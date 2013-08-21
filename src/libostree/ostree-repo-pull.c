@@ -861,6 +861,14 @@ scan_one_metadata_object (OtPullData         *pull_data,
     }
   else if (is_stored)
     {
+      // incomplete (metadata only) commit - fetch the rest:
+      if (objtype == OSTREE_OBJECT_TYPE_COMMIT &&
+          !ostree_repo_read_commit (pull_data->repo, tmp_checksum, NULL, cancellable, error))
+        {
+          g_clear_error (error);
+          is_requested = TRUE;
+        }
+
       if (pull_data->transaction_resuming || is_requested)
         {
           switch (objtype)
