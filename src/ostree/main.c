@@ -53,6 +53,7 @@ static OstreeCommand commands[] = {
   { "rev-parse", ostree_builtin_rev_parse, 0 },
   { "show", ostree_builtin_show, 0 },
 #ifdef HAVE_LIBSOUP 
+  { "summary", ostree_builtin_summary, 0 },
   { "trivial-httpd", ostree_builtin_trivial_httpd, OSTREE_BUILTIN_FLAG_NO_REPO },
 #endif
   { "write-refs", ostree_builtin_write_refs, 0 },
