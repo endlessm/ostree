@@ -26,7 +26,10 @@
 #include "ostree.h"
 #include "otutil.h"
 
+gboolean opt_detailed;
+
 static GOptionEntry options[] = {
+  { "detailed", 'd', 0, G_OPTION_ARG_NONE, &opt_detailed, "Emit detailed summary information", NULL },
   { NULL }
 };
 
@@ -93,14 +96,50 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
 
   if (!revision)
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
-                   "Refspec '%s' not found", refspec);
+      if (!*error)
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                     "Refspec '%s' not found", refspec);
       goto out;
     }
 
-  entries = ostree_repo_get_commit_sizes (repo, refspec,
-                                          &archived, &unpacked,
-                                          cancellable, error);
+  // detailed path - got to break the details out by hand:
+  // this is mostly to make the tests easier but might also
+  // be handy for somebody debugging a messed up size cache:
+  if (opt_detailed)
+    {
+      OstreeRepoCommitSizesIterator *iter =
+        ostree_repo_commit_sizes_iterator_new (repo, refspec, cancellable, error);
+
+      if (iter)
+        {
+          gint64 asize, usize;
+          gchar *csum;
+
+          g_print ("details:\n%-64s %16s %16s\n",
+                   "checksum", "archived", "unpacked");
+
+          while (ostree_repo_commit_sizes_iterator_next (repo, &iter,
+                                                         &csum, &asize, &usize))
+            {
+              entries++;
+              g_print ("%64s %16ld %16ld\n", csum, asize, usize);
+
+              // we don't use -ve values to mean anything at present
+              // but they are possible, ignore for now:
+              archived += MAX (0, asize);
+              unpacked += MAX (0, usize);
+            }
+
+          g_print ("details-end\n");
+        }
+    }
+  else
+    {
+      entries = ostree_repo_get_commit_sizes (repo, refspec,
+                                              &archived, &unpacked,
+                                              cancellable, error);
+    }
+
   if (entries > 0)
     {
       g_print ("Summary for refspec %s:\n"
@@ -109,7 +148,7 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
                "  unpacked: %ld bytes\n",
                refspec, entries, archived, unpacked);
     }
-  else
+  else if (!*error) // No error found, 0 entries => no index available
     {
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
                    "Refspec '%s' has no index, cannot summarise", refspec);
