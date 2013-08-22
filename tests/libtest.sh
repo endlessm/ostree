@@ -234,3 +234,30 @@ os_repository_new_commit ()
     ostree --repo=${test_tmpdir}/testos-repo commit -b testos/buildmaster/x86_64-runtime -s "Build"
     cd ${test_tmpdir}
 }
+
+# http_serve_docroot DOCROOT NAME
+# serve DOCROOT through ostree trivial-httpd
+# sets http_port and http_uri on success
+# call http_unserve_docroot NAME to terminate the webserver
+http_serve_docroot ()
+{
+    docroot=$(cd $1 && pwd);
+    name=$2;
+
+    assert_has_dir "$docroot";
+    assert_not_streq "$name" "";
+
+    mkdir -p "$test_tmpdir"/docroots;
+    target="$test_tmpdir"/docroots/"$name";
+    ln -s "$docroot" "$target";
+    http_port=$(ostree trivial-httpd -d --autoexit -p - "$target")
+    http_uri="http://127.0.0.1:${http_port}";
+}
+
+# http_unserve_docroot NAME
+# terminate a webserver started with http_serve_docroot
+http_unserve_docroot ()
+{
+    name=$1;
+    rm -f "$test_tmpdir"/docroots/"$name";
+}
