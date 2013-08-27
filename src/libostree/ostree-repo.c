@@ -113,6 +113,7 @@ ostree_repo_finalize (GObject *object)
     g_key_file_free (self->config);
   g_clear_pointer (&self->cached_meta_indexes, (GDestroyNotify) g_ptr_array_unref);
   g_clear_pointer (&self->cached_content_indexes, (GDestroyNotify) g_ptr_array_unref);
+  g_clear_pointer (&self->checksum_sizes, (GDestroyNotify) g_hash_table_unref);
   g_mutex_clear (&self->cache_lock);
   g_mutex_clear (&self->txn_stats_lock);
 
@@ -471,6 +472,37 @@ ostree_repo_get_parent (OstreeRepo  *self)
   return self->parent_repo;
 }
 
+typedef struct { gsize unpacked; gsize archived; } size_cache_entry;
+
+static size_cache_entry *
+new_size_cache_entry (gsize unpacked, gsize archived)
+{
+  size_cache_entry *entry = g_slice_new0 (size_cache_entry);
+
+  entry->unpacked = unpacked;
+  entry->archived = archived;
+
+  return entry;
+}
+
+static void
+free_size_cache_entry (gpointer entry)
+{
+  if (entry)
+    g_slice_free (size_cache_entry, entry);
+}
+
+static void
+repo_store_size_entry (OstreeRepo *self, const gchar *checksum, gsize unpacked, gsize archived)
+{
+  if (G_UNLIKELY (self->checksum_sizes == NULL))
+    self->checksum_sizes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, free_size_cache_entry);
+
+  g_hash_table_replace (self->checksum_sizes,
+                        g_strdup (checksum),
+                        new_size_cache_entry (unpacked, archived));
+}
+
 GFile *
 _ostree_repo_get_file_object_path (OstreeRepo   *self,
                                    const char   *checksum)
@@ -632,6 +664,8 @@ stage_object (OstreeRepo         *self,
   GChecksum *checksum = NULL;
   gboolean temp_file_is_regular;
   gboolean is_symlink = FALSE;
+  gsize unpacked_size = 0;
+  gboolean indexable = FALSE;
 
   g_return_val_if_fail (self->in_transaction, FALSE);
   
@@ -705,6 +739,7 @@ stage_object (OstreeRepo         *self,
           gs_unref_object GOutputStream *temp_out = NULL;
           gs_unref_object GConverter *zlib_compressor = NULL;
           gs_unref_object GOutputStream *compressed_out_stream = NULL;
+          indexable = TRUE;
 
           if (!gs_file_open_in_tmpdir (self->tmp_dir, 0644,
                                        &temp_file, &temp_out,
@@ -722,10 +757,12 @@ stage_object (OstreeRepo         *self,
             {
               zlib_compressor = (GConverter*)g_zlib_compressor_new (G_ZLIB_COMPRESSOR_FORMAT_RAW, 9);
               compressed_out_stream = g_converter_output_stream_new (temp_out, zlib_compressor);
-              
-              if (g_output_stream_splice (compressed_out_stream, file_input,
-                                          G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
-                                          cancellable, error) < 0)
+
+              // the compressor returns the number of uncompressed bytes written:
+              unpacked_size = g_output_stream_splice (compressed_out_stream, file_input,
+                                                      G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
+                                                      cancellable, error);
+              if(unpacked_size < 0)
                 goto out;
             }
 
@@ -763,6 +800,14 @@ stage_object (OstreeRepo         *self,
         }
     }
           
+  if (indexable)
+    {
+      gs_unref_object GFileInfo *info =
+        g_file_query_info (temp_file, G_FILE_ATTRIBUTE_STANDARD_SIZE, 0, NULL, NULL);
+      gsize archived_size = g_file_info_get_size (info);
+      repo_store_size_entry (self, actual_checksum, unpacked_size, archived_size);
+    }
+
   if (!ostree_repo_has_object (self, objtype, actual_checksum, &have_obj,
                                cancellable, error))
     goto out;
@@ -1594,6 +1639,68 @@ create_empty_gvariant_dict (void)
   return g_variant_builder_end (&builder);
 }
 
+static gboolean
+repo_create_index_for_commit (OstreeRepo *self, const gchar *csum, GError **error)
+{
+  gboolean ret = FALSE;
+
+  if (self->checksum_sizes && g_hash_table_size (self->checksum_sizes) > 0)
+    {
+      GHashTableIter entries = { 0 };
+      gchar *e_csum = NULL;
+      size_cache_entry *e_size = NULL;
+      GVariantBuilder index_builder;
+      GInputStream *index_stream = NULL;
+      gs_free gchar *path = NULL;
+      gs_unref_object GFile *file = NULL;
+      gs_unref_variant GVariant *index = NULL;
+      gs_unref_object GFile *temp_file;
+
+      g_hash_table_iter_init (&entries, self->checksum_sizes);
+      g_variant_builder_init (&index_builder,
+                              G_VARIANT_TYPE ("a" SIZES_ENTRY_SIGNATURE));
+
+      while (g_hash_table_iter_next (&entries,
+                                     (gpointer *) &e_csum,
+                                     (gpointer *) &e_size))
+        {
+          g_variant_builder_add (&index_builder, SIZES_ENTRY_SIGNATURE,
+                                 e_csum,
+                                 e_size->archived,
+                                 e_size->unpacked);
+        }
+
+      index = g_variant_builder_end (&index_builder);
+      index_stream = ot_variant_read (index);
+
+      if (!ostree_create_temp_file_from_input (self->tmp_dir,
+                                               SIZES_EXTENSTION,
+                                               NULL, NULL, NULL,
+                                               index_stream,
+                                               &temp_file, NULL, error))
+        goto out;
+
+      path = ostree_get_relative_file_path (csum, SIZES_EXTENSTION);
+
+      if (!path)
+        {
+          g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                               "Could not create file path for ." SIZES_EXTENSTION " file");
+          goto out;
+        }
+
+      file = g_file_resolve_relative_path (self->repodir, path);
+
+      if (!commit_loose_object_impl (self, temp_file, file, TRUE, NULL, error))
+        goto out;
+
+      ret = TRUE;
+    }
+
+ out:
+  return ret;
+}
+
 /**
  * ostree_repo_stage_commit:
  * @self: Repo
@@ -1649,6 +1756,7 @@ ostree_repo_stage_commit (OstreeRepo *self,
     goto out;
 
   ret_commit = ostree_checksum_from_bytes (commit_csum);
+  repo_create_index_for_commit (self, ret_commit, error);
 
   ret = TRUE;
   ot_transfer_out_value(out_commit, &ret_commit);

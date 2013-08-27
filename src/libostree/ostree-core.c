@@ -1348,6 +1348,43 @@ ostree_checksum_bytes_peek (GVariant *bytes)
   return g_variant_get_fixed_array (bytes, &n_elts, 1);
 }
 
+static char *
+get_relative_file_path (const char *checksum,
+                        const char *suffix,
+                        char flagchar)
+{
+  GString *path;
+
+  g_assert (strlen (checksum) == 64);
+
+  path = g_string_new ("objects/");
+
+  g_string_append_len (path, checksum, 2);
+  g_string_append_c (path, '/');
+  g_string_append (path, checksum + 2);
+  g_string_append_c (path, '.');
+  g_string_append (path, suffix);
+
+  if (flagchar)
+    g_string_append_c (path, flagchar);
+
+  return g_string_free (path, FALSE);
+}
+
+/**
+ * ostree_get_relative_file_path:
+ * @checksum: ASCII checksum string
+ * @suffix: suffix (file extension) string
+ *
+ * Returns: (transfer full): Relative path for an (object) file
+ */
+char *
+ostree_get_relative_file_path (const char *checksum,
+                               const char *suffix)
+{
+  return get_relative_file_path (checksum, suffix, 0);
+}
+
 /**
  * ostree_get_relative_object_path:
  * @checksum: ASCII checksum string
@@ -1361,21 +1398,15 @@ ostree_get_relative_object_path (const char         *checksum,
                                  OstreeObjectType    type,
                                  gboolean            compressed)
 {
-  GString *path;
+  gchar flagchar;
 
   g_assert (strlen (checksum) == 64);
 
-  path = g_string_new ("objects/");
+  flagchar = (!OSTREE_OBJECT_TYPE_IS_META (type) && compressed) ? 'z' : 0;
 
-  g_string_append_len (path, checksum, 2);
-  g_string_append_c (path, '/');
-  g_string_append (path, checksum + 2);
-  g_string_append_c (path, '.');
-  g_string_append (path, ostree_object_type_to_string (type));
-  if (!OSTREE_OBJECT_TYPE_IS_META (type) && compressed)
-    g_string_append (path, "z");
-
-  return g_string_free (path, FALSE);
+  return get_relative_file_path (checksum,
+                                 ostree_object_type_to_string (type),
+                                 flagchar);
 }
 
 /**

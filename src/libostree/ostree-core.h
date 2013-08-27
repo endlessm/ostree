@@ -194,6 +194,9 @@ void ostree_object_from_string (const char *str,
                                 gchar     **out_checksum,
                                 OstreeObjectType *out_objtype);
 
+char *ostree_get_relative_file_path (const char *checksum,
+                                     const char *suffix);
+
 char *ostree_get_relative_object_path (const char        *checksum,
                                        OstreeObjectType   type,
                                        gboolean           compressed);

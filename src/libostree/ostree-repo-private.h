@@ -24,6 +24,9 @@
 
 G_BEGIN_DECLS
 
+#define SIZES_EXTENSTION "sizes"
+#define SIZES_ENTRY_SIGNATURE "(sxx)"
+
 struct OstreeRepo {
   GObject parent;
 
@@ -53,6 +56,7 @@ struct OstreeRepo {
   gboolean in_transaction;
   GHashTable *loose_object_devino_hash;
   GHashTable *updated_uncompressed_dirs;
+  GHashTable *checksum_sizes;
 
   GKeyFile *config;
   OstreeRepoMode mode;
