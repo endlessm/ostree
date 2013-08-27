@@ -26,6 +26,7 @@ G_BEGIN_DECLS
 
 #define SIZES_EXTENSTION "sizes"
 #define SIZES_ENTRY_SIGNATURE "(sxx)"
+#define SIZES_VARIANT_TYPE G_VARIANT_TYPE ("a" SIZES_ENTRY_SIGNATURE)
 
 struct OstreeRepo {
   GObject parent;

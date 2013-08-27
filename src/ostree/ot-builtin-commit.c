@@ -362,6 +362,11 @@ ostree_builtin_commit (int argc, char **argv, OstreeRepo *repo, GCancellable *ca
               if (!ostree_repo_read_commit (repo, tree, &arg, cancellable, error))
                 goto out;
 
+              // index may not exist: will have to check index integrity at
+              // the final commit stage, as we can commit from multiple sources
+              // and mixed index/non-indexed sources will produce an invalid index
+              ostree_repo_copy_commit_sizes (repo, tree, cancellable, error);
+
               if (!ostree_repo_stage_directory_to_mtree (repo, arg, mtree, modifier,
                                                          cancellable, error))
                 goto out;

@@ -269,6 +269,14 @@ typedef enum {
  */
 typedef struct OstreeRepoCommitModifier OstreeRepoCommitModifier;
 
+/**
+ * OstreeRepoCommitSizesIterator
+ *
+ * A structure used as a handle when iterating over the items in
+ * a commit size cache
+ **/
+typedef struct OstreeRepoCommitSizesIterator OstreeRepoCommitSizesIterator;
+
 OstreeRepoCommitModifier *ostree_repo_commit_modifier_new (OstreeRepoCommitModifierFlags  flags,
                                                            OstreeRepoCommitFilter         commit_filter,
                                                            gpointer                       user_data);
@@ -343,6 +351,34 @@ ostree_repo_checkout_tree (OstreeRepo               *self,
 gboolean       ostree_repo_checkout_gc (OstreeRepo        *self,
                                         GCancellable      *cancellable,
                                         GError           **error);
+
+gsize          ostree_repo_copy_commit_sizes (OstreeRepo *self,
+                                              const char *rev,
+                                              GCancellable *cancellable,
+                                              GError **error);
+
+gsize          ostree_repo_get_commit_sizes (OstreeRepo *self,
+                                             const char *rev,
+                                             gint64 *packed,
+                                             gint64 *unpacked,
+                                             GCancellable *cancellable,
+                                             GError **error);
+
+OstreeRepoCommitSizesIterator *
+ostree_repo_commit_sizes_iterator_new (OstreeRepo *self,
+                                       const char *rev,
+                                       GCancellable *cancellable,
+                                       GError **error);
+
+gboolean
+ostree_repo_commit_sizes_iterator_next (OstreeRepo *self,
+                                        OstreeRepoCommitSizesIterator **iter,
+                                        gchar **checksum,
+                                        gint64 *archived,
+                                        gint64 *unpacked);
+void
+ostree_repo_commit_sizes_iterator_free (OstreeRepo *self,
+                                        OstreeRepoCommitSizesIterator **iter);
 
 gboolean       ostree_repo_read_commit (OstreeRepo *self,
                                         const char *rev,

@@ -2340,6 +2340,59 @@ list_loose_objects (OstreeRepo                     *self,
 }
 
 static gboolean
+load_private_variant (OstreeRepo    *self,
+                      const char    *suffix,
+                      const char    *csum,
+                      gboolean       must_exist,
+                      GVariant     **out_variant,
+                      GCancellable  *cancellable,
+                      GError       **error)
+{
+  gboolean mapped = FALSE;
+  gs_free gchar *path;
+  gs_unref_object GFile *file;
+  gs_unref_variant GVariant *value = NULL;
+
+  g_assert (csum);
+  g_assert (suffix);
+  g_assert (strlen (csum) == 64);
+
+  path = ostree_get_relative_file_path (csum, suffix);
+
+  if (!path)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Could not create file path for .%s file", suffix);
+      goto out;
+    }
+
+  file = g_file_resolve_relative_path (self->repodir, path);
+
+  if (!file)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Could not create file path for .%s file", suffix);
+      goto out;
+    }
+
+  mapped = ot_util_variant_map (file, SIZES_VARIANT_TYPE, TRUE, &value, error);
+
+  if (!mapped)
+    {
+      if (!must_exist &&
+          g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_clear_error (error);
+
+      goto out;
+    }
+
+  ot_transfer_out_value (out_variant, &value);
+
+ out:
+  return mapped;
+}
+
+static gboolean
 load_metadata_internal (OstreeRepo       *self,
                         OstreeObjectType  objtype,
                         const char       *sha256, 
@@ -2829,6 +2882,248 @@ ostree_repo_list_objects (OstreeRepo                  *self,
  out:
   return ret;
 }
+
+// Loads the cached index of commit object sizes for commit rev into
+// index. If loaded, index will hold elements of SIZES_ENTRY_SIGNATURE.
+// As the cache is optional, @error will only be set if the error encountered
+// was something other than G_IO_ERROR_NOT_FOUND.
+static gboolean
+repo_read_commit_sizes (OstreeRepo *self,
+                        const char *rev,
+                        GVariant **index,
+                        GCancellable *cancellable,
+                        GError **error)
+{
+  gboolean ret = FALSE;
+  gs_free char *resolved = NULL;
+  gs_unref_variant GVariant *tmp_index = NULL;
+
+  if(!ostree_repo_resolve_rev (self, rev, FALSE, &resolved, error))
+    goto out;
+
+  ret = load_private_variant (self, SIZES_EXTENSTION, resolved, FALSE,
+                              &tmp_index, cancellable, error);
+
+  ot_transfer_out_value (index, &tmp_index);
+
+ out:
+  return ret;
+}
+
+
+/**
+ * ostree_repo_copy_commit_sizes:
+ * @self: Repo
+ * @rev: A revision from which to copy the indexed sizes
+ * @cancellable: (allow-none): Cancellable
+ * @error: (allow-none): Error
+ *
+ * Copy the cache of commit-object sizes from @rev into the internal cache
+ * in @self. Useful when creating a new commit with @rev as [one of] the
+ * source(s) and you wish to create a size cache for the new commit.
+ *
+ * Returns: The number of entries read from the cache of the source.
+ * Note that since size caches are optional, it is not an error for
+ * no cache to be found (or for the number of entries to be 0).
+ * If an error other than %G_IO_ERROR_NOT_FOUND occurs, @error will be set.
+ */
+gsize
+ostree_repo_copy_commit_sizes (OstreeRepo *self,
+                               const char *rev,
+                               GCancellable *cancellable,
+                               GError **error)
+{
+  gsize ret = 0;
+  OstreeRepoCommitSizesIterator *iter = NULL;
+
+  iter = ostree_repo_commit_sizes_iterator_new (self, rev, cancellable, error);
+
+  if (iter)
+    {
+      gchar *csum;
+      gint64 archived;
+      gint64 unpacked;
+
+      while (ostree_repo_commit_sizes_iterator_next (self, &iter, &csum,
+                                                     &archived, &unpacked))
+        {
+          repo_store_size_entry (self, csum, unpacked, archived);
+          ret++;
+        }
+    }
+
+  return ret;
+}
+
+/**
+ * ostree_repo_get_commit_sizes:
+ * @self: Repo
+ * @rev: A revision (branch or sha256 sum) whose sizes you want to fetch
+ * @archived: Holds the total in-repo size of all committed files on success
+ * @unpacked: Holds the total unpacked size of all committed files on success
+ * @cancellable: (allow-none): Cancellable
+ * @error: (allow-none): Error
+ *
+ * The packed size is the size of all committed file objects. dirtree
+ * objects and dirmeta objects are not currently accounted for. As a result,
+ * if you are using this information to determine the amount of data to
+ * be downloaded on pull you should be aware that the actual size will be
+ * slightly greater than this number in normal use.
+ *
+ * Returns: The number of entries in the size cache on success (cached
+ * sizes found and loaded) or 0 otherwise.
+ * If the fetch failed for reasons other than the cached size metadata not
+ * being found (since the cache is optional), @error will be set.
+ */
+gsize
+ostree_repo_get_commit_sizes (OstreeRepo *self,
+                              const char *rev,
+                              gint64 *archived,
+                              gint64 *unpacked,
+                              GCancellable *cancellable,
+                              GError **error)
+{
+  gboolean ret = 0;
+  gs_unref_variant GVariant *index = NULL;
+  gint64 in = 0;
+  gint64 out = 0;
+  OstreeRepoCommitSizesIterator *iter = NULL;
+
+  iter = ostree_repo_commit_sizes_iterator_new (self, rev, cancellable, error);
+
+  if (iter)
+    {
+      gint64 i;
+      gint64 o;
+
+      ret = TRUE;
+
+      while (ostree_repo_commit_sizes_iterator_next (self, &iter, NULL, &i, &o))
+        {
+          in  += MAX (i, 0);
+          out += MAX (o, 0);
+          ret++;
+        }
+
+      if (archived) *archived = in;
+      if (unpacked) *unpacked = out;
+    }
+
+  return ret;
+}
+
+struct OstreeRepoCommitSizesIterator {
+  GVariantIter iterator;
+  GVariant *sizes;
+};
+
+/**
+ * ostree_repo_commit_sizes_iterator_new:
+ * @self: OstreeRepo
+ * @rev: The revision you want to examine the commit size cache for
+ * @cancellable: cancellable
+ * @error: (allow-none): error
+ *
+ * Initialises an %OstreeRepoCommitSizesIterator for revision @rev
+ * in @repo and returns it to you.
+ *
+ * If you exhaust the iterator with ostree_repo_commit_sizes_iterator_next()
+ * it is freed automatically.
+ *
+ * To free an OstreeRepoCommitSizesIterator early, call
+ * ostree_repo_commit_sizes_iterator_finish().
+ *
+ * Returns: an %OstreeRepoCommitSizesIterator pointer on success,
+ * %NULL on failure. If there is no cache of entry sizes, %NULL
+ * is returned but @error is not set, as the cache is optional.
+ */
+OstreeRepoCommitSizesIterator *
+ostree_repo_commit_sizes_iterator_new (OstreeRepo *self,
+                                       const char *rev,
+                                       GCancellable *cancellable,
+                                       GError **error)
+{
+  OstreeRepoCommitSizesIterator *ret = NULL;
+  gs_free OstreeRepoCommitSizesIterator *handle =
+    g_new0 (OstreeRepoCommitSizesIterator, 1);
+
+  if (repo_read_commit_sizes (self, rev, &handle->sizes, cancellable, error))
+    {
+      g_variant_iter_init (&handle->iterator, handle->sizes);
+      ret = handle;
+      handle = NULL;
+    }
+
+  return ret;
+}
+
+/**
+ * ostree_repo_commit_sizes_iterator_next:
+ * @self: OstreeRepo
+ * @iter: %OstreeRepoCommitSizesIterator
+ * @checksum: (allow-none): storage for the next entry checksum
+ * @archived: (allow-none): storage for the archived (in-repo) size
+ * @unpacked: (allow-none): storage for the unpacked size
+ *
+ * Extracts the next set of checksum and size values from @iter.
+ * If there are no more values, @iter is freed and nulled.
+ * The checksum is extracted by pointer, not copied, so should not
+ * be freed or modified.
+ *
+ * Returns: %TRUE if there was an entry available, %FALSE if the iterator
+ * has been exhausted.
+ **/
+gboolean
+ostree_repo_commit_sizes_iterator_next (OstreeRepo *self,
+                                        OstreeRepoCommitSizesIterator **iter,
+                                        gchar **checksum,
+                                        gint64 *archived,
+                                        gint64 *unpacked)
+{
+  gint64 in;
+  gint64 out;
+  OstreeRepoCommitSizesIterator *csi = *iter;
+
+  if (g_variant_iter_next (&csi->iterator, "(&sxx)", checksum, &in, &out))
+    {
+      if (archived) *archived = in;
+      if (unpacked) *unpacked = out;
+
+      return TRUE;
+    }
+  else
+    {
+      ostree_repo_commit_sizes_iterator_free (self, iter);
+      return FALSE;
+    }
+}
+
+/**
+ * ostree_repo_commit_sizes_iterator_free:
+ * @self: OstreeRepo
+ * @iter: OstreeRepoCommitSizesIterator to dispose of
+ *
+ * Frees an %OstreeRepoCommitSizesIterator early.
+ * See also: ostree_repo_commit_sizes_iterator_new()
+ *         : ostree_repo_commit_sizes_iterator_next()
+ **/
+void
+ostree_repo_commit_sizes_iterator_free (OstreeRepo *self,
+                                        OstreeRepoCommitSizesIterator **iter)
+{
+  if (*iter)
+    {
+      if ((*iter)->sizes)
+        {
+          g_variant_unref ((*iter)->sizes);
+          (*iter)->sizes = NULL;
+        }
+
+      g_free (*iter);
+      *iter = NULL;
+    }
+}
+
 
 /**
  * ostree_repo_read_commit:
