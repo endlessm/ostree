@@ -26,7 +26,10 @@
 #include "ostree.h"
 #include "otutil.h"
 
+gboolean opt_metadata;
+
 static GOptionEntry options[] = {
+  { "metadata", 'm', 0, G_OPTION_ARG_NONE, &opt_metadata, "Download only the metadata", NULL },
   { NULL }
 };
 
@@ -60,6 +63,9 @@ ostree_builtin_pull (int argc, char **argv, OstreeRepo *repo, GCancellable *canc
         g_ptr_array_add (refs_to_fetch, argv[i]);
       g_ptr_array_add (refs_to_fetch, NULL);
     }
+
+  if (opt_metadata)
+    pullflags |= OSTREE_REPO_PULL_FLAGS_METADATA;
 
   if (!ostree_repo_pull (repo, remote, refs_to_fetch ? (char**)refs_to_fetch->pdata : NULL,
                     pullflags, cancellable, error))

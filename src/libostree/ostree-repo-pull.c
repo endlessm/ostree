@@ -795,16 +795,20 @@ scan_commit_object (OtPullData         *pull_data,
   g_variant_get_child (commit, 6, "@ay", &tree_contents_csum);
   g_variant_get_child (commit, 7, "@ay", &tree_meta_csum);
 
-  if (!scan_one_metadata_object (pull_data, ostree_checksum_bytes_peek (tree_contents_csum),
-                                 OSTREE_OBJECT_TYPE_DIR_TREE, recursion_depth + 1,
-                                 cancellable, error))
-    goto out;
+  // If this is a metadata only pull, don't grab the top dirtree/dirmeta:
+  if (!(pull_data->flags & OSTREE_REPO_PULL_FLAGS_METADATA))
+    {
+      if (!scan_one_metadata_object (pull_data, ostree_checksum_bytes_peek (tree_contents_csum),
+                                     OSTREE_OBJECT_TYPE_DIR_TREE, recursion_depth + 1,
+                                     cancellable, error))
+        goto out;
 
-  if (!scan_one_metadata_object (pull_data, ostree_checksum_bytes_peek (tree_meta_csum),
-                                 OSTREE_OBJECT_TYPE_DIR_META, recursion_depth + 1,
-                                 cancellable, error))
-    goto out;
-  
+      if (!scan_one_metadata_object (pull_data, ostree_checksum_bytes_peek (tree_meta_csum),
+                                     OSTREE_OBJECT_TYPE_DIR_META, recursion_depth + 1,
+                                     cancellable, error))
+        goto out;
+    }
+
   ret = TRUE;
  out:
   if (iter)
