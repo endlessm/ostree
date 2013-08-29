@@ -65,6 +65,7 @@ typedef struct {
     PULL_MSG_SCAN_IDLE,
     PULL_MSG_MAIN_IDLE,
     PULL_MSG_FETCH,
+    PULL_MSG_FETCH_OPTIONAL,
     PULL_MSG_SCAN,
     PULL_MSG_QUIT
   } t;
@@ -120,6 +121,7 @@ typedef struct {
 typedef struct {
   OtPullData  *pull_data;
   GVariant    *object;
+  gchar       *relpath;
   GFile       *temp_path;
 } FetchObjectData;
 
@@ -232,6 +234,7 @@ pull_worker_message_new (int msgtype, gpointer data)
       break;
     case PULL_MSG_SCAN:
     case PULL_MSG_FETCH:
+    case PULL_MSG_FETCH_OPTIONAL:
       msg->d.item = data;
       break;
     case PULL_MSG_QUIT:
@@ -646,6 +649,7 @@ on_metadata_staged (GObject           *object,
  out:
   pull_data->n_outstanding_metadata_stage_requests--;
   (void) gs_file_unlink (fetch_data->temp_path, NULL, NULL);
+  g_clear_pointer (&fetch_data->relpath, g_free);
   g_object_unref (fetch_data->temp_path);
   g_variant_unref (fetch_data->object);
   g_free (fetch_data);
@@ -692,6 +696,75 @@ meta_fetch_on_complete (GObject           *object,
       g_variant_unref (fetch_data->object);
       g_free (fetch_data);
     }
+}
+
+static void
+optional_fetch_on_complete (GObject      *object,
+                            GAsyncResult *result,
+                            gpointer      user_data)
+{
+  FetchObjectData *fetch_data = user_data;
+  OtPullData *pull_data = fetch_data->pull_data;
+  gs_unref_variant GVariant *metadata = NULL;
+  gs_unref_variant GVariant *normal = NULL;
+  gs_unref_object GInputStream *input = NULL;
+  gs_unref_object GFile *temp_file = NULL;
+  gs_unref_object GFile *dest_file = NULL;
+  gs_unref_object GFile *parent = NULL;
+
+  GError *local_error = NULL;
+  GError **error = &local_error;
+  OstreeRepo *repo = pull_data->repo;
+
+  fetch_data->temp_path = ostree_fetcher_request_uri_finish ((OstreeFetcher*)object, result, error);
+  if (!fetch_data->temp_path)
+    {
+      if (g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_clear_error (error);
+      goto out;
+    }
+
+  g_debug ("fetch of optional item %s complete", fetch_data->relpath);
+
+  // make sure we can read it in:
+  if (!ot_util_variant_map (fetch_data->temp_path, SIZES_VARIANT_TYPE,
+                            FALSE, &metadata, error))
+    goto out;
+
+  // have to normalise everything going in to our trusted storage:
+  normal = g_variant_get_normal_form (metadata);
+  input = ot_variant_read (normal);
+
+  if(!ostree_create_temp_file_from_input (repo->tmp_dir,
+                                          "optional",
+                                          NULL, NULL, NULL,
+                                          input,
+                                          &temp_file,
+                                          pull_data->cancellable,
+                                          error))
+    goto out;
+
+  dest_file = g_file_resolve_relative_path (repo->repodir, fetch_data->relpath);
+  parent = g_file_get_parent (dest_file);
+
+  if (!gs_file_ensure_directory (parent, FALSE, pull_data->cancellable, error))
+    goto out;
+
+  if (!gs_file_sync_data (temp_file, pull_data->cancellable, error))
+    goto out;
+
+  if (!gs_file_rename (temp_file, dest_file, pull_data->cancellable, error))
+    goto out;
+
+  pull_data->n_fetched_metadata++;
+
+ out:
+  pull_data->n_outstanding_metadata_fetches--;
+  throw_async_error (pull_data, local_error);
+  g_clear_pointer (&fetch_data->object, g_variant_unref);
+  g_clear_pointer (&fetch_data->relpath, g_free);
+  g_free (fetch_data);
+
 }
 
 static gboolean
@@ -772,6 +845,15 @@ scan_one_metadata_object (OtPullData         *pull_data,
       ot_waitable_queue_push (pull_data->metadata_objects_to_fetch,
                               pull_worker_message_new (PULL_MSG_FETCH,
                                                        g_variant_ref (object)));
+
+      // Fetch the size cache index (or try to anyway):
+      if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
+        {
+          GVariant *sc = g_variant_new ("(ss)", tmp_checksum, SIZES_EXTENSTION);
+          PullWorkerMessage *msg = pull_worker_message_new (PULL_MSG_FETCH_OPTIONAL, sc);
+
+          ot_waitable_queue_push (pull_data->metadata_objects_to_fetch, msg);
+        }
     }
   else if (is_stored)
     {
@@ -972,11 +1054,36 @@ on_metadata_objects_to_fetch_ready (gint         fd,
           pull_data->n_outstanding_content_fetches++;
           pull_data->n_requested_content++;
         }
-      fetch_data = g_new (FetchObjectData, 1);
+      fetch_data = g_new0 (FetchObjectData, 1);
       fetch_data->pull_data = pull_data;
       fetch_data->object = g_variant_ref (msg->d.item);
       ostree_fetcher_request_uri_with_partial_async (pull_data->fetcher, obj_uri, pull_data->cancellable,
                                         is_meta ? meta_fetch_on_complete : content_fetch_on_complete, fetch_data);
+      soup_uri_free (obj_uri);
+      g_variant_unref (msg->d.item);
+    }
+  else if (msg->t == PULL_MSG_FETCH_OPTIONAL)
+    {
+      const char *csum = NULL;
+      const char *extn = NULL;
+      gchar *filepath = NULL;
+      SoupURI *obj_uri = NULL;
+      FetchObjectData *fetch_data;
+
+      g_variant_get (msg->d.item, "(&s&s)", &csum, &extn);
+      filepath = ostree_get_relative_file_path (csum, extn);
+      obj_uri = suburi_new (pull_data->base_uri, filepath, NULL);
+
+      pull_data->n_outstanding_metadata_fetches++;
+      pull_data->n_requested_metadata++;
+
+      fetch_data = g_new0 (FetchObjectData, 1);
+      fetch_data->pull_data = pull_data;
+      fetch_data->relpath = filepath;
+
+      ostree_fetcher_request_uri_async (pull_data->fetcher, obj_uri, pull_data->cancellable,
+                                        optional_fetch_on_complete, fetch_data);
+
       soup_uri_free (obj_uri);
       g_variant_unref (msg->d.item);
     }
