@@ -1094,6 +1094,8 @@ ostree_object_type_to_string (OstreeObjectType objtype)
       return "dirmeta";
     case OSTREE_OBJECT_TYPE_COMMIT:
       return "commit";
+    case OSTREE_OBJECT_TYPE_SIGNATURE:
+      return "sig";
     default:
       g_assert_not_reached ();
       return NULL;

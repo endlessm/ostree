@@ -54,7 +54,8 @@ typedef enum {
   OSTREE_OBJECT_TYPE_FILE = 1,      /* .file */
   OSTREE_OBJECT_TYPE_DIR_TREE = 2,  /* .dirtree */
   OSTREE_OBJECT_TYPE_DIR_META = 3,  /* .dirmeta */
-  OSTREE_OBJECT_TYPE_COMMIT = 4     /* .commit */
+  OSTREE_OBJECT_TYPE_COMMIT = 4,    /* .commit */
+  OSTREE_OBJECT_TYPE_SIGNATURE = 5  /* .sig */
 } OstreeObjectType;
 
 /**

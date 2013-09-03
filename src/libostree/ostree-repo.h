@@ -427,5 +427,14 @@ gboolean ostree_repo_pull (OstreeRepo             *self,
                            GCancellable           *cancellable,
                            GError                **error);
 
+#ifdef HAVE_GPGME
+gboolean ostree_repo_sign_commit (OstreeRepo     *self,
+                                  gchar          *commit_checksum,
+                                  gchar          *key_id,
+                                  gchar          *homedir,
+                                  GCancellable   *cancellable,
+                                  GError        **error);
+#endif
+
 G_END_DECLS
 

@@ -36,6 +36,11 @@
 #include "libgsystem.h"
 #include "ostree-repo-file-enumerator.h"
 
+#ifdef HAVE_GPGME
+#include <locale.h>
+#include <gpgme.h>
+#endif
+
 /**
  * SECTION:libostree-repo
  * @title: Content-addressed object store
@@ -2777,5 +2782,134 @@ ostree_repo_pull (OstreeRepo               *self,
   g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
                        "This version of ostree was built without libsoup, and cannot fetch over HTTP");
   return FALSE;
+}
+#endif
+
+#ifdef HAVE_GPGME
+gboolean
+ostree_repo_sign_commit (OstreeRepo     *self,
+                         gchar          *commit_checksum,
+                         gchar          *key_id,
+                         gchar          *homedir,
+                         GCancellable   *cancellable,
+                         GError        **error)
+{
+  gboolean ret = FALSE;
+  gpgme_ctx_t context;
+  gpgme_engine_info_t info;
+  gpgme_error_t err;
+  gpgme_key_t key = NULL;
+  gs_free gchar *commit_filename;
+  gs_free gchar *signature_filename;
+  gpgme_data_t commit_buffer = NULL;
+  gpgme_data_t signature_buffer = NULL;
+  int commit_fd = -1;
+  int signature_fd = -1;
+  gpgme_sign_result_t result;
+  gs_unref_object GFile *commit_path = NULL;
+  gs_unref_object GFile *sig_path = NULL;
+
+  commit_filename = ostree_get_relative_object_path (commit_checksum, OSTREE_OBJECT_TYPE_COMMIT, FALSE);
+  commit_path = g_file_resolve_relative_path (ostree_repo_get_path (self), commit_filename);
+  commit_filename = g_file_get_path (commit_path);
+
+  signature_filename = ostree_get_relative_object_path (commit_checksum, OSTREE_OBJECT_TYPE_SIGNATURE, FALSE);
+  sig_path = g_file_resolve_relative_path (ostree_repo_get_path (self), signature_filename);
+  signature_filename = g_file_get_path (sig_path);
+
+  gpgme_check_version (NULL);
+  gpgme_set_locale (NULL, LC_CTYPE, setlocale (LC_CTYPE, NULL));
+  
+  if ((err = gpgme_new (&context)) != GPG_ERR_NO_ERROR)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Unable to create gpg context");
+      goto out;
+    }
+
+  info = gpgme_ctx_get_engine_info (context);
+  
+  if (homedir != NULL)
+    {
+      if ((err = gpgme_ctx_set_engine_info (context, info->protocol, info->file_name, homedir))
+                 != GPG_ERR_NO_ERROR)
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                       "Unable to set gpg homedir");
+          goto out;
+        }
+    }
+
+  /* Get the secret keys with the given key id */
+  if ((err = gpgme_get_key (context, key_id, &key, 1)) != GPG_ERR_NO_ERROR)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "No gpg key found with the given key-id");
+      goto out;
+    }
+
+  /* Add the key to the context as a signer */
+  if ((err = gpgme_signers_add (context, key)) != GPG_ERR_NO_ERROR)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Error signing commit");
+      goto out;
+    }
+  
+  commit_fd = g_open (commit_filename, O_RDONLY, 0);
+  if (commit_fd < 0)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Unable to open commit file");
+      goto out;
+    }
+
+  if ((err = gpgme_data_new_from_fd (&commit_buffer, commit_fd)) != GPG_ERR_NO_ERROR)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Failed to create buffer from commit file");
+      goto out;
+    }
+  
+  signature_fd = g_open (signature_filename, O_WRONLY | O_CREAT, 0644);
+  if (signature_fd < 0)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Unable to open signature file");
+      goto out;
+    }
+  
+  if ((err = gpgme_data_new_from_fd (&signature_buffer, signature_fd)) != GPG_ERR_NO_ERROR)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Failed to create buffer for signature file");
+      goto out;
+    }
+  
+  if ((err = gpgme_op_sign (context, commit_buffer, signature_buffer, GPGME_SIG_MODE_DETACH))
+      != GPG_ERR_NO_ERROR)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Failure signing commit file");
+      goto out;
+    }
+  
+  result = gpgme_op_sign_result (context);
+
+  ret = TRUE;
+out:
+  if (commit_fd >= 0)
+    g_close (commit_fd, NULL);
+  if (signature_fd >= 0)
+    g_close (commit_fd, NULL);
+  if (commit_buffer)
+    gpgme_data_release (commit_buffer);
+  if (signature_buffer)
+    gpgme_data_release (signature_buffer);
+  if (key)
+    gpgme_key_release (key);
+  if (context)
+    gpgme_release (context);
+  return ret;
 }
 #endif
