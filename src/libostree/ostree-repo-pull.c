@@ -123,6 +123,7 @@ typedef struct {
   GVariant    *object;
   gchar       *relpath;
   GFile       *temp_path;
+  gboolean     is_signature;
 } FetchObjectData;
 
 static SoupURI *
@@ -727,22 +728,29 @@ optional_fetch_on_complete (GObject      *object,
   g_debug ("fetch of optional item %s complete", fetch_data->relpath);
 
   // make sure we can read it in:
-  if (!ot_util_variant_map (fetch_data->temp_path, SIZES_VARIANT_TYPE,
-                            FALSE, &metadata, error))
-    goto out;
+  if (!fetch_data->is_signature)
+    {
+      if (!ot_util_variant_map (fetch_data->temp_path, SIZES_VARIANT_TYPE,
+                                FALSE, &metadata, error))
+        goto out;
 
-  // have to normalise everything going in to our trusted storage:
-  normal = g_variant_get_normal_form (metadata);
-  input = ot_variant_read (normal);
+      // have to normalise everything going in to our trusted storage:
+      normal = g_variant_get_normal_form (metadata);
+      input = ot_variant_read (normal);
 
-  if(!ostree_create_temp_file_from_input (repo->tmp_dir,
-                                          "optional",
-                                          NULL, NULL, NULL,
-                                          input,
-                                          &temp_file,
-                                          pull_data->cancellable,
-                                          error))
-    goto out;
+      if(!ostree_create_temp_file_from_input (repo->tmp_dir,
+                                              "optional",
+                                              NULL, NULL, NULL,
+                                              input,
+                                              &temp_file,
+                                              pull_data->cancellable,
+                                              error))
+        goto out;
+    }
+  else
+    {
+      temp_file = fetch_data->temp_path;
+    }
 
   dest_file = g_file_resolve_relative_path (repo->repodir, fetch_data->relpath);
   parent = g_file_get_parent (dest_file);
@@ -853,9 +861,15 @@ scan_one_metadata_object (OtPullData         *pull_data,
       // Fetch the size cache index (or try to anyway):
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
         {
-          GVariant *sc = g_variant_new ("(ss)", tmp_checksum, SIZES_EXTENSTION);
+          GVariant *sc = g_variant_new ("(ssb)", tmp_checksum, SIZES_EXTENSTION, FALSE);
           PullWorkerMessage *msg = pull_worker_message_new (PULL_MSG_FETCH_OPTIONAL, sc);
 
+          ot_waitable_queue_push (pull_data->metadata_objects_to_fetch, msg);
+          
+          // Also try to fetch a corresponding .sig file
+          sc = g_variant_new ("(ssb)", tmp_checksum, SIGNATURE_EXTENSION, TRUE);
+          msg = pull_worker_message_new (PULL_MSG_FETCH_OPTIONAL, sc);
+          
           ot_waitable_queue_push (pull_data->metadata_objects_to_fetch, msg);
         }
     }
@@ -1081,8 +1095,9 @@ on_metadata_objects_to_fetch_ready (gint         fd,
       gchar *filepath = NULL;
       SoupURI *obj_uri = NULL;
       FetchObjectData *fetch_data;
+      gboolean is_sig = FALSE;
 
-      g_variant_get (msg->d.item, "(&s&s)", &csum, &extn);
+      g_variant_get (msg->d.item, "(&s&sb)", &csum, &extn, &is_sig);
       filepath = ostree_get_relative_file_path (csum, extn);
       obj_uri = suburi_new (pull_data->base_uri, filepath, NULL);
 
@@ -1092,6 +1107,7 @@ on_metadata_objects_to_fetch_ready (gint         fd,
       fetch_data = g_new0 (FetchObjectData, 1);
       fetch_data->pull_data = pull_data;
       fetch_data->relpath = filepath;
+      fetch_data->is_signature = is_sig;
 
       ostree_fetcher_request_uri_with_partial_async (pull_data->fetcher, obj_uri, pull_data->cancellable,
                                                      optional_fetch_on_complete, fetch_data);

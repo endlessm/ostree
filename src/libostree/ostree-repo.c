@@ -3315,4 +3315,127 @@ out:
     gpgme_release (context);
   return ret;
 }
+
+gboolean ostree_repo_verify_commit (OstreeRepo   *self,
+                                    gchar        *commit_checksum,
+                                    gchar        *homedir,
+                                    GCancellable *cancellable,
+                                    GError      **error)
+{
+  gboolean ret = FALSE;
+  gpgme_ctx_t context;
+  gpgme_engine_info_t info;
+  gpgme_error_t err;
+  gpgme_key_t key = NULL;
+  gs_free gchar *commit_filename;
+  gs_free gchar *signature_filename;
+  gpgme_data_t commit_buffer = NULL;
+  gpgme_data_t signature_buffer = NULL;
+  int commit_fd = -1;
+  int signature_fd = -1;
+  gpgme_verify_result_t result;
+  gs_unref_object GFile *commit_path = NULL;
+  gs_unref_object GFile *sig_path = NULL;
+
+  commit_filename = ostree_get_relative_object_path (commit_checksum,
+                                                     OSTREE_OBJECT_TYPE_COMMIT,
+                                                     FALSE);
+  commit_path = g_file_resolve_relative_path (ostree_repo_get_path (self),
+                                              commit_filename);
+  commit_filename = g_file_get_path (commit_path);
+
+  signature_filename = ostree_get_relative_object_path (commit_checksum,
+                                                        OSTREE_OBJECT_TYPE_SIGNATURE,
+                                                        FALSE);
+  sig_path = g_file_resolve_relative_path (ostree_repo_get_path (self),
+                                           signature_filename);
+  signature_filename = g_file_get_path (sig_path);
+
+  gpgme_check_version (NULL);
+  gpgme_set_locale (NULL, LC_CTYPE, setlocale (LC_CTYPE, NULL));
+  
+  if ((err = gpgme_new (&context)) != GPG_ERR_NO_ERROR)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Unable to create gpg context");
+      goto out;
+    }
+
+  info = gpgme_ctx_get_engine_info (context);
+  
+  if (homedir != NULL)
+    {
+      if ((err = gpgme_ctx_set_engine_info (context, info->protocol, info->file_name, homedir))
+          != GPG_ERR_NO_ERROR)
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                       "Unable to set gpg homedir");
+          goto out;
+        }
+    }
+
+  commit_fd = g_open (commit_filename, O_RDONLY, 0);
+  if (commit_fd < 0)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Unable to open commit file");
+      goto out;
+    }
+
+  if ((err = gpgme_data_new_from_fd (&commit_buffer, commit_fd)) != GPG_ERR_NO_ERROR)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Failed to create buffer from commit file");
+      goto out;
+    }
+  
+  signature_fd = g_open (signature_filename, O_RDONLY, 0);
+  if (signature_fd < 0)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Unable to open signature file");
+      goto out;
+    }
+  
+  if ((err = gpgme_data_new_from_fd (&signature_buffer, signature_fd)) != GPG_ERR_NO_ERROR)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Failed to create buffer for signature file");
+      goto out;
+    }
+  
+  if ((err = gpgme_op_verify (context, signature_buffer, commit_buffer, NULL))
+      != GPG_ERR_NO_ERROR)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Failure verifying commit file");
+      goto out;
+    }
+  
+  result = gpgme_op_verify_result (context);
+
+  if (result->signatures->summary != GPGME_SIGSUM_VALID)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "GPGME Signature is invalid");
+      goto out;
+    }
+
+  ret = TRUE;
+out:
+  if (commit_fd >= 0)
+    g_close (commit_fd, NULL);
+  if (signature_fd >= 0)
+    g_close (commit_fd, NULL);
+  if (commit_buffer)
+    gpgme_data_release (commit_buffer);
+  if (signature_buffer)
+    gpgme_data_release (signature_buffer);
+  if (key)
+    gpgme_key_release (key);
+  if (context)
+    gpgme_release (context);
+  return ret;
+}
+
 #endif
