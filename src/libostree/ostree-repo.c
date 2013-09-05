@@ -2978,6 +2978,9 @@ ostree_repo_copy_commit_sizes (OstreeRepo *self,
 gsize
 ostree_repo_get_commit_sizes (OstreeRepo *self,
                               const char *rev,
+                              gint64 *new_archived,
+                              gint64 *new_unpacked,
+                              gsize  *to_fetch,
                               gint64 *archived,
                               gint64 *unpacked,
                               GCancellable *cancellable,
@@ -2987,6 +2990,8 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
   gs_unref_variant GVariant *index = NULL;
   gint64 in = 0;
   gint64 out = 0;
+  gint64 new_in = 0;
+  gint64 new_out = 0;
   OstreeRepoCommitSizesIterator *iter = NULL;
 
   iter = ostree_repo_commit_sizes_iterator_new (self, rev, cancellable, error);
@@ -2995,21 +3000,52 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
     {
       gint64 i;
       gint64 o;
+      gsize  fetch = 0;
+      gchar *sum;
 
-      ret = TRUE;
-
-      while (ostree_repo_commit_sizes_iterator_next (self, &iter, NULL, &i, &o))
+      while (ostree_repo_commit_sizes_iterator_next (self, &iter, &sum, &i, &o))
         {
-          in  += MAX (i, 0);
-          out += MAX (o, 0);
+          gint64 asize = MAX (i, 0); // size of archive-z2 object
+          gint64 usize = MAX (o, 0); // size of bare object
+
+          in  += asize;
+          out += usize;
           ret++;
+
+          // nonzero archived & unpacked sizes => file object
+          if (asize && usize)
+            {
+              gboolean exists;
+              if (ostree_repo_has_object (self, OSTREE_OBJECT_TYPE_FILE,
+                                          sum, &exists, NULL, error))
+                { // cache check completed, but file is not in cache:
+                  if (!exists)
+                    {
+                      new_in += asize;
+                      new_out += usize;
+                      fetch++;
+                    }
+                }
+              else
+                {
+                  ret = 0;
+                  ostree_repo_commit_sizes_iterator_free (self, &iter);
+                  if (error && *error)
+                    g_debug ("has_object test failed: %s", (*error)->message);
+                  goto out;
+                }
+            }
         }
 
       if (archived) *archived = in;
       if (unpacked) *unpacked = out;
+      if (to_fetch) *to_fetch = fetch;
+      if (new_archived) *new_archived = new_in;
+      if (new_unpacked) *new_unpacked = new_out;
     }
 
-  return ret;
+  out:
+    return ret;
 }
 
 struct OstreeRepoCommitSizesIterator {
@@ -3031,7 +3067,7 @@ struct OstreeRepoCommitSizesIterator {
  * it is freed automatically.
  *
  * To free an OstreeRepoCommitSizesIterator early, call
- * ostree_repo_commit_sizes_iterator_finish().
+ * ostree_repo_commit_sizes_iterator_free().
  *
  * Returns: an %OstreeRepoCommitSizesIterator pointer on success,
  * %NULL on failure. If there is no cache of entry sizes, %NULL

@@ -45,6 +45,9 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
   gs_free gchar *revision = NULL;
   gint64 archived = 0;
   gint64 unpacked = 0;
+  gsize  fetch_needed = 0;
+  gint64 new_archived = 0;
+  gint64 new_unpacked = 0;
 
   context = g_option_context_new("[REMOTE] BRANCH - Display the summary for branch");
   g_option_context_add_main_entries (context, options, NULL);
@@ -112,22 +115,57 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
 
       if (iter)
         {
-          gint64 asize, usize;
+          gint64 in, out;
           gchar *csum;
 
-          g_print ("details:\n%-64s %16s %16s\n",
-                   "checksum", "archived", "unpacked");
+          g_print ("details:\n%-64s %16s %16s %s\n",
+                   "checksum", "archived", "unpacked", "in-cache");
 
           while (ostree_repo_commit_sizes_iterator_next (repo, &iter,
-                                                         &csum, &asize, &usize))
+                                                         &csum, &in, &out))
             {
-              entries++;
-              g_print ("%64s %16ld %16ld\n", csum, asize, usize);
-
               // we don't use -ve values to mean anything at present
               // but they are possible, ignore for now:
-              archived += MAX (0, asize);
-              unpacked += MAX (0, usize);
+              gint64 asize = MAX (in, 0);
+              gint64 usize = MAX (out, 0);
+              const gchar *have;
+              GError *err = NULL;
+
+              archived += asize;
+              unpacked += usize;
+              entries++;
+
+              if (asize && usize)
+                {
+                  gboolean exists;
+
+                  if (ostree_repo_has_object (repo, OSTREE_OBJECT_TYPE_FILE,
+                                              csum, &exists,
+                                              cancellable, &err))
+                    {
+                      if (exists)
+                        {
+                          have = "Yes";
+                        }
+                      else
+                        {
+                          have = "No";
+                          new_archived += asize;
+                          new_unpacked += usize;
+                        }
+                    }
+                  else
+                    {
+                      have = err ? err->message : "Unknown Error";
+                    }
+                }
+              else
+                {
+                  have = "N/a"; // non-file objects aren't tracked in the index
+                }
+
+              g_print ("%64s %16ld %16ld %s\n", csum, asize, usize, have);
+              g_clear_error (&err);
             }
 
           g_print ("details-end\n");
@@ -136,6 +174,9 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
   else
     {
       entries = ostree_repo_get_commit_sizes (repo, refspec,
+                                              &new_archived,
+                                              &new_unpacked,
+                                              &fetch_needed,
                                               &archived, &unpacked,
                                               cancellable, error);
     }
@@ -143,10 +184,13 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
   if (entries > 0)
     {
       g_print ("Summary for refspec %s:\n"
-               "  files: %lu entries\n"
-               "  archived: %ld bytes\n"
-               "  unpacked: %ld bytes\n",
-               refspec, entries, archived, unpacked);
+               "  files: %lu/%lu entries\n"
+               "  archived: %ld/%ld bytes\n"
+               "  unpacked: %ld/%ld bytes\n",
+               refspec,
+               fetch_needed - entries, entries,
+               archived - new_archived, archived,
+               unpacked - new_unpacked, unpacked);
     }
   else if (!*error) // No error found, 0 entries => no index available
     {

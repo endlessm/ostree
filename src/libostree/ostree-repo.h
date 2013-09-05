@@ -359,7 +359,10 @@ gsize          ostree_repo_copy_commit_sizes (OstreeRepo *self,
 
 gsize          ostree_repo_get_commit_sizes (OstreeRepo *self,
                                              const char *rev,
-                                             gint64 *packed,
+                                             gint64 *new_archived,
+                                             gint64 *new_unpacked,
+                                             gsize  *to_fetch,
+                                             gint64 *archived,
                                              gint64 *unpacked,
                                              GCancellable *cancellable,
                                              GError **error);
