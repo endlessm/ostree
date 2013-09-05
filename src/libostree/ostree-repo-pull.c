@@ -716,7 +716,7 @@ optional_fetch_on_complete (GObject      *object,
   GError **error = &local_error;
   OstreeRepo *repo = pull_data->repo;
 
-  fetch_data->temp_path = ostree_fetcher_request_uri_finish ((OstreeFetcher*)object, result, error);
+  fetch_data->temp_path = ostree_fetcher_request_uri_with_partial_finish ((OstreeFetcher*)object, result, error);
   if (!fetch_data->temp_path)
     {
       if (g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
@@ -1093,8 +1093,8 @@ on_metadata_objects_to_fetch_ready (gint         fd,
       fetch_data->pull_data = pull_data;
       fetch_data->relpath = filepath;
 
-      ostree_fetcher_request_uri_async (pull_data->fetcher, obj_uri, pull_data->cancellable,
-                                        optional_fetch_on_complete, fetch_data);
+      ostree_fetcher_request_uri_with_partial_async (pull_data->fetcher, obj_uri, pull_data->cancellable,
+                                                     optional_fetch_on_complete, fetch_data);
 
       soup_uri_free (obj_uri);
       g_variant_unref (msg->d.item);
