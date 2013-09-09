@@ -3317,8 +3317,8 @@ out:
 }
 
 gboolean ostree_repo_verify_commit (OstreeRepo   *self,
-                                    gchar        *commit_checksum,
-                                    gchar        *homedir,
+                                    const gchar  *commit_checksum,
+                                    const gchar  *homedir,
                                     GCancellable *cancellable,
                                     GError      **error)
 {
@@ -3414,7 +3414,7 @@ gboolean ostree_repo_verify_commit (OstreeRepo   *self,
   
   result = gpgme_op_verify_result (context);
 
-  if (result->signatures->summary != GPGME_SIGSUM_VALID)
+  if (result->signatures->summary & GPGME_SIGSUM_VALID == 0)
     {
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                    "GPGME Signature is invalid");

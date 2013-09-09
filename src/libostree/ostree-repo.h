@@ -456,6 +456,9 @@ gboolean ostree_repo_prune (OstreeRepo        *self,
 typedef enum {
   OSTREE_REPO_PULL_FLAGS_NONE     = 0x00,
   OSTREE_REPO_PULL_FLAGS_METADATA = 0x01,
+#ifdef HAVE_GPGME
+  OSTREE_REPO_PULL_FLAGS_VERIFY   = 0x02,
+#endif
 } OstreeRepoPullFlags;
 
 gboolean ostree_repo_pull (OstreeRepo             *self,
@@ -474,8 +477,8 @@ gboolean ostree_repo_sign_commit (OstreeRepo     *self,
                                   GError        **error);
 
 gboolean ostree_repo_verify_commit (OstreeRepo   *self,
-                                    gchar        *commit_checksum,
-                                    gchar        *homedir,
+                                    const gchar  *commit_checksum,
+                                    const gchar  *homedir,
                                     GCancellable *cancellable,
                                     GError      **error);
 #endif

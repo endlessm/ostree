@@ -803,6 +803,35 @@ scan_commit_object (OtPullData         *pull_data,
   g_variant_get_child (commit, 6, "@ay", &tree_contents_csum);
   g_variant_get_child (commit, 7, "@ay", &tree_meta_csum);
 
+#ifdef HAVE_GPGME
+  if (pull_data->flags & OSTREE_REPO_PULL_FLAGS_VERIFY)
+    {
+      GKeyFile *config = NULL;
+      gchar *homedir = NULL;
+      // Check the commit and signature are valid
+
+      /* Get gpghomedir from config file */
+      config = ostree_repo_get_config (pull_data->repo);
+      if (!g_key_file_has_key (config, "core", "gpghomedir", error))
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                       "No gpghomedir set in config");
+          goto out;
+        }
+      
+      homedir = g_key_file_get_string (config, "core", "gpghomedir", error);
+      
+      if (!ostree_repo_verify_commit (pull_data->repo,
+                                      checksum,
+                                      homedir,
+                                      cancellable,
+                                      error))
+        {
+          goto out;
+        }
+    }
+#endif
+
   // If this is a metadata only pull, don't grab the top dirtree/dirmeta:
   if (!(pull_data->flags & OSTREE_REPO_PULL_FLAGS_METADATA))
     {
@@ -893,6 +922,7 @@ scan_one_metadata_object (OtPullData         *pull_data,
                 goto out;
               break;
             case OSTREE_OBJECT_TYPE_DIR_META:
+            case OSTREE_OBJECT_TYPE_SIGNATURE:
               break;
             case OSTREE_OBJECT_TYPE_DIR_TREE:
               if (!scan_dirtree_object (pull_data, tmp_checksum, recursion_depth,
