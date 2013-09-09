@@ -27,9 +27,15 @@
 #include "libgsystem.h"
 
 static char *opt_mode = NULL;
+#ifdef HAVE_GPGME
+static char *opt_gpghomedir = NULL;
+#endif
 
 static GOptionEntry options[] = {
   { "mode", 0, 0, G_OPTION_ARG_STRING, &opt_mode, "Initialize repository in given mode (bare, archive-z2)", NULL },
+#ifdef HAVE_GPGME
+  { "gpg-homedir", 0, 0, G_OPTION_ARG_STRING, &opt_gpghomedir, "Initialize repository with given gpghome path", "path" },
+#endif
   { NULL }
 };
 
@@ -67,6 +73,12 @@ ostree_builtin_init (int argc, char **argv, OstreeRepo *repo, GCancellable *canc
       mode_str = opt_mode;
     }
   g_string_append_printf (config_data, "mode=%s\n", mode_str);
+#ifdef HAVE_GPGME
+  if (opt_gpghomedir)
+    {
+      g_string_append_printf (config_data, "gpghomedir=%s\n", opt_gpghomedir);
+    }
+#endif
   if (!g_file_replace_contents (child,
                                 config_data->str,
                                 config_data->len,
