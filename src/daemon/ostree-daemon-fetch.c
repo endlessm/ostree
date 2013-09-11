@@ -66,6 +66,50 @@ content_fetch_finished (GObject *object,
   g_assert_not_reached ();
 }
 
+typedef struct {
+  OstreeRepo *repo;
+  guint fetched;
+  guint requested;
+  guint64 bytes;
+} ProgressData;
+
+static gboolean
+update_progress_threadsafe (gpointer data)
+{
+  ProgressData *pd = data;
+
+  ostree_repo_emit_progress (pd->repo, pd->fetched, pd->requested, pd->bytes);
+
+  return FALSE;
+}
+
+static void
+update_progress_threadsafe_done (gpointer data)
+{
+  g_free (data);
+}
+
+static void
+update_progress (GObject *object,
+                 guint fetched,
+                 guint requested,
+                 guint64 bytes,
+                 gpointer data)
+{
+  OstreeRepo *repo = OSTREE_REPO (object);
+  ProgressData *pd = g_new0 (ProgressData, 1);
+
+  pd->repo = g_object_ref (repo);
+  pd->fetched = fetched;
+  pd->requested = requested;
+  pd->bytes = bytes;
+
+  g_idle_add_full (G_PRIORITY_HIGH_IDLE,
+                   update_progress_threadsafe,
+                   pd,
+                   update_progress_threadsafe_done);
+}
+
 static void
 content_fetch (GTask *task,
                gpointer object,
@@ -81,6 +125,7 @@ content_fetch (GTask *task,
   gs_free gchar *sum = NULL;
   gchar *pullrefs[] = { NULL, NULL };
   GMainContext *task_context = g_main_context_new ();
+  gulong progress = 0;
 
   g_main_context_push_thread_default (task_context);
 
@@ -96,6 +141,9 @@ content_fetch (GTask *task,
   // system hasn;t seen the download/unpack sizes for that so it cannot
   // be considered to have been approved.
   pullrefs[0] = (gchar *) otd_ostree_get_update_id (ostree);
+
+  progress = g_signal_connect (repo, "fetch-progress",
+                               G_CALLBACK (update_progress), NULL);
 
   // FIXME: upstream ostree_repo_pull had an unbalanced
   // g_main_context_get_thread_default/g_main_context_unref
@@ -124,6 +172,8 @@ content_fetch (GTask *task,
   g_task_return_error (task, error);
 
  cleanup:
+  if (progress)
+    g_signal_handler_disconnect (repo, progress);
   g_main_context_pop_thread_default (task_context);
   g_main_context_unref (task_context);
   return;
