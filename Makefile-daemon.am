@@ -115,8 +115,8 @@ $(ostree_daemon_gen_sources): src/daemon/ostree-daemon.xml
 	$(XSLTPROC) $+ > $@
 
 ostree-daemon-install-service: $(ostree_daemon_dbus_service)
-	$(INSTALL) -D -T $< $(ostree_daemon_etc)/dbus-1/system.d/$(notdir $<)
+	$(INSTALL) -D -T $< $(DESTDIR)$(datarootdir)/dbus-1/system-services/$(notdir $<)
 
 ostree-daemon-install-policy: $(ostree_daemon_dbus_policy)
-	$(INSTALL) -D -T $< $(datarootdir)/dbus-1/system-services/$(notdir $<)
+	$(INSTALL) -D -T $< $(DESTDIR)$(ostree_daemon_etc)/dbus-1/system.d/$(notdir $<)
 
