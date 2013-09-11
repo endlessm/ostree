@@ -116,6 +116,9 @@ typedef struct {
 
   GError      **async_error;
   gboolean      caught_error;
+
+  GSConsole    *console;
+  gboolean      progress;
 } OtPullData;
 
 typedef struct {
@@ -176,10 +179,39 @@ suburi_new (SoupURI   *base,
   return ret;
 }
 
-static gboolean
-uri_fetch_update_status (gpointer user_data)
+static void
+uri_fetch_update_status_signal (OtPullData *pull_data)
 {
-  OtPullData *pull_data = user_data;
+  guint requested = 0;
+  guint outstanding = 0;
+  guint64 bytes = 0;
+
+  if (pull_data->fetching_sync_uri)
+    return;
+
+  requested = pull_data->n_requested_metadata + pull_data->n_requested_content;
+
+  if (!requested)
+    return;
+
+  bytes = ostree_fetcher_bytes_transferred (pull_data->fetcher);
+  outstanding = pull_data->n_outstanding_content_fetches + pull_data->n_outstanding_metadata_fetches;
+
+  if (outstanding)
+    {
+      guint fetched = pull_data->n_fetched_metadata + pull_data->n_fetched_content;
+      ostree_repo_emit_progress (pull_data->repo, fetched, requested, bytes);
+    }
+  else
+    {
+      pull_data->progress = FALSE;
+      ostree_repo_emit_progress (pull_data->repo, requested, requested, bytes);
+    }
+}
+
+static void
+uri_fetch_update_status_console (OtPullData *pull_data)
+{
   GString *status;
   guint outstanding_stages;
   guint outstanding_fetches;
@@ -218,6 +250,18 @@ uri_fetch_update_status (gpointer user_data)
   gs_console_begin_status_line (gs_console_get (), status->str, NULL, NULL);
 
   g_string_free (status, TRUE);
+}
+
+static gboolean
+uri_fetch_update_status (gpointer user_data)
+{
+  OtPullData *pull_data = user_data;
+
+  if (pull_data->progress)
+    uri_fetch_update_status_signal (pull_data);
+
+  if (pull_data->console)
+    uri_fetch_update_status_console (pull_data);
 
   return TRUE;
 }
@@ -301,31 +345,31 @@ static gboolean
 run_mainloop_monitor_fetcher (OtPullData   *pull_data)
 {
   GSource *update_timeout = NULL;
-  GSConsole *console;
   GSource *idle_src;
 
-  console = gs_console_get ();
+  pull_data->console = gs_console_get ();
+  pull_data->progress = TRUE;
+  update_timeout = g_timeout_source_new_seconds (1);
+  g_source_set_callback (update_timeout, uri_fetch_update_status, pull_data, NULL);
+  g_source_attach (update_timeout, g_main_loop_get_context (pull_data->loop));
+  g_source_unref (update_timeout);
 
-  if (console)
+  if (pull_data->console)
     {
-      gs_console_begin_status_line (console, "", NULL, NULL);
-
-      update_timeout = g_timeout_source_new_seconds (1);
-      g_source_set_callback (update_timeout, uri_fetch_update_status, pull_data, NULL);
-      g_source_attach (update_timeout, g_main_loop_get_context (pull_data->loop));
-      g_source_unref (update_timeout);
+      gs_console_begin_status_line (pull_data->console, "", NULL, NULL);
     }
-  
+
   idle_src = g_idle_source_new ();
   g_source_set_callback (idle_src, idle_check_outstanding_requests, pull_data, NULL);
   g_source_attach (idle_src, pull_data->main_context);
   g_main_loop_run (pull_data->loop);
 
-  if (console)
+  if (pull_data->console)
     {
-      gs_console_end_status_line (console, NULL, NULL);
-      g_source_destroy (update_timeout);
+      gs_console_end_status_line (pull_data->console, NULL, NULL);
     }
+
+  g_source_destroy (update_timeout);
 
   return !pull_data->caught_error;
 }
