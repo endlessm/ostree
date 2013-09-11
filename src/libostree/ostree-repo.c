@@ -79,10 +79,17 @@ repo_find_object (OstreeRepo           *self,
                   GError             **error);
 
 enum {
+  FETCH_PROGRESS,
+  LAST_SIGNAL,
+};
+
+enum {
   PROP_0,
 
   PROP_PATH
 };
+
+static guint signals[LAST_SIGNAL] = { 0 };
 
 G_DEFINE_TYPE (OstreeRepo, ostree_repo, G_TYPE_OBJECT)
 
@@ -196,6 +203,17 @@ ostree_repo_class_init (OstreeRepoClass *klass)
   object_class->get_property = ostree_repo_get_property;
   object_class->set_property = ostree_repo_set_property;
   object_class->finalize = ostree_repo_finalize;
+
+  signals[FETCH_PROGRESS] =
+    g_signal_new ("fetch-progress",
+                  OSTREE_TYPE_REPO,
+                  G_SIGNAL_RUN_LAST,
+                  0,
+                  NULL, NULL, NULL,
+                  G_TYPE_NONE, 3,
+                  G_TYPE_UINT64,
+                  G_TYPE_UINT,
+                  G_TYPE_UINT);
 
   g_object_class_install_property (object_class,
                                    PROP_PATH,
@@ -3160,6 +3178,26 @@ ostree_repo_commit_sizes_iterator_free (OstreeRepo *self,
     }
 }
 
+/**
+ * ostree_repo_emit_progress:
+ * @self: Repo
+ * @fetched: number of items fetched
+ * @requested: number of items requested
+ * @bytes: number of bytes fetched
+ *
+ * Intended for use by ostree internals (such as @OstreeFetcher)
+ * which wish to signal download progress to interested listeners.
+ *
+ * Emits the "fetch-progress" signal.
+ **/
+void
+ostree_repo_emit_progress (OstreeRepo *self,
+                           guint       fetched,
+                           guint       requested,
+                           guint64     bytes)
+{
+  g_signal_emit (self, signals[FETCH_PROGRESS], 0, fetched, requested, bytes);
+}
 
 /**
  * ostree_repo_read_commit:

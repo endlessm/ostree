@@ -486,6 +486,12 @@ gboolean ostree_repo_verify_commit (OstreeRepo   *self,
                                     const gchar **keyringfiles,
                                     GCancellable *cancellable,
                                     GError      **error);
+
+void ostree_repo_emit_progress (OstreeRepo *self,
+                                guint       fetched,
+                                guint       requested,
+                                guint64     bytes);
+
 #endif
 
 G_END_DECLS
