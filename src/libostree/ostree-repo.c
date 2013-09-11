@@ -2189,7 +2189,7 @@ ostree_repo_stage_mtree (OstreeRepo           *self,
 /**
  * ostree_repo_commit_modifier_new:
  * @flags: Control options for filter
- * @commit_filter: (allow-none): Function that can inspect individual files
+ * @commit_filter: (allow-none)(scope async): Function that can inspect individual files
  * @user_data: (allow-none): User data
  *
  * Returns: (transfer full): A new commit modifier.
