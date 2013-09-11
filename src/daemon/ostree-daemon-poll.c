@@ -137,7 +137,8 @@ metadata_fetch (GTask *task,
 {
   OTDOSTree *ostree = OTD_OSTREE (object);
   OstreeRepo *repo = OSTREE_REPO (task_data);
-  OstreeRepoPullFlags flags = OSTREE_REPO_PULL_FLAGS_METADATA;
+  OstreeRepoPullFlags flags = (OSTREE_REPO_PULL_FLAGS_METADATA|
+                               OSTREE_REPO_PULL_FLAGS_VERIFY);
   GError *error = NULL;
   gs_free gchar *remote = NULL;
   gs_free gchar *branch = NULL;
