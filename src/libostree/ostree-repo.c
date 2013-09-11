@@ -3048,13 +3048,13 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
     return ret;
 }
 
-struct OstreeRepoCommitSizesIterator {
+struct _OstreeRepoCommitSizesIterator {
   GVariantIter iterator;
   GVariant *sizes;
 };
 
 /**
- * ostree_repo_commit_sizes_iterator_new:
+ * ostree_repo_commit_sizes_iterator_new: (skip)
  * @self: OstreeRepo
  * @rev: The revision you want to examine the commit size cache for
  * @cancellable: cancellable

@@ -270,12 +270,12 @@ typedef enum {
 typedef struct OstreeRepoCommitModifier OstreeRepoCommitModifier;
 
 /**
- * OstreeRepoCommitSizesIterator
+ * OstreeRepoCommitSizesIterator:
  *
  * A structure used as a handle when iterating over the items in
  * a commit size cache
  **/
-typedef struct OstreeRepoCommitSizesIterator OstreeRepoCommitSizesIterator;
+typedef struct _OstreeRepoCommitSizesIterator OstreeRepoCommitSizesIterator;
 
 OstreeRepoCommitModifier *ostree_repo_commit_modifier_new (OstreeRepoCommitModifierFlags  flags,
                                                            OstreeRepoCommitFilter         commit_filter,
