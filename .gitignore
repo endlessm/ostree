@@ -37,6 +37,11 @@ ABOUT-NLS
 _build
 
 /doc/ostree.1
+/doc/html
+/doc/xml
+/doc/ostree*.txt
+/doc/version.xml
+/doc/ostree.types
 
 /TAGS
 /ostree
@@ -44,5 +49,8 @@ _build
 /ostree-remount
 /ostree-daemon
 /OSTree-1.0.gir
+
+/*.conf
+/*.service
 
 /src/libostree/ostree-1.pc
