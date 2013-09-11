@@ -38,9 +38,11 @@ _build
 
 /doc/ostree.1
 
+/TAGS
 /ostree
 /ostree-prepare-root
 /ostree-remount
+/ostree-daemon
 /OSTree-1.0.gir
 
 /src/libostree/ostree-1.pc

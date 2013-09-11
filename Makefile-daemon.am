@@ -1,0 +1,101 @@
+# Makefile for C source code
+#
+# Copyright © 2013 Vivek Dasmohapatra <vivek@collabora.com>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the
+# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+# Boston, MA 02111-1307, USA.
+
+bin_PROGRAMS += ostree-daemon
+
+ostree_daemon_gen_objects := src/daemon/ostree-daemon-generated.o
+ostree_daemon_gen_sources := \
+	src/daemon/ostree-daemon-generated.h \
+	src/daemon/ostree-daemon-generated.c \
+	$(NULL)
+
+ostree_daemon_borrowed_sources := \
+	src/ostree/ot-admin-deploy.c \
+	src/ostree/ot-admin-deploy.h \
+	src/ostree/ot-admin-cleanup.c \
+	src/ostree/ot-admin-cleanup.h \
+	src/ostree/ot-deployment.c \
+	src/ostree/ot-deployment.h \
+	src/ostree/ot-config-parser.c \
+	src/ostree/ot-config-parser.h \
+	src/ostree/ot-admin-functions.c \
+	src/ostree/ot-admin-functions.h \
+	src/ostree/ot-admin-util.c \
+	src/ostree/ot-admin-util.h \
+	src/ostree/ot-ordered-hash.c \
+	src/ostree/ot-ordered-hash.h \
+	src/ostree/ot-bootloader-syslinux.c \
+	src/ostree/ot-bootloader-syslinux.h \
+	src/ostree/ot-bootloader-uboot.c \
+	src/ostree/ot-bootloader-uboot.h \
+	src/ostree/ot-bootloader.c \
+	src/ostree/ot-bootloader.h \
+	$(NULL)
+
+ostree_daemon_SOURCES := \
+	$(ostree_daemon_borrowed_sources) \
+	$(ostree_daemon_gen_sources) \
+	src/daemon/ostree-daemon-apply.c \
+	src/daemon/ostree-daemon-apply.h \
+	src/daemon/ostree-daemon-fetch.c \
+	src/daemon/ostree-daemon-fetch.h \
+	src/daemon/ostree-daemon-poll.c \
+	src/daemon/ostree-daemon-poll.h \
+	src/daemon/ostree-daemon-util.c \
+	src/daemon/ostree-daemon-util.h \
+	src/daemon/ostree-daemon.c \
+	src/daemon/ostree-daemon.h \
+	src/daemon/ostree-daemon.xml \
+	$(NULL)
+
+ostree_daemon_bin_shared_ldadd = \
+	libotutil.la \
+	libostree-1.la\
+	$(OT_DEP_GIO_UNIX_LIBS) \
+	$(OT_DEP_SOUP_LIBS)
+ostree_daemon_bin_shared_cflags = \
+	$(AM_CFLAGS) \
+	$(OT_DEP_GIO_UNIX_CFLAGS) \
+	$(OT_DEP_SOUP_CFLAGS) \
+	-I$(srcdir)/src/libgsystem \
+	-I$(srcdir)/src/libotutil \
+	-I$(srcdir)/src/libostree \
+	-I$(srcdir)/src/ostree \
+	-I$(srcdir)/src/daemon \
+	-DLOCALEDIR=\"$(datadir)/locale\"
+
+ostree_daemon_CFLAGS = \
+	$(ostree_daemon_bin_shared_cflags) \
+	$(OT_INTERNAL_GIO_UNIX_CFLAGS) \
+	$(OT_INTERNAL_SOUP_CFLAGS)	
+ostree_daemon_LDADD  = \
+	$(ostree_daemon_bin_shared_ldadd) \
+	$(OT_INTERNAL_GIO_UNIX_LIBS) \
+	$(OT_INTERNAL_SOUP_LIBS)
+
+$(ostree_daemon_OBJECTS): $(ostree_daemon_gen_sources)
+
+$(ostree_daemon_gen_sources): src/daemon/ostree-daemon.xml
+	@echo $@ : $<
+	@cd $$(dirname $<) && gdbus-codegen     \
+	    --interface-prefix org.gnome. 		\
+	    --generate-c-code $(basename $(@F)) \
+	    --c-namespace OTD 					\
+	    --c-generate-object-manager 		\
+	    $$(basename $<)
