@@ -7,8 +7,6 @@
     <property name="State"            type="u" access="read"/>
     <property name="UpdateID"         type="s" access="read"/>
     <property name="CurrentID"        type="s" access="read"/>
-    <property name="Branch"           type="s" access="read"/>
-    <property name="Remote"           type="s" access="read"/>
     <property name="UpdateLabel"      type="s" access="read"/>
     <property name="UpdateMessage"    type="s" access="read"/>
     <property name="DownloadSize"     type="x" access="read"/>

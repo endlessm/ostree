@@ -42,8 +42,6 @@ struct _OTDOSTreeIface
     OTDOSTree *object,
     GDBusMethodInvocation *invocation);
 
-  const gchar * (*get_branch) (OTDOSTree *object);
-
   const gchar * (*get_current_id) (OTDOSTree *object);
 
   gint64  (*get_download_size) (OTDOSTree *object);
@@ -57,8 +55,6 @@ struct _OTDOSTreeIface
   gint64  (*get_full_download_size) (OTDOSTree *object);
 
   gint64  (*get_full_unpacked_size) (OTDOSTree *object);
-
-  const gchar * (*get_remote) (OTDOSTree *object);
 
   guint  (*get_state) (OTDOSTree *object);
 
@@ -176,14 +172,6 @@ void otd_ostree_set_update_id (OTDOSTree *object, const gchar *value);
 const gchar *otd_ostree_get_current_id (OTDOSTree *object);
 gchar *otd_ostree_dup_current_id (OTDOSTree *object);
 void otd_ostree_set_current_id (OTDOSTree *object, const gchar *value);
-
-const gchar *otd_ostree_get_branch (OTDOSTree *object);
-gchar *otd_ostree_dup_branch (OTDOSTree *object);
-void otd_ostree_set_branch (OTDOSTree *object, const gchar *value);
-
-const gchar *otd_ostree_get_remote (OTDOSTree *object);
-gchar *otd_ostree_dup_remote (OTDOSTree *object);
-void otd_ostree_set_remote (OTDOSTree *object, const gchar *value);
 
 const gchar *otd_ostree_get_update_label (OTDOSTree *object);
 gchar *otd_ostree_dup_update_label (OTDOSTree *object);

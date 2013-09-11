@@ -324,32 +324,6 @@ static const _ExtendedGDBusPropertyInfo _otd_ostree_property_info_current_id =
   FALSE
 };
 
-static const _ExtendedGDBusPropertyInfo _otd_ostree_property_info_branch =
-{
-  {
-    -1,
-    (gchar *) "Branch",
-    (gchar *) "s",
-    G_DBUS_PROPERTY_INFO_FLAGS_READABLE,
-    NULL
-  },
-  "branch",
-  FALSE
-};
-
-static const _ExtendedGDBusPropertyInfo _otd_ostree_property_info_remote =
-{
-  {
-    -1,
-    (gchar *) "Remote",
-    (gchar *) "s",
-    G_DBUS_PROPERTY_INFO_FLAGS_READABLE,
-    NULL
-  },
-  "remote",
-  FALSE
-};
-
 static const _ExtendedGDBusPropertyInfo _otd_ostree_property_info_update_label =
 {
   {
@@ -472,8 +446,6 @@ static const _ExtendedGDBusPropertyInfo * const _otd_ostree_property_info_pointe
   &_otd_ostree_property_info_state,
   &_otd_ostree_property_info_update_id,
   &_otd_ostree_property_info_current_id,
-  &_otd_ostree_property_info_branch,
-  &_otd_ostree_property_info_remote,
   &_otd_ostree_property_info_update_label,
   &_otd_ostree_property_info_update_message,
   &_otd_ostree_property_info_download_size,
@@ -529,8 +501,6 @@ otd_ostree_override_properties (GObjectClass *klass, guint property_id_begin)
   g_object_class_override_property (klass, property_id_begin++, "state");
   g_object_class_override_property (klass, property_id_begin++, "update-id");
   g_object_class_override_property (klass, property_id_begin++, "current-id");
-  g_object_class_override_property (klass, property_id_begin++, "branch");
-  g_object_class_override_property (klass, property_id_begin++, "remote");
   g_object_class_override_property (klass, property_id_begin++, "update-label");
   g_object_class_override_property (klass, property_id_begin++, "update-message");
   g_object_class_override_property (klass, property_id_begin++, "download-size");
@@ -557,7 +527,6 @@ otd_ostree_override_properties (GObjectClass *klass, guint property_id_begin)
  * @handle_apply: Handler for the #OTDOSTree::handle-apply signal.
  * @handle_fetch: Handler for the #OTDOSTree::handle-fetch signal.
  * @handle_poll: Handler for the #OTDOSTree::handle-poll signal.
- * @get_branch: Getter for the #OTDOSTree:branch property.
  * @get_current_id: Getter for the #OTDOSTree:current-id property.
  * @get_download_size: Getter for the #OTDOSTree:download-size property.
  * @get_downloaded_bytes: Getter for the #OTDOSTree:downloaded-bytes property.
@@ -565,7 +534,6 @@ otd_ostree_override_properties (GObjectClass *klass, guint property_id_begin)
  * @get_error_message: Getter for the #OTDOSTree:error-message property.
  * @get_full_download_size: Getter for the #OTDOSTree:full-download-size property.
  * @get_full_unpacked_size: Getter for the #OTDOSTree:full-unpacked-size property.
- * @get_remote: Getter for the #OTDOSTree:remote property.
  * @get_state: Getter for the #OTDOSTree:state property.
  * @get_unpacked_size: Getter for the #OTDOSTree:unpacked-size property.
  * @get_update_id: Getter for the #OTDOSTree:update-id property.
@@ -715,24 +683,6 @@ otd_ostree_default_init (OTDOSTreeIface *iface)
    */
   g_object_interface_install_property (iface,
     g_param_spec_string ("current-id", "CurrentID", "CurrentID", NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-  /**
-   * OTDOSTree:branch:
-   *
-   * Represents the D-Bus property <link linkend="gdbus-property-org-gnome-OSTree.Branch">"Branch"</link>.
-   *
-   * Since the D-Bus property for this #GObject property is readable but not writable, it is meaningful to read from it on both the client- and service-side. It is only meaningful, however, to write to it on the service-side.
-   */
-  g_object_interface_install_property (iface,
-    g_param_spec_string ("branch", "Branch", "Branch", NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-  /**
-   * OTDOSTree:remote:
-   *
-   * Represents the D-Bus property <link linkend="gdbus-property-org-gnome-OSTree.Remote">"Remote"</link>.
-   *
-   * Since the D-Bus property for this #GObject property is readable but not writable, it is meaningful to read from it on both the client- and service-side. It is only meaningful, however, to write to it on the service-side.
-   */
-  g_object_interface_install_property (iface,
-    g_param_spec_string ("remote", "Remote", "Remote", NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
   /**
    * OTDOSTree:update-label:
    *
@@ -950,108 +900,6 @@ void
 otd_ostree_set_current_id (OTDOSTree *object, const gchar *value)
 {
   g_object_set (G_OBJECT (object), "current-id", value, NULL);
-}
-
-/**
- * otd_ostree_get_branch: (skip)
- * @object: A #OTDOSTree.
- *
- * Gets the value of the <link linkend="gdbus-property-org-gnome-OSTree.Branch">"Branch"</link> D-Bus property.
- *
- * Since this D-Bus property is readable, it is meaningful to use this function on both the client- and service-side.
- *
- * <warning>The returned value is only valid until the property changes so on the client-side it is only safe to use this function on the thread where @object was constructed. Use otd_ostree_dup_branch() if on another thread.</warning>
- *
- * Returns: (transfer none): The property value or %NULL if the property is not set. Do not free the returned value, it belongs to @object.
- */
-const gchar *
-otd_ostree_get_branch (OTDOSTree *object)
-{
-  return OTD_OSTREE_GET_IFACE (object)->get_branch (object);
-}
-
-/**
- * otd_ostree_dup_branch: (skip)
- * @object: A #OTDOSTree.
- *
- * Gets a copy of the <link linkend="gdbus-property-org-gnome-OSTree.Branch">"Branch"</link> D-Bus property.
- *
- * Since this D-Bus property is readable, it is meaningful to use this function on both the client- and service-side.
- *
- * Returns: (transfer full): The property value or %NULL if the property is not set. The returned value should be freed with g_free().
- */
-gchar *
-otd_ostree_dup_branch (OTDOSTree *object)
-{
-  gchar *value;
-  g_object_get (G_OBJECT (object), "branch", &value, NULL);
-  return value;
-}
-
-/**
- * otd_ostree_set_branch: (skip)
- * @object: A #OTDOSTree.
- * @value: The value to set.
- *
- * Sets the <link linkend="gdbus-property-org-gnome-OSTree.Branch">"Branch"</link> D-Bus property to @value.
- *
- * Since this D-Bus property is not writable, it is only meaningful to use this function on the service-side.
- */
-void
-otd_ostree_set_branch (OTDOSTree *object, const gchar *value)
-{
-  g_object_set (G_OBJECT (object), "branch", value, NULL);
-}
-
-/**
- * otd_ostree_get_remote: (skip)
- * @object: A #OTDOSTree.
- *
- * Gets the value of the <link linkend="gdbus-property-org-gnome-OSTree.Remote">"Remote"</link> D-Bus property.
- *
- * Since this D-Bus property is readable, it is meaningful to use this function on both the client- and service-side.
- *
- * <warning>The returned value is only valid until the property changes so on the client-side it is only safe to use this function on the thread where @object was constructed. Use otd_ostree_dup_remote() if on another thread.</warning>
- *
- * Returns: (transfer none): The property value or %NULL if the property is not set. Do not free the returned value, it belongs to @object.
- */
-const gchar *
-otd_ostree_get_remote (OTDOSTree *object)
-{
-  return OTD_OSTREE_GET_IFACE (object)->get_remote (object);
-}
-
-/**
- * otd_ostree_dup_remote: (skip)
- * @object: A #OTDOSTree.
- *
- * Gets a copy of the <link linkend="gdbus-property-org-gnome-OSTree.Remote">"Remote"</link> D-Bus property.
- *
- * Since this D-Bus property is readable, it is meaningful to use this function on both the client- and service-side.
- *
- * Returns: (transfer full): The property value or %NULL if the property is not set. The returned value should be freed with g_free().
- */
-gchar *
-otd_ostree_dup_remote (OTDOSTree *object)
-{
-  gchar *value;
-  g_object_get (G_OBJECT (object), "remote", &value, NULL);
-  return value;
-}
-
-/**
- * otd_ostree_set_remote: (skip)
- * @object: A #OTDOSTree.
- * @value: The value to set.
- *
- * Sets the <link linkend="gdbus-property-org-gnome-OSTree.Remote">"Remote"</link> D-Bus property to @value.
- *
- * Since this D-Bus property is not writable, it is only meaningful to use this function on the service-side.
- */
-void
-otd_ostree_set_remote (OTDOSTree *object, const gchar *value)
-{
-  g_object_set (G_OBJECT (object), "remote", value, NULL);
 }
 
 /**
@@ -1796,7 +1644,7 @@ otd_ostree_proxy_get_property (GObject      *object,
 {
   const _ExtendedGDBusPropertyInfo *info;
   GVariant *variant;
-  g_assert (prop_id != 0 && prop_id - 1 < 14);
+  g_assert (prop_id != 0 && prop_id - 1 < 12);
   info = _otd_ostree_property_info_pointers[prop_id - 1];
   variant = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (object), info->parent_struct.name);
   if (info->use_gvariant)
@@ -1837,7 +1685,7 @@ otd_ostree_proxy_set_property (GObject      *object,
 {
   const _ExtendedGDBusPropertyInfo *info;
   GVariant *variant;
-  g_assert (prop_id != 0 && prop_id - 1 < 14);
+  g_assert (prop_id != 0 && prop_id - 1 < 12);
   info = _otd_ostree_property_info_pointers[prop_id - 1];
   variant = g_dbus_gvalue_to_gvariant (value, G_VARIANT_TYPE (info->parent_struct.signature));
   g_dbus_proxy_call (G_DBUS_PROXY (object),
@@ -1956,36 +1804,6 @@ otd_ostree_proxy_get_current_id (OTDOSTree *object)
   GVariant *variant;
   const gchar *value = NULL;
   variant = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (proxy), "CurrentID");
-  if (variant != NULL)
-    {
-      value = g_variant_get_string (variant, NULL);
-      g_variant_unref (variant);
-    }
-  return value;
-}
-
-static const gchar *
-otd_ostree_proxy_get_branch (OTDOSTree *object)
-{
-  OTDOSTreeProxy *proxy = OTD_OSTREE_PROXY (object);
-  GVariant *variant;
-  const gchar *value = NULL;
-  variant = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (proxy), "Branch");
-  if (variant != NULL)
-    {
-      value = g_variant_get_string (variant, NULL);
-      g_variant_unref (variant);
-    }
-  return value;
-}
-
-static const gchar *
-otd_ostree_proxy_get_remote (OTDOSTree *object)
-{
-  OTDOSTreeProxy *proxy = OTD_OSTREE_PROXY (object);
-  GVariant *variant;
-  const gchar *value = NULL;
-  variant = g_dbus_proxy_get_cached_property (G_DBUS_PROXY (proxy), "Remote");
   if (variant != NULL)
     {
       value = g_variant_get_string (variant, NULL);
@@ -2163,8 +1981,6 @@ otd_ostree_proxy_iface_init (OTDOSTreeIface *iface)
   iface->get_state = otd_ostree_proxy_get_state;
   iface->get_update_id = otd_ostree_proxy_get_update_id;
   iface->get_current_id = otd_ostree_proxy_get_current_id;
-  iface->get_branch = otd_ostree_proxy_get_branch;
-  iface->get_remote = otd_ostree_proxy_get_remote;
   iface->get_update_label = otd_ostree_proxy_get_update_label;
   iface->get_update_message = otd_ostree_proxy_get_update_message;
   iface->get_download_size = otd_ostree_proxy_get_download_size;
@@ -2643,7 +2459,7 @@ otd_ostree_skeleton_finalize (GObject *object)
 {
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
   guint n;
-  for (n = 0; n < 14; n++)
+  for (n = 0; n < 12; n++)
     g_value_unset (&skeleton->priv->properties[n]);
   g_free (skeleton->priv->properties);
   g_list_free_full (skeleton->priv->changed_properties, (GDestroyNotify) _changed_property_free);
@@ -2661,7 +2477,7 @@ otd_ostree_skeleton_get_property (GObject      *object,
   GParamSpec   *pspec)
 {
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
-  g_assert (prop_id != 0 && prop_id - 1 < 14);
+  g_assert (prop_id != 0 && prop_id - 1 < 12);
   g_mutex_lock (&skeleton->priv->lock);
   g_value_copy (&skeleton->priv->properties[prop_id - 1], value);
   g_mutex_unlock (&skeleton->priv->lock);
@@ -2778,7 +2594,7 @@ otd_ostree_skeleton_set_property (GObject      *object,
   GParamSpec   *pspec)
 {
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
-  g_assert (prop_id != 0 && prop_id - 1 < 14);
+  g_assert (prop_id != 0 && prop_id - 1 < 12);
   g_mutex_lock (&skeleton->priv->lock);
   g_object_freeze_notify (object);
   if (!_g_value_equal (value, &skeleton->priv->properties[prop_id - 1]))
@@ -2798,21 +2614,19 @@ otd_ostree_skeleton_init (OTDOSTreeSkeleton *skeleton)
   skeleton->priv = G_TYPE_INSTANCE_GET_PRIVATE (skeleton, OTD_TYPE_OSTREE_SKELETON, OTDOSTreeSkeletonPrivate);
   g_mutex_init (&skeleton->priv->lock);
   skeleton->priv->context = g_main_context_ref_thread_default ();
-  skeleton->priv->properties = g_new0 (GValue, 14);
+  skeleton->priv->properties = g_new0 (GValue, 12);
   g_value_init (&skeleton->priv->properties[0], G_TYPE_UINT);
   g_value_init (&skeleton->priv->properties[1], G_TYPE_STRING);
   g_value_init (&skeleton->priv->properties[2], G_TYPE_STRING);
   g_value_init (&skeleton->priv->properties[3], G_TYPE_STRING);
   g_value_init (&skeleton->priv->properties[4], G_TYPE_STRING);
-  g_value_init (&skeleton->priv->properties[5], G_TYPE_STRING);
-  g_value_init (&skeleton->priv->properties[6], G_TYPE_STRING);
+  g_value_init (&skeleton->priv->properties[5], G_TYPE_INT64);
+  g_value_init (&skeleton->priv->properties[6], G_TYPE_INT64);
   g_value_init (&skeleton->priv->properties[7], G_TYPE_INT64);
   g_value_init (&skeleton->priv->properties[8], G_TYPE_INT64);
   g_value_init (&skeleton->priv->properties[9], G_TYPE_INT64);
-  g_value_init (&skeleton->priv->properties[10], G_TYPE_INT64);
-  g_value_init (&skeleton->priv->properties[11], G_TYPE_INT64);
-  g_value_init (&skeleton->priv->properties[12], G_TYPE_UINT);
-  g_value_init (&skeleton->priv->properties[13], G_TYPE_STRING);
+  g_value_init (&skeleton->priv->properties[10], G_TYPE_UINT);
+  g_value_init (&skeleton->priv->properties[11], G_TYPE_STRING);
 }
 
 static guint 
@@ -2849,7 +2663,7 @@ otd_ostree_skeleton_get_current_id (OTDOSTree *object)
 }
 
 static const gchar *
-otd_ostree_skeleton_get_branch (OTDOSTree *object)
+otd_ostree_skeleton_get_update_label (OTDOSTree *object)
 {
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
   const gchar *value;
@@ -2860,34 +2674,12 @@ otd_ostree_skeleton_get_branch (OTDOSTree *object)
 }
 
 static const gchar *
-otd_ostree_skeleton_get_remote (OTDOSTree *object)
-{
-  OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
-  const gchar *value;
-  g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_string (&(skeleton->priv->properties[4]));
-  g_mutex_unlock (&skeleton->priv->lock);
-  return value;
-}
-
-static const gchar *
-otd_ostree_skeleton_get_update_label (OTDOSTree *object)
-{
-  OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
-  const gchar *value;
-  g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_string (&(skeleton->priv->properties[5]));
-  g_mutex_unlock (&skeleton->priv->lock);
-  return value;
-}
-
-static const gchar *
 otd_ostree_skeleton_get_update_message (OTDOSTree *object)
 {
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
   const gchar *value;
   g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_string (&(skeleton->priv->properties[6]));
+  value = g_value_get_string (&(skeleton->priv->properties[4]));
   g_mutex_unlock (&skeleton->priv->lock);
   return value;
 }
@@ -2898,7 +2690,7 @@ otd_ostree_skeleton_get_download_size (OTDOSTree *object)
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
   gint64 value;
   g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_int64 (&(skeleton->priv->properties[7]));
+  value = g_value_get_int64 (&(skeleton->priv->properties[5]));
   g_mutex_unlock (&skeleton->priv->lock);
   return value;
 }
@@ -2909,7 +2701,7 @@ otd_ostree_skeleton_get_downloaded_bytes (OTDOSTree *object)
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
   gint64 value;
   g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_int64 (&(skeleton->priv->properties[8]));
+  value = g_value_get_int64 (&(skeleton->priv->properties[6]));
   g_mutex_unlock (&skeleton->priv->lock);
   return value;
 }
@@ -2920,7 +2712,7 @@ otd_ostree_skeleton_get_unpacked_size (OTDOSTree *object)
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
   gint64 value;
   g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_int64 (&(skeleton->priv->properties[9]));
+  value = g_value_get_int64 (&(skeleton->priv->properties[7]));
   g_mutex_unlock (&skeleton->priv->lock);
   return value;
 }
@@ -2931,7 +2723,7 @@ otd_ostree_skeleton_get_full_download_size (OTDOSTree *object)
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
   gint64 value;
   g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_int64 (&(skeleton->priv->properties[10]));
+  value = g_value_get_int64 (&(skeleton->priv->properties[8]));
   g_mutex_unlock (&skeleton->priv->lock);
   return value;
 }
@@ -2942,7 +2734,7 @@ otd_ostree_skeleton_get_full_unpacked_size (OTDOSTree *object)
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
   gint64 value;
   g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_int64 (&(skeleton->priv->properties[11]));
+  value = g_value_get_int64 (&(skeleton->priv->properties[9]));
   g_mutex_unlock (&skeleton->priv->lock);
   return value;
 }
@@ -2953,7 +2745,7 @@ otd_ostree_skeleton_get_error_code (OTDOSTree *object)
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
   guint value;
   g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_uint (&(skeleton->priv->properties[12]));
+  value = g_value_get_uint (&(skeleton->priv->properties[10]));
   g_mutex_unlock (&skeleton->priv->lock);
   return value;
 }
@@ -2964,7 +2756,7 @@ otd_ostree_skeleton_get_error_message (OTDOSTree *object)
   OTDOSTreeSkeleton *skeleton = OTD_OSTREE_SKELETON (object);
   const gchar *value;
   g_mutex_lock (&skeleton->priv->lock);
-  value = g_value_get_string (&(skeleton->priv->properties[13]));
+  value = g_value_get_string (&(skeleton->priv->properties[11]));
   g_mutex_unlock (&skeleton->priv->lock);
   return value;
 }
@@ -3001,8 +2793,6 @@ otd_ostree_skeleton_iface_init (OTDOSTreeIface *iface)
   iface->get_state = otd_ostree_skeleton_get_state;
   iface->get_update_id = otd_ostree_skeleton_get_update_id;
   iface->get_current_id = otd_ostree_skeleton_get_current_id;
-  iface->get_branch = otd_ostree_skeleton_get_branch;
-  iface->get_remote = otd_ostree_skeleton_get_remote;
   iface->get_update_label = otd_ostree_skeleton_get_update_label;
   iface->get_update_message = otd_ostree_skeleton_get_update_message;
   iface->get_download_size = otd_ostree_skeleton_get_download_size;
