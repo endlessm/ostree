@@ -841,7 +841,8 @@ scan_commit_object (OtPullData         *pull_data,
 
           while ((file_info = g_file_enumerator_next_file (keyfile_enumerator, cancellable, error)) != NULL)
             {
-              g_ptr_array_add (keyringfiles, g_file_info_get_name (file_info));
+              gpointer name = (gpointer) g_file_info_get_name (file_info);
+              g_ptr_array_add (keyringfiles, name);
               g_clear_object (&file_info);
             }
         }
@@ -852,7 +853,7 @@ scan_commit_object (OtPullData         *pull_data,
       if (!ostree_repo_verify_commit (pull_data->repo,
                                       checksum,
                                       homedir,
-                                      g_ptr_array_free (keyringfiles, FALSE),
+                                      (const gchar **)g_ptr_array_free (keyringfiles, FALSE),
                                       cancellable,
                                       error))
         {
