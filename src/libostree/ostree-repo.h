@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "config.h"
 #include "ostree-core.h"
 #include "ostree-types.h"
 
