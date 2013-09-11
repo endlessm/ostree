@@ -97,11 +97,11 @@ content_fetch (GTask *task,
   // be considered to have been approved.
   pullrefs[0] = (gchar *) otd_ostree_get_update_id (ostree);
 
-  // FIXME: upstream ostree_repo_pull has an unbalanced
+  // FIXME: upstream ostree_repo_pull had an unbalanced
   // g_main_context_get_thread_default/g_main_context_unref
   // instead of
   // g_main_context_ref_thread_default/g_main_context_unref
-  // which breaks our g_main_context_unref down in cleanup:
+  // patch has been accepted upstream, but double check when merging
   if (!ostree_repo_pull (repo, src, pullrefs, flags, cancel, &error))
     goto error;
 
