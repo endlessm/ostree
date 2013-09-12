@@ -81,7 +81,7 @@ m4_ifdef([GOBJECT_INTROSPECTION_CHECK], [
 ])
 AM_CONDITIONAL(BUILDOPT_INTROSPECTION, test x$found_introspection = xyes)
 
-LIBGPGME_DEPENDENCY="1.4.3"
+LIBGPGME_DEPENDENCY="1.2.0"
 
 AC_ARG_WITH(gpgme,
             AS_HELP_STRING([--without-gpgme], [Do not use gpgme]),
