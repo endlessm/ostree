@@ -808,22 +808,26 @@ scan_commit_object (OtPullData         *pull_data,
     {
       GKeyFile *config = NULL;
       gchar *homedir = NULL;
+      gchar *keyringfile = NULL;
       // Check the commit and signature are valid
 
       /* Get gpghomedir from config file */
       config = ostree_repo_get_config (pull_data->repo);
-      if (!g_key_file_has_key (config, "core", "gpghomedir", error))
+      if (g_key_file_has_key (config, "core", "gpghomedir", error))
         {
-          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                       "No gpghomedir set in config");
-          goto out;
+          homedir = g_key_file_get_string (config, "core", "gpghomedir", error);
         }
       
-      homedir = g_key_file_get_string (config, "core", "gpghomedir", error);
       
+      if (g_key_file_has_key (config, "core", "gpgkeyring", error))
+        {
+          keyringfile = g_key_file_get_string (config, "core", "gpgkeyring", error);
+        }
+
       if (!ostree_repo_verify_commit (pull_data->repo,
                                       checksum,
                                       homedir,
+                                      keyringfile,
                                       cancellable,
                                       error))
         {

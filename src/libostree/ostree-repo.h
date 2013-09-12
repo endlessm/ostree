@@ -479,6 +479,7 @@ gboolean ostree_repo_sign_commit (OstreeRepo     *self,
 gboolean ostree_repo_verify_commit (OstreeRepo   *self,
                                     const gchar  *commit_checksum,
                                     const gchar  *homedir,
+                                    const gchar  *keyringfile,
                                     GCancellable *cancellable,
                                     GError      **error);
 #endif

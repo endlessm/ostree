@@ -29,12 +29,14 @@
 static char *opt_mode = NULL;
 #ifdef HAVE_GPGME
 static char *opt_gpghomedir = NULL;
+static char *opt_gpgkeyring = NULL;
 #endif
 
 static GOptionEntry options[] = {
   { "mode", 0, 0, G_OPTION_ARG_STRING, &opt_mode, "Initialize repository in given mode (bare, archive-z2)", NULL },
 #ifdef HAVE_GPGME
   { "gpg-homedir", 0, 0, G_OPTION_ARG_STRING, &opt_gpghomedir, "Initialize repository with given gpghome path", "path" },
+  { "gpg-keyring", 0, 0, G_OPTION_ARG_STRING, &opt_gpgkeyring, "Initialize repository with given gpgkeyring path", "path" },
 #endif
   { NULL }
 };
@@ -78,6 +80,12 @@ ostree_builtin_init (int argc, char **argv, OstreeRepo *repo, GCancellable *canc
     {
       g_string_append_printf (config_data, "gpghomedir=%s\n", opt_gpghomedir);
     }
+
+  if (opt_gpgkeyring)
+    {
+      g_string_append_printf (config_data, "gpgkeyring=%s\n", opt_gpgkeyring);
+    }
+
 #endif
   if (!g_file_replace_contents (child,
                                 config_data->str,

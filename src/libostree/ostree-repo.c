@@ -3319,6 +3319,7 @@ out:
 gboolean ostree_repo_verify_commit (OstreeRepo   *self,
                                     const gchar  *commit_checksum,
                                     const gchar  *homedir,
+                                    const gchar  *keyringfile,
                                     GCancellable *cancellable,
                                     GError      **error)
 {
@@ -3331,8 +3332,10 @@ gboolean ostree_repo_verify_commit (OstreeRepo   *self,
   gs_free gchar *signature_filename;
   gpgme_data_t commit_buffer = NULL;
   gpgme_data_t signature_buffer = NULL;
+  gpgme_data_t keyringfile_buffer = NULL;
   int commit_fd = -1;
   int signature_fd = -1;
+  int keyringfile_fd = -1;
   gpgme_verify_result_t result;
   gs_unref_object GFile *commit_path = NULL;
   gs_unref_object GFile *sig_path = NULL;
@@ -3396,7 +3399,28 @@ gboolean ostree_repo_verify_commit (OstreeRepo   *self,
                    "Unable to open signature file");
       goto out;
     }
-  
+
+  if (keyringfile != NULL)
+    {
+      keyringfile_fd = g_open (keyringfile, O_RDONLY, 0);
+      if (keyringfile_fd > 0)
+        {
+          if ((err = gpgme_data_new_from_fd (&keyringfile_buffer, keyringfile_fd)) != GPG_ERR_NO_ERROR)
+            {
+              g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                           "Failed to create buffer for given keyring file");
+              goto out;
+            }
+
+          if ((err = gpgme_op_import (context, keyringfile_buffer)) != GPG_ERR_NO_ERROR)
+            {
+                g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                             "Failed to import keyring from keyring file");
+                goto out;
+            }
+        }
+    }
+
   if ((err = gpgme_data_new_from_fd (&signature_buffer, signature_fd)) != GPG_ERR_NO_ERROR)
     {
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
@@ -3423,10 +3447,14 @@ gboolean ostree_repo_verify_commit (OstreeRepo   *self,
 
   ret = TRUE;
 out:
+  if (keyringfile_fd >= 0)
+    g_close (keyringfile_fd, NULL);
   if (commit_fd >= 0)
     g_close (commit_fd, NULL);
   if (signature_fd >= 0)
     g_close (commit_fd, NULL);
+  if (keyringfile_buffer)
+    gpgme_data_release (keyringfile_buffer);
   if (commit_buffer)
     gpgme_data_release (commit_buffer);
   if (signature_buffer)

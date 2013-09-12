@@ -63,8 +63,15 @@ cp -a ${repopath} ${repopath}.orig
 
 cd ${test_tmpdir}
 rm repo -rf
+
 mkdir repo
 ${CMD_PREFIX} ostree --repo=repo init --gpg-homedir=${SRCDIR}/gpghome
 ${CMD_PREFIX} ostree --repo=repo remote add origin $(cat httpd-address)/ostree/gnomerepo
 ${CMD_PREFIX} ostree --repo=repo pull origin main --verify-commits
+rm repo -rf
 
+mkdir repo
+${CMD_PREFIX} ostree --repo=repo init --gpg-keyring=${SRCDIR}/gpghome/pubring.gpg
+${CMD_PREFIX} ostree --repo=repo remote add origin $(cat httpd-address)/ostree/gnomerepo
+${CMD_PREFIX} ostree --repo=repo pull origin main --verify-commits
+rm repo -rf
