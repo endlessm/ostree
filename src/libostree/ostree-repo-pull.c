@@ -804,11 +804,14 @@ scan_commit_object (OtPullData         *pull_data,
   g_variant_get_child (commit, 7, "@ay", &tree_meta_csum);
 
 #ifdef HAVE_GPGME
-  if (pull_data->flags & OSTREE_REPO_PULL_FLAGS_VERIFY)
+  if (!(pull_data->flags & OSTREE_REPO_PULL_FLAGS_NO_VERIFY))
     {
       GKeyFile *config = NULL;
       gchar *homedir = NULL;
-      gchar *keyringfile = NULL;
+      GFile *gpgdir = g_file_new_for_path ("/usr/share/ostree/trusted.gpg.d/");
+      GFileEnumerator *keyfile_enumerator;
+      GFileInfo *file_info;
+      GPtrArray *keyringfiles = g_ptr_array_new();
       // Check the commit and signature are valid
 
       /* Get gpghomedir from config file */
@@ -817,17 +820,39 @@ scan_commit_object (OtPullData         *pull_data,
         {
           homedir = g_key_file_get_string (config, "core", "gpghomedir", error);
         }
+      else
+        {
+          homedir = "/usr/share/ostree/trusted.gpg.d/";
+        }
       
       
       if (g_key_file_has_key (config, "core", "gpgkeyring", error))
         {
-          keyringfile = g_key_file_get_string (config, "core", "gpgkeyring", error);
+          g_ptr_array_add (keyringfiles, (gpointer)g_key_file_get_string (config, "core", "gpgkeyring", error));
         }
+
+      if (g_file_test ("/usr/share/ostree/trusted.gpg.d/", G_FILE_TEST_EXISTS))
+        {
+          keyfile_enumerator = g_file_enumerate_children (gpgdir,
+                                                          "*",
+                                                          G_FILE_QUERY_INFO_NONE,
+                                                          cancellable,
+                                                          error);
+
+          while ((file_info = g_file_enumerator_next_file (keyfile_enumerator, cancellable, error)) != NULL)
+            {
+              g_ptr_array_add (keyringfiles, g_file_info_get_name (file_info));
+              g_clear_object (&file_info);
+            }
+        }
+
+      // Throw a null on the end.
+      g_ptr_array_add (keyringfiles, NULL);
 
       if (!ostree_repo_verify_commit (pull_data->repo,
                                       checksum,
                                       homedir,
-                                      keyringfile,
+                                      g_ptr_array_free (keyringfiles, FALSE),
                                       cancellable,
                                       error))
         {

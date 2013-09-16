@@ -461,7 +461,7 @@ typedef enum {
   OSTREE_REPO_PULL_FLAGS_NONE     = 0x00,
   OSTREE_REPO_PULL_FLAGS_METADATA = 0x01,
 #ifdef HAVE_GPGME
-  OSTREE_REPO_PULL_FLAGS_VERIFY   = 0x02,
+  OSTREE_REPO_PULL_FLAGS_NO_VERIFY   = 0x02,
 #endif
 } OstreeRepoPullFlags;
 
@@ -483,7 +483,7 @@ gboolean ostree_repo_sign_commit (OstreeRepo     *self,
 gboolean ostree_repo_verify_commit (OstreeRepo   *self,
                                     const gchar  *commit_checksum,
                                     const gchar  *homedir,
-                                    const gchar  *keyringfile,
+                                    const gchar **keyringfiles,
                                     GCancellable *cancellable,
                                     GError      **error);
 #endif

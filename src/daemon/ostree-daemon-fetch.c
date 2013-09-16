@@ -74,7 +74,7 @@ content_fetch (GTask *task,
 {
   OTDOSTree *ostree = OTD_OSTREE (object);
   OstreeRepo *repo = OSTREE_REPO (task_data);
-  OstreeRepoPullFlags flags = OSTREE_REPO_PULL_FLAGS_VERIFY;
+  OstreeRepoPullFlags flags = OSTREE_REPO_PULL_FLAGS_NONE;
   GError *error = NULL;
   gs_free gchar *src = NULL;
   gs_free gchar *ref = NULL;

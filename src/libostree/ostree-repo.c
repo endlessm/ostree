@@ -3355,7 +3355,7 @@ out:
 gboolean ostree_repo_verify_commit (OstreeRepo   *self,
                                     const gchar  *commit_checksum,
                                     const gchar  *homedir,
-                                    const gchar  *keyringfile,
+                                    const gchar **keyringfiles,
                                     GCancellable *cancellable,
                                     GError      **error)
 {
@@ -3436,23 +3436,21 @@ gboolean ostree_repo_verify_commit (OstreeRepo   *self,
       goto out;
     }
 
-  if (keyringfile != NULL)
+  if (keyringfiles != NULL)
     {
-      keyringfile_fd = g_open (keyringfile, O_RDONLY, 0);
-      if (keyringfile_fd > 0)
+      int i;
+      for (i = 0; keyringfiles[i] && *keyringfiles[i]; ++i)
         {
-          if ((err = gpgme_data_new_from_fd (&keyringfile_buffer, keyringfile_fd)) != GPG_ERR_NO_ERROR)
+          keyringfile_fd = g_open (keyringfiles[i], O_RDONLY, 0);
+          if (keyringfile_fd > 0)
             {
-              g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                           "Failed to create buffer for given keyring file");
-              goto out;
-            }
-
-          if ((err = gpgme_op_import (context, keyringfile_buffer)) != GPG_ERR_NO_ERROR)
-            {
-                g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                             "Failed to import keyring from keyring file");
-                goto out;
+              if ((err = gpgme_data_new_from_fd (&keyringfile_buffer, keyringfile_fd)) == GPG_ERR_NO_ERROR)
+                {
+                  // Ignore failures in case of invalid keyrings just ignore and go on.
+                  gpgme_op_import (context, keyringfile_buffer);
+                  gpgme_data_release (keyringfile_buffer);
+                }
+              g_close (keyringfile_fd, NULL);
             }
         }
     }
@@ -3474,7 +3472,7 @@ gboolean ostree_repo_verify_commit (OstreeRepo   *self,
   
   result = gpgme_op_verify_result (context);
 
-  if (result->signatures->summary & GPGME_SIGSUM_VALID == 0)
+  if ((result->signatures->summary & GPGME_SIGSUM_VALID) == 0)
     {
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                    "GPGME Signature is invalid");
@@ -3483,14 +3481,10 @@ gboolean ostree_repo_verify_commit (OstreeRepo   *self,
 
   ret = TRUE;
 out:
-  if (keyringfile_fd >= 0)
-    g_close (keyringfile_fd, NULL);
   if (commit_fd >= 0)
     g_close (commit_fd, NULL);
   if (signature_fd >= 0)
     g_close (commit_fd, NULL);
-  if (keyringfile_buffer)
-    gpgme_data_release (keyringfile_buffer);
   if (commit_buffer)
     gpgme_data_release (commit_buffer);
   if (signature_buffer)

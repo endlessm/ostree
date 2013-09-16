@@ -28,13 +28,13 @@
 
 gboolean opt_metadata;
 #ifdef HAVE_GPGME
-gboolean opt_verifysignatures;
+gboolean opt_noverifysignatures;
 #endif
 
 static GOptionEntry options[] = {
   { "metadata", 'm', 0, G_OPTION_ARG_NONE, &opt_metadata, "Download only the metadata", NULL },
 #ifdef HAVE_GPGME
-  { "verify-commits", 0, 0, G_OPTION_ARG_NONE, &opt_verifysignatures, "Verify commits with gpg signatures", NULL },
+  { "no-verify-commits", 0, 0, G_OPTION_ARG_NONE, &opt_noverifysignatures, "Do not verify commits with gpg signatures", NULL },
 #endif
   { NULL }
 };
@@ -74,8 +74,8 @@ ostree_builtin_pull (int argc, char **argv, OstreeRepo *repo, GCancellable *canc
     pullflags |= OSTREE_REPO_PULL_FLAGS_METADATA;
 
 #ifdef HAVE_GPGME
-  if (opt_verifysignatures)
-    pullflags |= OSTREE_REPO_PULL_FLAGS_VERIFY;
+  if (opt_noverifysignatures)
+    pullflags |= OSTREE_REPO_PULL_FLAGS_NO_VERIFY;
 #endif
 
   if (!ostree_repo_pull (repo, remote, refs_to_fetch ? (char**)refs_to_fetch->pdata : NULL,

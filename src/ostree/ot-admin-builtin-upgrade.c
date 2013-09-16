@@ -35,10 +35,16 @@
 
 static gboolean opt_reboot;
 static char *opt_osname;
+#ifdef HAVE_GPGME
+static gboolean opt_noverifysignatures;
+#endif
 
 static GOptionEntry options[] = {
   { "os", 0, 0, G_OPTION_ARG_STRING, &opt_osname, "Specify operating system root to use", NULL },
   { "reboot", 'r', 0, G_OPTION_ARG_NONE, &opt_reboot, "Reboot after a successful upgrade", NULL },
+#ifdef HAVE_GPGME
+  { "no-verify-commits", 0, 0, G_OPTION_ARG_NONE, &opt_noverifysignatures, "Do not verify commits with gpg signatures", NULL },
+#endif
   { NULL }
 };
 
@@ -115,11 +121,17 @@ ot_admin_builtin_upgrade (int argc, char **argv, GFile *sysroot, GCancellable *c
 
   if (origin_remote)
     {
+      OstreeRepoPullFlags pullflags = 0;
       char *refs_to_fetch[] = { origin_ref, NULL };
 
       g_print ("Fetching remote %s ref %s\n", origin_remote, origin_ref);
 
-      if (!ostree_repo_pull (repo, origin_remote, refs_to_fetch, OSTREE_REPO_PULL_FLAGS_NONE,
+#ifdef HAVE_GPGME
+      if (opt_noverifysignatures)
+          pullflags |= OSTREE_REPO_PULL_FLAGS_NO_VERIFY;
+#endif
+
+      if (!ostree_repo_pull (repo, origin_remote, refs_to_fetch, pullflags,
                              cancellable, error))
         goto out;
     }
