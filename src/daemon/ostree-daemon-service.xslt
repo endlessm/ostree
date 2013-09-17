@@ -12,7 +12,7 @@ User=root</xsl:text>
 
   <xsl:template match="//interface[@name]">
     <xsl:variable name="if"><xsl:value-of select="@name"/></xsl:variable>
-    <xsl:value-of select="$if"/><xsl:text>;</xsl:text>
+    <xsl:value-of select="$if"/><xsl:text></xsl:text>
   </xsl:template>
 
   <!-- this strips out all the non-tag text so that
