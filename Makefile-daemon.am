@@ -19,14 +19,20 @@
 
 bin_PROGRAMS += ostree-daemon
 
+EXTRA_DIST += src/daemon/ostree-daemon-ifname.xslt \
+	src/daemon/ostree-daemon.xml \
+	$(NULL)
+
 ostree_daemon_dbus_if := \
-	$(shell $(XSLTPROC) src/daemon/ostree-daemon-ifname.xslt src/daemon/ostree-daemon.xml)
-ostree_daemon_dbus_policy  := $(ostree_daemon_dbus_if).conf
-ostree_daemon_dbus_service := $(ostree_daemon_dbus_if).service
-ostree_daemon_dbus_config  := $(ostree_daemon_dbus_policy) $(ostree_daemon_dbus_service)
-ostree_daemon_etc := \
-	$(shell if [ /usr = "$(prefix)" ]; then echo /etc; else echo $(sysconfdir); fi)
-INSTALL_DATA_HOOKS += ostree-daemon-install-service ostree-daemon-install-policy
+	$(shell $(XSLTPROC) $(srcdir)/src/daemon/ostree-daemon-ifname.xslt \
+		$(srcdir)/src/daemon/ostree-daemon.xml)
+
+dbusconfdir = ${sysconfdir}/dbus-1/system.d
+dbussystemservicedir = $(datadir)/dbus-1/system-services
+
+dbusconf_DATA = $(ostree_daemon_dbus_if).conf
+dbussystemservice_DATA = $(ostree_daemon_dbus_if).service
+CLEANFILES += $(dbusconf_DATA) $(dbussystemservice_DATA)
 
 ostree_daemon_gen_objects := src/daemon/ostree-daemon-generated.o
 ostree_daemon_gen_sources := \
@@ -106,15 +112,8 @@ $(ostree_daemon_gen_sources): src/daemon/ostree-daemon.xml
 	   --c-generate-object-manager          \
 	   $(<F)
 
-%.conf: src/daemon/ostree-daemon-policy.xslt src/daemon/ostree-daemon.xml
+$(ostree_daemon_dbus_if).conf: $(srcdir)/src/daemon/ostree-daemon-policy.xslt $(srcdir)/src/daemon/ostree-daemon.xml
 	$(XSLTPROC) $+ > $@
 
-%.service: src/daemon/ostree-daemon-service.xslt src/daemon/ostree-daemon.xml
+$(ostree_daemon_dbus_if).service: $(srcdir)/src/daemon/ostree-daemon-service.xslt $(srcdir)/src/daemon/ostree-daemon.xml
 	$(XSLTPROC) $+ > $@
-
-ostree-daemon-install-service: $(ostree_daemon_dbus_service)
-	$(INSTALL) -D -T $< $(DESTDIR)$(datarootdir)/dbus-1/system-services/$(notdir $<)
-
-ostree-daemon-install-policy: $(ostree_daemon_dbus_policy)
-	$(INSTALL) -D -T $< $(DESTDIR)$(ostree_daemon_etc)/dbus-1/system.d/$(notdir $<)
-
