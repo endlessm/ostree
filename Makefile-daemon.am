@@ -20,6 +20,8 @@
 bin_PROGRAMS += ostree-daemon
 
 EXTRA_DIST += src/daemon/ostree-daemon-ifname.xslt \
+	src/daemon/ostree-daemon-policy.xslt \
+	src/daemon/ostree-daemon-service.xslt \
 	src/daemon/ostree-daemon.xml \
 	$(NULL)
 
@@ -112,8 +114,8 @@ $(ostree_daemon_gen_sources): src/daemon/ostree-daemon.xml
 	   --c-generate-object-manager          \
 	   $(<F)
 
-$(ostree_daemon_dbus_if).conf: $(srcdir)/src/daemon/ostree-daemon-policy.xslt $(srcdir)/src/daemon/ostree-daemon.xml
+$(ostree_daemon_dbus_if).conf: src/daemon/ostree-daemon-policy.xslt src/daemon/ostree-daemon.xml
 	$(XSLTPROC) $+ > $@
 
-$(ostree_daemon_dbus_if).service: $(srcdir)/src/daemon/ostree-daemon-service.xslt $(srcdir)/src/daemon/ostree-daemon.xml
+$(ostree_daemon_dbus_if).service: src/daemon/ostree-daemon-service.xslt src/daemon/ostree-daemon.xml
 	$(XSLTPROC) $+ > $@
