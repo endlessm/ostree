@@ -38,7 +38,6 @@ ostree_daemon_borrowed_sources := \
 	src/ostree/ot-admin-deploy.c \
 	src/ostree/ot-admin-deploy.h \
 	src/ostree/ot-admin-cleanup.c \
-	src/ostree/ot-admin-cleanup.h \
 	src/ostree/ot-deployment.c \
 	src/ostree/ot-deployment.h \
 	src/ostree/ot-config-parser.c \
@@ -46,7 +45,6 @@ ostree_daemon_borrowed_sources := \
 	src/ostree/ot-admin-functions.c \
 	src/ostree/ot-admin-functions.h \
 	src/ostree/ot-admin-util.c \
-	src/ostree/ot-admin-util.h \
 	src/ostree/ot-ordered-hash.c \
 	src/ostree/ot-ordered-hash.h \
 	src/ostree/ot-bootloader-syslinux.c \
