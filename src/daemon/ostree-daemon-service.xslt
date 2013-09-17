@@ -3,7 +3,7 @@
   <xsl:output omit-xml-declaration="yes"/>
   <xsl:template match="/node">
     <xsl:text>[D-BUS Service]
-Names=</xsl:text>
+Name=</xsl:text>
     <xsl:apply-templates /><xsl:text>
 Exec=/usr/bin/ostree-daemon
 User=root</xsl:text>
