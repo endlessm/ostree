@@ -46,6 +46,7 @@ G_BEGIN_DECLS
  * @OSTREE_OBJECT_TYPE_DIR_TREE: List of children (trees or files), and metadata
  * @OSTREE_OBJECT_TYPE_DIR_META: Directory metadata
  * @OSTREE_OBJECT_TYPE_COMMIT: Toplevel object, refers to tree and dirmeta for root
+ * @OSTREE_OBJECT_TYPE_SIGNATURE: Toplevel object, signature for a commit
  *
  * Enumeration for core object types; %OSTREE_OBJECT_TYPE_FILE is for
  * content, the other types are metadata.
