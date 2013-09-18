@@ -24,6 +24,7 @@ EXTRA_DIST += src/daemon/ostree-daemon-ifname.xslt \
 	src/daemon/ostree-daemon-policy.xslt \
 	src/daemon/ostree-daemon-service.xslt \
 	src/daemon/ostree-daemon.xml \
+	src/daemon/ostree-daemon-ctl \
 	$(NULL)
 
 ostree_daemon_dbus_if := \
