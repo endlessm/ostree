@@ -122,6 +122,7 @@ main (gint argc, gchar *argv[])
 #ifndef GLIB_VERSION_2_36
   g_type_init ();
 #endif
+  g_set_prgname (argv[0]);
 
   repo = ostree_daemon_local_repo ();
   loop = g_main_loop_new (NULL, FALSE);
