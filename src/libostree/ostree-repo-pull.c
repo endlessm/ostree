@@ -1099,7 +1099,7 @@ on_metadata_objects_to_scan_ready (gint         fd,
       IdleThrowErrorData *throwdata = g_new0 (IdleThrowErrorData, 1);
       throwdata->pull_data = pull_data;
       throwdata->error = local_error;
-      g_main_context_invoke (NULL, idle_throw_error, throwdata);
+      g_main_context_invoke (pull_data->main_context, idle_throw_error, throwdata);
     }
   return TRUE;
 }
