@@ -1569,7 +1569,10 @@ ostree_repo_pull (OstreeRepo               *self,
   
   /* Now await work completion */
   if (!run_mainloop_monitor_fetcher (pull_data))
-    goto out;
+    {
+      ostree_repo_abort_transaction (self, NULL, NULL);
+      goto out;
+    }
   
   if (!ostree_repo_commit_transaction (pull_data->repo, cancellable, error))
     goto out;
