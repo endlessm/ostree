@@ -997,40 +997,29 @@ scan_one_metadata_object (OtPullData         *pull_data,
     }
   else if (is_stored)
     {
-      // incomplete (metadata only) commit - fetch the rest:
-      if (objtype == OSTREE_OBJECT_TYPE_COMMIT &&
-          !ostree_repo_read_commit (pull_data->repo, tmp_checksum, NULL, cancellable, error))
+      switch (objtype)
         {
-          g_clear_error (error);
-          is_requested = TRUE;
-        }
-
-      if (pull_data->transaction_resuming || is_requested)
-        {
-          switch (objtype)
-            {
-            case OSTREE_OBJECT_TYPE_COMMIT:
-              if (!scan_commit_object (pull_data, tmp_checksum, recursion_depth,
-                                       pull_data->cancellable, error))
-                goto out;
-              break;
-            case OSTREE_OBJECT_TYPE_SIZES:
-            case OSTREE_OBJECT_TYPE_DIR_META:
-              break;
-            case OSTREE_OBJECT_TYPE_SIGNATURE:
-              if (!scan_signature_object (pull_data, tmp_checksum, recursion_depth,
-                                       pull_data->cancellable, error))
-                goto out;
-              break;
-            case OSTREE_OBJECT_TYPE_DIR_TREE:
-              if (!scan_dirtree_object (pull_data, tmp_checksum, recursion_depth,
-                                        pull_data->cancellable, error))
-                goto out;
-              break;
-            case OSTREE_OBJECT_TYPE_FILE:
-              g_assert_not_reached ();
-              break;
-            }
+          case OSTREE_OBJECT_TYPE_COMMIT:
+            if (!scan_commit_object (pull_data, tmp_checksum, recursion_depth,
+                                   pull_data->cancellable, error))
+              goto out;
+            break;
+          case OSTREE_OBJECT_TYPE_SIZES:
+          case OSTREE_OBJECT_TYPE_DIR_META:
+            break;
+          case OSTREE_OBJECT_TYPE_SIGNATURE:
+            if (!scan_signature_object (pull_data, tmp_checksum, recursion_depth,
+                                     pull_data->cancellable, error))
+              goto out;
+            break;
+          case OSTREE_OBJECT_TYPE_DIR_TREE:
+            if (!scan_dirtree_object (pull_data, tmp_checksum, recursion_depth,
+                                      pull_data->cancellable, error))
+              goto out;
+            break;
+          case OSTREE_OBJECT_TYPE_FILE:
+            g_assert_not_reached ();
+            break;
         }
       g_hash_table_insert (pull_data->scanned_metadata, g_variant_ref (object), object);
       g_atomic_int_inc (&pull_data->n_scanned_metadata);
