@@ -1020,6 +1020,7 @@ scan_one_metadata_object (OtPullData         *pull_data,
             case OSTREE_OBJECT_TYPE_SIGNATURE:
               if (!scan_signature_object (pull_data, tmp_checksum, recursion_depth,
                                        pull_data->cancellable, error))
+                goto out;
               break;
             case OSTREE_OBJECT_TYPE_DIR_TREE:
               if (!scan_dirtree_object (pull_data, tmp_checksum, recursion_depth,
