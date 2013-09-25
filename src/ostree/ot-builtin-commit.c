@@ -59,7 +59,7 @@ static GOptionEntry options[] = {
   { "table-output", 0, 0, G_OPTION_ARG_NONE, &opt_table_output, "Output more information in a KEY: VALUE format", NULL },
 #ifdef HAVE_GPGME
   { "gpg-sign", 0, 0, G_OPTION_ARG_STRING, &opt_key_id, "GPG Key ID to sign the commit with", "key-id"},
-  { "gpg-homedir", 0, 0, G_OPTION_ARG_STRING, &opt_gpg_homedir, "GPG Homedir to use when looking for keyrings", "homedir"},
+  { "gpg-homedir", 0, 0, G_OPTION_ARG_STRING, &opt_gpg_homedir, "GPG Homedir to use when signing commits", "homedir"},
 #endif
   { NULL }
 };
