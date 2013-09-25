@@ -34,12 +34,12 @@ do_corrupt_pull_test() {
     mkdir repo
     ${CMD_PREFIX} ostree --repo=repo init
     ${CMD_PREFIX} ostree --repo=repo remote add origin $(cat httpd-address)/ostree/gnomerepo
-    if ${CMD_PREFIX} ostree --repo=repo pull origin main; then
+    if ${CMD_PREFIX} ostree --repo=repo pull --no-verify-commits origin main; then
         assert_not_reached "pull unexpectedly succeeded!"
     fi
     rm -rf ${repopath}
     cp -a ${repopath}.orig ${repopath}
-    if ${CMD_PREFIX} ostree --repo=repo pull origin main && ${CMD_PREFIX} ostree --repo=repo fsck; then
+    if ${CMD_PREFIX} ostree --repo=repo pull --no-verify-commits origin main && ${CMD_PREFIX} ostree --repo=repo fsck; then
         echo "ok pull with correct data worked"
     else
         assert_not_reached "pull with correct data failed!"

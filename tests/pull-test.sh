@@ -21,7 +21,9 @@ cd ${test_tmpdir}
 mkdir repo
 ${CMD_PREFIX} ostree --repo=repo init
 ${CMD_PREFIX} ostree --repo=repo remote add origin $(cat httpd-address)/ostree/gnomerepo
-${CMD_PREFIX} ostree --repo=repo pull origin main
+${CMD_PREFIX} ostree --repo=repo pull --no-verify-commits origin main
+${CMD_PREFIX} ostree --repo=repo pull --no-verify-commits origin main
+echo "done pull"
 ${CMD_PREFIX} ostree --repo=repo fsck
 echo "ok pull"
 

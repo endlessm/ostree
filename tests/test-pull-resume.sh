@@ -39,7 +39,7 @@ maxtries=`expr $maxtries \* 2`
 
 for ((i = 0; i < $maxtries; i=i+1))
 do
-if ${CMD_PREFIX} ostree --repo=repo pull origin main; then
+if ${CMD_PREFIX} ostree --repo=repo pull --no-verify-commits origin main; then
     break;
 fi
 done

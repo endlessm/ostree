@@ -65,9 +65,10 @@ cd ${test_tmpdir}
 rm repo -rf
 
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init --gpg-homedir=${SRCDIR}/gpghome
+${CMD_PREFIX} ostree --repo=repo init
+${CMD_PREFIX} ostree --repo=repo config  set core.gpgkeyring ${SRCDIR}/gpghome/pubring.gpg
 ${CMD_PREFIX} ostree --repo=repo remote add origin $(cat httpd-address)/ostree/gnomerepo
-${CMD_PREFIX} ostree --repo=repo pull origin main
+${CMD_PREFIX} ostree --repo=repo pull --no-verify-commits origin main
 rm repo -rf
 
 mkdir repo

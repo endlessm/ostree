@@ -147,7 +147,7 @@ function check_pull_meta ()
     branch=$3;
 
     cd $test_tmpdir;
-    ostree --repo=$local pull -m $remote $branch;
+    ostree --repo=$local pull --no-verify-commits -m $remote $branch;
     count=$(find $local/objects -type f | wc -l)
 
     if [ -z "$count"  ]; then assert "Malformed repo after metadata pull"     ; fi;
@@ -161,7 +161,7 @@ function check_pull_data ()
     branch=$3;
 
     cd $test_tmpdir;
-    ostree --repo=$local pull $remote $branch;
+    ostree --repo=$local pull --no-verify-commits $remote $branch;
     count=$(find $local/objects -type f | wc -l)
 
     if [ -z "$count"  ]; then assert "Malformed repo after contents pull" ; fi;
