@@ -77,7 +77,7 @@ function extract_index ()
     go="no";
 
     ostree --repo="$repo" summary -d $rev |
-    while read checksum archived unpacked;
+    while read checksum archived unpacked ignored;
     do
         if [ $go = "yes" ];
         then
