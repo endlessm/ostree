@@ -64,8 +64,6 @@ pending_uri_free (OstreeFetcherPendingURI *pending)
   if (pending->refcount > 0)
     return;
 
-  if (!pending->is_stream)
-    ostree_fetcher_pending_uri_done (pending->self, pending);
 
   soup_uri_free (pending->uri);
   g_clear_object (&pending->self);
@@ -257,6 +255,7 @@ on_splice_complete (GObject        *object,
   if (local_error)
     g_simple_async_result_take_error (pending->result, local_error);
   g_simple_async_result_complete (pending->result);
+  ostree_fetcher_pending_uri_done (pending->self, pending);
   g_object_unref (pending->result);
 }
 
