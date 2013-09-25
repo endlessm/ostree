@@ -56,7 +56,8 @@ typedef enum {
   OSTREE_OBJECT_TYPE_DIR_TREE = 2,  /* .dirtree */
   OSTREE_OBJECT_TYPE_DIR_META = 3,  /* .dirmeta */
   OSTREE_OBJECT_TYPE_COMMIT = 4,    /* .commit */
-  OSTREE_OBJECT_TYPE_SIGNATURE = 5  /* .sig */
+  OSTREE_OBJECT_TYPE_SIGNATURE = 5, /* .sig */
+  OSTREE_OBJECT_TYPE_SIZES = 6      /* .sizes */
 } OstreeObjectType;
 
 /**
@@ -65,7 +66,7 @@ typedef enum {
  *
  * Returns: %TRUE if object type is metadata
  */
-#define OSTREE_OBJECT_TYPE_IS_META(t) (t >= 2 && t <= 4)
+#define OSTREE_OBJECT_TYPE_IS_META(t) (t >= OSTREE_OBJECT_TYPE_DIR_TREE && t <= OSTREE_OBJECT_TYPE_SIZES)
 
 /**
  * OSTREE_OBJECT_TYPE_LAST:

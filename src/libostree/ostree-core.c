@@ -1096,6 +1096,8 @@ ostree_object_type_to_string (OstreeObjectType objtype)
       return "commit";
     case OSTREE_OBJECT_TYPE_SIGNATURE:
       return "sig";
+    case OSTREE_OBJECT_TYPE_SIZES:
+      return "sizes";
     default:
       g_assert_not_reached ();
       return NULL;
@@ -1203,7 +1205,7 @@ ostree_object_name_serialize (const char *checksum,
                               OstreeObjectType objtype)
 {
   g_assert (objtype >= OSTREE_OBJECT_TYPE_FILE
-            && objtype <= OSTREE_OBJECT_TYPE_COMMIT);
+            && objtype <= OSTREE_OBJECT_TYPE_SIZES);
   return g_variant_new ("(su)", checksum, (guint32)objtype);
 }
 

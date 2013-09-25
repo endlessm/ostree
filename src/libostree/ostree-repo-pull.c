@@ -124,9 +124,7 @@ typedef struct {
 typedef struct {
   OtPullData  *pull_data;
   GVariant    *object;
-  gchar       *relpath;
   GFile       *temp_path;
-  gboolean     is_signature;
 } FetchObjectData;
 
 static SoupURI *
@@ -694,7 +692,6 @@ on_metadata_staged (GObject           *object,
  out:
   pull_data->n_outstanding_metadata_stage_requests--;
   (void) gs_file_unlink (fetch_data->temp_path, NULL, NULL);
-  g_clear_pointer (&fetch_data->relpath, g_free);
   g_object_unref (fetch_data->temp_path);
   g_variant_unref (fetch_data->object);
   g_free (fetch_data);
@@ -750,29 +747,40 @@ optional_fetch_on_complete (GObject      *object,
 {
   FetchObjectData *fetch_data = user_data;
   OtPullData *pull_data = fetch_data->pull_data;
+  const char *checksum;
+  OstreeObjectType objtype;
   gs_unref_variant GVariant *metadata = NULL;
   gs_unref_variant GVariant *normal = NULL;
   gs_unref_object GInputStream *input = NULL;
   gs_unref_object GFile *temp_file = NULL;
   gs_unref_object GFile *dest_file = NULL;
   gs_unref_object GFile *parent = NULL;
+  gs_free gchar *path = NULL;
 
   GError *local_error = NULL;
   GError **error = &local_error;
   OstreeRepo *repo = pull_data->repo;
 
+  ostree_object_name_deserialize (fetch_data->object, &checksum, &objtype);
   fetch_data->temp_path = ostree_fetcher_request_uri_with_partial_finish ((OstreeFetcher*)object, result, error);
   if (!fetch_data->temp_path)
     {
+      gs_free char *name = ostree_object_to_string (checksum, objtype);
+
+      g_prefix_error (error, "While fetching %s: ", name);
+
+      if (objtype == OSTREE_OBJECT_TYPE_SIGNATURE && !(pull_data->flags & OSTREE_REPO_PULL_FLAGS_NO_VERIFY))
+        goto out;
+
       if (g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
         g_clear_error (error);
       goto out;
     }
 
-  g_debug ("fetch of optional item %s complete", fetch_data->relpath);
+  g_debug ("fetch of optional item %s complete", ostree_object_to_string (checksum, objtype));
 
   // make sure we can read it in:
-  if (!fetch_data->is_signature)
+  if (objtype != OSTREE_OBJECT_TYPE_SIGNATURE)
     {
       if (!ot_util_variant_map (fetch_data->temp_path, SIZES_VARIANT_TYPE,
                                 FALSE, &metadata, error))
@@ -796,7 +804,8 @@ optional_fetch_on_complete (GObject      *object,
       temp_file = fetch_data->temp_path;
     }
 
-  dest_file = g_file_resolve_relative_path (repo->repodir, fetch_data->relpath);
+  path = ostree_get_relative_object_path (checksum, objtype, FALSE);
+  dest_file = g_file_resolve_relative_path (repo->repodir, path);
   parent = g_file_get_parent (dest_file);
 
   if (!gs_file_ensure_directory (parent, FALSE, pull_data->cancellable, error))
@@ -810,11 +819,14 @@ optional_fetch_on_complete (GObject      *object,
 
   pull_data->n_fetched_metadata++;
 
+  ot_waitable_queue_push (pull_data->metadata_objects_to_scan,
+                          pull_worker_message_new (PULL_MSG_SCAN,
+                                                  g_variant_ref (fetch_data->object)));
+
  out:
   pull_data->n_outstanding_metadata_fetches--;
   throw_async_error (pull_data, local_error);
   g_clear_pointer (&fetch_data->object, g_variant_unref);
-  g_clear_pointer (&fetch_data->relpath, g_free);
   g_free (fetch_data);
 
 }
@@ -928,6 +940,36 @@ scan_commit_object (OtPullData         *pull_data,
 }
 
 static gboolean
+scan_signature_object (OtPullData         *pull_data,
+                       const char         *checksum,
+                       guint               recursion_depth,
+                       GCancellable       *cancellable,
+                       GError            **error)
+{
+  gboolean ret = FALSE;
+  guchar csum[32];
+
+  if (recursion_depth > OSTREE_MAX_RECURSION)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Exceeded maximum recursion");
+      goto out;
+    }
+
+  ostree_checksum_inplace_to_bytes (checksum, csum);
+  /* Got the signature, now scan the commit */
+  if (!scan_one_metadata_object (pull_data, csum,
+                                 OSTREE_OBJECT_TYPE_COMMIT,
+                                 recursion_depth + 1,
+                                 cancellable, error))
+    goto out;
+
+  ret = TRUE;
+out:
+  return ret;
+}
+
+static gboolean
 scan_one_metadata_object (OtPullData         *pull_data,
                           const guchar       *csum,
                           OstreeObjectType    objtype,
@@ -938,42 +980,51 @@ scan_one_metadata_object (OtPullData         *pull_data,
   gboolean ret = FALSE;
   gs_unref_variant GVariant *object = NULL;
   gs_free char *tmp_checksum = NULL;
+  gs_free char *name;
   gboolean is_requested;
   gboolean is_stored;
 
   tmp_checksum = ostree_checksum_from_bytes (csum);
   object = ostree_object_name_serialize (tmp_checksum, objtype);
 
+  name = ostree_object_to_string (tmp_checksum, objtype);
+
   if (g_hash_table_lookup (pull_data->scanned_metadata, object))
     return TRUE;
 
-  is_requested = g_hash_table_lookup (pull_data->requested_metadata, tmp_checksum) != NULL;
+  is_requested = g_hash_table_lookup (pull_data->requested_metadata, name) != NULL;
   if (!ostree_repo_has_object (pull_data->repo, objtype, tmp_checksum, &is_stored,
                                cancellable, error))
     goto out;
 
   if (!is_stored && !is_requested)
     {
-      char *duped_checksum = g_strdup (tmp_checksum);
-      g_hash_table_insert (pull_data->requested_metadata, duped_checksum, duped_checksum);
+      char *name = ostree_object_to_string (tmp_checksum, objtype);
+      g_hash_table_insert (pull_data->requested_metadata, name, name);
       
       ot_waitable_queue_push (pull_data->metadata_objects_to_fetch,
-                              pull_worker_message_new (PULL_MSG_FETCH,
-                                                       g_variant_ref (object)));
+                              pull_worker_message_new (
+                                objtype != OSTREE_OBJECT_TYPE_SIGNATURE ?
+                                  PULL_MSG_FETCH : PULL_MSG_FETCH_OPTIONAL,
+                                  g_variant_ref (object)));
 
       // Fetch the size cache index (or try to anyway):
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
         {
-          GVariant *sc = g_variant_new ("(ssb)", tmp_checksum, SIZES_EXTENSTION, FALSE);
-          PullWorkerMessage *msg = pull_worker_message_new (PULL_MSG_FETCH_OPTIONAL, sc);
+          PullWorkerMessage *msg = pull_worker_message_new (PULL_MSG_FETCH_OPTIONAL,
+            ostree_object_name_serialize (tmp_checksum,
+              OSTREE_OBJECT_TYPE_SIZES));
 
           ot_waitable_queue_push (pull_data->metadata_objects_to_fetch, msg);
           
-          // Also try to fetch a corresponding .sig file
-          sc = g_variant_new ("(ssb)", tmp_checksum, SIGNATURE_EXTENSION, TRUE);
-          msg = pull_worker_message_new (PULL_MSG_FETCH_OPTIONAL, sc);
+          // Also try to fetch a corresponding .sig file if we're not verifying
+          // signatures
+          if (pull_data->flags & OSTREE_REPO_PULL_FLAGS_NO_VERIFY) {
+            msg = pull_worker_message_new (PULL_MSG_FETCH_OPTIONAL,
+              ostree_object_name_serialize (tmp_checksum, OSTREE_OBJECT_TYPE_SIGNATURE));
           
-          ot_waitable_queue_push (pull_data->metadata_objects_to_fetch, msg);
+            ot_waitable_queue_push (pull_data->metadata_objects_to_fetch, msg);
+          }
         }
     }
   else if (is_stored)
@@ -995,8 +1046,12 @@ scan_one_metadata_object (OtPullData         *pull_data,
                                        pull_data->cancellable, error))
                 goto out;
               break;
+            case OSTREE_OBJECT_TYPE_SIZES:
             case OSTREE_OBJECT_TYPE_DIR_META:
+              break;
             case OSTREE_OBJECT_TYPE_SIGNATURE:
+              if (!scan_signature_object (pull_data, tmp_checksum, recursion_depth,
+                                       pull_data->cancellable, error))
               break;
             case OSTREE_OBJECT_TYPE_DIR_TREE:
               if (!scan_dirtree_object (pull_data, tmp_checksum, recursion_depth,
@@ -1194,24 +1249,22 @@ on_metadata_objects_to_fetch_ready (gint         fd,
     }
   else if (msg->t == PULL_MSG_FETCH_OPTIONAL)
     {
-      const char *csum = NULL;
-      const char *extn = NULL;
-      gchar *filepath = NULL;
+      const char *checksum;
+      gs_free char *objpath = NULL;
+      OstreeObjectType objtype;
       SoupURI *obj_uri = NULL;
       FetchObjectData *fetch_data;
-      gboolean is_sig = FALSE;
 
-      g_variant_get (msg->d.item, "(&s&sb)", &csum, &extn, &is_sig);
-      filepath = ostree_get_relative_file_path (csum, extn);
-      obj_uri = suburi_new (pull_data->base_uri, filepath, NULL);
+      ostree_object_name_deserialize (msg->d.item, &checksum, &objtype);
+      objpath = ostree_get_relative_object_path (checksum, objtype, TRUE);
+      obj_uri = suburi_new (pull_data->base_uri, objpath, NULL);
 
       pull_data->n_outstanding_metadata_fetches++;
       pull_data->n_requested_metadata++;
 
       fetch_data = g_new0 (FetchObjectData, 1);
       fetch_data->pull_data = pull_data;
-      fetch_data->relpath = filepath;
-      fetch_data->is_signature = is_sig;
+      fetch_data->object = g_variant_ref (msg->d.item);
 
       ostree_fetcher_request_uri_with_partial_async (pull_data->fetcher, obj_uri, pull_data->cancellable,
                                                      optional_fetch_on_complete, fetch_data);
@@ -1538,9 +1591,12 @@ ostree_repo_pull (OstreeRepo               *self,
     {
       const char *commit = value;
 
-      ot_waitable_queue_push (pull_data->metadata_objects_to_scan,
-                              pull_worker_message_new (PULL_MSG_SCAN,
-                                                       ostree_object_name_serialize (commit, OSTREE_OBJECT_TYPE_COMMIT)));
+      PullWorkerMessage *msg = pull_worker_message_new (PULL_MSG_SCAN,
+       ostree_object_name_serialize (commit,
+        pull_data->flags & OSTREE_REPO_PULL_FLAGS_NO_VERIFY ?
+          OSTREE_OBJECT_TYPE_COMMIT : OSTREE_OBJECT_TYPE_SIGNATURE));
+
+      ot_waitable_queue_push (pull_data->metadata_objects_to_scan, msg);
     }
 
   g_hash_table_iter_init (&hash_iter, requested_refs_to_fetch);
@@ -1548,10 +1604,12 @@ ostree_repo_pull (OstreeRepo               *self,
     {
       const char *ref = key;
       const char *sha256 = value;
+      PullWorkerMessage *msg = pull_worker_message_new (PULL_MSG_SCAN,
+       ostree_object_name_serialize (sha256,
+        pull_data->flags & OSTREE_REPO_PULL_FLAGS_NO_VERIFY ?
+          OSTREE_OBJECT_TYPE_COMMIT : OSTREE_OBJECT_TYPE_SIGNATURE));
 
-      ot_waitable_queue_push (pull_data->metadata_objects_to_scan,
-                              pull_worker_message_new (PULL_MSG_SCAN,
-                                                       ostree_object_name_serialize (sha256, OSTREE_OBJECT_TYPE_COMMIT)));
+      ot_waitable_queue_push (pull_data->metadata_objects_to_scan, msg);
       g_hash_table_insert (updated_refs, g_strdup (ref), g_strdup (sha256));
     }
   
