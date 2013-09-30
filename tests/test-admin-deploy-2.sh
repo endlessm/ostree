@@ -42,10 +42,10 @@ echo "ok deploy command"
 orig_bootcsum=${bootcsum}
 os_repository_new_commit
 ostree --repo=sysroot/ostree/repo remote add testos file://$(pwd)/testos-repo testos/buildmaster/x86_64-runtime
-ostree admin --sysroot=sysroot upgrade --os=testos
+ostree admin --sysroot=sysroot upgrade --os=testos --no-verify-commits
 os_repository_new_commit
 ostree --repo=sysroot/ostree/repo remote add testos file://$(pwd)/testos-repo testos/buildmaster/x86_64-runtime
-ostree admin --sysroot=sysroot upgrade --os=testos
+ostree admin  --sysroot=sysroot upgrade --os=testos --no-verify-commits
 
 rev=${newrev}
 newrev=$(ostree --repo=sysroot/ostree/repo rev-parse testos/buildmaster/x86_64-runtime)
