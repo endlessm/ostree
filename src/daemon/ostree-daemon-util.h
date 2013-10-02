@@ -24,6 +24,7 @@
 
 #include "ostree-daemon-generated.h"
 #include "libgsystem.h"
+#include <glib.h>
 #include <ostree.h>
 
 #define shuffle_out_values(out,local,null) \
@@ -33,6 +34,14 @@
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, _f, ## __VA_ARGS__)
 
 G_BEGIN_DECLS
+
+#define OTD_ERROR (otd_error_quark())
+GQuark otd_error_quark (void);
+
+typedef enum {
+  OTD_ERROR_WRONG_STATE,
+  OTD_N_ERRORS /*< skip >*/
+} OTDError;
 
 typedef enum {
   OTD_STATE_NONE = 0,
@@ -44,10 +53,8 @@ typedef enum {
   OTD_STATE_UPDATE_READY,
   OTD_STATE_APPLYING_UPDATE,
   OTD_STATE_UPDATE_APPLIED,
+  OTD_N_STATES,
 } OTDState;
-
-#define OTD_STATE_MIN OTD_STATE_READY
-#define OTD_STATE_MAX OTD_STATE_UPDATE_APPLIED
 
 #define OSTREE_REMOTE  "local"
 #define OSTREE_LOCAL   "/tmp/ostree-tmp-co"
@@ -55,6 +62,7 @@ typedef enum {
 #define OSTREE_REFSPEC OSTREE_REMOTE "/" OSTREE_BRANCH
 
 
+const gchar *otd_state_to_string (OTDState state);
 void ostree_daemon_set_state (OTDOSTree *ostree, OTDState state);
 
 void ostree_daemon_set_error (OTDOSTree *ostree, GError *error);

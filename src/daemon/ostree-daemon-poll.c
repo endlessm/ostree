@@ -205,36 +205,23 @@ handle_poll (OTDOSTree             *ostree,
 
   switch (state)
     {
-    case OTD_STATE_READY:
-    case OTD_STATE_ERROR:
-    case OTD_STATE_UPDATE_AVAILABLE:
-    case OTD_STATE_UPDATE_READY:
-    case OTD_STATE_UPDATE_APPLIED:
-      poll_ok = TRUE;
-      break;
-    case OTD_STATE_POLLING:
-      message ("Poll() called while already polling for an update");
-      break;
-    case OTD_STATE_FETCHING:
-      message ("Poll() called while already fetching an update");
-      break;
-    case OTD_STATE_APPLYING_UPDATE:
-      message ("Poll() called while already applying an update");
-      break;
-    default:
-      message ("Impossible state %u (range: %u - %u) when Poll() called",
-               state, OTD_STATE_MIN, OTD_STATE_MAX);
+      case OTD_STATE_READY:
+      case OTD_STATE_ERROR:
+        break;
+      default:
+        g_dbus_method_invocation_return_error (call,
+          OTD_ERROR, OTD_ERROR_WRONG_STATE,
+          "Can't call Poll() while in state %s", otd_state_to_string (state));
+        goto bail;
     }
-
-  if (!poll_ok)
-    goto out;
 
   ostree_daemon_set_state (ostree, OTD_STATE_POLLING);
   task = g_task_new (ostree, NULL, metadata_fetch_finished, g_object_ref (repo));
   g_task_set_task_data (task, g_object_ref (repo), g_object_unref);
   g_task_run_in_thread (task, metadata_fetch);
 
- out:
   otd_ostree_complete_poll (ostree, call);
+
+bail:
   return TRUE;
 }

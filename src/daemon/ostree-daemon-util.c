@@ -25,6 +25,45 @@
 #include "ot-deployment.h"
 #include "ot-admin-functions.h"
 
+static const GDBusErrorEntry otd_error_entries[] = {
+  { OTD_ERROR_WRONG_STATE, "org.gnome.OSTree.Error.WrongState" }
+};
+
+/* Ensure that every error code has an associated D-Bus error name */
+G_STATIC_ASSERT (G_N_ELEMENTS (otd_error_entries) == OTD_N_ERRORS);
+
+GQuark
+otd_error_quark (void)
+{
+  static volatile gsize quark_volatile = 0;
+  g_dbus_error_register_error_domain ("otd-error-quark",
+                                      &quark_volatile,
+                                      otd_error_entries,
+                                      G_N_ELEMENTS (otd_error_entries));
+  return (GQuark) quark_volatile;
+}
+
+static const gchar * state_str[] = {
+   "None",
+   "Ready",
+   "Error",
+   "Polling",
+   "UpdateAvailable",
+   "Fetching",
+   "UpdateReady",
+   "ApplyUpdate",
+   "UpdateApplied" };
+
+G_STATIC_ASSERT (G_N_ELEMENTS (state_str) == OTD_N_STATES);
+
+const gchar * otd_state_to_string (OTDState state)
+{
+  g_assert (state < OTD_N_STATES);
+
+  return state_str[state];
+};
+
+
 void
 ostree_daemon_set_state (OTDOSTree *ostree, OTDState state)
 {

@@ -187,51 +187,25 @@ handle_fetch (OTDOSTree             *ostree,
   OstreeRepo *repo = OSTREE_REPO (user_data);
   GTask *task = NULL;
   OTDState state = otd_ostree_get_state (ostree);
-  const gchar *update_id = otd_ostree_get_update_id (ostree);
-  gboolean fetch_ok = FALSE;
-  GError *error = NULL;
 
   switch (state)
     {
-    case OTD_STATE_READY:
-    case OTD_STATE_ERROR:
-    case OTD_STATE_UPDATE_AVAILABLE:
-    case OTD_STATE_UPDATE_READY:
-    case OTD_STATE_UPDATE_APPLIED:
-      fetch_ok = TRUE;
-      break;
-    case OTD_STATE_POLLING:
-      message ("Fetch() called while already polling for an update");
-      break;
-    case OTD_STATE_FETCHING:
-      message ("Fetch() called while already fetching an update");
-      break;
-    case OTD_STATE_APPLYING_UPDATE:
-      message ("Fetch() called while already applying an update");
-      break;
-    default:
-      g_set_error (&error, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT,
-                   "Impossible state %u (range: %u - %u) when Fetch() called",
-                   state, OTD_STATE_MIN, OTD_STATE_MAX);
+      case OTD_STATE_UPDATE_AVAILABLE:
+        break;
+      default:
+        g_dbus_method_invocation_return_error (call,
+          OTD_ERROR, OTD_ERROR_WRONG_STATE,
+          "Can't call Fetch() while in state %s", otd_state_to_string (state));
+      goto bail;
     }
-
-  if (!ostree_validate_checksum_string (update_id, &error))
-    goto out;
-
-  if (!fetch_ok)
-    goto out;
 
   ostree_daemon_set_state (ostree, OTD_STATE_FETCHING);
   task = g_task_new (ostree, NULL, content_fetch_finished, g_object_ref (repo));
   g_task_set_task_data (task, g_object_ref (repo), g_object_unref);
   g_task_run_in_thread (task, content_fetch);
 
- out:
-  if (error)
-    {
-      ostree_daemon_set_error (ostree, error);
-      g_clear_error (&error);
-    }
   otd_ostree_complete_fetch (ostree, call);
+
+bail:
   return TRUE;
 }
