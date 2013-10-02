@@ -67,6 +67,7 @@ content_fetch_finished (GObject *object,
 }
 
 typedef struct {
+  OTDOSTree *otd;
   OstreeRepo *repo;
   guint fetched;
   guint requested;
@@ -78,7 +79,10 @@ update_progress_threadsafe (gpointer data)
 {
   ProgressData *pd = data;
 
-  ostree_repo_emit_progress (pd->repo, pd->fetched, pd->requested, pd->bytes);
+  /* Idle could have been scheduled after the fetch completed, make sure we
+   * don't override the downloaded bytes */
+  if ( otd_ostree_get_state (pd->otd) == OTD_STATE_FETCHING)
+    otd_ostree_set_downloaded_bytes (pd->otd, pd->bytes);
 
   return FALSE;
 }
@@ -86,6 +90,10 @@ update_progress_threadsafe (gpointer data)
 static void
 update_progress_threadsafe_done (gpointer data)
 {
+  ProgressData *pd = data;
+
+  g_object_unref (pd->otd);
+  g_object_unref (pd->repo);
   g_free (data);
 }
 
@@ -99,6 +107,7 @@ update_progress (GObject *object,
   OstreeRepo *repo = OSTREE_REPO (object);
   ProgressData *pd = g_new0 (ProgressData, 1);
 
+  pd->otd = g_object_ref (data);
   pd->repo = g_object_ref (repo);
   pd->fetched = fetched;
   pd->requested = requested;
@@ -143,7 +152,7 @@ content_fetch (GTask *task,
   pullrefs[0] = (gchar *) otd_ostree_get_update_id (ostree);
 
   progress = g_signal_connect (repo, "fetch-progress",
-                               G_CALLBACK (update_progress), NULL);
+                               G_CALLBACK (update_progress), ostree);
 
   // FIXME: upstream ostree_repo_pull had an unbalanced
   // g_main_context_get_thread_default/g_main_context_unref
