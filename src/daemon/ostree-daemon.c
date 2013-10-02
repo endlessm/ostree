@@ -63,17 +63,15 @@ on_bus_acquired (GDBusConnection *connection,
   g_signal_connect (ostree, "handle-poll",  G_CALLBACK (handle_poll), repo);
   g_signal_connect (ostree, "handle-apply", G_CALLBACK (handle_apply), repo);
 
-  if (ostree_daemon_resolve_upgrade (ostree, repo, &src, &ref, &sum, &error))
+  if (ostree_daemon_resolve_upgrade (ostree, repo, NULL, NULL, &sum, &error))
     {
-      gs_free gchar *refspec = g_strdup_printf ("%s:%s", src, ref);
-
       otd_ostree_set_current_id (ostree, sum);
       otd_ostree_set_download_size (ostree, 0);
       otd_ostree_set_downloaded_bytes (ostree, 0);
       otd_ostree_set_unpacked_size (ostree, 0);
       otd_ostree_set_error_code (ostree, 0);
       otd_ostree_set_error_message (ostree, "");
-      otd_ostree_set_update_id (ostree, refspec);
+      otd_ostree_set_update_id (ostree, "");
       state = OTD_STATE_READY;
     }
   else
