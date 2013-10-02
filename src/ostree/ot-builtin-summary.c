@@ -117,12 +117,14 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
         {
           gint64 in, out;
           gchar *csum;
+          OstreeObjectType objtype;
 
-          g_print ("details:\n%-64s %16s %16s %s\n",
-                   "checksum", "archived", "unpacked", "in-cache");
+          g_print ("details:\n%-64s %16s %16s %16s %s\n",
+                   "checksum", "type", "archived", "unpacked", "in-cache");
 
           while (ostree_repo_commit_sizes_iterator_next (repo, &iter,
-                                                         &csum, &in, &out))
+                                                         &csum, &objtype,
+                                                         &in, &out))
             {
               // we don't use -ve values to mean anything at present
               // but they are possible, ignore for now:
@@ -139,7 +141,7 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
                 {
                   gboolean exists;
 
-                  if (ostree_repo_has_object (repo, OSTREE_OBJECT_TYPE_FILE,
+                  if (ostree_repo_has_object (repo, objtype,
                                               csum, &exists,
                                               cancellable, &err))
                     {
@@ -164,7 +166,7 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
                   have = "N/a"; // non-file objects aren't tracked in the index
                 }
 
-              g_print ("%64s %16ld %16ld %s\n", csum, asize, usize, have);
+              g_print ("%64s %16d %16ld %16ld %s\n", csum, objtype, asize, usize, have);
               g_clear_error (&err);
             }
 

@@ -31,6 +31,7 @@
 #include "ostree-chain-input-stream.h"
 #include "otutil.h"
 #include "libgsystem.h"
+#include "ostree-repo-private.h"
 
 #define ALIGN_VALUE(this, boundary) \
   (( ((unsigned long)(this)) + (((unsigned long)(boundary)) -1)) & (~(((unsigned long)(boundary))-1)))
@@ -1097,7 +1098,7 @@ ostree_object_type_to_string (OstreeObjectType objtype)
     case OSTREE_OBJECT_TYPE_SIGNATURE:
       return "sig";
     case OSTREE_OBJECT_TYPE_SIZES:
-      return "sizes";
+      return SIZES_EXTENSTION;
     default:
       g_assert_not_reached ();
       return NULL;

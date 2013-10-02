@@ -491,13 +491,14 @@ ostree_repo_get_parent (OstreeRepo  *self)
   return self->parent_repo;
 }
 
-typedef struct { gsize unpacked; gsize archived; } size_cache_entry;
+typedef struct { OstreeObjectType objtype; gsize unpacked; gsize archived; } size_cache_entry;
 
 static size_cache_entry *
-new_size_cache_entry (gsize unpacked, gsize archived)
+new_size_cache_entry (OstreeObjectType objtype, gsize unpacked, gsize archived)
 {
   size_cache_entry *entry = g_slice_new0 (size_cache_entry);
 
+  entry->objtype = objtype;
   entry->unpacked = unpacked;
   entry->archived = archived;
 
@@ -512,14 +513,15 @@ free_size_cache_entry (gpointer entry)
 }
 
 static void
-repo_store_size_entry (OstreeRepo *self, const gchar *checksum, gsize unpacked, gsize archived)
+repo_store_size_entry (OstreeRepo *self, OstreeObjectType objtype,
+  const gchar *checksum, gsize unpacked, gsize archived)
 {
   if (G_UNLIKELY (self->checksum_sizes == NULL))
     self->checksum_sizes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, free_size_cache_entry);
 
   g_hash_table_replace (self->checksum_sizes,
                         g_strdup (checksum),
-                        new_size_cache_entry (unpacked, archived));
+                        new_size_cache_entry (objtype, unpacked, archived));
 }
 
 GFile *
@@ -684,7 +686,6 @@ stage_object (OstreeRepo         *self,
   gboolean temp_file_is_regular;
   gboolean is_symlink = FALSE;
   gsize unpacked_size = 0;
-  gboolean indexable = FALSE;
 
   g_return_val_if_fail (self->in_transaction, FALSE);
   
@@ -758,7 +759,6 @@ stage_object (OstreeRepo         *self,
           gs_unref_object GOutputStream *temp_out = NULL;
           gs_unref_object GConverter *zlib_compressor = NULL;
           gs_unref_object GOutputStream *compressed_out_stream = NULL;
-          indexable = TRUE;
 
           if (!gs_file_open_in_tmpdir (self->tmp_dir, 0644,
                                        &temp_file, &temp_out,
@@ -819,12 +819,19 @@ stage_object (OstreeRepo         *self,
         }
     }
           
-  if (indexable)
+
+  if (repo_mode == OSTREE_REPO_MODE_ARCHIVE_Z2)
     {
       gs_unref_object GFileInfo *info =
         g_file_query_info (temp_file, G_FILE_ATTRIBUTE_STANDARD_SIZE, 0, NULL, NULL);
       gsize archived_size = g_file_info_get_size (info);
-      repo_store_size_entry (self, actual_checksum, unpacked_size, archived_size);
+
+      /* Non-file objects aren't compressed so their unpacked size and archived
+       * size are the same */
+      if (objtype != OSTREE_OBJECT_TYPE_FILE)
+        unpacked_size = archived_size;
+
+      repo_store_size_entry (self, objtype, actual_checksum, unpacked_size, archived_size);
     }
 
   if (!ostree_repo_has_object (self, objtype, actual_checksum, &have_obj,
@@ -1685,6 +1692,7 @@ repo_create_index_for_commit (OstreeRepo *self, const gchar *csum, GError **erro
         {
           g_variant_builder_add (&index_builder, SIZES_ENTRY_SIGNATURE,
                                  e_csum,
+                                 e_size->objtype,
                                  e_size->archived,
                                  e_size->unpacked);
         }
@@ -2962,11 +2970,13 @@ ostree_repo_copy_commit_sizes (OstreeRepo *self,
       gchar *csum;
       gint64 archived;
       gint64 unpacked;
+      OstreeObjectType objtype;
 
       while (ostree_repo_commit_sizes_iterator_next (self, &iter, &csum,
-                                                     &archived, &unpacked))
+                                                     &objtype, &archived,
+                                                     &unpacked))
         {
-          repo_store_size_entry (self, csum, unpacked, archived);
+          repo_store_size_entry (self, objtype, csum, unpacked, archived);
           ret++;
         }
     }
@@ -3021,11 +3031,16 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
       gint64 o;
       gsize  fetch = 0;
       gchar *sum;
+      OstreeObjectType objtype;
 
-      while (ostree_repo_commit_sizes_iterator_next (self, &iter, &sum, &i, &o))
+      while (ostree_repo_commit_sizes_iterator_next (self, &iter, &sum, &objtype, &i, &o))
         {
           gint64 asize = MAX (i, 0); // size of archive-z2 object
           gint64 usize = MAX (o, 0); // size of bare object
+
+          /* Skip invalid object types */
+          if (objtype < 0 || objtype > OSTREE_OBJECT_TYPE_LAST)
+            continue;
 
           in  += asize;
           out += usize;
@@ -3035,7 +3050,7 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
           if (asize && usize)
             {
               gboolean exists;
-              if (ostree_repo_has_object (self, OSTREE_OBJECT_TYPE_FILE,
+              if (ostree_repo_has_object (self, objtype,
                                           sum, &exists, NULL, error))
                 { // cache check completed, but file is not in cache:
                   if (!exists)
@@ -3117,6 +3132,7 @@ ostree_repo_commit_sizes_iterator_new (OstreeRepo *self,
  * @self: OstreeRepo
  * @iter: %OstreeRepoCommitSizesIterator
  * @checksum: (allow-none): storage for the next entry checksum
+ * @objtype: (allow-none): storage for the Object type of the next entry
  * @archived: (allow-none): storage for the archived (in-repo) size
  * @unpacked: (allow-none): storage for the unpacked size
  *
@@ -3132,25 +3148,26 @@ gboolean
 ostree_repo_commit_sizes_iterator_next (OstreeRepo *self,
                                         OstreeRepoCommitSizesIterator **iter,
                                         gchar **checksum,
+                                        OstreeObjectType *objtype,
                                         gint64 *archived,
                                         gint64 *unpacked)
 {
   gint64 in;
   gint64 out;
+  OstreeObjectType t;
   OstreeRepoCommitSizesIterator *csi = *iter;
 
-  if (g_variant_iter_next (&csi->iterator, "(&sxx)", checksum, &in, &out))
+  if (g_variant_iter_next (&csi->iterator, "(&suxx)", checksum, &t, &in, &out))
     {
       if (archived) *archived = in;
       if (unpacked) *unpacked = out;
+      if (objtype) *objtype = t;
 
       return TRUE;
     }
-  else
-    {
-      ostree_repo_commit_sizes_iterator_free (self, iter);
-      return FALSE;
-    }
+
+  ostree_repo_commit_sizes_iterator_free (self, iter);
+  return FALSE;
 }
 
 /**

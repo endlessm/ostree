@@ -378,6 +378,7 @@ gboolean
 ostree_repo_commit_sizes_iterator_next (OstreeRepo *self,
                                         OstreeRepoCommitSizesIterator **iter,
                                         gchar **checksum,
+                                        OstreeObjectType *objtype,
                                         gint64 *archived,
                                         gint64 *unpacked);
 void
