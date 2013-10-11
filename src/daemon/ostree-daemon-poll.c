@@ -52,23 +52,23 @@ metadata_fetch_finished (GObject *object,
       const gchar *label;
       const gchar *message;
 
-     // get the sha256 sum uf the currently booted image:
-    if (!ostree_daemon_resolve_upgrade (ostree, repo, NULL, NULL, &cur, &error))
+      // get the sha256 sum uf the currently booted image:
+      if (!ostree_daemon_resolve_upgrade (ostree, repo, NULL, NULL, &cur, &error))
         goto out;
 
-    // Everything is happy thusfar
-    otd_ostree_set_error_code (ostree, 0);
-    otd_ostree_set_error_message (ostree, "");
-    // if we have a checksum for the remote upgrade candidate
-    // and it's ≠ what we're currently booted into, advertise it as such:
-    if (g_strcmp0 (cur, csum) != 0) {
+      // Everything is happy thusfar
+      otd_ostree_set_error_code (ostree, 0);
+      otd_ostree_set_error_message (ostree, "");
+      // if we have a checksum for the remote upgrade candidate
+      // and it's ≠ what we're currently booted into, advertise it as such:
+      if (g_strcmp0 (cur, csum) != 0) {
         ostree_daemon_set_state (ostree, OTD_STATE_UPDATE_AVAILABLE);
-      }
-    else
-      {
-        ostree_daemon_set_state (ostree, OTD_STATE_READY);
-        goto out;
-      }
+        }
+      else
+        {
+          ostree_daemon_set_state (ostree, OTD_STATE_READY);
+          goto out;
+        }
 
       otd_ostree_set_update_id (ostree, csum);
 
@@ -115,13 +115,6 @@ metadata_fetch_finished (GObject *object,
       // get the sha256 sum uf the currently booted image:
       if (!ostree_daemon_resolve_upgrade (ostree, repo, NULL, NULL, &cur, &error))
         goto out;
-
-      // if we have a checksum for the remote upgrade candidate
-      // and it's ≠ what we're currently booted into, advertise it as such:
-      if (g_strcmp0 (cur, csum) != 0)
-        ostree_daemon_set_state (ostree, OTD_STATE_UPDATE_AVAILABLE);
-      else
-        ostree_daemon_set_state (ostree, OTD_STATE_READY);
     }
   else if (!error) // this should never happen, but check for it anyway:
     {
