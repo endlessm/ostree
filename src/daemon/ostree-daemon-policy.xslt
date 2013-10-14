@@ -23,6 +23,17 @@
             </xsl:attribute>
           </allow>
         </xsl:for-each>
+        <xsl:comment> And the standard introspection interfaces </xsl:comment>
+        <allow send_interface="org.freedesktop.DBus.Introspectable">
+          <xsl:attribute name="send_destination">
+            <xsl:value-of select="$dest"/>
+          </xsl:attribute>
+        </allow>
+        <allow send_interface="org.freedesktop.DBus.Properties">
+          <xsl:attribute name="send_destination">
+            <xsl:value-of select="$dest"/>
+          </xsl:attribute>
+        </allow>
       </policy>
       <policy at_console="true">
         <xsl:comment> Console user can send to the main interface </xsl:comment>
