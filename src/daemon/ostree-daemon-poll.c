@@ -215,6 +215,8 @@ handle_poll (OTDOSTree             *ostree,
   switch (state)
     {
       case OTD_STATE_READY:
+      case OTD_STATE_UPDATE_AVAILABLE:
+      case OTD_STATE_UPDATE_READY:
       case OTD_STATE_ERROR:
         break;
       default:
