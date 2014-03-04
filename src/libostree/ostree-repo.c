@@ -868,6 +868,18 @@ stage_object (OstreeRepo         *self,
               if (!ostree_set_xattrs (temp_file, xattrs, cancellable, error))
                 goto out;
             }
+          /* To satisfy tools such as guile which compare mtimes
+             to determine whether or not source files need to be compiled,
+             set all the modification times to 0.
+           */
+          if (!g_file_set_attribute_uint64(temp_file, "time::modified", 0,
+                                           G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+                                           cancellable, error))
+            goto out;
+          if (!g_file_set_attribute_uint32(temp_file, "time::modified-usec", 0,
+                                           G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+                                           cancellable, error))
+            goto out;
         }
       if (!commit_loose_object_trusted (self, actual_checksum, objtype, temp_file, temp_file_is_regular,
                                         cancellable, error))
