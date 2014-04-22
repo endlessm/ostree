@@ -62,14 +62,8 @@ ot_admin_builtin_os_init (int argc, char **argv, GFile *sysroot, GCancellable *c
   deploy_dir = ot_gfile_get_child_build_path (sysroot, "ostree", "deploy", osname, NULL);
 
   /* Ensure core subdirectories of /var exist, since we need them for
-   * dracut generation, and the host will want them too.  Note that at
-   * the moment we pre-create /var/log/journal to cater to systemd.
+   * dracut generation, and the host will want them too.
    */
-  g_clear_object (&dir);
-  dir = ot_gfile_get_child_build_path (deploy_dir, "var", "log", "journal", NULL);
-  if (!gs_file_ensure_directory (dir, TRUE, cancellable, error))
-    goto out;
-
   g_clear_object (&dir);
   dir = ot_gfile_get_child_build_path (deploy_dir, "var", "tmp", NULL);
   if (!gs_file_ensure_directory (dir, TRUE, cancellable, error))
