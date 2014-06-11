@@ -30,9 +30,11 @@
 #include "otutil.h"
 
 static char *opt_remote;
+static gint opt_depth = 0;
 
 static GOptionEntry options[] = {
   { "remote", 0, 0, G_OPTION_ARG_STRING, &opt_remote, "Add REMOTE to refspec", "REMOTE" },
+  { "depth", 0, 0, G_OPTION_ARG_INT, &opt_depth, "Traverse DEPTH parents for each commit (default: 0)", "DEPTH" },
   { NULL }
 };
 
@@ -245,8 +247,8 @@ ostree_builtin_pull_local (int argc, char **argv, OstreeRepo *repo, GCancellable
         {
           const char *checksum = value;
           
-          if (!ostree_repo_traverse_commit (data->src_repo, checksum, 0, source_objects,
-                                            cancellable, error))
+          if (!ostree_repo_traverse_commit (data->src_repo, checksum, opt_depth,
+                                            source_objects, cancellable, error))
             goto out;
         }
     }
@@ -258,8 +260,8 @@ ostree_builtin_pull_local (int argc, char **argv, OstreeRepo *repo, GCancellable
         {
           const char *checksum = key;
 
-          if (!ostree_repo_traverse_commit (data->src_repo, checksum, 0, source_objects,
-                                            cancellable, error))
+          if (!ostree_repo_traverse_commit (data->src_repo, checksum, opt_depth,
+                                            source_objects, cancellable, error))
             goto out;
         }
     }
