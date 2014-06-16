@@ -432,6 +432,13 @@ gboolean ostree_repo_traverse_commit (OstreeRepo         *repo,
                                       GCancellable       *cancellable,
                                       GError            **error);
 
+gboolean ostree_repo_traverse_commit_full (OstreeRepo         *repo,
+                                           const char         *commit_checksum,
+                                           int                 maxdepth,
+                                           GHashTable         *inout_reachable,
+                                           GCancellable       *cancellable,
+                                           GError            **error);
+
 /**
  * OstreeRepoPruneFlags:
  * @OSTREE_REPO_PRUNE_FLAGS_NONE: No special options for pruning

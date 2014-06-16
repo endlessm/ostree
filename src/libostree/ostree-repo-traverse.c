@@ -136,19 +136,14 @@ ostree_repo_traverse_dirtree (OstreeRepo      *repo,
                                     inout_reachable, cancellable, error);
 }
 
-/**
- * ostree_traverse_commit:
- *
- * Add to @inout_reachable all objects reachable from
- * @commit_checksum, traversing @maxdepth parent commits.
- */
-gboolean
-ostree_repo_traverse_commit (OstreeRepo      *repo,
-                             const char      *commit_checksum,
-                             int              maxdepth,
-                             GHashTable      *inout_reachable,
-                             GCancellable    *cancellable,
-                             GError         **error)
+static gboolean
+traverse_commit_internal (OstreeRepo      *repo,
+                          const char      *commit_checksum,
+                          int              maxdepth,
+                          gboolean         full,
+                          GHashTable      *inout_reachable,
+                          GCancellable    *cancellable,
+                          GError         **error)
 {
   gboolean ret = FALSE;
   gs_free char*tmp_checksum = NULL;
@@ -177,6 +172,35 @@ ostree_repo_traverse_commit (OstreeRepo      *repo,
         break;
   
       g_hash_table_add (inout_reachable, key);
+
+      /* Try to add optional signature and sizes object */
+      if (full)
+        {
+          gboolean have_obj;
+
+          if (ostree_repo_has_object (repo, OSTREE_OBJECT_TYPE_SIGNATURE,
+                                      commit_checksum, &have_obj, NULL, error))
+            {
+              if (have_obj)
+                {
+                  key = ostree_object_name_serialize (commit_checksum,
+                                                      OSTREE_OBJECT_TYPE_SIGNATURE);
+                  g_hash_table_add (inout_reachable, key);
+                }
+            }
+
+          if (ostree_repo_has_object (repo, OSTREE_OBJECT_TYPE_SIZES,
+                                      commit_checksum, &have_obj, NULL, error))
+            {
+              if (have_obj)
+                {
+                  key = ostree_object_name_serialize (commit_checksum,
+                                                      OSTREE_OBJECT_TYPE_SIZES);
+                  g_hash_table_add (inout_reachable, key);
+                }
+            }
+        }
+
       key = NULL;
 
       g_variant_get_child (commit, 7, "@ay", &meta_csum_bytes);
@@ -227,4 +251,40 @@ ostree_repo_traverse_commit (OstreeRepo      *repo,
   ret = TRUE;
  out:
   return ret;
+}
+
+/**
+ * ostree_traverse_commit:
+ *
+ * Add to @inout_reachable all objects reachable from
+ * @commit_checksum, traversing @maxdepth parent commits.
+ */
+gboolean
+ostree_repo_traverse_commit (OstreeRepo      *repo,
+                             const char      *commit_checksum,
+                             int              maxdepth,
+                             GHashTable      *inout_reachable,
+                             GCancellable    *cancellable,
+                             GError         **error)
+{
+  return traverse_commit_internal (repo, commit_checksum, maxdepth, FALSE,
+                                   inout_reachable, cancellable, error);
+}
+
+/**
+ * ostree_traverse_commit_full:
+ *
+ * Add to @inout_reachable all objects reachable from @commit_checksum,
+ * traversing @maxdepth parent commits. Include optional objects.
+ */
+gboolean
+ostree_repo_traverse_commit_full (OstreeRepo      *repo,
+                                  const char      *commit_checksum,
+                                  int              maxdepth,
+                                  GHashTable      *inout_reachable,
+                                  GCancellable    *cancellable,
+                                  GError         **error)
+{
+  return traverse_commit_internal (repo, commit_checksum, maxdepth, TRUE,
+                                   inout_reachable, cancellable, error);
 }
