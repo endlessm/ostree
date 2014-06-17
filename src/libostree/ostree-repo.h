@@ -159,6 +159,13 @@ gboolean      ostree_repo_stage_content_finish (OstreeRepo        *self,
                                                 guchar           **out_csum,
                                                 GError           **error);
 
+gboolean      ostree_repo_stage_signature_trusted (OstreeRepo       *self,
+                                                   const char       *checksum,
+                                                   GInputStream     *object_input,
+                                                   guint64           length,
+                                                   GCancellable     *cancellable,
+                                                   GError          **error);
+
 gboolean      ostree_repo_resolve_rev (OstreeRepo  *self,
                                        const char  *refspec,
                                        gboolean     allow_noent,

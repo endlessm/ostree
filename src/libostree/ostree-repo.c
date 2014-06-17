@@ -1674,6 +1674,34 @@ ostree_repo_stage_content_finish (OstreeRepo        *self,
   return TRUE;
 }
 
+/**
+ * ostree_repo_stage_signature_trusted:
+ * @self: Repo
+ * @checksum: Store content using this ASCII SHA256 checksum
+ * @object_input: Content stream
+ * @length: Length of @object_input
+ * @cancellable: Cancellable
+ * @error: Data for @callback
+ *
+ * Store the content object streamed as @object_input, with total
+ * length @length.  The given @checksum will be treated as trusted.
+ *
+ * This function should be used when importing signature objects from
+ * local disk, for example.
+ */
+gboolean
+ostree_repo_stage_signature_trusted (OstreeRepo       *self,
+                                     const char       *checksum,
+                                     GInputStream     *object_input,
+                                     guint64           length,
+                                     GCancellable     *cancellable,
+                                     GError          **error)
+{
+  return stage_object (self, OSTREE_OBJECT_TYPE_SIGNATURE, checksum,
+                       object_input, length, NULL,
+                       cancellable, error);
+}
+
 static GVariant *
 create_empty_gvariant_dict (void)
 {
