@@ -79,6 +79,21 @@ import_one_object (OtLocalCloneData *data,
                                               cancellable, error))
         goto out;
     }
+  else if (objtype == OSTREE_OBJECT_TYPE_SIGNATURE)
+    {
+      guint64 length;
+      gs_unref_object GInputStream *sig_object = NULL;
+
+      if (!ostree_repo_load_object_stream (data->src_repo, objtype, checksum,
+                                           &sig_object, &length,
+                                           cancellable, error))
+        goto out;
+
+      if (!ostree_repo_stage_signature_trusted (data->dest_repo, checksum,
+                                                sig_object, length,
+                                                cancellable, error))
+        goto out;
+    }
   else
     {
       gs_unref_variant GVariant *metadata = NULL;
@@ -247,8 +262,9 @@ ostree_builtin_pull_local (int argc, char **argv, OstreeRepo *repo, GCancellable
         {
           const char *checksum = value;
           
-          if (!ostree_repo_traverse_commit (data->src_repo, checksum, opt_depth,
-                                            source_objects, cancellable, error))
+          if (!ostree_repo_traverse_commit_full (data->src_repo, checksum,
+                                                 opt_depth, source_objects,
+                                                 cancellable, error))
             goto out;
         }
     }
@@ -260,8 +276,9 @@ ostree_builtin_pull_local (int argc, char **argv, OstreeRepo *repo, GCancellable
         {
           const char *checksum = key;
 
-          if (!ostree_repo_traverse_commit (data->src_repo, checksum, opt_depth,
-                                            source_objects, cancellable, error))
+          if (!ostree_repo_traverse_commit_full (data->src_repo, checksum,
+                                                 opt_depth, source_objects,
+                                                 cancellable, error))
             goto out;
         }
     }
