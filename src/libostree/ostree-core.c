@@ -68,6 +68,8 @@ ostree_metadata_variant_type (OstreeObjectType objtype)
       return OSTREE_DIRMETA_GVARIANT_FORMAT;
     case OSTREE_OBJECT_TYPE_COMMIT:
       return OSTREE_COMMIT_GVARIANT_FORMAT;
+    case OSTREE_OBJECT_TYPE_SIZES:
+      return SIZES_VARIANT_TYPE;
     default:
       g_assert_not_reached ();
     }
