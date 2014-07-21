@@ -87,6 +87,11 @@ apply (GTask *task,
   const gchar *osname;
   GKeyFile *origin;
 
+  /* EOS-2.1.0 shipped with the root mount being initially done as read-only,
+   * but that prevents a machine-id from being generated on first boot.
+   * Add kernel parameter 'rw' as is done with newer images. */
+  const gchar *add_rw_arg[] = { "rw", NULL };
+
   g_main_context_push_thread_default (task_context);
 
   if (!ot_admin_list_deployments (root, &bootversion, &deployed, cancel, &error))
@@ -103,7 +108,7 @@ apply (GTask *task,
   origin = ot_deployment_get_origin (merge_deployment);
 
   if (!ot_admin_deploy (root, bootversion, deployed, osname, update_id, origin,
-                        NULL, FALSE, booted_deployment, merge_deployment,
+                        add_rw_arg, FALSE, booted_deployment, merge_deployment,
                         NULL, &newbootver, NULL, // out args
                         cancel, &error))
     goto error;
