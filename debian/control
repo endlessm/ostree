@@ -1,0 +1,68 @@
+Source: ostree
+Section: admin
+Priority: optional
+Maintainer: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Build-Depends: debhelper (>= 8.0.0), autotools-dev,
+              libglib2.0-dev (>= 2.34),
+              libsoup2.4-dev (>= 2.39.1),
+              libarchive-dev (>= 2.8.0),
+              libgpgme11-dev,
+              libattr1-dev,
+              gobject-introspection,
+              libgirepository1.0-dev,
+              dh-systemd,
+              systemd,
+              dh-autoreconf,
+              gtk-doc-tools
+Standards-Version: 3.9.4
+Homepage: https://wiki.gnome.org/OSTree
+
+Package: ostree
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: git for operating system binaries
+ OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
+ While it takes over some of the roles of tradtional "package managers" like
+ dpkg and rpm, it is not a package system; nor is it a tool for managing full
+ disk images. Instead, it sits between those levels, offering a blend of the
+ advantages (and disadvantages) of both.
+
+Package: libostree-1
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: git for operating system binaries - runtime library
+ OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
+ While it takes over some of the roles of tradtional "package managers" like
+ dpkg and rpm, it is not a package system; nor is it a tool for managing full
+ disk images. Instead, it sits between those levels, offering a blend of the
+ advantages (and disadvantages) of both.
+ .
+ This package provides the libostree library
+
+Package: libostree-dev
+Section: libdevel
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, gir1.2-ostree (= ${binary:Version})
+Description: git for operating system binaries - runtime library
+ OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
+ While it takes over some of the roles of tradtional "package managers" like
+ dpkg and rpm, it is not a package system; nor is it a tool for managing full
+ disk images. Instead, it sits between those levels, offering a blend of the
+ advantages (and disadvantages) of both.
+ .
+ This package provides the libostree developement headers
+
+Package: gir1.2-ostree
+Architecture: any
+Section: introspection
+Depends: ${gir:Depends}, ${shlibs:Depends}, ${misc:Depends}
+Description: git for operating system binaries - runtime library
+ OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
+ While it takes over some of the roles of tradtional "package managers" like
+ dpkg and rpm, it is not a package system; nor is it a tool for managing full
+ disk images. Instead, it sits between those levels, offering a blend of the
+ advantages (and disadvantages) of both.
+ .
+ This package contains the GObject introspection data which may be
+ used to generate dynamic bindings.
