@@ -1,4 +1,4 @@
 usr/include
 usr/lib/*/*.so
 usr/lib/*/pkgconfig
-/usr/lib/*/girepository-1.0/ usr/lib
+usr/share/gir-1.0
