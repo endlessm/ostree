@@ -20,11 +20,10 @@
 
 #include "config.h"
 
-#include "ot-main.h"
 #include "ot-admin-builtins.h"
 #include "ot-admin-functions.h"
+#include "ot-deployment.h"
 #include "ostree.h"
-#include "ot-tool-util.h"
 #include "otutil.h"
 #include "libgsystem.h"
 
@@ -41,8 +40,60 @@ static GOptionEntry options[] = {
   { NULL }
 };
 
+static gboolean
+split_option_string (const char   *opt,
+                     char       **out_key,
+                     char       **out_value,
+                     GError     **error)
+{
+  const char *equal = strchr (opt, '=');
+  
+  if (!equal)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Setting must be of the form \"key=value\"");
+      return FALSE;
+    }
+
+  *out_key = g_strndup (opt, equal - opt);
+  *out_value = g_strdup (equal + 1);
+
+  return TRUE;
+}
+
+static gboolean
+write_origin_file (GFile             *sysroot,
+                   OtDeployment      *deployment,
+                   GCancellable      *cancellable,
+                   GError           **error)
+{
+  gboolean ret = FALSE;
+  GKeyFile *origin = ot_deployment_get_origin (deployment);
+
+  if (origin)
+    {
+      gs_unref_object GFile *deployment_path = ot_admin_get_deployment_directory (sysroot, deployment);
+      gs_unref_object GFile *origin_path = ot_admin_get_deployment_origin_path (deployment_path);
+      gs_free char *contents = NULL;
+      gsize len;
+
+      contents = g_key_file_to_data (origin, &len, error);
+      if (!contents)
+        goto out;
+
+      if (!g_file_replace_contents (origin_path, contents, len, NULL, FALSE,
+                                    G_FILE_CREATE_REPLACE_DESTINATION, NULL,
+                                    cancellable, error))
+        goto out;
+    }
+
+  ret = TRUE;
+ out:
+  return ret;
+}
+
 gboolean
-ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_admin_builtin_set_origin (int argc, char **argv, GFile *sysroot, GCancellable *cancellable, GError **error)
 {
   gboolean ret = FALSE;
   GOptionContext *context;
@@ -50,12 +101,16 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
   const char *url = NULL;
   const char *branch = NULL;
   gs_unref_object OstreeRepo *repo = NULL;
-  gs_unref_object OstreeSysroot *sysroot = NULL;
-  OstreeDeployment *target_deployment = NULL;
+  gs_unref_ptrarray GPtrArray *current_deployments = NULL;
+  gs_unref_object OtDeployment *target_deployment = NULL;
+  int current_bootversion;
+  GKeyFile *config = NULL;
 
   context = g_option_context_new ("REMOTENAME URL [BRANCH]");
 
-  if (!ostree_admin_option_context_parse (context, options, &argc, &argv, &sysroot, cancellable, error))
+  g_option_context_add_main_entries (context, options, NULL);
+
+  if (!g_option_context_parse (context, &argc, &argv, error))
     goto out;
 
   if (argc < 3)
@@ -69,15 +124,25 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
   if (argc > 3)
     branch = argv[3];
 
-  if (!ostree_sysroot_load (sysroot, cancellable, error))
+  if (!ot_admin_get_repo (sysroot, &repo, cancellable, error))
     goto out;
 
-  if (!ostree_sysroot_get_repo (sysroot, &repo, cancellable, error))
-    goto out;
+  if (!ot_admin_list_deployments (sysroot, &current_bootversion, &current_deployments,
+                                  cancellable, error))
+    {
+      g_prefix_error (error, "While listing deployments: ");
+      goto out;
+    }
 
   if (opt_index == -1)
     {
-      target_deployment = ostree_sysroot_get_booted_deployment (sysroot);
+      if (!ot_admin_find_booted_deployment (sysroot, current_deployments,
+                                            &target_deployment,
+                                            cancellable, error))
+        {
+          g_prefix_error (error, "While getting booted deployment: ");
+          goto out;
+        }
       if (target_deployment == NULL)
         {
           g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
@@ -87,39 +152,44 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
     }
   else
     {
-      target_deployment = ot_admin_get_indexed_deployment (sysroot, opt_index, error);
-      if (!target_deployment)
-        goto out;
+      if (opt_index < 0)
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                       "Invalid index %d", opt_index);
+          goto out;
+        }
+      if (opt_index >= current_deployments->len)
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                       "Out of range index %d, expected < %d", opt_index, current_deployments->len);
+          goto out;
+        }
+      target_deployment = g_object_ref (current_deployments->pdata[opt_index]);
     }
 
   { char **iter;
-    gs_unref_variant_builder GVariantBuilder *optbuilder =
-      g_variant_builder_new (G_VARIANT_TYPE ("a{sv}"));
+    gs_free char *remote_section = g_strdup_printf ("remote \"%s\"", remotename);
 
+    config = ostree_repo_copy_config (repo);
     for (iter = opt_set; iter && *iter; iter++)
       {
         const char *keyvalue = *iter;
         gs_free char *subkey = NULL;
         gs_free char *subvalue = NULL;
 
-        if (!ot_parse_keyvalue (keyvalue, &subkey, &subvalue, error))
+        if (!split_option_string (keyvalue, &subkey, &subvalue, error))
           goto out;
 
-        g_variant_builder_add (optbuilder, "{s@v}",
-                               subkey, g_variant_new_variant (g_variant_new_string (subvalue)));
+        g_key_file_set_string (config, remote_section, subkey, subvalue);
       }
-    
-    if (!ostree_repo_remote_change (repo, NULL,
-                                    OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS, 
-                                    remotename, url,
-                                    g_variant_builder_end (optbuilder),
-                                    cancellable, error))
-      goto out;
+
+    g_key_file_set_string (config, remote_section, "url", url);
+    if (!ostree_repo_write_config (repo, config, error))
+        goto out;
   }
   
-  { GKeyFile *old_origin = ostree_deployment_get_origin (target_deployment);
+  { GKeyFile *old_origin = ot_deployment_get_origin (target_deployment);
     gs_free char *origin_refspec = g_key_file_get_string (old_origin, "origin", "refspec", NULL);
-    gs_free char *new_refspec = NULL;
     gs_free char *origin_remote = NULL;
     gs_free char *origin_ref = NULL;
   
@@ -127,19 +197,17 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
       goto out;
 
     { gs_free char *new_refspec = g_strconcat (remotename, ":", branch ? branch : origin_ref, NULL);
-      gs_unref_keyfile GKeyFile *new_origin = NULL;
-      gs_unref_object GFile *origin_path = NULL;
-      
-      new_origin = ostree_sysroot_origin_new_from_refspec (sysroot, new_refspec);
 
-      if (!ostree_sysroot_write_origin_file (sysroot, target_deployment, new_origin,
-                                             cancellable, error))
+      g_key_file_set_string (old_origin, "origin", "refspec", new_refspec);
+      if (!write_origin_file (sysroot, target_deployment, cancellable, error))
         goto out;
     }
   }
 
   ret = TRUE;
  out:
+  if (config)
+    g_key_file_free (config);
   if (context)
     g_option_context_free (context);
   return ret;
