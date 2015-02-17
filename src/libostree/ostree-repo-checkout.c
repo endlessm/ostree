@@ -453,6 +453,20 @@ ostree_repo_checkout_tree (OstreeRepo               *self,
         }
     }
 
+    /* Set directory mtime to 0, so that it is constant for all checkouts.
+     * Must be done last, after creating all children.
+     */
+    if (!g_file_set_attribute_uint64(destination,
+                                     "time::modified", 0,
+                                     G_FILE_QUERY_INFO_NONE,
+                                     cancellable, error))
+      goto out;
+    if (!g_file_set_attribute_uint32(destination,
+                                     "time::modified-usec", 0,
+                                     G_FILE_QUERY_INFO_NONE,
+                                     cancellable, error))
+     goto out;
+
   ret = TRUE;
  out:
   return ret;
