@@ -2346,8 +2346,10 @@ list_loose_object_dir (OstreeRepo             *self,
         continue;
 
       name = g_file_info_get_attribute_byte_string (file_info, "standard::name"); 
-      
-      if (g_str_has_suffix (name, ".file"))
+      if ((self->mode == OSTREE_REPO_MODE_ARCHIVE_Z2
+           && g_str_has_suffix (name, ".filez")) ||
+          (self->mode == OSTREE_REPO_MODE_BARE
+           && g_str_has_suffix (name, ".file")))
         objtype = OSTREE_OBJECT_TYPE_FILE;
       else if (g_str_has_suffix (name, ".dirtree"))
         objtype = OSTREE_OBJECT_TYPE_DIR_TREE;
@@ -2355,6 +2357,10 @@ list_loose_object_dir (OstreeRepo             *self,
         objtype = OSTREE_OBJECT_TYPE_DIR_META;
       else if (g_str_has_suffix (name, ".commit"))
         objtype = OSTREE_OBJECT_TYPE_COMMIT;
+      else if (g_str_has_suffix (name, ".sig"))
+        objtype = OSTREE_OBJECT_TYPE_SIGNATURE;
+      else if (g_str_has_suffix (name, ".sizes2"))
+        objtype = OSTREE_OBJECT_TYPE_SIZES;
       else
         continue;
           
