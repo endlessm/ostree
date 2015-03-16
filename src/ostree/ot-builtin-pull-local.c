@@ -262,9 +262,9 @@ ostree_builtin_pull_local (int argc, char **argv, OstreeRepo *repo, GCancellable
         {
           const char *checksum = value;
           
-          if (!ostree_repo_traverse_commit_full (data->src_repo, checksum,
-                                                 opt_depth, source_objects,
-                                                 cancellable, error))
+          if (!ostree_repo_traverse_commit (data->src_repo, checksum,
+                                            opt_depth, source_objects,
+                                            cancellable, error))
             goto out;
         }
     }
@@ -276,9 +276,9 @@ ostree_builtin_pull_local (int argc, char **argv, OstreeRepo *repo, GCancellable
         {
           const char *checksum = key;
 
-          if (!ostree_repo_traverse_commit_full (data->src_repo, checksum,
-                                                 opt_depth, source_objects,
-                                                 cancellable, error))
+          if (!ostree_repo_traverse_commit (data->src_repo, checksum,
+                                            opt_depth, source_objects,
+                                            cancellable, error))
             goto out;
         }
     }
