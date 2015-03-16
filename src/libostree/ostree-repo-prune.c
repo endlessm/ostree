@@ -145,8 +145,9 @@ ostree_repo_prune (OstreeRepo        *self,
         {
           const char *checksum = value;
           
-          if (!ostree_repo_traverse_commit (self, checksum, depth, data.reachable,
-                                            cancellable, error))
+          if (!ostree_repo_traverse_commit_full (self, checksum, depth,
+                                                 data.reachable,
+                                                 cancellable, error))
             goto out;
         }
     }
@@ -169,8 +170,9 @@ ostree_repo_prune (OstreeRepo        *self,
           if (objtype != OSTREE_OBJECT_TYPE_COMMIT)
             continue;
           
-          if (!ostree_repo_traverse_commit (self, checksum, depth, data.reachable,
-                                            cancellable, error))
+          if (!ostree_repo_traverse_commit_full (self, checksum, depth,
+                                                 data.reachable,
+                                                 cancellable, error))
             goto out;
         }
     }
