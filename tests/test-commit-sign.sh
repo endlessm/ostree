@@ -25,6 +25,10 @@ fi
 
 . $(dirname $0)/libtest.sh
 
+# Make a copy of the keyrings to be usable unprivileged
+cp -r ${SRCDIR}/gpghome ${test_tmpdir}
+chmod 0700 ${test_tmpdir}/gpghome
+
 keyid="472CDAFA"
     oldpwd=`pwd`
     mkdir ostree-srv
@@ -37,13 +41,13 @@ keyid="472CDAFA"
     mkdir baz
     echo moo > baz/cow
     echo alien > baz/saucer
-    ${CMD_PREFIX} ostree  --repo=${test_tmpdir}/ostree-srv/gnomerepo commit -b main -s "A remote commit" -m "Some Commit body" --gpg-sign=$keyid --gpg-homedir=${SRCDIR}/gpghome
+    ${CMD_PREFIX} ostree  --repo=${test_tmpdir}/ostree-srv/gnomerepo commit -b main -s "A remote commit" -m "Some Commit body" --gpg-sign=$keyid --gpg-homedir=${test_tmpdir}/gpghome
     mkdir baz/deeper
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo commit -b main -s "Add deeper" --gpg-sign=$keyid --gpg-homedir=${SRCDIR}/gpghome
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo commit -b main -s "Add deeper" --gpg-sign=$keyid --gpg-homedir=${test_tmpdir}/gpghome
     echo hi > baz/deeper/ohyeah
     mkdir baz/another/
     echo x > baz/another/y
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo commit -b main -s "The rest" --gpg-sign=$keyid --gpg-homedir=${SRCDIR}/gpghome
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo commit -b main -s "The rest" --gpg-sign=$keyid --gpg-homedir=${test_tmpdir}/gpghome
     cd ..
     rm -rf gnomerepo-files
 
@@ -66,13 +70,13 @@ rm repo -rf
 
 mkdir repo
 ${CMD_PREFIX} ostree --repo=repo init
-${CMD_PREFIX} ostree --repo=repo config  set core.gpgkeyring ${SRCDIR}/gpghome/pubring.gpg
+${CMD_PREFIX} ostree --repo=repo config  set core.gpgkeyring ${test_tmpdir}/gpghome/pubring.gpg
 ${CMD_PREFIX} ostree --repo=repo remote add origin $(cat httpd-address)/ostree/gnomerepo
 ${CMD_PREFIX} ostree --repo=repo pull --no-verify-commits origin main
 rm repo -rf
 
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init --gpg-homedir=${SRCDIR}/gpghome --gpg-keyring=${SRCDIR}/gpghome/pubring.gpg
+${CMD_PREFIX} ostree --repo=repo init --gpg-homedir=${test_tmpdir}/gpghome --gpg-keyring=${test_tmpdir}/gpghome/pubring.gpg
 ${CMD_PREFIX} ostree --repo=repo remote add origin $(cat httpd-address)/ostree/gnomerepo
 ${CMD_PREFIX} ostree --repo=repo pull origin main
 rm repo -rf
