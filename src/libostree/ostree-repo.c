@@ -2524,7 +2524,7 @@ load_metadata_internal (OstreeRepo       *self,
     }
   else if (error_if_not_found)
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
                    "No such metadata object %s.%s",
                    sha256, ostree_object_type_to_string (objtype));
       goto out;
