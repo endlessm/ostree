@@ -166,7 +166,8 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
                   have = "N/a"; // non-file objects aren't tracked in the index
                 }
 
-              g_print ("%64s %16d %16ld %16ld %s\n", csum, objtype, asize, usize, have);
+              g_print ("%64s %16d %16" G_GINT64_FORMAT " %16" G_GINT64_FORMAT " %s\n",
+                       csum, objtype, asize, usize, have);
               g_clear_error (&err);
             }
 
@@ -186,9 +187,9 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
   if (entries > 0)
     {
       g_print ("Summary for refspec %s:\n"
-               "  files: %lu/%lu entries\n"
-               "  archived: %ld/%ld bytes\n"
-               "  unpacked: %ld/%ld bytes\n",
+               "  files: %" G_GSIZE_FORMAT "/%" G_GSIZE_FORMAT " entries\n"
+               "  archived: %" G_GINT64_FORMAT "/%" G_GINT64_FORMAT "\n"
+               "  unpacked: %" G_GINT64_FORMAT "/%" G_GINT64_FORMAT "\n",
                refspec,
                fetch_needed - entries, entries,
                archived - new_archived, archived,
