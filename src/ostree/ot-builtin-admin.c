@@ -44,6 +44,7 @@ static OstreeAdminCommand admin_subcommands[] = {
   { "undeploy", ot_admin_builtin_undeploy },
   { "upgrade", ot_admin_builtin_upgrade },
   { "cleanup", ot_admin_builtin_cleanup },
+  { "set-origin", ot_admin_builtin_set_origin },
   { "status", ot_admin_builtin_status },
   { "config-diff", ot_admin_builtin_diff },
   { NULL, NULL }
