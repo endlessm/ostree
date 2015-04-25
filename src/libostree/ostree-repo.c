@@ -491,10 +491,10 @@ ostree_repo_get_parent (OstreeRepo  *self)
   return self->parent_repo;
 }
 
-typedef struct { OstreeObjectType objtype; gsize unpacked; gsize archived; } size_cache_entry;
+typedef struct { OstreeObjectType objtype; gint64 unpacked; gint64 archived; } size_cache_entry;
 
 static size_cache_entry *
-new_size_cache_entry (OstreeObjectType objtype, gsize unpacked, gsize archived)
+new_size_cache_entry (OstreeObjectType objtype, gint64 unpacked, gint64 archived)
 {
   size_cache_entry *entry = g_slice_new0 (size_cache_entry);
 
@@ -514,7 +514,7 @@ free_size_cache_entry (gpointer entry)
 
 static void
 repo_store_size_entry (OstreeRepo *self, OstreeObjectType objtype,
-  const gchar *checksum, gsize unpacked, gsize archived)
+  const gchar *checksum, gint64 unpacked, gint64 archived)
 {
   if (G_UNLIKELY (self->checksum_sizes == NULL))
     self->checksum_sizes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, free_size_cache_entry);
@@ -685,7 +685,7 @@ stage_object (OstreeRepo         *self,
   GChecksum *checksum = NULL;
   gboolean temp_file_is_regular;
   gboolean is_symlink = FALSE;
-  gsize unpacked_size = 0;
+  gint64 unpacked_size = 0;
 
   g_return_val_if_fail (self->in_transaction, FALSE);
   
@@ -778,6 +778,7 @@ stage_object (OstreeRepo         *self,
               compressed_out_stream = g_converter_output_stream_new (temp_out, zlib_compressor);
 
               // the compressor returns the number of uncompressed bytes written:
+              // TODO: what if unpacked_size should be greater than 2GB?
               unpacked_size = g_output_stream_splice (compressed_out_stream, file_input,
                                                       G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
                                                       cancellable, error);
@@ -824,7 +825,7 @@ stage_object (OstreeRepo         *self,
     {
       gs_unref_object GFileInfo *info =
         g_file_query_info (temp_file, G_FILE_ATTRIBUTE_STANDARD_SIZE, 0, NULL, NULL);
-      gsize archived_size = g_file_info_get_size (info);
+      gint64 archived_size = g_file_info_get_size (info);
 
       /* Non-file objects aren't compressed so their unpacked size and archived
        * size are the same */
