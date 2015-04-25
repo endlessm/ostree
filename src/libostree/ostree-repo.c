@@ -3066,7 +3066,7 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
                               GCancellable *cancellable,
                               GError **error)
 {
-  gboolean ret = 0;
+  gsize ret = 0;
   gs_unref_variant GVariant *index = NULL;
   gint64 in = 0;
   gint64 out = 0;
