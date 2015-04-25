@@ -191,7 +191,7 @@ ostree_builtin_summary (int argc, char **argv, OstreeRepo *repo, GCancellable *c
                "  archived: %" G_GINT64_FORMAT "/%" G_GINT64_FORMAT "\n"
                "  unpacked: %" G_GINT64_FORMAT "/%" G_GINT64_FORMAT "\n",
                refspec,
-               fetch_needed - entries, entries,
+               entries - fetch_needed, entries,
                archived - new_archived, archived,
                unpacked - new_unpacked, unpacked);
     }
