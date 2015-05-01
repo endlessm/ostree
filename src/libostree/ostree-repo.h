@@ -443,6 +443,17 @@ gboolean      ostree_repo_write_commit_detached_metadata (OstreeRepo      *self,
                                                           GCancellable    *cancellable,
                                                           GError         **error);
 
+gboolean      ostree_repo_get_commit_sizes (OstreeRepo *self,
+                                            const char   *rev,
+                                            gint64       *new_archived,
+                                            gint64       *new_unpacked,
+                                            gsize        *new_files,
+                                            gint64       *archived,
+                                            gint64       *unpacked,
+                                            gsize        *files,
+                                            GCancellable *cancellable,
+                                            GError      **error);
+
 /**
  * OstreeRepoCheckoutMode:
  * @OSTREE_REPO_CHECKOUT_MODE_NONE: No special options
