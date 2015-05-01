@@ -323,16 +323,19 @@ commit_loose_object_trusted (OstreeRepo        *self,
 
 typedef struct
 {
+  OstreeObjectType objtype;
   gsize unpacked;
   gsize archived;
 } OstreeContentSizeCacheEntry;
 
 static OstreeContentSizeCacheEntry *
-content_size_cache_entry_new (gsize unpacked,
-                              gsize archived)
+content_size_cache_entry_new (OstreeObjectType objtype,
+                              gsize            unpacked,
+                              gsize            archived)
 {
   OstreeContentSizeCacheEntry *entry = g_slice_new0 (OstreeContentSizeCacheEntry);
 
+  entry->objtype = objtype;
   entry->unpacked = unpacked;
   entry->archived = archived;
 
@@ -348,6 +351,7 @@ content_size_cache_entry_free (gpointer entry)
 
 static void
 repo_store_size_entry (OstreeRepo       *self,
+                       OstreeObjectType  objtype,
                        const gchar      *checksum,
                        gsize             unpacked,
                        gsize             archived)
@@ -358,7 +362,7 @@ repo_store_size_entry (OstreeRepo       *self,
 
   g_hash_table_replace (self->object_sizes,
                         g_strdup (checksum),
-                        content_size_cache_entry_new (unpacked, archived));
+                        content_size_cache_entry_new (objtype, unpacked, archived));
 }
 
 static int
@@ -421,6 +425,7 @@ add_size_index_to_metadata (OstreeRepo        *self,
           e_size = g_hash_table_lookup (self->object_sizes, e_checksum);
           _ostree_write_varuint64 (buffer, e_size->archived);
           _ostree_write_varuint64 (buffer, e_size->unpacked);
+          g_string_append_c (buffer, (guchar) e_size->objtype);
 
           g_variant_builder_add (&index_builder, "@ay",
                                  ot_gvariant_new_bytearray ((guint8*)buffer->str, buffer->len));
@@ -779,7 +784,7 @@ write_object (OstreeRepo         *self,
           goto out;
         }
 
-      repo_store_size_entry (self, actual_checksum, unpacked_size, stbuf.st_size);
+      repo_store_size_entry (self, objtype, actual_checksum, unpacked_size, stbuf.st_size);
     }
 
   if (!_ostree_repo_has_loose_object (self, actual_checksum, objtype, &have_obj,
