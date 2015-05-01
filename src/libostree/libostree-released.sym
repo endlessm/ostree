@@ -172,6 +172,7 @@ global:
         ostree_repo_file_tree_get_metadata_checksum;
         ostree_repo_file_tree_query_child;
         ostree_repo_file_tree_set_metadata;
+        ostree_repo_get_commit_sizes;
         ostree_repo_get_config;
         ostree_repo_get_disable_fsync;
         ostree_repo_get_mode;
