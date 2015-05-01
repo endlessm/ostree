@@ -402,6 +402,166 @@ add_size_index_to_metadata (OstreeRepo        *self,
   return g_variant_ref_sink (g_variant_builder_end (builder));
 }
 
+static gboolean
+ostree_repo_commit_unpack_sizes (GVariant                    *entry,
+                                 OstreeContentSizeCacheEntry *sizes,
+                                 char                        *csum)
+{
+  gboolean ret = FALSE;
+  const guchar *buffer;
+  gsize bytes_read = 0;
+  gsize object_size = g_variant_get_size (entry);
+  guint64 archived, unpacked;
+
+  if (object_size <= 32)
+    goto out;
+
+  buffer = g_variant_get_data (entry);
+  if (!buffer)
+    goto out;
+
+  ostree_checksum_inplace_from_bytes (buffer, csum);
+  buffer += 32;
+  object_size -= 32;
+
+  if (!_ostree_read_varuint64 (buffer, object_size, &archived, &bytes_read))
+    goto out;
+  sizes->archived = archived;
+  buffer += bytes_read;
+  object_size -= bytes_read;
+
+  if (!_ostree_read_varuint64 (buffer, object_size, &unpacked, &bytes_read))
+    goto out;
+  sizes->unpacked = unpacked;
+  buffer += bytes_read;
+  object_size -= bytes_read;
+
+  if (object_size < 1)
+    goto out;
+
+  if (*buffer < OSTREE_OBJECT_TYPE_FILE || *buffer > OSTREE_OBJECT_TYPE_LAST)
+    goto out;
+  sizes->objtype = (OstreeObjectType) *buffer;
+
+  ret = TRUE;
+out:
+  return ret;
+}
+
+/**
+ * ostree_repo_get_commit_sizes
+ * @self: Self
+ * @rev: Commit checksum
+ * @new_archived: (out) (optional): number of archived bytes for the commit
+ *                missing from the repository, or %NULL
+ * @new_unpacked: (out) (optional): number of unpacked bytes for the commit
+ *                missing from the repository, or %NULL
+ * @new_files: (out) (optional): number of files for the commit missing from
+ *             the repository, or %NULL
+ * @archived: (out) (optional): number of archived bytes for the commit in the
+ *            repository, or %NULL
+ * @unpacked: (out) (optional): number of unpacked bytes for the commit in the
+ *            repository, or %NULL
+ * @files: (out) (optional): number of files for the commit in the repository,
+ *         or %NULL
+ * @cancellable: a #GCancellable
+ * @error: a #GError
+ *
+ * Reads the size data for the commit stored in the %ostree.sizes key in
+ * the commit metadata. If this data is not available, %FALSE is
+ * returned and @error is set to %G_IO_ERROR_NOT_FOUND.
+ *
+ * Returns: %TRUE on success, %FALSE on failure
+ */
+gboolean
+ostree_repo_get_commit_sizes (OstreeRepo *self,
+                              const char *rev,
+                              gint64 *new_archived,
+                              gint64 *new_unpacked,
+                              gsize  *new_files,
+                              gint64 *archived,
+                              gint64 *unpacked,
+                              gsize  *files,
+                              GCancellable *cancellable,
+                              GError **error)
+{
+  gboolean ret = FALSE;
+  guint64 n_archived = 0;
+  guint64 n_unpacked = 0;
+  gsize n_files = 0;
+  guint64 t_archived = 0;
+  guint64 t_unpacked = 0;
+  gsize t_files = 0;
+  GVariantIter obj_iter;
+  g_autoptr(GVariant) object = NULL;
+  g_autoptr(GVariant) commit = NULL;
+  g_autoptr(GVariant) metadata = NULL;
+  g_autoptr(GVariant) sizes = NULL;
+
+  if (!ostree_repo_load_variant (self, OSTREE_OBJECT_TYPE_COMMIT, rev,
+                                 &commit, error))
+    {
+      g_prefix_error (error, "Failed to read commit: ");
+      goto out;
+    }
+
+  metadata = g_variant_get_child_value (commit, 0);
+
+  sizes = g_variant_lookup_value (metadata, "ostree.sizes", G_VARIANT_TYPE("aay"));
+  if (!sizes)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                   "No metadata key ostree.sizes in commit %s", rev);
+      goto out;
+    }
+
+  g_variant_iter_init (&obj_iter, sizes);
+  while ((object = g_variant_iter_next_value (&obj_iter)))
+    {
+      OstreeContentSizeCacheEntry entry;
+      char csum[65];
+      gboolean exists;
+
+      if (!ostree_repo_commit_unpack_sizes (object, &entry, csum))
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                       "Invalid object size metadata");
+          goto out;
+        }
+      g_variant_unref (object);
+      object = NULL;
+
+      t_archived += entry.archived;
+      t_unpacked += entry.unpacked;
+
+      if (entry.objtype == OSTREE_OBJECT_TYPE_FILE)
+        t_files++;
+
+      if (!ostree_repo_has_object (self, entry.objtype,
+                                   csum, &exists, cancellable, error))
+        goto out;
+
+      /* cache check completed, but file is not in cache */
+      if (!exists)
+        {
+          n_archived += entry.archived;
+          n_unpacked += entry.unpacked;
+          if (entry.objtype == OSTREE_OBJECT_TYPE_FILE)
+            n_files++;
+        }
+    }
+
+  ret = TRUE;
+  if (new_archived) *new_archived = n_archived;
+  if (new_unpacked) *new_unpacked = n_unpacked;
+  if (new_files) *new_files = n_files;
+  if (archived) *archived = t_archived;
+  if (unpacked) *unpacked = t_unpacked;
+  if (files) *files = t_files;
+out:
+  return ret;
+}
+
 /* Combines a check for whether or not we already have the object with
  * allocating a tempfile if we don't.  Used by the static delta code.
  */
@@ -677,6 +837,17 @@ write_content_object (OstreeRepo         *self,
 
   g_assert (actual_checksum != NULL); /* Pacify static analysis */
 
+  /* Update size metadata if configured */
+  if (indexable && object_file_type == G_FILE_TYPE_REGULAR)
+    {
+      struct stat stbuf;
+
+      if (!glnx_fstat (tmpf.fd, &stbuf, error))
+        return FALSE;
+
+      repo_store_size_entry (self, OSTREE_OBJECT_TYPE_FILE, actual_checksum, unpacked_size, stbuf.st_size);
+    }
+
   /* See whether or not we have the object, now that we know the
    * checksum.
    */
@@ -748,17 +919,6 @@ write_content_object (OstreeRepo         *self,
                                   ostree_object_type_to_string (OSTREE_OBJECT_TYPE_FILE));
     }
 
-  /* Update size metadata if configured */
-  if (indexable && object_file_type == G_FILE_TYPE_REGULAR)
-    {
-      struct stat stbuf;
-
-      if (!glnx_fstat (tmpf.fd, &stbuf, error))
-        return FALSE;
-
-      repo_store_size_entry (self, OSTREE_OBJECT_TYPE_FILE, actual_checksum, unpacked_size, stbuf.st_size);
-    }
-
   /* Update statistics */
   g_mutex_lock (&self->txn_stats_lock);
   self->txn_stats.content_objects_written++;
@@ -816,6 +976,10 @@ write_metadata_object (OstreeRepo         *self,
        */
       if (have_obj)
         {
+          if (ostree_repo_get_mode (self) == OSTREE_REPO_MODE_ARCHIVE_Z2 && self->generate_sizes)
+            repo_store_size_entry (self, objtype, actual_checksum,
+                                   g_bytes_get_size (buf), g_bytes_get_size (buf));
+
           g_mutex_lock (&self->txn_stats_lock);
           self->txn_stats.metadata_objects_total++;
           g_mutex_unlock (&self->txn_stats_lock);
@@ -885,6 +1049,9 @@ write_metadata_object (OstreeRepo         *self,
             }
         }
     }
+
+  if (ostree_repo_get_mode (self) == OSTREE_REPO_MODE_ARCHIVE_Z2 && self->generate_sizes)
+    repo_store_size_entry (self, objtype, actual_checksum, len, len);
 
   /* Update the stats, note we both wrote one and add to total */
   g_mutex_lock (&self->txn_stats_lock);
@@ -1647,7 +1814,8 @@ ostree_repo_write_metadata (OstreeRepo         *self,
       if (!_ostree_repo_has_loose_object (self, expected_checksum, objtype, &have_obj,
                                           cancellable, error))
         return FALSE;
-      if (have_obj)
+      if (have_obj &&
+          !(ostree_repo_get_mode (self) == OSTREE_REPO_MODE_ARCHIVE_Z2 && self->generate_sizes))
         {
           if (out_csum)
             *out_csum = ostree_checksum_to_bytes (expected_checksum);
@@ -1913,6 +2081,9 @@ ostree_repo_write_content (OstreeRepo       *self,
 {
   /* First, if we have an expected checksum, see if we already have this
    * object.  This mirrors the same logic in ostree_repo_write_metadata().
+   *
+   * If we’re writing out size metadata, fall through to the write_content_object()
+   * call anyway, since we need all the objects to end up in self->object_sizes.
    */
   if (expected_checksum)
     {
@@ -1921,7 +2092,8 @@ ostree_repo_write_content (OstreeRepo       *self,
                                           OSTREE_OBJECT_TYPE_FILE, &have_obj,
                                           cancellable, error))
         return FALSE;
-      if (have_obj)
+      if (have_obj &&
+          !(ostree_repo_get_mode (self) == OSTREE_REPO_MODE_ARCHIVE_Z2 && self->generate_sizes))
         {
           if (out_csum)
             *out_csum = ostree_checksum_to_bytes (expected_checksum);
