@@ -1669,7 +1669,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   pull_data->progress = progress;
 
   pull_data->expected_commit_sizes = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                            (GDestroyNotify)g_free,
+                                                            NULL,
                                                             (GDestroyNotify)g_free);
   pull_data->commit_to_depth = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                       (GDestroyNotify)g_free,
