@@ -60,25 +60,31 @@ let [,commitVariant] = repo.load_variant(OSTree.ObjectType.COMMIT, commit);
 let metadata = commitVariant.get_child_value(0);
 let sizes = metadata.lookup_value('ostree.sizes', GLib.VariantType.new('aay'));
 let nSizes = sizes.n_children();
-assertEquals(nSizes, 2);
+assertEquals(nSizes, 4);
 let expectedUncompressedSizes = [12, 18];
-let foundExpectedUncompressedSizes = 0;
+let foundFiles = 0;
 for (let i = 0; i < nSizes; i++) {
     let sizeEntry = sizes.get_child_value(i);
-    assertEquals(sizeEntry.n_children(), 34);
+    assertEquals(sizeEntry.n_children(), 35);
     let compressedSize = sizeEntry.get_child_value(32).get_byte();
     let uncompressedSize = sizeEntry.get_child_value(33).get_byte();
+    let objType = sizeEntry.get_child_value(34).get_byte();
     print("compressed = " + compressedSize);
     print("uncompressed = " + uncompressedSize);
-    for (let j = 0; j < expectedUncompressedSizes.length; j++) {
-	let expected = expectedUncompressedSizes[j];
-	if (expected == uncompressedSize) {
-	    print("Matched expected uncompressed size " + expected);
-	    expectedUncompressedSizes.splice(j, 1);
-	    break;
-	}
+    print("object type = " + objType);
+    if (objType === OSTree.ObjectType.FILE) {
+        foundFiles++;
+        for (let j = 0; j < expectedUncompressedSizes.length; j++) {
+            let expected = expectedUncompressedSizes[j];
+            if (expected == uncompressedSize) {
+                print("Matched expected uncompressed size " + expected);
+                expectedUncompressedSizes.splice(j, 1);
+                break;
+            }
+        }
     }
 }
+assertEquals(foundFiles, 2);
 if (expectedUncompressedSizes.length > 0) {
     throw new Error("Failed to match expectedUncompressedSizes: " + JSON.stringify(expectedUncompressedSizes));
 }
