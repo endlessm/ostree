@@ -2421,6 +2421,48 @@ copy_detached_metadata (OstreeRepo    *self,
 }
 
 static gboolean
+copy_compat_metadata (OstreeRepo    *self,
+                      OstreeRepo    *source,
+                      const char    *checksum,
+                      GCancellable  *cancellable,
+                      GError        **error)
+{
+  gboolean ret = FALSE;
+  OstreeObjectType compat_meta_types[] = { OSTREE_OBJECT_TYPE_COMPAT_SIZES,
+                                           OSTREE_OBJECT_TYPE_COMPAT_SIG };
+  guint i;
+
+  for (i = 0; i < G_N_ELEMENTS (compat_meta_types); i++)
+    {
+      OstreeObjectType objtype = compat_meta_types[i];
+      gboolean have_obj = FALSE;
+      guint64 length;
+      gs_unref_object GInputStream *object = NULL;
+
+      if (!ostree_repo_has_object (source, objtype, checksum, &have_obj,
+                                   cancellable, error))
+        goto out;
+
+      if (!have_obj)
+        continue;
+
+      if (!ostree_repo_load_object_stream (source, objtype, checksum,
+                                           &object, &length,
+                                           cancellable, error))
+        goto out;
+
+      if (!ostree_repo_write_metadata_stream_trusted (self, objtype,
+                                                      checksum, object, length,
+                                                      cancellable, error))
+        goto out;
+    }
+
+  ret = TRUE;
+ out:
+  return ret;
+}
+
+static gboolean
 import_one_object_copy (OstreeRepo    *self,
                         OstreeRepo    *source,
                         const char   *checksum,
@@ -2449,6 +2491,10 @@ import_one_object_copy (OstreeRepo    *self,
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
         {
           if (!copy_detached_metadata (self, source, checksum, cancellable, error))
+            goto out;
+
+          /* Add optional compat metadata */
+          if (!copy_compat_metadata (self, source, checksum, cancellable, error))
             goto out;
         }
       if (!ostree_repo_write_metadata_stream_trusted (self, objtype,
@@ -2503,6 +2549,10 @@ import_one_object_link (OstreeRepo    *self,
   if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
     {
       if (!copy_detached_metadata (self, source, checksum, cancellable, error))
+        goto out;
+
+      /* Add optional compat metadata */
+      if (!copy_compat_metadata (self, source, checksum, cancellable, error))
         goto out;
     }
 
