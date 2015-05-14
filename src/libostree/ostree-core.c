@@ -980,6 +980,8 @@ ostree_object_type_to_string (OstreeObjectType objtype)
       return "commit";
     case OSTREE_OBJECT_TYPE_COMPAT_SIZES:
       return "sizes2";
+    case OSTREE_OBJECT_TYPE_COMPAT_SIG:
+      return "sig";
     default:
       g_assert_not_reached ();
       return NULL;
@@ -1005,6 +1007,8 @@ ostree_object_type_from_string (const char *str)
     return OSTREE_OBJECT_TYPE_COMMIT;
   else if (!strcmp (str, "sizes2"))
     return OSTREE_OBJECT_TYPE_COMPAT_SIZES;
+  else if (!strcmp (str, "sig"))
+    return OSTREE_OBJECT_TYPE_COMPAT_SIG;
   g_assert_not_reached ();
   return 0;
 }
