@@ -426,6 +426,7 @@ ostree_repo_traverse_commit_union (OstreeRepo      *repo,
       gs_unref_variant GVariant *commit = NULL;
       ostree_cleanup_repo_commit_traverse_iter
         OstreeRepoCommitTraverseIter iter = { 0, };
+      gboolean have_obj = FALSE;
 
       key = ostree_object_name_serialize (commit_checksum, OSTREE_OBJECT_TYPE_COMMIT);
 
@@ -444,6 +445,19 @@ ostree_repo_traverse_commit_union (OstreeRepo      *repo,
         break;
 
       g_hash_table_add (inout_reachable, key);
+
+      /* Try to add compat sizes object */
+      if (ostree_repo_has_object (repo, OSTREE_OBJECT_TYPE_COMPAT_SIZES,
+                                  commit_checksum, &have_obj, NULL, error))
+        {
+          if (have_obj)
+            {
+              key = ostree_object_name_serialize (commit_checksum,
+                                                  OSTREE_OBJECT_TYPE_COMPAT_SIZES);
+              g_hash_table_add (inout_reachable, key);
+            }
+        }
+
       key = NULL;
 
       if (!ostree_repo_commit_traverse_iter_init_commit (&iter, repo, commit,
