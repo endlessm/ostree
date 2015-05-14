@@ -139,7 +139,7 @@ load_and_fsck_one_object (OstreeRepo            *repo,
     {
       *out_found_corruption = TRUE;
     }
-  else
+  else if (objtype != OSTREE_OBJECT_TYPE_COMPAT_SIZES)
     {
       gs_free guchar *computed_csum = NULL;
       gs_free char *tmp_checksum = NULL;
