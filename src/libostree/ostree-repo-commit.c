@@ -577,9 +577,20 @@ write_object (OstreeRepo         *self,
 
   if (out_csum)
     {
-      checksum = g_checksum_new (G_CHECKSUM_SHA256);
-      if (input)
-        checksum_input = ostree_checksum_input_stream_new (input, checksum);
+      if (objtype == OSTREE_OBJECT_TYPE_COMPAT_SIZES ||
+          objtype == OSTREE_OBJECT_TYPE_COMPAT_SIG)
+        {
+          /* The "checksum" is the commit checksum, so just use the
+           * expected checksum.
+           */
+          ret_csum = ostree_checksum_to_bytes (expected_checksum);
+        }
+      else
+        {
+          checksum = g_checksum_new (G_CHECKSUM_SHA256);
+          if (input)
+            checksum_input = ostree_checksum_input_stream_new (input, checksum);
+        }
     }
 
   if (objtype == OSTREE_OBJECT_TYPE_FILE)
