@@ -1791,6 +1791,10 @@ load_metadata_internal (OstreeRepo       *self,
 
   g_return_val_if_fail (OSTREE_OBJECT_TYPE_IS_META (objtype), FALSE);
 
+  /* The compat signature file is not a GVariant */
+  if (out_variant)
+    g_assert (objtype != OSTREE_OBJECT_TYPE_COMPAT_SIG);
+
   _ostree_loose_path (loose_path_buf, sha256, objtype, self->mode);
 
   if (!openat_allow_noent (self->objects_dir_fd, loose_path_buf, &fd,

@@ -692,6 +692,9 @@ ostree_checksum_file_from_input (GFileInfo        *file_info,
 
   if (OSTREE_OBJECT_TYPE_IS_META (objtype))
     {
+      g_assert (objtype != OSTREE_OBJECT_TYPE_COMPAT_SIZES);
+      g_assert (objtype != OSTREE_OBJECT_TYPE_COMPAT_SIG);
+
       if (!ot_gio_splice_update_checksum (NULL, in, checksum, cancellable, error))
         goto out;
     }
