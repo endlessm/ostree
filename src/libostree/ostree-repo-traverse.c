@@ -446,7 +446,7 @@ ostree_repo_traverse_commit_union (OstreeRepo      *repo,
 
       g_hash_table_add (inout_reachable, key);
 
-      /* Try to add compat sizes object */
+      /* Try to add compat sizes and signature objects */
       if (ostree_repo_has_object (repo, OSTREE_OBJECT_TYPE_COMPAT_SIZES,
                                   commit_checksum, &have_obj, NULL, error))
         {
@@ -454,6 +454,16 @@ ostree_repo_traverse_commit_union (OstreeRepo      *repo,
             {
               key = ostree_object_name_serialize (commit_checksum,
                                                   OSTREE_OBJECT_TYPE_COMPAT_SIZES);
+              g_hash_table_add (inout_reachable, key);
+            }
+        }
+      if (ostree_repo_has_object (repo, OSTREE_OBJECT_TYPE_COMPAT_SIG,
+                                  commit_checksum, &have_obj, NULL, error))
+        {
+          if (have_obj)
+            {
+              key = ostree_object_name_serialize (commit_checksum,
+                                                  OSTREE_OBJECT_TYPE_COMPAT_SIG);
               g_hash_table_add (inout_reachable, key);
             }
         }

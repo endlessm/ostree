@@ -1664,6 +1664,8 @@ list_loose_objects_at (OstreeRepo             *self,
         objtype = OSTREE_OBJECT_TYPE_COMMIT;
       else if (strcmp (dot, ".sizes2") == 0)
         objtype = OSTREE_OBJECT_TYPE_COMPAT_SIZES;
+      else if (strcmp (dot, ".sig") == 0)
+        objtype = OSTREE_OBJECT_TYPE_COMPAT_SIG;
       else
         continue;
 
