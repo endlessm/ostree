@@ -56,6 +56,7 @@ G_BEGIN_DECLS
  * @OSTREE_OBJECT_TYPE_DIR_TREE: List of children (trees or files), and metadata
  * @OSTREE_OBJECT_TYPE_DIR_META: Directory metadata
  * @OSTREE_OBJECT_TYPE_COMMIT: Toplevel object, refers to tree and dirmeta for root
+ * @OSTREE_OBJECT_TYPE_COMPAT_SIZES: Toplevel object, refers to legacy file sizes metadata
  *
  * Enumeration for core object types; %OSTREE_OBJECT_TYPE_FILE is for
  * content, the other types are metadata.
@@ -64,7 +65,8 @@ typedef enum {
   OSTREE_OBJECT_TYPE_FILE = 1,      /* .file */
   OSTREE_OBJECT_TYPE_DIR_TREE = 2,  /* .dirtree */
   OSTREE_OBJECT_TYPE_DIR_META = 3,  /* .dirmeta */
-  OSTREE_OBJECT_TYPE_COMMIT = 4     /* .commit */
+  OSTREE_OBJECT_TYPE_COMMIT = 4,    /* .commit */
+  OSTREE_OBJECT_TYPE_COMPAT_SIZES = 5  /* .sizes2 */
 } OstreeObjectType;
 
 /**
@@ -73,14 +75,14 @@ typedef enum {
  *
  * Returns: %TRUE if object type is metadata
  */
-#define OSTREE_OBJECT_TYPE_IS_META(t) (t >= 2 && t <= 4)
+#define OSTREE_OBJECT_TYPE_IS_META(t) (t >= 2 && t <= 5)
 
 /**
  * OSTREE_OBJECT_TYPE_LAST:
  *
  * Last valid object type; use this to validate ranges.
  */
-#define OSTREE_OBJECT_TYPE_LAST OSTREE_OBJECT_TYPE_COMMIT
+#define OSTREE_OBJECT_TYPE_LAST OSTREE_OBJECT_TYPE_COMPAT_SIZES
 
 /**
  * OSTREE_DIRMETA_GVARIANT_FORMAT:
@@ -141,6 +143,14 @@ typedef enum {
  */
 #define OSTREE_SUMMARY_GVARIANT_STRING "(a(s(taya{sv}))a{sv})"
 #define OSTREE_SUMMARY_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_SUMMARY_GVARIANT_STRING)
+
+/**
+ * OSTREE_COMPAT_SIZES_GVARIANT_FORMAT:
+ *
+ * a(say) - array of (checksum, object type, archived size, unpacked size) for files
+ */
+#define OSTREE_COMPAT_SIZES_GVARIANT_STRING "(a(suxx))"
+#define OSTREE_COMPAT_SIZES_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_COMPAT_SIZES_GVARIANT_STRING)
 
 /**
  * OstreeRepoMode:

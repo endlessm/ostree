@@ -79,6 +79,8 @@ ostree_metadata_variant_type (OstreeObjectType objtype)
       return OSTREE_DIRMETA_GVARIANT_FORMAT;
     case OSTREE_OBJECT_TYPE_COMMIT:
       return OSTREE_COMMIT_GVARIANT_FORMAT;
+    case OSTREE_OBJECT_TYPE_COMPAT_SIZES:
+      return OSTREE_COMPAT_SIZES_GVARIANT_FORMAT;
     default:
       g_assert_not_reached ();
     }
@@ -976,6 +978,8 @@ ostree_object_type_to_string (OstreeObjectType objtype)
       return "dirmeta";
     case OSTREE_OBJECT_TYPE_COMMIT:
       return "commit";
+    case OSTREE_OBJECT_TYPE_COMPAT_SIZES:
+      return "sizes2";
     default:
       g_assert_not_reached ();
       return NULL;
@@ -999,6 +1003,8 @@ ostree_object_type_from_string (const char *str)
     return OSTREE_OBJECT_TYPE_DIR_META;
   else if (!strcmp (str, "commit"))
     return OSTREE_OBJECT_TYPE_COMMIT;
+  else if (!strcmp (str, "sizes2"))
+    return OSTREE_OBJECT_TYPE_COMPAT_SIZES;
   g_assert_not_reached ();
   return 0;
 }
