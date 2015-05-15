@@ -4245,6 +4245,14 @@ ostree_repo_sign_commit (OstreeRepo     *self,
                                                    error))
     goto out;
 
+  /* Also write compat signature file */
+  if (!_ostree_repo_write_commit_compat_signature (self,
+                                                   commit_checksum,
+                                                   signature,
+                                                   cancellable,
+                                                   error))
+    goto out;
+
   ret = TRUE;
 out:
   return ret;
