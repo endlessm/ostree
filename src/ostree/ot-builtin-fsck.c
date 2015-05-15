@@ -52,7 +52,8 @@ load_and_fsck_one_object (OstreeRepo            *repo,
   gs_unref_variant GVariant *xattrs = NULL;
   GError *temp_error = NULL;
 
-  if (OSTREE_OBJECT_TYPE_IS_META (objtype))
+  if (OSTREE_OBJECT_TYPE_IS_META (objtype) &&
+      objtype != OSTREE_OBJECT_TYPE_COMPAT_SIG)
     {
       if (!ostree_repo_load_variant (repo, objtype,
                                      checksum, &metadata, &temp_error))
@@ -103,6 +104,31 @@ load_and_fsck_one_object (OstreeRepo            *repo,
 
         }
     }
+  else if (objtype == OSTREE_OBJECT_TYPE_COMPAT_SIG)
+    {
+      guint64 length;
+
+      if (!ostree_repo_load_object_stream (repo, objtype, checksum, &input,
+                                           &length, cancellable, &temp_error))
+        {
+          if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+            {
+              g_clear_error (&temp_error);
+              g_printerr ("Object missing: %s.%s\n", checksum,
+                          ostree_object_type_to_string (objtype));
+              missing = TRUE;
+            }
+          else
+            {
+              *error = temp_error;
+              g_prefix_error (error, "Loading signature object %s: ",
+                              checksum);
+              goto out;
+            }
+        }
+
+      /* No validation of signatures for now... */
+    }
   else
     {
       guint32 mode;
@@ -139,7 +165,8 @@ load_and_fsck_one_object (OstreeRepo            *repo,
     {
       *out_found_corruption = TRUE;
     }
-  else
+  else if (objtype != OSTREE_OBJECT_TYPE_COMPAT_SIZES &&
+           objtype != OSTREE_OBJECT_TYPE_COMPAT_SIG)
     {
       gs_free guchar *computed_csum = NULL;
       gs_free char *tmp_checksum = NULL;

@@ -79,6 +79,8 @@ ostree_metadata_variant_type (OstreeObjectType objtype)
       return OSTREE_DIRMETA_GVARIANT_FORMAT;
     case OSTREE_OBJECT_TYPE_COMMIT:
       return OSTREE_COMMIT_GVARIANT_FORMAT;
+    case OSTREE_OBJECT_TYPE_COMPAT_SIZES:
+      return OSTREE_COMPAT_SIZES_GVARIANT_FORMAT;
     default:
       g_assert_not_reached ();
     }
@@ -690,6 +692,9 @@ ostree_checksum_file_from_input (GFileInfo        *file_info,
 
   if (OSTREE_OBJECT_TYPE_IS_META (objtype))
     {
+      g_assert (objtype != OSTREE_OBJECT_TYPE_COMPAT_SIZES);
+      g_assert (objtype != OSTREE_OBJECT_TYPE_COMPAT_SIG);
+
       if (!ot_gio_splice_update_checksum (NULL, in, checksum, cancellable, error))
         goto out;
     }
@@ -976,6 +981,10 @@ ostree_object_type_to_string (OstreeObjectType objtype)
       return "dirmeta";
     case OSTREE_OBJECT_TYPE_COMMIT:
       return "commit";
+    case OSTREE_OBJECT_TYPE_COMPAT_SIZES:
+      return "sizes2";
+    case OSTREE_OBJECT_TYPE_COMPAT_SIG:
+      return "sig";
     default:
       g_assert_not_reached ();
       return NULL;
@@ -999,6 +1008,10 @@ ostree_object_type_from_string (const char *str)
     return OSTREE_OBJECT_TYPE_DIR_META;
   else if (!strcmp (str, "commit"))
     return OSTREE_OBJECT_TYPE_COMMIT;
+  else if (!strcmp (str, "sizes2"))
+    return OSTREE_OBJECT_TYPE_COMPAT_SIZES;
+  else if (!strcmp (str, "sig"))
+    return OSTREE_OBJECT_TYPE_COMPAT_SIG;
   g_assert_not_reached ();
   return 0;
 }
@@ -1083,7 +1096,7 @@ ostree_object_name_serialize (const char *checksum,
                               OstreeObjectType objtype)
 {
   g_assert (objtype >= OSTREE_OBJECT_TYPE_FILE
-            && objtype <= OSTREE_OBJECT_TYPE_COMMIT);
+            && objtype <= OSTREE_OBJECT_TYPE_LAST);
   return g_variant_new ("(su)", checksum, (guint32)objtype);
 }
 

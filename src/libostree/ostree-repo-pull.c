@@ -1148,6 +1148,8 @@ scan_one_metadata_object_c (OtPullData         *pull_data,
                 goto out;
               break;
             case OSTREE_OBJECT_TYPE_DIR_META:
+            case OSTREE_OBJECT_TYPE_COMPAT_SIZES:
+            case OSTREE_OBJECT_TYPE_COMPAT_SIG:
               break;
             case OSTREE_OBJECT_TYPE_DIR_TREE:
               if (!scan_dirtree_object (pull_data, tmp_checksum, recursion_depth,
