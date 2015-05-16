@@ -1,0 +1,100 @@
+# Makefile for C source code
+#
+# Copyright © 2013 Vivek Dasmohapatra <vivek@collabora.com>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the
+# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+# Boston, MA 02111-1307, USA.
+
+bin_PROGRAMS += ostree-daemon
+bin_SCRIPTS += src/daemon/ostree-daemon-ctl
+
+EXTRA_DIST += src/daemon/ostree-daemon-ifname.xslt \
+	src/daemon/ostree-daemon-policy.xslt \
+	src/daemon/ostree-daemon-service.xslt \
+	src/daemon/ostree-daemon.xml \
+	src/daemon/ostree-daemon-ctl \
+	$(NULL)
+
+ostree_daemon_dbus_if := \
+	$(shell $(XSLTPROC) $(srcdir)/src/daemon/ostree-daemon-ifname.xslt \
+		$(srcdir)/src/daemon/ostree-daemon.xml)
+
+dbusconfdir = ${sysconfdir}/dbus-1/system.d
+dbussystemservicedir = $(datadir)/dbus-1/system-services
+
+dbusconf_DATA = $(ostree_daemon_dbus_if).conf
+dbussystemservice_DATA = $(ostree_daemon_dbus_if).service
+CLEANFILES += $(dbusconf_DATA) $(dbussystemservice_DATA)
+
+ostree_daemon_gen_objects := src/daemon/ostree-daemon-generated.o
+ostree_daemon_gen_sources := \
+	src/daemon/ostree-daemon-generated.h \
+	src/daemon/ostree-daemon-generated.c \
+	$(NULL)
+
+ostree_daemon_SOURCES := \
+	$(ostree_daemon_gen_sources) \
+	src/daemon/ostree-daemon-apply.c \
+	src/daemon/ostree-daemon-apply.h \
+	src/daemon/ostree-daemon-fetch.c \
+	src/daemon/ostree-daemon-fetch.h \
+	src/daemon/ostree-daemon-poll.c \
+	src/daemon/ostree-daemon-poll.h \
+	src/daemon/ostree-daemon-util.c \
+	src/daemon/ostree-daemon-util.h \
+	src/daemon/ostree-daemon.c \
+	src/daemon/ostree-daemon.h \
+	src/daemon/ostree-daemon.xml \
+	$(NULL)
+
+ostree_daemon_bin_shared_ldadd = \
+	libostree-1.la\
+	$(OT_DEP_GIO_UNIX_LIBS) \
+	$(OT_DEP_SOUP_LIBS)
+ostree_daemon_bin_shared_cflags = \
+	$(AM_CFLAGS) \
+	$(OT_DEP_GIO_UNIX_CFLAGS) \
+	$(OT_DEP_SOUP_CFLAGS) \
+	-I$(srcdir)/src/libotutil \
+	-I$(srcdir)/src/libostree \
+	-I$(srcdir)/src/ostree \
+	-I$(srcdir)/src/daemon \
+	-I$(srcdir)/libglnx \
+	-DLOCALEDIR=\"$(datadir)/locale\"
+
+ostree_daemon_CFLAGS = \
+	$(ostree_daemon_bin_shared_cflags) \
+	$(OT_INTERNAL_GIO_UNIX_CFLAGS) \
+	$(OT_INTERNAL_SOUP_CFLAGS)
+ostree_daemon_LDADD  = \
+	$(ostree_daemon_bin_shared_ldadd) \
+	$(OT_INTERNAL_GIO_UNIX_LIBS) \
+	$(OT_INTERNAL_SOUP_LIBS)
+
+$(ostree_daemon_OBJECTS): $(ostree_daemon_gen_sources)
+
+$(ostree_daemon_gen_sources): src/daemon/ostree-daemon.xml
+	@cd $(<D) && gdbus-codegen              \
+	   --interface-prefix $(basename $(ostree_daemon_dbus_if)). \
+	   --generate-c-code $(basename $(@F))  \
+	   --c-namespace OTD                    \
+	   --c-generate-object-manager          \
+	   $(<F)
+
+$(ostree_daemon_dbus_if).conf: src/daemon/ostree-daemon-policy.xslt src/daemon/ostree-daemon.xml
+	$(XSLTPROC) $+ > $@
+
+$(ostree_daemon_dbus_if).service: src/daemon/ostree-daemon-service.xslt src/daemon/ostree-daemon.xml
+	$(XSLTPROC) $+ > $@

@@ -64,6 +64,10 @@ include Makefile-switchroot.am
 include Makefile-tests.am
 include Makefile-boot.am
 
+if USE_LIBSOUP
+include Makefile-daemon.am
+endif
+
 release-tag:
 	git tag -m "Release $(VERSION)" v$(VERSION)
 
