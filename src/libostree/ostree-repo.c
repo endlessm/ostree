@@ -3348,11 +3348,24 @@ ostree_repo_delete_object (OstreeRepo           *self,
   if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
     {
       char meta_loose[_OSTREE_LOOSE_PATH_MAX];
+      char compat_files_loose[2][_OSTREE_LOOSE_PATH_MAX];
 
       _ostree_loose_path (meta_loose, sha256, OSTREE_OBJECT_TYPE_COMMIT_META, self->mode);
 
       if (!ot_ensure_unlinked_at (self->objects_dir_fd, meta_loose, error))
         return FALSE;
+
+      /* Delete optional compat objects */
+      _ostree_loose_path_with_extension (compat_files_loose[0], sha256, "sig");
+      _ostree_loose_path_with_extension (compat_files_loose[1], sha256, "sizes2");
+
+      for (gsize i = 0; i < G_N_ELEMENTS (compat_files_loose); i++)
+        {
+          const char *compat_loose = compat_files_loose[i];
+
+          if (!ot_ensure_unlinked_at (self->objects_dir_fd, compat_loose, error))
+            return FALSE;
+        }
     }
 
   if (!glnx_unlinkat (self->objects_dir_fd, loose_path, 0, error))
