@@ -1399,6 +1399,28 @@ _ostree_loose_path_with_suffix (char              *buf,
 }
 
 /*
+ * _ostree_loose_path_with_extension:
+ * @buf: Output buffer, must be _OSTREE_LOOSE_PATH_MAX in size
+ * @checksum: ASCII checksum
+ * @extension: File extension
+ *
+ * Like _ostree_loose_path, but also use an arbitrary file extension;
+ * useful for finding non-core objects.
+ */
+void
+_ostree_loose_path_with_extension (char        *buf,
+                                   const char  *checksum,
+                                   const char  *extension)
+{
+  *buf = checksum[0];
+  buf++;
+  *buf = checksum[1];
+  buf++;
+  snprintf (buf, _OSTREE_LOOSE_PATH_MAX - 2, "/%s.%s",
+            checksum + 2, extension);
+}
+
+/*
  * _ostree_get_relative_object_path:
  * @checksum: ASCII checksum string
  * @type: Object type
