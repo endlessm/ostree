@@ -3115,6 +3115,8 @@ ostree_repo_delete_object (OstreeRepo           *self,
   if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
     {
       char meta_loose[_OSTREE_LOOSE_PATH_MAX];
+      char compat_files_loose[2][_OSTREE_LOOSE_PATH_MAX];
+      guint i;
 
       _ostree_loose_path (meta_loose, sha256, OSTREE_OBJECT_TYPE_COMMIT_META, self->mode);
 
@@ -3127,6 +3129,29 @@ ostree_repo_delete_object (OstreeRepo           *self,
             {
               glnx_set_error_from_errno (error);
               goto out;
+            }
+        }
+
+      /* Delete optional compat objects */
+      _ostree_loose_path_with_extension (compat_files_loose[0], sha256,
+                                         "sig");
+      _ostree_loose_path_with_extension (compat_files_loose[1], sha256,
+                                         "sizes2");
+
+      for (i = 0; i < G_N_ELEMENTS (compat_files_loose); i++)
+        {
+          char *compat_loose = compat_files_loose[i];
+
+          do
+            res = unlinkat (self->objects_dir_fd, compat_loose, 0);
+          while (G_UNLIKELY (res == -1 && errno == EINTR));
+          if (res == -1)
+            {
+              if (G_UNLIKELY (errno != ENOENT))
+                {
+                  glnx_set_error_from_errno (error);
+                  goto out;
+                }
             }
         }
     }
