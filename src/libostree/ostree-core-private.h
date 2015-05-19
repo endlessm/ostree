@@ -136,6 +136,11 @@ _ostree_loose_path_with_suffix (char              *buf,
                                 OstreeRepoMode     repo_mode,
                                 const char        *suffix);
 
+void
+_ostree_loose_path_with_extension (char        *buf,
+                                   const char  *checksum,
+                                   const char  *extension);
+
 #define _OSTREE_METADATA_GPGSIGS_NAME "ostree.gpgsigs"
 #define _OSTREE_METADATA_GPGSIGS_TYPE G_VARIANT_TYPE ("aay")
 
