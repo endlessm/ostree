@@ -3362,6 +3362,56 @@ copy_detached_metadata (OstreeRepo    *self,
   return TRUE;
 }
 
+static gboolean
+copy_compat_sizes (OstreeRepo    *self,
+                   OstreeRepo    *source,
+                   const char    *checksum,
+                   GCancellable  *cancellable,
+                   GError        **error)
+{
+  g_autoptr(GVariant) compat_sizes = NULL;
+
+  if (!_ostree_repo_read_commit_compat_sizes (source,
+                                              checksum, &compat_sizes,
+                                              cancellable, error))
+    return FALSE;
+
+  if (compat_sizes)
+    {
+      if (!_ostree_repo_write_commit_compat_sizes (self,
+                                                   checksum, compat_sizes,
+                                                   cancellable, error))
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+copy_compat_signature (OstreeRepo    *self,
+                       OstreeRepo    *source,
+                       const char    *checksum,
+                       GCancellable  *cancellable,
+                       GError        **error)
+{
+  g_autoptr(GBytes) compat_signature = NULL;
+
+  if (!_ostree_repo_read_commit_compat_signature (source, checksum,
+                                                  &compat_signature,
+                                                  cancellable, error))
+    return FALSE;
+
+  if (compat_signature)
+    {
+      if (!_ostree_repo_write_commit_compat_signature (self, checksum,
+                                                       compat_signature,
+                                                       cancellable, error))
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
 /* Try to import an object via reflink or just linkat(); returns a value in
  * @out_was_supported if we were able to do it or not.  In this path
  * we're not verifying the checksum.
@@ -3508,6 +3558,10 @@ import_one_object_direct (OstreeRepo    *dest_repo,
     {
       if (!copy_detached_metadata (dest_repo, src_repo, checksum, cancellable, error))
         return FALSE;
+      if (!copy_compat_sizes (dest_repo, src_repo, checksum, cancellable, error))
+        return FALSE;
+      if (!copy_compat_signature (dest_repo, src_repo, checksum, cancellable, error))
+        return FALSE;
     }
 
   *out_was_supported = TRUE;
@@ -3613,6 +3667,10 @@ _ostree_repo_import_object (OstreeRepo           *self,
         {
           /* FIXME - cleanup detached metadata if copy below fails */
           if (!copy_detached_metadata (self, source, checksum, cancellable, error))
+            return FALSE;
+          if (!copy_compat_sizes (self, source, checksum, cancellable, error))
+            return FALSE;
+          if (!copy_compat_signature (self, source, checksum, cancellable, error))
             return FALSE;
         }
 
