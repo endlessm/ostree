@@ -148,4 +148,7 @@ _ostree_detached_metadata_append_gpg_sig (GVariant   *existing_metadata,
 GFile *
 _ostree_get_default_sysroot_path (void);
 
+/* array of (checksum, object type, archived size, unpacked size) for files */
+#define _OSTREE_COMPAT_SIZES_TYPE G_VARIANT_TYPE ("(a(suxx))")
+
 G_END_DECLS
