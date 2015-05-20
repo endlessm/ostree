@@ -2182,6 +2182,208 @@ ostree_repo_write_commit_detached_metadata (OstreeRepo      *self,
   return ret;
 }
 
+GFile *
+_ostree_repo_get_commit_compat_signature_loose_path (OstreeRepo  *self,
+                                                     const char  *checksum)
+{
+  char buf[_OSTREE_LOOSE_PATH_MAX];
+  _ostree_loose_path_with_extension (buf, checksum, "sig");
+  return g_file_resolve_relative_path (self->objects_dir, buf);
+}
+
+gboolean
+_ostree_repo_read_commit_compat_signature (OstreeRepo      *self,
+                                           const char      *checksum,
+                                           GBytes         **out_signature,
+                                           GCancellable    *cancellable,
+                                           GError         **error)
+{
+  gboolean ret = FALSE;
+  gs_unref_object GFile *signature_path =
+    _ostree_repo_get_commit_compat_signature_loose_path (self, checksum);
+  GMappedFile *signature_file = NULL;
+  gs_unref_bytes GBytes *ret_signature = NULL;
+  GError *temp_error = NULL;
+
+  signature_file = gs_file_map_noatime (signature_path, cancellable,
+                                        &temp_error);
+  if (!signature_file)
+    {
+      if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        {
+          g_clear_error (&temp_error);
+        }
+      else
+        {
+          g_propagate_error (error, temp_error);
+          g_prefix_error (error, "Unable to read existing compat signature: ");
+          goto out;
+        }
+    }
+  else
+    {
+      ret_signature = g_mapped_file_get_bytes (signature_file);
+    }
+
+  ret = TRUE;
+  ot_transfer_out_value (out_signature, &ret_signature);
+ out:
+  if (signature_file)
+    g_mapped_file_unref (signature_file);
+  return ret;
+}
+
+gboolean
+_ostree_repo_write_commit_compat_signature (OstreeRepo      *self,
+                                            const char      *checksum,
+                                            GBytes          *signature,
+                                            GCancellable    *cancellable,
+                                            GError         **error)
+{
+  gboolean ret = FALSE;
+  gs_unref_object GFile *signature_path =
+    _ostree_repo_get_commit_compat_signature_loose_path (self, checksum);
+  gsize signature_size;
+  gconstpointer signature_buf = NULL;
+
+  signature_buf = g_bytes_get_data (signature, &signature_size);
+  if (signature_size == 0)
+    {
+      GError *local_error = NULL;
+
+      (void) g_file_delete (signature_path, cancellable, &local_error);
+
+      if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        {
+          g_clear_error (&local_error);
+        }
+      else if (local_error != NULL)
+        {
+          g_propagate_error (error, local_error);
+          g_prefix_error (error, "Unable to delete compat signature: ");
+          goto out;
+        }
+    }
+  else
+    {
+      if (!g_file_replace_contents (signature_path,
+                                    signature_buf,
+                                    signature_size,
+                                    NULL, FALSE, 0, NULL,
+                                    cancellable, error))
+        {
+          g_prefix_error (error, "Failed to write compat signature: ");
+          goto out;
+        }
+    }
+
+  ret = TRUE;
+ out:
+  return ret;
+}
+
+GFile *
+_ostree_repo_get_commit_compat_sizes_loose_path (OstreeRepo  *self,
+                                               const char  *checksum)
+{
+  char buf[_OSTREE_LOOSE_PATH_MAX];
+  _ostree_loose_path_with_extension (buf, checksum, "sizes2");
+  return g_file_resolve_relative_path (self->objects_dir, buf);
+}
+
+gboolean
+_ostree_repo_read_commit_compat_sizes (OstreeRepo      *self,
+                                       const char      *checksum,
+                                       GVariant       **out_sizes,
+                                       GCancellable    *cancellable,
+                                       GError         **error)
+{
+  gboolean ret = FALSE;
+  gs_unref_object GFile *sizes_path =
+    _ostree_repo_get_commit_compat_sizes_loose_path (self, checksum);
+  gs_unref_variant GVariant *ret_sizes = NULL;
+  GError *temp_error = NULL;
+
+  if (!ot_util_variant_map_at (AT_FDCWD, gs_file_get_path_cached (sizes_path),
+                               _OSTREE_COMPAT_SIZES_TYPE,
+                               TRUE, &ret_sizes, &temp_error))
+    {
+      if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        {
+          g_clear_error (&temp_error);
+        }
+      else
+        {
+          g_propagate_error (error, temp_error);
+          g_prefix_error (error, "Unable to read existing compat sizes: ");
+          goto out;
+        }
+    }
+
+  ret = TRUE;
+  ot_transfer_out_value (out_sizes, &ret_sizes);
+ out:
+  return ret;
+}
+
+gboolean
+_ostree_repo_write_commit_compat_sizes (OstreeRepo      *self,
+                                        const char      *checksum,
+                                        GVariant        *sizes,
+                                        GCancellable    *cancellable,
+                                        GError         **error)
+{
+  gboolean ret = FALSE;
+  gs_unref_object GFile *sizes_path =
+    _ostree_repo_get_commit_compat_sizes_loose_path (self, checksum);
+  gs_unref_variant GVariant *normalized = NULL;
+  gsize normalized_size = 0;
+
+  if (!_ostree_repo_ensure_loose_objdir_at (self->objects_dir_fd, checksum,
+                                            cancellable, error))
+    goto out;
+
+  if (sizes != NULL)
+    {
+      normalized = g_variant_get_normal_form (sizes);
+      normalized_size = g_variant_get_size (normalized);
+    }
+
+  if (normalized_size == 0)
+    {
+      GError *local_error = NULL;
+
+      (void) g_file_delete (sizes_path, cancellable, &local_error);
+
+      if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        {
+          g_clear_error (&local_error);
+        }
+      else if (local_error != NULL)
+        {
+          g_propagate_error (error, local_error);
+          g_prefix_error (error, "Unable to delete compat sizes: ");
+          goto out;
+        }
+    }
+  else
+    {
+      if (!g_file_replace_contents (sizes_path,
+                                    g_variant_get_data (normalized),
+                                    normalized_size,
+                                    NULL, FALSE, 0, NULL,
+                                    cancellable, error))
+        {
+          g_prefix_error (error, "Unable to write compat sizes: ");
+          goto out;
+        }
+    }
+
+  ret = TRUE;
+ out:
+  return ret;
+}
+
 static GVariant *
 create_tree_variant_from_hashes (GHashTable            *file_checksums,
                                  GHashTable            *dir_contents_checksums,
