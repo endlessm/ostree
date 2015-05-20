@@ -148,4 +148,7 @@ GVariant *
 _ostree_detached_metadata_append_gpg_sig (GVariant   *existing_metadata,
                                           GBytes     *signature_bytes);
 
+/* array of (checksum, object type, archived size, unpacked size) for files */
+#define _OSTREE_COMPAT_SIZES_TYPE G_VARIANT_TYPE ("(a(suxx))")
+
 G_END_DECLS
