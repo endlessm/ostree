@@ -3200,6 +3200,62 @@ copy_detached_metadata (OstreeRepo    *self,
 }
 
 static gboolean
+copy_compat_sizes (OstreeRepo    *self,
+                   OstreeRepo    *source,
+                   const char    *checksum,
+                   GCancellable  *cancellable,
+                   GError        **error)
+{
+  gboolean ret = FALSE;
+  gs_unref_variant GVariant *compat_sizes = NULL;
+
+  if (!_ostree_repo_read_commit_compat_sizes (source,
+                                              checksum, &compat_sizes,
+                                              cancellable, error))
+    goto out;
+
+  if (compat_sizes)
+    {
+      if (!_ostree_repo_write_commit_compat_sizes (self,
+                                                   checksum, compat_sizes,
+                                                   cancellable, error))
+        goto out;
+    }
+
+  ret = TRUE;
+ out:
+  return ret;
+}
+
+static gboolean
+copy_compat_signature (OstreeRepo    *self,
+                       OstreeRepo    *source,
+                       const char    *checksum,
+                       GCancellable  *cancellable,
+                       GError        **error)
+{
+  gboolean ret = FALSE;
+  gs_unref_bytes GBytes *compat_signature = NULL;
+
+  if (!_ostree_repo_read_commit_compat_signature (source, checksum,
+                                                  &compat_signature,
+                                                  cancellable, error))
+    goto out;
+
+  if (compat_signature)
+    {
+      if (!_ostree_repo_write_commit_compat_signature (self, checksum,
+                                                       compat_signature,
+                                                       cancellable, error))
+        goto out;
+    }
+
+  ret = TRUE;
+ out:
+  return ret;
+}
+
+static gboolean
 import_one_object_copy (OstreeRepo    *self,
                         OstreeRepo    *source,
                         const char   *checksum,
@@ -3241,6 +3297,10 @@ import_one_object_copy (OstreeRepo    *self,
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
         {
           if (!copy_detached_metadata (self, source, checksum, cancellable, error))
+            goto out;
+          if (!copy_compat_sizes (self, source, checksum, cancellable, error))
+            goto out;
+          if (!copy_compat_signature (self, source, checksum, cancellable, error))
             goto out;
         }
 
