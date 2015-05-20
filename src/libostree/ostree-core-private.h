@@ -225,4 +225,7 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderConfig, g_object_unref)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderMount, g_object_unref)
 #endif
 
+/* array of (checksum, object type, archived size, unpacked size) for files */
+#define _OSTREE_COMPAT_SIZES_TYPE G_VARIANT_TYPE ("(a(suxx))")
+
 G_END_DECLS
