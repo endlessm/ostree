@@ -179,5 +179,7 @@ _ostree_raw_file_to_archive_stream (GInputStream       *input,
                                     GError            **error);
 
 
+/* array of (checksum, object type, archived size, unpacked size) for files */
+#define _OSTREE_COMPAT_SIZES_TYPE G_VARIANT_TYPE ("(a(suxx))")
 
 G_END_DECLS
