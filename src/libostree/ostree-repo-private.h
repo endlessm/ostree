@@ -103,6 +103,42 @@ GFile *
 _ostree_repo_get_commit_metadata_loose_path (OstreeRepo        *self,
                                              const char        *checksum);
 
+GFile *
+_ostree_repo_get_commit_compat_signature_loose_path (OstreeRepo  *self,
+                                                     const char  *checksum);
+
+gboolean
+_ostree_repo_read_commit_compat_signature (OstreeRepo      *self,
+                                           const char      *checksum,
+                                           GBytes         **out_signature,
+                                           GCancellable    *cancellable,
+                                           GError         **error);
+
+gboolean
+_ostree_repo_write_commit_compat_signature (OstreeRepo      *self,
+                                            const char      *checksum,
+                                            GBytes          *signature,
+                                            GCancellable    *cancellable,
+                                            GError         **error);
+
+GFile *
+_ostree_repo_get_commit_compat_sizes_loose_path (OstreeRepo  *self,
+                                                 const char  *checksum);
+
+gboolean
+_ostree_repo_read_commit_compat_sizes (OstreeRepo      *self,
+                                       const char      *checksum,
+                                       GVariant       **out_sizes,
+                                       GCancellable    *cancellable,
+                                       GError         **error);
+
+gboolean
+_ostree_repo_write_commit_compat_sizes (OstreeRepo      *self,
+                                        const char      *checksum,
+                                        GVariant        *sizes,
+                                        GCancellable    *cancellable,
+                                        GError         **error);
+
 gboolean
 _ostree_repo_has_loose_object (OstreeRepo           *self,
                                const char           *checksum,
