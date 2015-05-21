@@ -27,7 +27,7 @@ fi
 
 setup_test_repository "archive-z2"
 
-echo '1..1'
+echo '1..3'
 
 cd ${test_tmpdir}
 ${OSTREE} commit -b test2 -s "A GPG signed commit" -m "Signed commit body" \
@@ -37,3 +37,31 @@ find repo/objects -name '*.sig' | wc -l > sigcount
 assert_file_has_content sigcount "^1$"
 
 echo "ok compat sign"
+
+rm -rf local
+mkdir local
+${CMD_PREFIX} ostree --repo=local init
+${CMD_PREFIX} ostree --repo=local pull-local repo test2
+find local/objects -name '*.sig' | wc -l > sigcount
+assert_file_has_content sigcount "^1$"
+
+echo "ok compat pull-local"
+
+setup_fake_remote_repo1 "archive-z2"
+
+cd ${test_tmpdir}
+${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo \
+    commit -b main -s "A GPG signed commit" -m "Signed commit body" \
+    --gpg-sign=${TEST_GPG_KEYID_1} --gpg-homedir=${TEST_GPG_KEYHOME} \
+    --tree=dir=files
+
+rm -rf local
+mkdir local
+${CMD_PREFIX} ostree --repo=local init
+${CMD_PREFIX} ostree --repo=local remote add --set=gpg-verify=false origin \
+    $(cat httpd-address)/ostree/gnomerepo
+${CMD_PREFIX} ostree --repo=local pull origin main
+find local/objects -name '*.sig' | wc -l > sigcount
+assert_file_has_content sigcount "^1$"
+
+echo "ok compat pull"
