@@ -27,7 +27,7 @@ fi
 
 setup_test_repository "archive-z2"
 
-echo '1..3'
+echo '1..5'
 
 cd ${test_tmpdir}
 ${OSTREE} commit -b test2 -s "A GPG signed commit" -m "Signed commit body" \
@@ -65,3 +65,34 @@ find local/objects -name '*.sig' | wc -l > sigcount
 assert_file_has_content sigcount "^1$"
 
 echo "ok compat pull"
+
+# Test pulls from a repo containing a commit made with old ostree
+cd ${test_tmpdir}
+rm -rf compat-repo
+cp -a ${SRCDIR}/compat-repo .
+
+rm -rf local
+mkdir local
+${CMD_PREFIX} ostree --repo=local init
+${CMD_PREFIX} ostree --repo=local pull-local compat-repo main
+find local/objects -name '*.sig' | wc -l > sigcount
+assert_file_has_content sigcount "^1$"
+find local/objects -name '*.sizes2' | wc -l > sizescount
+assert_file_has_content sizescount "^1$"
+
+echo "ok compat pull-local from old repo"
+
+ln -s ${test_tmpdir}/compat-repo ${test_tmpdir}/httpd/
+
+rm -rf local
+mkdir local
+${CMD_PREFIX} ostree --repo=local init
+${CMD_PREFIX} ostree --repo=local remote add --set=gpg-verify=false origin \
+    $(cat httpd-address)/compat-repo
+${CMD_PREFIX} ostree --repo=local pull origin main
+find local/objects -name '*.sig' | wc -l > sigcount
+assert_file_has_content sigcount "^1$"
+find local/objects -name '*.sizes2' | wc -l > sizescount
+assert_file_has_content sizescount "^1$"
+
+echo "ok compat pull from old repo"
