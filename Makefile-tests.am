@@ -225,6 +225,16 @@ EXTRA_DIST += \
 	tests/gpg-verify-data/trustdb.gpg \
 	tests/gpg-verify-data/gpg.conf
 
+# Compat repo tests
+if ENABLE_INSTALLED_TESTS
+EXTRA_DIST += tests/compat-repo
+install-compat-repo-hook:
+	mkdir -p $(DESTDIR)$(installed_testdir)
+	cp -r $(srcdir)/tests/compat-repo $(DESTDIR)$(installed_testdir)
+	mkdir -p $(DESTDIR)$(installed_testdir)/compat-repo/tmp
+INSTALL_DATA_HOOKS += install-compat-repo-hook
+endif
+
 tests/libreaddir-rand.so: Makefile
 	$(AM_V_GEN) ln -fns ../.libs/libreaddir-rand.so tests
 ALL_LOCAL_RULES += tests/libreaddir-rand.so
