@@ -27,7 +27,7 @@ fi
 
 setup_test_repository "archive-z2"
 
-echo '1..5'
+echo '1..6'
 
 cd ${test_tmpdir}
 ${OSTREE} commit -b test2 -s "A GPG signed commit" -m "Signed commit body" \
@@ -97,3 +97,10 @@ find local/objects -name '*.sizes2' | wc -l > sizescount
 assert_file_has_content sizescount "^1$"
 
 echo "ok compat pull from old repo"
+
+${CMD_PREFIX} ostree --repo=local refs --delete origin:main
+${CMD_PREFIX} ostree --repo=local prune --depth=-1 --refs-only
+find local/objects -type f | wc -l > objcount
+assert_file_has_content objcount "^0$"
+
+echo "ok compat prune"
