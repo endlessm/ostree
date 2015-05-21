@@ -114,6 +114,7 @@ _installed_or_uninstalled_test_scripts = \
 	tests/test-delta.sh \
 	tests/test-xattrs.sh \
 	tests/test-auto-summary.sh \
+	tests/test-compat-files.sh \
 	tests/test-prune.sh \
 	tests/test-concurrency.py \
 	tests/test-refs.sh \
@@ -384,6 +385,16 @@ EXTRA_DIST += \
 	tests/libostreetest.h \
 	tests/libtest.sh \
 	$(NULL)
+
+# Compat repo tests
+EXTRA_DIST += tests/compat-repo
+if ENABLE_INSTALLED_TESTS
+install-compat-repo-hook:
+	mkdir -p $(DESTDIR)$(installed_testdir)
+	cp -r $(srcdir)/tests/compat-repo $(DESTDIR)$(installed_testdir)
+	mkdir -p $(DESTDIR)$(installed_testdir)/compat-repo/tmp
+INSTALL_DATA_HOOKS += install-compat-repo-hook
+endif
 
 tests/libreaddir-rand.so: Makefile
 	mkdir -p tests/
