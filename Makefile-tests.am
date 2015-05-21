@@ -82,6 +82,7 @@ dist_test_scripts = \
 	tests/test-delta.sh \
 	tests/test-xattrs.sh \
 	tests/test-auto-summary.sh \
+	tests/test-compat-files.sh \
 	tests/test-prune.sh \
 	tests/test-refs.sh \
 	tests/test-demo-buildsystem.sh \
