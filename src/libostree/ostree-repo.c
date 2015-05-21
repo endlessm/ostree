@@ -4545,6 +4545,32 @@ _ostree_repo_verify_commit_internal (OstreeRepo    *self,
       goto out;
     }
 
+  /* Fall back to the compat signature file if no metadata */
+  if (!metadata)
+    {
+      gs_unref_bytes GBytes *signature = NULL;
+
+      if (!_ostree_repo_read_commit_compat_signature (self,
+                                                      commit_checksum,
+                                                      &signature,
+                                                      cancellable,
+                                                      error))
+        {
+          g_prefix_error (error, "Failed to read compat signature: ");
+          goto out;
+        }
+
+      /* Construct metadata variant from signature data */
+      if (signature)
+        {
+          gs_unref_variant GVariant *tmp_metadata = NULL;
+
+          tmp_metadata = ot_gvariant_new_empty_string_dict ();
+          metadata = _ostree_detached_metadata_append_gpg_sig (tmp_metadata,
+                                                               signature);
+        }
+    }
+
   signed_data = g_variant_get_data_as_bytes (commit_variant);
 
   /* XXX This is a hackish way to indicate to use ALL remote-specific
