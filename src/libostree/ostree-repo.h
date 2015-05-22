@@ -1096,6 +1096,13 @@ gboolean ostree_repo_regenerate_summary (OstreeRepo     *self,
                                          GCancellable   *cancellable,
                                          GError        **error);
 
+_OSTREE_PUBLIC
+gboolean ostree_repo_delete_compat_signature (OstreeRepo     *self,
+                                              const gchar    *commit_checksum,
+                                              GBytes         *signature,
+                                              GCancellable   *cancellable,
+                                              GError        **error);
+
 
 G_END_DECLS
 
