@@ -4957,6 +4957,47 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
   return ret;
 }
 
+/**
+ * ostree_repo_delete_compat_signature:
+ * @self: Self
+ * @commit_checksum: SHA256 of given commit to delete signature from
+ * @signature: Signature data
+ * @cancellable: A #GCancellable
+ * @error: a #GError
+ *
+ * Delete a GPG signature from a commit's compat signature file.
+ */
+gboolean
+ostree_repo_delete_compat_signature (OstreeRepo     *self,
+                                     const gchar    *commit_checksum,
+                                     GBytes         *signature,
+                                     GCancellable   *cancellable,
+                                     GError        **error)
+{
+  g_autoptr(GBytes) compat_sig = NULL;
+
+  if (!_ostree_repo_read_commit_compat_signature (self, commit_checksum,
+                                                  &compat_sig, cancellable,
+                                                  error))
+      return FALSE;
+
+  if (g_bytes_equal (compat_sig, signature))
+    {
+      char compat_sig_loose[_OSTREE_LOOSE_PATH_MAX];
+
+      _ostree_loose_path_with_extension (compat_sig_loose, commit_checksum,
+                                         "sig");
+
+      if (TEMP_FAILURE_RETRY (unlinkat (self->objects_dir_fd, compat_sig_loose, 0) < 0))
+        {
+          glnx_set_error_from_errno (error);
+          return FALSE;
+        }
+    }
+
+  return TRUE;
+}
+
 /* See ostree-repo-private.h for more information about this */
 void
 _ostree_repo_memory_cache_ref_init (OstreeRepoMemoryCacheRef *state,
