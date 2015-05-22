@@ -1307,6 +1307,13 @@ gboolean ostree_repo_regenerate_summary (OstreeRepo     *self,
                                          GCancellable   *cancellable,
                                          GError        **error);
 
+_OSTREE_PUBLIC
+gboolean ostree_repo_delete_compat_signature (OstreeRepo     *self,
+                                              const gchar    *commit_checksum,
+                                              GBytes         *signature,
+                                              GCancellable   *cancellable,
+                                              GError        **error);
+
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
 
 /**
