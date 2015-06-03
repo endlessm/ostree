@@ -2353,6 +2353,8 @@ ostree_repo_delete_object (OstreeRepo           *self,
   if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
     {
       char meta_loose[_OSTREE_LOOSE_PATH_MAX];
+      char compat_files_loose[2][_OSTREE_LOOSE_PATH_MAX];
+      guint i;
 
       _ostree_loose_path_with_suffix (meta_loose, sha256,
                                       OSTREE_OBJECT_TYPE_COMMIT, self->mode, "meta");
@@ -2366,6 +2368,29 @@ ostree_repo_delete_object (OstreeRepo           *self,
             {
               gs_set_error_from_errno (error, errno);
               goto out;
+            }
+        }
+
+      /* Delete optional compat objects */
+      _ostree_loose_path_with_extension (compat_files_loose[0], sha256,
+                                         "sig");
+      _ostree_loose_path_with_extension (compat_files_loose[1], sha256,
+                                         "sizes2");
+
+      for (i = 0; i < G_N_ELEMENTS (compat_files_loose); i++)
+        {
+          char *compat_loose = compat_files_loose[i];
+
+          do
+            res = unlinkat (self->objects_dir_fd, compat_loose, 0);
+          while (G_UNLIKELY (res == -1 && errno == EINTR));
+          if (res == -1)
+            {
+              if (G_UNLIKELY (errno != ENOENT))
+                {
+                  gs_set_error_from_errno (error, errno);
+                  goto out;
+                }
             }
         }
     }
@@ -2413,6 +2438,62 @@ copy_detached_metadata (OstreeRepo    *self,
 }
 
 static gboolean
+copy_compat_sizes (OstreeRepo    *self,
+                   OstreeRepo    *source,
+                   const char    *checksum,
+                   GCancellable  *cancellable,
+                   GError        **error)
+{
+  gboolean ret = FALSE;
+  gs_unref_variant GVariant *compat_sizes = NULL;
+
+  if (!_ostree_repo_read_commit_compat_sizes (source,
+                                              checksum, &compat_sizes,
+                                              cancellable, error))
+    goto out;
+
+  if (compat_sizes)
+    {
+      if (!_ostree_repo_write_commit_compat_sizes (self,
+                                                   checksum, compat_sizes,
+                                                   cancellable, error))
+        goto out;
+    }
+
+  ret = TRUE;
+ out:
+  return ret;
+}
+
+static gboolean
+copy_compat_signature (OstreeRepo    *self,
+                       OstreeRepo    *source,
+                       const char    *checksum,
+                       GCancellable  *cancellable,
+                       GError        **error)
+{
+  gboolean ret = FALSE;
+  gs_unref_bytes GBytes *compat_signature = NULL;
+
+  if (!_ostree_repo_read_commit_compat_signature (source, checksum,
+                                                  &compat_signature,
+                                                  cancellable, error))
+    goto out;
+
+  if (compat_signature)
+    {
+      if (!_ostree_repo_write_commit_compat_signature (self, checksum,
+                                                       compat_signature,
+                                                       cancellable, error))
+        goto out;
+    }
+
+  ret = TRUE;
+ out:
+  return ret;
+}
+
+static gboolean
 import_one_object_copy (OstreeRepo    *self,
                         OstreeRepo    *source,
                         const char   *checksum,
@@ -2441,6 +2522,10 @@ import_one_object_copy (OstreeRepo    *self,
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
         {
           if (!copy_detached_metadata (self, source, checksum, cancellable, error))
+            goto out;
+          if (!copy_compat_sizes (self, source, checksum, cancellable, error))
+            goto out;
+          if (!copy_compat_signature (self, source, checksum, cancellable, error))
             goto out;
         }
       if (!ostree_repo_write_metadata_stream_trusted (self, objtype,
@@ -3261,6 +3346,14 @@ ostree_repo_sign_commit (OstreeRepo     *self,
                                                    error))
     goto out;
 
+  /* Also write compat signature file */
+  if (!_ostree_repo_write_commit_compat_signature (self,
+                                                   commit_checksum,
+                                                   signature,
+                                                   cancellable,
+                                                   error))
+    goto out;
+
   ret = TRUE;
 out:
   return ret;
@@ -3508,6 +3601,32 @@ ostree_repo_verify_commit_ext (OstreeRepo    *self,
       goto out;
     }
 
+  /* Fall back to the compat signature file if no metadata */
+  if (!metadata)
+    {
+      gs_unref_bytes GBytes *signature = NULL;
+
+      if (!_ostree_repo_read_commit_compat_signature (self,
+                                                      commit_checksum,
+                                                      &signature,
+                                                      cancellable,
+                                                      error))
+        {
+          g_prefix_error (error, "Failed to read compat signature: ");
+          goto out;
+        }
+
+      /* Construct metadata variant from signature data */
+      if (signature)
+        {
+          gs_unref_variant GVariant *tmp_metadata = NULL;
+
+          tmp_metadata = ot_gvariant_new_empty_string_dict ();
+          metadata = _ostree_detached_metadata_append_gpg_sig (tmp_metadata,
+                                                               signature);
+        }
+    }
+
   signed_data = g_variant_get_data_as_bytes (commit_variant);
 
   result = _ostree_repo_gpg_verify_with_metadata (self,
@@ -3594,5 +3713,52 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
  out:
   if (ordered_keys)
     g_list_free (ordered_keys);
+  return ret;
+}
+
+/**
+ * ostree_repo_delete_compat_signature:
+ * @self: Self
+ * @commit_checksum: SHA256 of given commit to delete signature from
+ * @signature: Signature data
+ * @cancellable: A #GCancellable
+ * @error: a #GError
+ *
+ * Delete a GPG signature from a commit's compat signature file.
+ */
+gboolean
+ostree_repo_delete_compat_signature (OstreeRepo     *self,
+                                     const gchar    *commit_checksum,
+                                     GBytes         *signature,
+                                     GCancellable   *cancellable,
+                                     GError        **error)
+{
+  gboolean ret = FALSE;
+  gs_unref_bytes GBytes *compat_sig = NULL;
+
+  if (!_ostree_repo_read_commit_compat_signature (self, commit_checksum,
+                                                  &compat_sig, cancellable,
+                                                  error))
+      goto out;
+
+  if (g_bytes_equal (compat_sig, signature))
+    {
+      char compat_sig_loose[_OSTREE_LOOSE_PATH_MAX];
+      int res;
+
+      _ostree_loose_path_with_extension (compat_sig_loose, commit_checksum,
+                                         "sig");
+      do
+        res = unlinkat (self->objects_dir_fd, compat_sig_loose, 0);
+      while (G_UNLIKELY (res == -1 && errno == EINTR));
+      if (G_UNLIKELY (res == -1))
+        {
+          gs_set_error_from_errno (error, errno);
+          goto out;
+        }
+    }
+
+  ret = TRUE;
+ out:
   return ret;
 }

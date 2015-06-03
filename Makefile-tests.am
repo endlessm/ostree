@@ -51,6 +51,7 @@ testfiles = test-basic \
 	test-delta \
 	test-xattrs \
 	test-auto-summary \
+	test-compat-files \
 	$(NULL)
 insttest_SCRIPTS = $(addprefix tests/,$(testfiles:=.sh))
 
@@ -81,6 +82,13 @@ gpginsttest_trusted_DATA = tests/gpghome/trusted/pubring.gpg
 install-gpg-data-hook:
 	ln -sf trusted/pubring.gpg $(DESTDIR)$(gpginsttestdir)/pubring.gpg 
 INSTALL_DATA_HOOKS += install-gpg-data-hook
+
+# Compat repo tests
+EXTRA_DIST += tests/compat-repo
+install-compat-repo-hook:
+	mkdir -p $(DESTDIR)$(insttestdir)
+	cp -r $(srcdir)/tests/compat-repo $(DESTDIR)$(insttestdir)
+INSTALL_DATA_HOOKS += install-compat-repo-hook
 
 %.test: tests/%.sh Makefile
 	$(AM_V_GEN) (echo '[Test]' > $@.tmp; \

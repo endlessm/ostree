@@ -125,11 +125,19 @@ _ostree_loose_path_with_suffix (char              *buf,
                                 OstreeRepoMode     repo_mode,
                                 const char        *suffix);
 
+void
+_ostree_loose_path_with_extension (char        *buf,
+                                   const char  *checksum,
+                                   const char  *extension);
+
 #define _OSTREE_METADATA_GPGSIGS_NAME "ostree.gpgsigs"
 #define _OSTREE_METADATA_GPGSIGS_TYPE G_VARIANT_TYPE ("aay")
 
 GVariant *
 _ostree_detached_metadata_append_gpg_sig (GVariant   *existing_metadata,
                                           GBytes     *signature_bytes);
+
+/* array of (checksum, object type, archived size, unpacked size) for files */
+#define _OSTREE_COMPAT_SIZES_TYPE G_VARIANT_TYPE ("(a(suxx))")
 
 G_END_DECLS
