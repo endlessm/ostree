@@ -1,3 +1,13 @@
+ostree (2015.7-0) master; urgency=medium
+
+  * New upstream release
+    + Removed ostree-daemon, now in eos-updater.
+    + Updated dependencies.
+  * Added ostree-doc and ostree-dbg packages.
+  [endlessm/eos-shell#1965]
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Fri, 05 Jun 2015 10:38:00 -0700
+
 ostree (2013.6+git20131014.1-2endless10) eos; urgency=medium
 
   + endless-add-rw-parameter.patch
