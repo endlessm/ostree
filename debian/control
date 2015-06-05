@@ -50,7 +50,8 @@ Section: libdevel
 Architecture: any
 Depends: ${misc:Depends},
          libostree-1 (= ${binary:Version}),
-         gir1.2-ostree (= ${binary:Version})
+         gir1.2-ostree (= ${binary:Version}),
+         libglib2.0-dev
 Description: git for operating system binaries - runtime library
  OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
  While it takes over some of the roles of tradtional "package managers" like
