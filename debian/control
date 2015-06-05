@@ -3,17 +3,21 @@ Section: admin
 Priority: optional
 Maintainer: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
 Build-Depends: debhelper (>= 8.0.0), autotools-dev,
-              libglib2.0-dev (>= 2.34),
+              libglib2.0-dev (>= 2.40.0),
+              libgsystem-dev (>= 2015.1),
+              liblzma-dev (>= 5.0.5),
+              zlib1g-dev,
+              e2fslibs-dev,
               libsoup2.4-dev (>= 2.39.1),
+              libgirepository1.0-dev (>= 1.34.0),
+              libgpgme11-dev (>= 1.1.8),
+              gtk-doc-tools (>= 1.15),
               libarchive-dev (>= 2.8.0),
-              libgpgme11-dev,
-              libattr1-dev,
+              libselinux1-dev (>= 2.1.13),
               gobject-introspection,
-              libgirepository1.0-dev,
               dh-systemd,
               systemd,
-              dh-autoreconf,
-              gtk-doc-tools
+              dh-autoreconf
 Standards-Version: 3.9.4
 Homepage: https://wiki.gnome.org/OSTree
 
