@@ -23,7 +23,7 @@ Homepage: https://wiki.gnome.org/OSTree
 
 Package: ostree
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libostree-1 (= ${binary:Version})
 Description: git for operating system binaries
  OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
  While it takes over some of the roles of tradtional "package managers" like
@@ -48,7 +48,9 @@ Description: git for operating system binaries - runtime library
 Package: libostree-dev
 Section: libdevel
 Architecture: any
-Depends: ${misc:Depends}, gir1.2-ostree (= ${binary:Version})
+Depends: ${misc:Depends},
+         libostree-1 (= ${binary:Version}),
+         gir1.2-ostree (= ${binary:Version})
 Description: git for operating system binaries - runtime library
  OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
  While it takes over some of the roles of tradtional "package managers" like
@@ -61,7 +63,8 @@ Description: git for operating system binaries - runtime library
 Package: gir1.2-ostree
 Architecture: any
 Section: introspection
-Depends: ${gir:Depends}, ${misc:Depends}
+Depends: ${gir:Depends}, ${misc:Depends},
+         libostree-1 (= ${binary:Version})
 Description: git for operating system binaries - runtime library
  OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
  While it takes over some of the roles of tradtional "package managers" like
