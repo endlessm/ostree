@@ -13,8 +13,16 @@
 	mkdir -p m4
 	dh $@  --with gir,systemd,autoreconf
 
+CONFFLAGS = \
+	--with-dracut \
+	--with-gpgme \
+	--enable-introspection \
+	--enable-gtk-doc \
+	--without-grub2 \
+	$(NULL)
+
 override_dh_auto_configure:
-	dh_auto_configure -- --with-dracut --with-gpgme --enable-introspection --enable-gtk-doc
+	dh_auto_configure -- $(CONFFLAGS)
 
 override_dh_systemd_start:
 	dh_systemd_start --no-start
