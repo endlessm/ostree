@@ -21,6 +21,7 @@
 #pragma once
 
 #include "ostree-repo.h"
+#include "ostree-fetcher.h"
 
 G_BEGIN_DECLS
 
@@ -230,6 +231,11 @@ _ostree_repo_get_remote_boolean_option (OstreeRepo  *self,
                                         gboolean     default_value,
                                         gboolean    *out_value,
                                         GError     **error);
+
+OstreeFetcher *
+_ostree_repo_remote_new_fetcher (OstreeRepo  *self,
+                                 const char  *remote_name,
+                                 GError     **error);
 
 OstreeGpgVerifyResult *
 _ostree_repo_gpg_verify_with_metadata (OstreeRepo          *self,
