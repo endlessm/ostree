@@ -2,7 +2,7 @@ Source: ostree
 Section: admin
 Priority: optional
 Maintainer: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-Build-Depends: debhelper (>= 8.0.0), autotools-dev,
+Build-Depends: debhelper (>= 8.0.0),
               libglib2.0-dev (>= 2.40.0),
               libgsystem-dev (>= 2015.1),
               liblzma-dev (>= 5.0.5),

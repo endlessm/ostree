@@ -11,7 +11,7 @@
 
 %:
 	mkdir -p m4
-	dh $@  --with autotools-dev,gir,systemd,autoreconf
+	dh $@  --with gir,systemd,autoreconf
 
 override_dh_auto_configure:
 	dh_auto_configure -- --with-dracut --with-gpgme --enable-introspection --enable-gtk-doc
