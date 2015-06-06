@@ -47,6 +47,7 @@ testfiles = test-basic \
 	test-admin-upgrade-not-backwards \
 	test-repo-checkout-subpath	\
 	test-reset-nonlinear \
+	test-size-summary \
 	test-setuid \
 	test-delta \
 	test-xattrs \

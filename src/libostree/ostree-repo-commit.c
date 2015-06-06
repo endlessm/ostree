@@ -308,16 +308,19 @@ commit_loose_object_trusted (OstreeRepo        *self,
 
 typedef struct
 {
-  gsize unpacked;
-  gsize archived;
+  OstreeObjectType objtype;
+  guint64 unpacked;
+  guint64 archived;
 } OstreeContentSizeCacheEntry;
 
 static OstreeContentSizeCacheEntry *
-content_size_cache_entry_new (gsize unpacked,
-                              gsize archived)
+content_size_cache_entry_new (OstreeObjectType objtype,
+                              guint64          unpacked,
+                              guint64          archived)
 {
   OstreeContentSizeCacheEntry *entry = g_slice_new0 (OstreeContentSizeCacheEntry);
 
+  entry->objtype = objtype;
   entry->unpacked = unpacked;
   entry->archived = archived;
 
@@ -333,9 +336,10 @@ content_size_cache_entry_free (gpointer entry)
 
 static void
 repo_store_size_entry (OstreeRepo       *self,
+                       OstreeObjectType  objtype,
                        const gchar      *checksum,
-                       gsize             unpacked,
-                       gsize             archived)
+                       guint64           unpacked,
+                       guint64           archived)
 {
   if (G_UNLIKELY (self->object_sizes == NULL))
     self->object_sizes = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -343,7 +347,7 @@ repo_store_size_entry (OstreeRepo       *self,
 
   g_hash_table_replace (self->object_sizes,
                         g_strdup (checksum),
-                        content_size_cache_entry_new (unpacked, archived));
+                        content_size_cache_entry_new (objtype, unpacked, archived));
 }
 
 static int
@@ -406,6 +410,7 @@ add_size_index_to_metadata (OstreeRepo        *self,
           e_size = g_hash_table_lookup (self->object_sizes, e_checksum);
           _ostree_write_varuint64 (buffer, e_size->archived);
           _ostree_write_varuint64 (buffer, e_size->unpacked);
+          g_string_append_c (buffer, (guchar) e_size->objtype);
 
           g_variant_builder_add (&index_builder, "@ay",
                                  ot_gvariant_new_bytearray ((guint8*)buffer->str, buffer->len));
@@ -420,6 +425,134 @@ add_size_index_to_metadata (OstreeRepo        *self,
   *out_metadata = g_variant_builder_end (builder);
   g_variant_ref_sink (*out_metadata);
 
+  return ret;
+}
+
+static gboolean
+ostree_repo_commit_unpack_sizes (GVariant                    *entry,
+                                 OstreeContentSizeCacheEntry *sizes,
+                                 char                        *csum)
+{
+  gboolean ret = FALSE;
+  const guchar *buffer;
+  gsize bytes_read = 0;
+  gsize object_size = g_variant_get_size (entry);
+
+  if (object_size <= 32)
+    goto out;
+
+  buffer = g_variant_get_data (entry);
+  if (!buffer)
+    goto out;
+
+  ostree_checksum_inplace_from_bytes (buffer, csum);
+  buffer += 32;
+  object_size -= 32;
+
+  if (!_ostree_read_varuint64 (buffer, object_size, &(sizes->archived), &bytes_read))
+    goto out;
+  buffer += bytes_read;
+  object_size -= bytes_read;
+
+  if (!_ostree_read_varuint64 (buffer, object_size, &(sizes->unpacked), &bytes_read))
+    goto out;
+  buffer += bytes_read;
+  object_size -= bytes_read;
+
+  if (object_size < 1)
+    goto out;
+
+  if (*buffer < OSTREE_OBJECT_TYPE_FILE || *buffer > OSTREE_OBJECT_TYPE_LAST)
+    goto out;
+  sizes->objtype = (OstreeObjectType) *buffer;
+
+  ret = TRUE;
+out:
+  return ret;
+}
+
+gboolean
+ostree_repo_get_commit_sizes (OstreeRepo *self,
+                              const char *rev,
+                              gint64 *new_archived,
+                              gint64 *new_unpacked,
+                              gsize  *new_files,
+                              gint64 *archived,
+                              gint64 *unpacked,
+                              gsize  *files,
+                              GCancellable *cancellable,
+                              GError **error)
+{
+  gboolean ret = FALSE;
+  guint64 n_archived = 0;
+  guint64 n_unpacked = 0;
+  gsize n_files = 0;
+  guint64 t_archived = 0;
+  guint64 t_unpacked = 0;
+  gsize t_files = 0;
+  GVariantIter obj_iter;
+  gs_unref_variant GVariant *object;
+  gs_unref_variant GVariant *commit = NULL;
+  gs_unref_variant GVariant *metadata = NULL;
+  gs_unref_variant GVariant *sizes = NULL;
+
+  if (!ostree_repo_load_variant (self, OSTREE_OBJECT_TYPE_COMMIT, rev,
+                                 &commit, error))
+    {
+      g_prefix_error (error, "Failed to read commit: ");
+      goto out;
+    }
+
+  metadata = g_variant_get_child_value (commit, 0);
+
+  sizes = g_variant_lookup_value (metadata, "ostree.sizes", G_VARIANT_TYPE("aay"));
+  if (!sizes)
+    goto out; // No size data is available
+
+  g_variant_iter_init (&obj_iter, sizes);
+  while ((object = g_variant_iter_next_value (&obj_iter)))
+    {
+      OstreeContentSizeCacheEntry entry;
+      char csum[65];
+      gboolean exists;
+
+      if (!ostree_repo_commit_unpack_sizes (object, &entry, csum))
+      {
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                     "Invalid object size metadata");
+        goto out;
+      }
+      g_variant_unref (object);
+      object = NULL;
+
+      t_archived += entry.archived;
+      t_unpacked += entry.unpacked;
+
+      if (entry.objtype == OSTREE_OBJECT_TYPE_FILE)
+        t_files++;
+
+      if (!ostree_repo_has_object (self, entry.objtype,
+                                   csum, &exists, cancellable, error))
+        goto out;
+
+      // cache check completed, but file is not in cache:
+      if (!exists)
+        {
+          n_archived += entry.archived;
+          n_unpacked += entry.unpacked;
+          if (entry.objtype == OSTREE_OBJECT_TYPE_FILE)
+            n_files++;
+        }
+    }
+
+    ret = TRUE;
+    if (new_archived) *new_archived = n_archived;
+    if (new_unpacked) *new_unpacked = n_unpacked;
+    if (new_files) *new_files = n_files;
+    if (archived) *archived = t_archived;
+    if (unpacked) *unpacked = t_unpacked;
+    if (files) *files = t_files;
+out:
   return ret;
 }
 
@@ -550,8 +683,7 @@ write_object (OstreeRepo         *self,
   gboolean temp_file_is_symlink;
   gboolean object_is_symlink = FALSE;
   char loose_objpath[_OSTREE_LOOSE_PATH_MAX];
-  gssize unpacked_size = 0;
-  gboolean indexable = FALSE;
+  guint64 unpacked_size = 0;
 
   g_return_val_if_fail (expected_checksum || out_csum, FALSE);
 
@@ -655,9 +787,6 @@ write_object (OstreeRepo         *self,
           gs_unref_object GConverter *zlib_compressor = NULL;
           gs_unref_object GOutputStream *compressed_out_stream = NULL;
 
-          if (self->generate_sizes)
-            indexable = TRUE;
-
           if (!gs_file_open_in_tmpdir_at (self->tmp_dir_fd, 0644,
                                           &temp_filename, &temp_out,
                                           cancellable, error))
@@ -677,10 +806,10 @@ write_object (OstreeRepo         *self,
               /* Don't close the base; we'll do that later */
               g_filter_output_stream_set_close_base_stream ((GFilterOutputStream*)compressed_out_stream, FALSE);
               
-              unpacked_size = g_output_stream_splice (compressed_out_stream, file_input,
-                                                      0, cancellable, error);
-              if (unpacked_size < 0)
+              if (g_output_stream_splice (compressed_out_stream, file_input, 0, cancellable, error) < 0)
                 goto out;
+
+              unpacked_size = g_file_info_get_size (file_info);
             }
         }
       else
@@ -701,6 +830,7 @@ write_object (OstreeRepo         *self,
                                   cancellable, error) < 0)
         goto out;
       temp_file_is_regular = TRUE;
+      unpacked_size = file_object_length;
     }
 
   if (temp_out)
@@ -726,7 +856,7 @@ write_object (OstreeRepo         *self,
 
   g_assert (actual_checksum != NULL); /* Pacify static analysis */
           
-  if (indexable && temp_file_is_regular)
+  if (repo_mode == OSTREE_REPO_MODE_ARCHIVE_Z2 && self->generate_sizes && temp_file_is_regular)
     {
       struct stat stbuf;
 
@@ -736,7 +866,7 @@ write_object (OstreeRepo         *self,
           goto out;
         }
 
-      repo_store_size_entry (self, actual_checksum, unpacked_size, stbuf.st_size);
+      repo_store_size_entry (self, objtype, actual_checksum, unpacked_size, stbuf.st_size);
     }
 
   if (!_ostree_repo_has_loose_object (self, actual_checksum, objtype,

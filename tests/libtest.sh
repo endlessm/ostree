@@ -156,7 +156,7 @@ setup_fake_remote_repo1() {
     echo hi > baz/deeper/ohyeah
     mkdir baz/another/
     echo x > baz/another/y
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo commit --add-metadata-string version=3.2 -b main -s "The rest"
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo commit --generate-sizes --add-metadata-string version=3.2 -b main -s "The rest"
     cd ..
     rm -rf gnomerepo-files
     

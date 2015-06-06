@@ -424,6 +424,17 @@ gboolean      ostree_repo_write_commit_detached_metadata (OstreeRepo      *self,
                                                           GCancellable    *cancellable,
                                                           GError         **error);
 
+gboolean      ostree_repo_get_commit_sizes (OstreeRepo *self,
+                                            const char   *rev,
+                                            gint64       *new_archived,
+                                            gint64       *new_unpacked,
+                                            gsize        *new_files,
+                                            gint64       *archived,
+                                            gint64       *unpacked,
+                                            gsize        *files,
+                                            GCancellable *cancellable,
+                                            GError      **error);
+
 /**
  * OstreeRepoCheckoutMode:
  * @OSTREE_REPO_CHECKOUT_MODE_NONE: No special options
@@ -653,10 +664,12 @@ gboolean ostree_repo_prune (OstreeRepo        *self,
  * OstreeRepoPullFlags:
  * @OSTREE_REPO_PULL_FLAGS_NONE: No special options for pull
  * @OSTREE_REPO_PULL_FLAGS_MIRROR: Write out refs suitable for mirrors
+ * @OSTREE_REPO_PULL_FLAGS_METADATA: Only fetch the commit object + any metadata
  */
 typedef enum {
   OSTREE_REPO_PULL_FLAGS_NONE,
-  OSTREE_REPO_PULL_FLAGS_MIRROR
+  OSTREE_REPO_PULL_FLAGS_MIRROR,
+  OSTREE_REPO_PULL_FLAGS_METADATA
 } OstreeRepoPullFlags;
 
 gboolean ostree_repo_pull (OstreeRepo             *self,
