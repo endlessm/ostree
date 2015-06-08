@@ -89,6 +89,7 @@ EXTRA_DIST += tests/compat-repo
 install-compat-repo-hook:
 	mkdir -p $(DESTDIR)$(insttestdir)
 	cp -r $(srcdir)/tests/compat-repo $(DESTDIR)$(insttestdir)
+	mkdir -p $(DESTDIR)$(insttestdir)/compat-repo/tmp
 INSTALL_DATA_HOOKS += install-compat-repo-hook
 
 %.test: tests/%.sh Makefile
