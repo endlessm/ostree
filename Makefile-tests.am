@@ -51,6 +51,7 @@ testfiles = test-basic \
 	test-repo-checkout-subpath	\
 	test-reset-nonlinear \
 	test-oldstyle-partial \
+	test-size-summary \
 	test-setuid \
 	test-delta \
 	test-xattrs \
