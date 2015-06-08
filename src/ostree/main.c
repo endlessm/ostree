@@ -58,6 +58,7 @@ static OstreeCommand commands[] = {
   { "show", ostree_builtin_show },
   { "static-delta", ostree_builtin_static_delta },
   { "summary", ostree_builtin_summary },
+  { "size-summary", ostree_builtin_size_summary },
 #if defined(HAVE_LIBSOUP) && defined(BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE)
   { "trivial-httpd", ostree_builtin_trivial_httpd },
 #endif
