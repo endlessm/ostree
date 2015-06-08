@@ -491,7 +491,7 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
   guint64 t_unpacked = 0;
   gsize t_files = 0;
   GVariantIter obj_iter;
-  gs_unref_variant GVariant *object;
+  gs_unref_variant GVariant *object = NULL;
   gs_unref_variant GVariant *commit = NULL;
   gs_unref_variant GVariant *metadata = NULL;
   gs_unref_variant GVariant *sizes = NULL;
