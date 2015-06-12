@@ -31,14 +31,14 @@ static gboolean opt_disable_fsync;
 static gboolean opt_mirror;
 static char* opt_subpath;
 static int opt_depth = 0;
-static gboolean opt_metadata;
+static gboolean opt_commit_only;
  
  static GOptionEntry options[] = {
    { "disable-fsync", 0, 0, G_OPTION_ARG_NONE, &opt_disable_fsync, "Do not invoke fsync()", NULL },
    { "mirror", 0, 0, G_OPTION_ARG_NONE, &opt_mirror, "Write refs suitable for a mirror", NULL },
    { "subpath", 0, 0, G_OPTION_ARG_STRING, &opt_subpath, "Only pull the provided subpath", NULL },
    { "depth", 0, 0, G_OPTION_ARG_INT, &opt_depth, "Traverse DEPTH parents (-1=infinite) (default: 0)", "DEPTH" },
-   { "metadata", 'm', 0, G_OPTION_ARG_NONE, &opt_metadata, "Download only the metadata", NULL },
+   { "commit-only", 0, 0, G_OPTION_ARG_NONE, &opt_commit_only, "Only pull the commit object", NULL },
    { NULL }
  };
 
@@ -89,8 +89,8 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
   if (opt_mirror)
     pullflags |= OSTREE_REPO_PULL_FLAGS_MIRROR;
 
-  if (opt_metadata)
-    pullflags |= OSTREE_REPO_PULL_FLAGS_METADATA;
+  if (opt_commit_only)
+    pullflags |= OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY;
 
   if (strchr (argv[1], ':') == NULL)
     {

@@ -88,7 +88,7 @@ ostree_builtin_size_summary (int argc, char **argv, GCancellable *cancellable, G
   // nothing in the cache, but try and fetch it if it's a remote refspec:
   if (!revision && remote)
     {
-      OstreeRepoPullFlags flags = OSTREE_REPO_PULL_FLAGS_METADATA;
+      OstreeRepoPullFlags flags = OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY;
       gchar *pullrefs[] = { (gchar *) ref, NULL };
 
       if (!ostree_repo_pull (repo, remote, pullrefs, flags, NULL, cancellable, error))

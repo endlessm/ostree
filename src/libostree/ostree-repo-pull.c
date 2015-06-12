@@ -1103,8 +1103,8 @@ scan_commit_object (OtPullData         *pull_data,
   g_variant_get_child (commit, 6, "@ay", &tree_contents_csum);
   g_variant_get_child (commit, 7, "@ay", &tree_meta_csum);
 
-  // If this is a metadata only pull, don't grab the top dirtree/dirmeta:
-  if (!(pull_data->flags & OSTREE_REPO_PULL_FLAGS_METADATA))
+  // If this is a commit only pull, don't grab the top dirtree/dirmeta:
+  if (!(pull_data->flags & OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY))
     {
       if (!scan_one_metadata_object_c (pull_data,
                                        ostree_checksum_bytes_peek (tree_contents_csum),
@@ -1306,7 +1306,7 @@ enqueue_one_object_request (OtPullData        *pull_data,
   expected_max_size_p = g_hash_table_lookup (pull_data->expected_commit_sizes, checksum);
   if (expected_max_size_p)
     expected_max_size = *expected_max_size_p;
-  else if (is_meta)
+  else if (is_meta && fetchtype != OSTREE_FETCH_OBJECT_COMPAT_SIZES)
     expected_max_size = OSTREE_MAX_METADATA_SIZE;
   else
     expected_max_size = 0;
@@ -2248,7 +2248,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     }
 
   /* iterate over commits fetched and delete any commitpartial files */
-  if (!(dir_to_pull || (pull_data->flags & OSTREE_REPO_PULL_FLAGS_METADATA)))
+  if (!(dir_to_pull || (pull_data->flags & OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY)))
     {
       g_hash_table_iter_init (&hash_iter, requested_refs_to_fetch);
       while (g_hash_table_iter_next (&hash_iter, &key, &value))
