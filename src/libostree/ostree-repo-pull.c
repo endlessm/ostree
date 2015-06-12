@@ -1103,8 +1103,8 @@ scan_commit_object (OtPullData         *pull_data,
   g_variant_get_child (commit, 6, "@ay", &tree_contents_csum);
   g_variant_get_child (commit, 7, "@ay", &tree_meta_csum);
 
-  // If this is a metadata only pull, don't grab the top dirtree/dirmeta:
-  if (!(pull_data->flags & OSTREE_REPO_PULL_FLAGS_METADATA))
+  // If this is a commit only pull, don't grab the top dirtree/dirmeta:
+  if (!(pull_data->flags & OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY))
     {
       if (!scan_one_metadata_object_c (pull_data,
                                        ostree_checksum_bytes_peek (tree_contents_csum),
@@ -2248,7 +2248,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     }
 
   /* iterate over commits fetched and delete any commitpartial files */
-  if (!(dir_to_pull || (pull_data->flags & OSTREE_REPO_PULL_FLAGS_METADATA)))
+  if (!(dir_to_pull || (pull_data->flags & OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY)))
     {
       g_hash_table_iter_init (&hash_iter, requested_refs_to_fetch);
       while (g_hash_table_iter_next (&hash_iter, &key, &value))
