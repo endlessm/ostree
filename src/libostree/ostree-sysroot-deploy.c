@@ -742,6 +742,7 @@ merge_configuration (OstreeSysroot         *sysroot,
   glnx_unref_object OstreeSePolicy *sepolicy = NULL;
   gboolean etc_exists;
   gboolean usretc_exists;
+  int deployment_etc_fd = -1;
 
   if (previous_deployment)
     {
@@ -816,9 +817,20 @@ merge_configuration (OstreeSysroot         *sysroot,
         goto out;
     }
 
+  /* Ensure that the new deployment does not have /etc/.updated so that
+   * systemd ConditionNeedsUpdate=/etc services run after rebooting.
+   */
+  if (!gs_file_open_dir_fd (deployment_etc_path, &deployment_etc_fd,
+                            cancellable, error))
+    goto out;
+  if (!ot_ensure_unlinked_at (deployment_etc_fd, ".updated", error))
+    goto out;
+
   ret = TRUE;
   gs_transfer_out_value (out_sepolicy, &sepolicy);
  out:
+  if (deployment_etc_fd != -1)
+    (void) close (deployment_etc_fd);
   return ret;
 }
 
