@@ -2047,6 +2047,7 @@ ostree_sysroot_deploy_tree (OstreeSysroot     *self,
   g_autofree char *tree_kernel_path = NULL;
   g_autofree char *tree_initramfs_path = NULL;
   glnx_fd_close int deployment_dfd = -1;
+  glnx_fd_close int deployment_var_dfd = -1;
   glnx_unref_object OstreeSePolicy *sepolicy = NULL;
   g_autofree char *new_bootcsum = NULL;
   glnx_unref_object OstreeBootconfigParser *bootconfig = NULL;
@@ -2120,6 +2121,18 @@ ostree_sysroot_deploy_tree (OstreeSysroot     *self,
       g_prefix_error (error, "During /etc merge: ");
       goto out;
     }
+
+  /* Ensure that the new deployment does not have /etc/.updated or
+   * /var/.updated so that systemd ConditionNeedsUpdate=/etc|/var
+   * services run after rebooting.
+   */
+  if (!ot_ensure_unlinked_at (deployment_dfd, "etc/.updated", error))
+    goto out;
+  if (!gs_file_open_dir_fd (deployment_var, &deployment_var_dfd,
+                            cancellable, error))
+    goto out;
+  if (!ot_ensure_unlinked_at (deployment_var_dfd, ".updated", error))
+    goto out;
 
   g_clear_object (&self->sepolicy);
   self->sepolicy = g_object_ref (sepolicy);
