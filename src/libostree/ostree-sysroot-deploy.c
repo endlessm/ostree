@@ -1945,6 +1945,21 @@ ostree_sysroot_deploy_tree (OstreeSysroot     *self,
       return FALSE;
     }
 
+  /* Ensure that the new deployment does not have /etc/.updated or
+   * /var/.updated so that systemd ConditionNeedsUpdate=/etc|/var
+   * services run after rebooting.
+   */
+  g_autofree char *subpath = g_build_filename ("ostree", "deploy", osname, "var", NULL);
+  g_autoptr(GFile) deployment_var = g_file_resolve_relative_path (self->path, subpath);
+  glnx_fd_close int deployment_var_dfd = -1;
+  if (!ot_ensure_unlinked_at (deployment_dfd, "etc/.updated", error))
+    return FALSE;
+  if (!glnx_opendirat (AT_FDCWD, gs_file_get_path_cached (deployment_var),
+                       TRUE, &deployment_var_dfd, error))
+    return FALSE;
+  if (!ot_ensure_unlinked_at (deployment_var_dfd, ".updated", error))
+    return FALSE;
+
   if (!selinux_relabel_var_if_needed (self, sepolicy, os_deploy_dfd,
                                       cancellable, error))
     return FALSE;
