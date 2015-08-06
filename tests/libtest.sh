@@ -17,7 +17,8 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
-SRCDIR=$(dirname $0)
+SRCDIR="$(dirname "$(readlink -f $0)")"
+TOPDIR="$(dirname ${SRCDIR})"
 test_tmpdir=$(pwd)
 
 export G_DEBUG=fatal-warnings
@@ -40,7 +41,7 @@ fi
 if test -n "$OT_TESTS_VALGRIND"; then
     CMD_PREFIX="env G_SLICE=always-malloc valgrind -q --leak-check=full --num-callers=30 --suppressions=${SRCDIR}/ostree-valgrind.supp"
 else
-    CMD_PREFIX="env LD_PRELOAD=${SRCDIR}/libreaddir-rand.so"
+    CMD_PREFIX="env LD_PRELOAD=${TOPDIR}/.libs/libreaddir-rand.so"
 fi
 
 assert_not_reached () {
