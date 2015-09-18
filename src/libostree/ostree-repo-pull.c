@@ -2330,8 +2330,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     
   ostree_repo_abort_transaction (pull_data->repo, cancellable, NULL);
   g_main_context_unref (pull_data->main_context);
-  if (idle_src)
-    g_source_destroy (idle_src);
   if (update_timeout)
     g_source_destroy (update_timeout);
   g_strfreev (configured_branches);
