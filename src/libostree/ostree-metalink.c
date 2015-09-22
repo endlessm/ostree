@@ -56,7 +56,7 @@ typedef struct
 {
   OstreeMetalink *metalink;
 
-  GTask *task;
+  GCancellable *cancellable;
   GMarkupParseContext *parser;
 
   guint passthrough_depth;
@@ -72,7 +72,7 @@ typedef struct
   char *verification_sha256;
   char *verification_sha512;
 
-  char *result;
+  GBytes *result;
 
   char *last_metalink_error;
   guint current_url_index;
@@ -86,6 +86,10 @@ state_transition (OstreeMetalinkRequest  *self,
                   OstreeMetalinkState     new_state)
 {
   g_assert (self->state != new_state);
+
+  if (new_state == OSTREE_METALINK_STATE_PASSTHROUGH)
+    self->passthrough_previous = self->state;
+
   self->state = new_state;
 }
 
@@ -106,8 +110,7 @@ metalink_parser_start (GMarkupParseContext  *context,
                        gpointer              user_data,
                        GError              **error)
 {
-  GTask *task = user_data;
-  OstreeMetalinkRequest *self = g_task_get_task_data (task);
+  OstreeMetalinkRequest *self = user_data;
 
   switch (self->state)
     {
@@ -269,8 +272,7 @@ metalink_parser_end (GMarkupParseContext  *context,
                      gpointer              user_data,
                      GError              **error)
 {
-  GTask *task = user_data;
-  OstreeMetalinkRequest *self = g_task_get_task_data (task);
+  OstreeMetalinkRequest *self = user_data;
 
   switch (self->state)
     {
@@ -297,9 +299,9 @@ metalink_parser_end (GMarkupParseContext  *context,
       state_transition (self, OSTREE_METALINK_STATE_RESOURCES);
       break;
     case OSTREE_METALINK_STATE_PASSTHROUGH:
-      g_assert_cmpint (self->passthrough_depth, >, 0);
-      self->passthrough_depth--;
-      if (self->passthrough_depth == 0)
+      if (self->passthrough_depth > 0)
+        self->passthrough_depth--;
+      else
         state_transition (self, self->passthrough_previous);
       break;
     }
@@ -312,8 +314,7 @@ metalink_parser_text (GMarkupParseContext *context,
                       gpointer             user_data,
                       GError             **error)
 {
-  GTask *task = user_data;
-  OstreeMetalinkRequest *self = g_task_get_task_data (task);
+  OstreeMetalinkRequest *self = user_data;
 
   switch (self->state)
     {
@@ -410,9 +411,6 @@ _ostree_metalink_new (OstreeFetcher  *fetcher,
   return self;
 }
 
-static void
-try_next_url (OstreeMetalinkRequest          *self);
-
 static gboolean
 valid_hex_checksum (const char *s, gsize expected_len)
 {
@@ -421,58 +419,44 @@ valid_hex_checksum (const char *s, gsize expected_len)
   return len == expected_len && s[len] == '\0';
 }
 
-static void
-on_fetched_url (GObject              *src,
-                GAsyncResult         *res,
-                gpointer              user_data)
+static gboolean
+try_one_url (OstreeMetalinkRequest *self,
+             SoupURI              *uri,
+             GBytes              **out_data,
+             GError         **error)
 {
-  GTask *task = user_data;
-  OstreeMetalinkRequest *self = g_task_get_task_data (task);
-  GError *local_error = NULL;
-  struct stat stbuf;
-  int parent_dfd = _ostree_fetcher_get_dfd (self->metalink->fetcher);
-  g_autoptr(GInputStream) instream = NULL;
-  g_autofree char *result = NULL;
-  GChecksum *checksum = NULL;
+  gboolean ret = FALSE;
+  g_autoptr(GBytes) bytes = NULL;
+  gssize n_bytes;
 
-  result = _ostree_fetcher_request_uri_with_partial_finish ((OstreeFetcher*)src, res, &local_error);
-  if (!result)
+  if (!_ostree_fetcher_request_uri_to_membuf (self->metalink->fetcher,
+                                              uri,
+                                              FALSE,
+                                              FALSE,
+                                              &bytes,
+                                              self->metalink->max_size,
+                                              self->cancellable,
+                                              error))
     goto out;
 
-  if (!ot_openat_read_stream (parent_dfd, result, FALSE,
-                              &instream, NULL, &local_error))
-    goto out;
-  
-  if (fstat (g_file_descriptor_based_get_fd ((GFileDescriptorBased*)instream), &stbuf) != 0)
+  n_bytes = g_bytes_get_size (bytes);
+  if (n_bytes != self->size)
     {
-      gs_set_error_from_errno (&local_error, errno);
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Expected size is %" G_GUINT64_FORMAT " bytes but content is %" G_GSSIZE_FORMAT " bytes",
+                   self->size, n_bytes);
       goto out;
     }
 
-  if (stbuf.st_size != self->size)
-    {
-      g_set_error (&local_error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Expected size is %" G_GUINT64_FORMAT " bytes but content is %" G_GUINT64_FORMAT " bytes",
-                   self->size, stbuf.st_size);
-      goto out;
-    }
-  
   if (self->verification_sha512)
     {
-      const char *actual;
+      g_autofree char *actual = NULL;
 
-      checksum = g_checksum_new (G_CHECKSUM_SHA512);
-
-      if (!ot_gio_splice_update_checksum (NULL, instream, checksum,
-                                          g_task_get_cancellable (task),
-                                          &local_error))
-        goto out;
-      
-      actual = g_checksum_get_string (checksum);
+      actual = g_compute_checksum_for_bytes (G_CHECKSUM_SHA512, bytes);
 
       if (strcmp (self->verification_sha512, actual) != 0)
         {
-          g_set_error (&local_error, G_IO_ERROR, G_IO_ERROR_FAILED,
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                        "Expected checksum is %s but actual is %s",
                        self->verification_sha512, actual);
           goto out;
@@ -480,73 +464,34 @@ on_fetched_url (GObject              *src,
     }
   else if (self->verification_sha256)
     {
-      const char *actual;
+      g_autofree char *actual = NULL;
 
-      checksum = g_checksum_new (G_CHECKSUM_SHA256);
-
-      if (!ot_gio_splice_update_checksum (NULL, instream, checksum,
-                                          g_task_get_cancellable (task),
-                                          &local_error))
-        goto out;
-
-      actual = g_checksum_get_string (checksum);
+      actual = g_compute_checksum_for_bytes (G_CHECKSUM_SHA256, bytes);
 
       if (strcmp (self->verification_sha256, actual) != 0)
         {
-          g_set_error (&local_error, G_IO_ERROR, G_IO_ERROR_FAILED,
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                        "Expected checksum is %s but actual is %s",
                        self->verification_sha256, actual);
           goto out;
         }
     }
 
+  ret = TRUE;
+  if (out_data)
+    *out_data = g_bytes_ref (bytes);
  out:
-  if (checksum)
-    g_checksum_free (checksum);
-  if (local_error)
-    {
-      g_free (self->last_metalink_error);
-      self->last_metalink_error = g_strdup (local_error->message);
-      g_clear_error (&local_error);
-
-      /* And here we iterate on the next one if we hit an error */
-      self->current_url_index++;
-      try_next_url (self);
-    }
-  else
-    {
-      self->result = result;
-      result = NULL; /* Transfer ownership */
-      g_task_return_boolean (self->task, TRUE);
-    }
-}
-
-static void
-try_next_url (OstreeMetalinkRequest          *self)
-{
-  if (self->current_url_index >= self->urls->len)
-    {
-      g_task_return_new_error (self->task, G_IO_ERROR, G_IO_ERROR_FAILED,
-                               "Exhausted %u metalink targets, last error: %s",
-                               self->urls->len, self->last_metalink_error);
-    }
-  else
-    {
-      SoupURI *next = self->urls->pdata[self->current_url_index];
-      
-      _ostree_fetcher_request_uri_with_partial_async (self->metalink->fetcher, next,
-                                                      self->metalink->max_size,
-                                                      OSTREE_FETCHER_DEFAULT_PRIORITY,
-                                                      g_task_get_cancellable (self->task),
-                                                      on_fetched_url, self->task);
-    }
+  return ret;
 }
 
 static gboolean
-start_target_request_phase (OstreeMetalinkRequest      *self,
-                            GError                    **error)
+try_metalink_targets (OstreeMetalinkRequest      *self,
+                      SoupURI                   **out_target_uri,
+                      GBytes                    **out_data,
+                      GError                    **error)
 {
   gboolean ret = FALSE;
+  SoupURI *target_uri;
 
   if (!self->found_a_file_element)
     {
@@ -557,7 +502,10 @@ start_target_request_phase (OstreeMetalinkRequest      *self,
 
   if (!self->found_our_file_element)
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+      /* XXX Use NOT_FOUND here so we can distinguish not finding the
+       *     requested file from other errors.  This is a bit of a hack
+       *     through; metalinks should have their own error enum. */
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
                    "No <file name='%s'> found", self->metalink->requested_file);
       goto out;
     }
@@ -590,24 +538,40 @@ start_target_request_phase (OstreeMetalinkRequest      *self,
       goto out;
     }
 
-  try_next_url (self);
+  for (self->current_url_index = 0;
+       self->current_url_index < self->urls->len;
+       self->current_url_index++)
+    {
+      GError *temp_error = NULL;
+
+      target_uri = self->urls->pdata[self->current_url_index];
+      
+      if (try_one_url (self, target_uri, out_data, &temp_error))
+        break;
+      else
+        {
+          g_free (self->last_metalink_error);
+          self->last_metalink_error = g_strdup (temp_error->message);
+          g_clear_error (&temp_error);
+        }
+    }
+
+  if (self->current_url_index >= self->urls->len)
+    {
+      g_assert (self->last_metalink_error != NULL);
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Exhausted %u metalink targets, last error: %s",
+                   self->urls->len, self->last_metalink_error);
+      goto out;
+    }
   
   ret = TRUE;
+  if (out_target_uri)
+    *out_target_uri = soup_uri_copy (target_uri);
  out:
   return ret;
 }
 
-static void
-ostree_metalink_request_unref (gpointer data)
-{
-  OstreeMetalinkRequest  *request = data;
-  g_object_unref (request->metalink);
-  g_free (request->result);
-  g_free (request->last_metalink_error);
-  g_ptr_array_unref (request->urls);
-  g_free (request);
-}
-                               
 static const GMarkupParser metalink_parser = {
   metalink_parser_start,
   metalink_parser_end,
@@ -619,115 +583,64 @@ static const GMarkupParser metalink_parser = {
 typedef struct
 {
   SoupURI               **out_target_uri;
-  char                  **out_data;
+  GBytes                **out_data;
   gboolean              success;
   GError                **error;
   GMainLoop             *loop;
 } FetchMetalinkSyncData;
 
-static gboolean
-ostree_metalink_request_finish (OstreeMetalink         *self,
-                                GAsyncResult           *result,
-                                SoupURI               **out_target_uri,
-                                char                  **out_data,
-                                GError                **error)
-{
-  OstreeMetalinkRequest *request;
-
-  g_return_val_if_fail (g_task_is_valid (result, self), FALSE);
-
-  request = g_task_get_task_data ((GTask*)result);
-
-  if (g_task_propagate_boolean ((GTask*)result, error))
-    {
-      g_assert_cmpint (request->current_url_index, <, request->urls->len);
-      *out_target_uri = request->urls->pdata[request->current_url_index];
-      *out_data = g_strdup (request->result);
-      return TRUE;
-    }
-  else
-    return FALSE;
-}
-
-static void
-on_metalink_fetched (GObject          *src,
-                     GAsyncResult     *result,
-                     gpointer          user_data)
-{
-  FetchMetalinkSyncData *data = user_data;
-
-  data->success = ostree_metalink_request_finish ((OstreeMetalink*)src,
-                                                  result,
-                                                  data->out_target_uri,
-                                                  data->out_data,
-                                                  data->error);
-  g_main_loop_quit (data->loop);
-}
-
-static gboolean
-on_metalink_bytes_read (OstreeMetalinkRequest *self,
-                        OstreeMetalinkRequest *request,
-                        FetchMetalinkSyncData *sync_data,
-                        GBytes *bytes,
-                        GError **error)
-{
-  gsize len;
-  const guint8 *data = g_bytes_get_data (bytes, &len);
-  if (!g_markup_parse_context_parse (self->parser, (const char*)data, len, error))
-    return FALSE;
-
-  if (!start_target_request_phase (self, error))
-    return FALSE;
-
-  return TRUE;
-}
-
+/*
+ * Note that for legacy reasons we iterate the caller's main context.
+ * If you don't want that (and you probably don't) push a temporary
+ * one.
+ */
 gboolean
 _ostree_metalink_request_sync (OstreeMetalink        *self,
-                               GMainLoop             *loop,
                                SoupURI               **out_target_uri,
-                               char                  **out_data,
+                               GBytes                **out_data,
                                SoupURI               **fetching_sync_uri,
                                GCancellable          *cancellable,
                                GError                **error)
 {
-  OstreeMetalinkRequest *request = g_new0 (OstreeMetalinkRequest, 1);
-  FetchMetalinkSyncData data = { 0, };
-  GTask *task = g_task_new (self, cancellable, on_metalink_fetched, &data);
+  gboolean ret = FALSE;
+  OstreeMetalinkRequest request = { 0, };
+  g_autoptr(GMainContext) mainctx = NULL;
   GBytes *out_contents = NULL;
+  gsize len;
+  const guint8 *data;
 
-  data.out_target_uri = out_target_uri;
-  data.out_data = out_data;
-  data.loop = loop;
-  data.error = error;
-  *fetching_sync_uri = _ostree_metalink_get_uri (self);
+  if (fetching_sync_uri != NULL)
+    *fetching_sync_uri = _ostree_metalink_get_uri (self);
 
-  request->metalink = g_object_ref (self);
-  request->urls = g_ptr_array_new_with_free_func ((GDestroyNotify) soup_uri_free);
-  request->task = task; /* Unowned */
+  mainctx = g_main_context_ref_thread_default ();
 
-  request->parser = g_markup_parse_context_new (&metalink_parser, G_MARKUP_PREFIX_ERROR_POSITION, task, NULL);
+  request.metalink = g_object_ref (self);
+  request.urls = g_ptr_array_new_with_free_func ((GDestroyNotify) soup_uri_free);
+  request.parser = g_markup_parse_context_new (&metalink_parser, G_MARKUP_PREFIX_ERROR_POSITION, &request, NULL);
 
-  g_task_set_task_data (task, request, ostree_metalink_request_unref);
-
-  if (! _ostree_fetcher_request_uri_to_membuf (self->fetcher,
-                                               self->uri,
-                                               FALSE,
-                                               FALSE,
-                                               &out_contents,
-                                               loop,
-                                               self->max_size,
-                                               cancellable,
-                                               error))
+  if (!_ostree_fetcher_request_uri_to_membuf (self->fetcher,
+                                              self->uri,
+                                              FALSE,
+                                              FALSE,
+                                              &out_contents,
+                                              self->max_size,
+                                              cancellable,
+                                              error))
     goto out;
 
-  if (! on_metalink_bytes_read (request, request, &data, out_contents, error))
+  data = g_bytes_get_data (out_contents, &len);
+  if (!g_markup_parse_context_parse (request.parser, (const char*)data, len, error))
     goto out;
 
-  g_main_loop_run (data.loop);
+  if (!try_metalink_targets (&request, out_target_uri, out_data, error))
+    goto out;
 
+  ret = TRUE;
  out:
-  return data.success;
+  g_clear_object (&request.metalink);
+  g_clear_pointer (&request.urls, g_ptr_array_unref);
+  g_clear_pointer (&request.parser, g_markup_parse_context_free);
+  return ret;
 }
 
 SoupURI *

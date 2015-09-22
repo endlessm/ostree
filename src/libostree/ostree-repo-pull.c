@@ -45,7 +45,6 @@ typedef struct {
   OstreeRepo   *remote_repo_local;
 
   GMainContext    *main_context;
-  GMainLoop    *loop;
   GCancellable *cancellable;
   OstreeAsyncProgress *progress;
 
@@ -95,10 +94,12 @@ typedef struct {
   guint64       previous_bytes_sec;
   guint64       previous_total_downloaded;
 
+  GError       *cached_async_error;
   GError      **async_error;
   gboolean      caught_error;
 
   GQueue scan_object_queue;
+  GSource *idle_src;
 } OtPullData;
 
 typedef enum {
@@ -145,6 +146,13 @@ static void queue_scan_one_metadata_object_c (OtPullData         *pull_data,
                                               const guchar       *csum,
                                               OstreeObjectType    objtype,
                                               guint               recursion_depth);
+
+static gboolean scan_one_metadata_object_c (OtPullData         *pull_data,
+                                            const guchar       *csum,
+                                            OstreeObjectType    objtype,
+                                            guint               recursion_depth,
+                                            GCancellable       *cancellable,
+                                            GError            **error);
 
 static SoupURI *
 suburi_new (SoupURI   *base,
@@ -242,28 +250,9 @@ update_progress (gpointer user_data)
   return TRUE;
 }
 
-static void
-throw_async_error (OtPullData          *pull_data,
-                   GError              *error)
-{
-  if (error)
-    {
-      if (!pull_data->caught_error)
-        {
-          pull_data->caught_error = TRUE;
-          g_propagate_error (pull_data->async_error, error);
-          g_main_loop_quit (pull_data->loop);
-        }
-      else
-        {
-          g_error_free (error);
-        }
-    }
-}
-
-static void
-check_outstanding_requests_handle_error (OtPullData          *pull_data,
-                                         GError              *error)
+/* The core logic function for whether we should continue the main loop */
+static gboolean
+pull_termination_condition (OtPullData          *pull_data)
 {
   gboolean current_fetch_idle = (pull_data->n_outstanding_metadata_fetches == 0 &&
                                  pull_data->n_outstanding_content_fetches == 0 &&
@@ -274,60 +263,83 @@ check_outstanding_requests_handle_error (OtPullData          *pull_data,
   gboolean current_scan_idle = g_queue_is_empty (&pull_data->scan_object_queue);
   gboolean current_idle = current_fetch_idle && current_write_idle && current_scan_idle;
 
-  throw_async_error (pull_data, error);
+  if (pull_data->caught_error)
+    return TRUE;
 
   switch (pull_data->phase)
     {
     case OSTREE_PULL_PHASE_FETCHING_REFS:
       if (!pull_data->fetching_sync_uri)
-        g_main_loop_quit (pull_data->loop);
+        return TRUE;
       break;
     case OSTREE_PULL_PHASE_FETCHING_OBJECTS:
       if (current_idle && !pull_data->fetching_sync_uri)
         {
           g_debug ("pull: idle, exiting mainloop");
-          
-          g_main_loop_quit (pull_data->loop);
+          return TRUE;
         }
       break;
     }
+  return FALSE;
 }
 
-static gboolean
-scan_one_metadata_object_c (OtPullData         *pull_data,
-                            const guchar         *csum,
-                            OstreeObjectType    objtype,
-                            guint               recursion_depth,
-                            GCancellable       *cancellable,
-                            GError            **error);
-
 static void
-process_scan_queue (OtPullData *pull_data)
+check_outstanding_requests_handle_error (OtPullData          *pull_data,
+                                         GError              *error)
 {
-  ScanObjectQueueData *scan_data;
-  GError *error = NULL;
-
-  scan_data = g_queue_pop_head (&pull_data->scan_object_queue);
-  if (!scan_data)
-    return;
-
-  if (scan_one_metadata_object_c (pull_data,
-                                  scan_data->csum,
-                                  scan_data->objtype,
-                                  scan_data->recursion_depth,
-                                  pull_data->cancellable,
-                                  &error))
-    throw_async_error (pull_data, error);
-
-  g_free (scan_data);
+  if (error)
+    {
+      if (!pull_data->caught_error)
+        {
+          pull_data->caught_error = TRUE;
+          g_propagate_error (pull_data->async_error, error);
+        }
+      else
+        {
+          g_error_free (error);
+        }
+    }
 }
 
 static gboolean
 idle_worker (gpointer user_data)
 {
-  process_scan_queue (user_data);
-  check_outstanding_requests_handle_error (user_data, NULL);
+  OtPullData *pull_data = user_data;
+  ScanObjectQueueData *scan_data;
+  GError *error = NULL;
+
+  scan_data = g_queue_pop_head (&pull_data->scan_object_queue);
+  if (!scan_data)
+    {
+      g_clear_pointer (&pull_data->idle_src, (GDestroyNotify) g_source_destroy);
+      return G_SOURCE_REMOVE;
+    }
+
+  scan_one_metadata_object_c (pull_data,
+                              scan_data->csum,
+                              scan_data->objtype,
+                              scan_data->recursion_depth,
+                              pull_data->cancellable,
+                              &error);
+  check_outstanding_requests_handle_error (pull_data, error);
+
+  g_free (scan_data);
   return G_SOURCE_CONTINUE;
+}
+
+static void
+ensure_idle_queued (OtPullData *pull_data)
+{
+  GSource *idle_src;
+
+  if (pull_data->idle_src)
+    return;
+
+  idle_src = g_idle_source_new ();
+  g_source_set_callback (idle_src, idle_worker, pull_data, NULL);
+  g_source_attach (idle_src, pull_data->main_context);
+  g_source_unref (idle_src);
+  pull_data->idle_src = idle_src;
 }
 
 typedef struct {
@@ -351,7 +363,6 @@ fetch_uri_contents_membuf_sync (OtPullData    *pull_data,
                                                add_nul,
                                                allow_noent,
                                                out_contents,
-                                               pull_data->loop,
                                                OSTREE_MAX_METADATA_SIZE,
                                                cancellable,
                                                error);
@@ -1135,14 +1146,12 @@ scan_commit_object (OtPullData         *pull_data,
   // If this is a commit only pull, don't grab the top dirtree/dirmeta:
   if (!(pull_data->flags & OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY))
     {
-      queue_scan_one_metadata_object_c (pull_data,
-                                        ostree_checksum_bytes_peek (tree_contents_csum),
+      queue_scan_one_metadata_object_c (pull_data, ostree_checksum_bytes_peek (tree_contents_csum),
                                         OSTREE_OBJECT_TYPE_DIR_TREE, recursion_depth + 1);
-      queue_scan_one_metadata_object_c (pull_data,
-                                        ostree_checksum_bytes_peek (tree_meta_csum),
+      queue_scan_one_metadata_object_c (pull_data, ostree_checksum_bytes_peek (tree_meta_csum),
                                         OSTREE_OBJECT_TYPE_DIR_META, recursion_depth + 1);
     }
- 
+
   ret = TRUE;
  out:
   return ret;
@@ -1172,6 +1181,7 @@ queue_scan_one_metadata_object_c (OtPullData         *pull_data,
   scan_data->recursion_depth = recursion_depth;
 
   g_queue_push_tail (&pull_data->scan_object_queue, scan_data);
+  ensure_idle_queued (pull_data);
 }
 
 static gboolean
@@ -1755,8 +1765,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   gboolean ret = FALSE;
   GHashTableIter hash_iter;
   gpointer key, value;
-  gboolean tls_permissive = FALSE;
-  OstreeFetcherConfigFlags fetcher_flags = 0;
   g_autofree char *remote_key = NULL;
   g_autofree char *path = NULL;
   g_autofree char *baseurl = NULL;
@@ -1775,7 +1783,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   const char *dir_to_pull = NULL;
   char **refs_to_fetch = NULL;
   GSource *update_timeout = NULL;
-  GSource *idle_src;
   gboolean disable_static_deltas = FALSE;
 
   if (options)
@@ -1798,9 +1805,11 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
   pull_data->is_mirror = (flags & OSTREE_REPO_PULL_FLAGS_MIRROR) > 0;
 
-  pull_data->async_error = error;
+  if (error)
+    pull_data->async_error = &pull_data->cached_async_error;
+  else
+    pull_data->async_error = NULL;
   pull_data->main_context = g_main_context_ref_thread_default ();
-  pull_data->loop = g_main_loop_new (pull_data->main_context, FALSE);
   pull_data->flags = flags;
 
   pull_data->repo = self;
@@ -1845,84 +1854,13 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
   pull_data->phase = OSTREE_PULL_PHASE_FETCHING_REFS;
 
-  if (!_ostree_repo_get_remote_boolean_option (self,
-                                               remote_name_or_baseurl, "tls-permissive",
-                                               FALSE, &tls_permissive, error))
+  pull_data->fetcher = _ostree_repo_remote_new_fetcher (self, remote_name_or_baseurl, error);
+  if (pull_data->fetcher == NULL)
     goto out;
-  if (tls_permissive)
-    fetcher_flags |= OSTREE_FETCHER_FLAGS_TLS_PERMISSIVE;
 
   pull_data->tmpdir_dfd = pull_data->repo->tmp_dir_fd;
-  pull_data->fetcher = _ostree_fetcher_new (pull_data->tmpdir_dfd, fetcher_flags);
   requested_refs_to_fetch = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   commits_to_fetch = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-
-  {
-    g_autofree char *tls_client_cert_path = NULL;
-    g_autofree char *tls_client_key_path = NULL;
-
-    if (!_ostree_repo_get_remote_option (self,
-                                         remote_name_or_baseurl, "tls-client-cert-path",
-                                         NULL, &tls_client_cert_path, error))
-      goto out;
-    if (!_ostree_repo_get_remote_option (self,
-                                         remote_name_or_baseurl, "tls-client-key-path",
-                                         NULL, &tls_client_key_path, error))
-      goto out;
-
-    if ((tls_client_cert_path != NULL) != (tls_client_key_path != NULL))
-      {
-        g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                     "remote \"%s\" must specify both \"tls-client-cert-path\" and \"tls-client-key-path\"",
-                     remote_name_or_baseurl);
-        goto out;
-      }
-    else if (tls_client_cert_path)
-      {
-        g_autoptr(GTlsCertificate) client_cert = NULL;
-
-        g_assert (tls_client_key_path);
-
-        client_cert = g_tls_certificate_new_from_files (tls_client_cert_path,
-                                                        tls_client_key_path,
-                                                        error);
-        if (!client_cert)
-          goto out;
-
-        _ostree_fetcher_set_client_cert (pull_data->fetcher, client_cert);
-      }
-  }
-
-  {
-    g_autofree char *tls_ca_path = NULL;
-    g_autoptr(GTlsDatabase) db = NULL;
-
-    if (!_ostree_repo_get_remote_option (self,
-                                         remote_name_or_baseurl, "tls-ca-path",
-                                         NULL, &tls_ca_path, error))
-      goto out;
-
-    if (tls_ca_path)
-      {
-        db = g_tls_file_database_new (tls_ca_path, error);
-        if (!db)
-          goto out;
-        
-        _ostree_fetcher_set_tls_database (pull_data->fetcher, db);
-      }
-  }
-
-  {
-    g_autofree char *http_proxy = NULL;
-
-    if (!_ostree_repo_get_remote_option (self,
-                                         remote_name_or_baseurl, "proxy",
-                                         NULL, &http_proxy, error))
-      goto out;
-
-    if (http_proxy)
-      _ostree_fetcher_set_proxy (pull_data->fetcher, http_proxy);
-  }
 
   if (!_ostree_repo_get_remote_option (self,
                                        remote_name_or_baseurl, "metalink",
@@ -1956,10 +1894,9 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     }
   else
     {
-      g_autofree char *metalink_data = NULL;
+      g_autoptr(GBytes) summary_bytes = NULL;
       SoupURI *metalink_uri = soup_uri_new (metalink_url_str);
       SoupURI *target_uri = NULL;
-      gs_fd_close int fd = -1;
       
       if (!metalink_uri)
         {
@@ -1973,9 +1910,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       soup_uri_free (metalink_uri);
 
       if (! _ostree_metalink_request_sync (metalink,
-                                           pull_data->loop,
                                            &target_uri,
-                                           &metalink_data,
+                                           &summary_bytes,
                                            &pull_data->fetching_sync_uri,
                                            cancellable,
                                            error))
@@ -1987,16 +1923,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         soup_uri_set_path (pull_data->base_uri, repo_base);
       }
 
-      fd = openat (pull_data->tmpdir_dfd, metalink_data, O_RDONLY | O_CLOEXEC);
-      if (fd == -1)
-        {
-          gs_set_error_from_errno (error, errno);
-          goto out;
-        }
-
-      if (!ot_util_variant_map_fd (fd, 0, OSTREE_SUMMARY_GVARIANT_FORMAT, FALSE,
-                                   &pull_data->summary, error))
-        goto out;
+      pull_data->summary = g_variant_new_from_bytes (OSTREE_SUMMARY_GVARIANT_FORMAT,
+                                                     summary_bytes, FALSE);
     }
 
   if (!_ostree_repo_get_remote_list_option (self,
@@ -2214,6 +2142,14 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
   pull_data->phase = OSTREE_PULL_PHASE_FETCHING_OBJECTS;
 
+  /* Now discard the previous fetcher, as it was bound to a temporary main context
+   * for synchronous requests.
+   */
+  g_clear_object (&pull_data->fetcher);
+  pull_data->fetcher = _ostree_repo_remote_new_fetcher (self, remote_name_or_baseurl, error);
+  if (pull_data->fetcher == NULL)
+    goto out;
+
   if (!ostree_repo_prepare_transaction (pull_data->repo, &pull_data->transaction_resuming,
                                         cancellable, error))
     goto out;
@@ -2264,22 +2200,19 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         }
     }
 
-  idle_src = g_idle_source_new ();
-  g_source_set_callback (idle_src, idle_worker, pull_data, NULL);
-  g_source_attach (idle_src, pull_data->main_context);
-  g_source_unref (idle_src);
-
   if (pull_data->progress)
     {
       update_timeout = g_timeout_source_new_seconds (1);
       g_source_set_priority (update_timeout, G_PRIORITY_HIGH);
       g_source_set_callback (update_timeout, update_progress, pull_data, NULL);
-      g_source_attach (update_timeout, g_main_loop_get_context (pull_data->loop));
+      g_source_attach (update_timeout, pull_data->main_context);
       g_source_unref (update_timeout);
     }
 
   /* Now await work completion */
-  g_main_loop_run (pull_data->loop);
+  while (!pull_termination_condition (pull_data))
+    g_main_context_iteration (pull_data->main_context, TRUE);
+
   if (pull_data->caught_error)
     goto out;
   
@@ -2386,14 +2319,19 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
   ret = TRUE;
  out:
+  /* This is pretty ugly - we have two error locations, because we
+   * have a mix of synchronous and async code.  Mixing them gets messy
+   * as we need to avoid overwriting errors.
+   */
+  if (pull_data->cached_async_error && error && !*error)
+    g_propagate_error (error, pull_data->cached_async_error);
+  else
+    g_clear_error (&pull_data->cached_async_error);
+    
   ostree_repo_abort_transaction (pull_data->repo, cancellable, NULL);
   g_main_context_unref (pull_data->main_context);
-  if (idle_src)
-    g_source_destroy (idle_src);
   if (update_timeout)
     g_source_destroy (update_timeout);
-  if (pull_data->loop)
-    g_main_loop_unref (pull_data->loop);
   g_strfreev (configured_branches);
   g_clear_object (&pull_data->fetcher);
   g_clear_object (&pull_data->remote_repo_local);
@@ -2410,6 +2348,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   g_clear_pointer (&pull_data->summary_deltas_checksums, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_content, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_metadata, (GDestroyNotify) g_hash_table_unref);
+  g_clear_pointer (&pull_data->idle_src, (GDestroyNotify) g_source_destroy);
   g_clear_pointer (&remote_config, (GDestroyNotify) g_key_file_unref);
   return ret;
 }

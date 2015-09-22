@@ -201,10 +201,10 @@ _ostree_fetcher_init (OstreeFetcher *self)
 
   self->max_outstanding = 3 * max_conns;
 
-  g_signal_connect (self->session, "request-started",
-                    G_CALLBACK (on_request_started), self);
-  g_signal_connect (self->session, "request-unqueued",
-                    G_CALLBACK (on_request_unqueued), self);
+  g_signal_connect_object (self->session, "request-started",
+                           G_CALLBACK (on_request_started), self, 0);
+  g_signal_connect_object (self->session, "request-unqueued",
+                           G_CALLBACK (on_request_unqueued), self, 0);
   
   self->sending_messages = g_hash_table_new_full (NULL, NULL, NULL,
                                                   (GDestroyNotify)g_object_unref);
@@ -715,7 +715,7 @@ _ostree_fetcher_bytes_transferred (OstreeFetcher       *self)
 typedef struct
 {
   GInputStream   *result_stream;
-  GMainLoop      *loop;
+  gboolean         done;
   GError         **error;
 }
 FetchUriSyncData;
@@ -729,16 +729,19 @@ fetch_uri_sync_on_complete (GObject        *object,
 
   data->result_stream = ostree_fetcher_stream_uri_finish ((OstreeFetcher*)object,
                                                           result, data->error);
-  g_main_loop_quit (data->loop);
+  data->done = TRUE;
 }
 
+/* Synchronously request a URI - will iterate the thread-default main
+ * context for historical reasons.  If you don't want that, push a
+ * temporary one.
+ */
 gboolean
 _ostree_fetcher_request_uri_to_membuf (OstreeFetcher  *fetcher,
                                        SoupURI        *uri,
                                        gboolean        add_nul,
                                        gboolean        allow_noent,
                                        GBytes         **out_contents,
-                                       GMainLoop      *loop,
                                        guint64        max_size,
                                        GCancellable   *cancellable,
                                        GError         **error)
@@ -747,6 +750,7 @@ _ostree_fetcher_request_uri_to_membuf (OstreeFetcher  *fetcher,
   const guint8 nulchar = 0;
   g_autofree char *ret_contents = NULL;
   g_autoptr(GMemoryOutputStream) buf = NULL;
+  g_autoptr(GMainContext) mainctx = NULL;
   FetchUriSyncData data;
   g_assert (error != NULL);
 
@@ -755,7 +759,9 @@ _ostree_fetcher_request_uri_to_membuf (OstreeFetcher  *fetcher,
   if (g_cancellable_set_error_if_cancelled (cancellable, error))
     return FALSE;
 
-  data.loop = loop;
+  mainctx = g_main_context_ref_thread_default ();
+
+  data.done = FALSE;
   data.error = error;
 
   ostree_fetcher_stream_uri_async (fetcher, uri,
@@ -763,8 +769,9 @@ _ostree_fetcher_request_uri_to_membuf (OstreeFetcher  *fetcher,
                                    OSTREE_FETCHER_DEFAULT_PRIORITY,
                                    cancellable,
                                    fetch_uri_sync_on_complete, &data);
+  while (!data.done)
+    g_main_context_iteration (mainctx, TRUE);
 
-  g_main_loop_run (loop);
   if (!data.result_stream)
     {
       if (allow_noent)
