@@ -1,0 +1,9 @@
+etc/ostree
+etc/dracut.conf.d/ostree.conf
+lib/systemd/system/ostree*.service
+usr/bin/ostree
+usr/lib/dracut/modules.d/98ostree
+usr/sbin/ostree-prepare-root
+usr/sbin/ostree-remount
+usr/share/man
+usr/share/ostree/trusted.gpg.d

@@ -1,0 +1,54 @@
+From d667ebe1568591bdd3c3cc23d751ffc5c0a3752c Mon Sep 17 00:00:00 2001
+From: Sam Thursfield <ssssam@gmail.com>
+Date: Tue, 31 Mar 2015 12:59:43 -0400
+Subject: core: Fix possible crash in ostree_mutable_tree_walk()
+
+If the starting index is beyond the end of the list, it's a programming
+error. Previously, the code was trying to raise a runtime error, but
+actually causing a segfault.
+
+This was detected by test code in test-mutable-tree.c, which is removed
+in this commit because it should now not be possible to crash here.
+
+https://bugzilla.gnome.org/747032
+
+diff --git a/src/libostree/ostree-mutable-tree.c b/src/libostree/ostree-mutable-tree.c
+index 26a1ca4..17bcdc9 100644
+--- a/src/libostree/ostree-mutable-tree.c
++++ b/src/libostree/ostree-mutable-tree.c
+@@ -315,11 +315,9 @@ ostree_mutable_tree_walk (OstreeMutableTree     *self,
+                           OstreeMutableTree    **out_subdir,
+                           GError               **error)
+ {
+-  if (start >= split_path->len)
+-    {
+-      return set_error_noent (error, (char*)split_path->pdata[start]);
+-    }
+-  else if (start == split_path->len - 1)
++  g_return_val_if_fail (start < split_path->len, FALSE);
++
++  if (start == split_path->len - 1)
+     {
+       *out_subdir = g_object_ref (self);
+       return TRUE;
+diff --git a/tests/test-mutable-tree.c b/tests/test-mutable-tree.c
+index ef2b6b5..b0c2386 100644
+--- a/tests/test-mutable-tree.c
++++ b/tests/test-mutable-tree.c
+@@ -70,13 +70,6 @@ test_mutable_tree_walk (void)
+ 
+   {
+     gs_unref_object OstreeMutableTree *subdir = NULL;
+-    g_assert_false (ostree_mutable_tree_walk (tree, split_path, 10, &subdir, &error));
+-    g_assert_null (subdir);
+-    g_clear_error (&error);
+-  }
+-
+-  {
+-    gs_unref_object OstreeMutableTree *subdir = NULL;
+     gs_unref_object OstreeMutableTree *a = NULL;
+     gs_free char *source_checksum = NULL;
+     ostree_mutable_tree_lookup (tree, "a", &source_checksum, &a, &error);
+-- 
+cgit v0.10.2
+

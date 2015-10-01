@@ -1,0 +1,36 @@
+From d59a63e3e650aa75a055e4ede523790d60645435 Mon Sep 17 00:00:00 2001
+From: Colin Walters <walters@verbum.org>
+Date: Wed, 1 Apr 2015 05:42:26 -0400
+Subject: Switch to using glibc xattrs
+
+See https://github.com/GNOME/ostree/pull/78
+
+diff --git a/glnx-fdio.h b/glnx-fdio.h
+index 19f938c..5765a02 100644
+--- a/libglnx/glnx-fdio.h
++++ b/libglnx/glnx-fdio.h
+@@ -25,7 +25,7 @@
+ #include <dirent.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+-#include <attr/xattr.h>
++#include <sys/xattr.h>
+ /* From systemd/src/shared/util.h */
+ /* When we include libgen.h because we need dirname() we immediately
+  * undefine basename() since libgen.h defines it as a macro to the XDG
+diff --git a/glnx-xattrs.h b/glnx-xattrs.h
+index 410c722..a566a22 100644
+--- a/libglnx/glnx-xattrs.h
++++ b/libglnx/glnx-xattrs.h
+@@ -25,7 +25,7 @@
+ #include <dirent.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+-#include <attr/xattr.h>
++#include <sys/xattr.h>
+ 
+ G_BEGIN_DECLS
+ 
+-- 
+cgit v0.10.2
+

@@ -1,0 +1,5 @@
+#! /usr/bin/dh-exec
+usr/include/*
+usr/lib/${DEB_HOST_MULTIARCH}/libostree-1.so
+usr/lib/${DEB_HOST_MULTIARCH}/pkgconfig
+usr/share/gir-1.0/OSTree-1.0.gir

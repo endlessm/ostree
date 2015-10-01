@@ -1,0 +1,24 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+%:
+	dh $@ --parallel --with=autoreconf,gir
+
+override_dh_auto_clean:
+
+override_dh_autoreconf:
+	env NOCONFIGURE=1 dh_autoreconf ./autogen.sh
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		--disable-silent-rules \
+		--enable-gtk-doc \
+		--with-dracut \
+		--with-grub2 \
+		--with-systemdsystemunitdir=/lib/systemd/system
+
+override_dh_strip:
+	dh_strip -postree --dbg-package=ostree-dbg
+	dh_strip -plibostree-1-1 --dbg-package=ostree-dbg

@@ -1,0 +1,31 @@
+ostree (2016.1-alexlarsson1~wily1) wily; urgency=medium
+
+  * New upstream release
+
+ -- Alexander Larsson <alexander.larsson@gmail.com>  Thu, 01 Oct 2015 11:28:39 +0200
+
+ostree (2015.11-alexlarsson1~vivid1) vivid; urgency=medium
+
+  * New upstream release
+
+ -- Alexander Larsson <alexander.larsson@gmail.com>  Thu, 01 Oct 2015 11:28:39 +0200
+
+ostree (2015.9-alexlarsson1) vivid; urgency=medium
+
+  * New upstream release
+
+ -- Alexander Larsson <alexander.larsson@gmail.com>  Thu, 01 Oct 2015 11:28:39 +0200
+
+ostree (2015.4-0amigadave2) trusty; urgency=low
+
+  [ David King ]
+  * Add build dependency on libattr1-dev. 
+
+ -- David King <amigadave@amigadave.com>  Wed, 08 Apr 2015 13:10:39 +0100
+
+ostree (2015.4-0amigadave1) trusty; urgency=low
+
+  [ David King ]
+  * Initial packaging.
+
+ -- David King <amigadave@amigadave.com>  Thu, 02 Apr 2015 15:40:52 +0000
