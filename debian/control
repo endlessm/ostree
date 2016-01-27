@@ -1,5 +1,5 @@
 Source: ostree
-Section: devel
+Section: admin
 Priority: optional
 Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
 Uploaders:

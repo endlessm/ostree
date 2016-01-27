@@ -8,6 +8,7 @@ ostree (2016.1-1) UNRELEASED; urgency=medium
   * Normalize packaging via `wrap-and-sort -abst`
   * debian/control: move shared library to Section: libs
   * debian/control: remove redundant Section
+  * debian/control: change Section to admin
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 
