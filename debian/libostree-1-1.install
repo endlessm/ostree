@@ -1,2 +1,1 @@
-#! /usr/bin/dh-exec
-usr/lib/${DEB_HOST_MULTIARCH}/libostree-1.so.*
+usr/lib/*/libostree-1.so.*
