@@ -113,7 +113,6 @@ Description: content-addressed filesystem for operating system binaries
 
 Package: ostree-grub2
 Architecture: all
-Section: devel
 Depends:
  grub2,
  ${misc:Depends},
