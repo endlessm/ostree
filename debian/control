@@ -90,13 +90,3 @@ Depends:
  grub2
 Description: GRUB 2 configuration for ostree
  Configuration snippets for using ostree with GRUB 2.
-
-Package: ostree-dbg
-Architecture: any
-Section: debug
-Priority: extra
-Depends:
- ${misc:Depends},
- libostree-1-1 (= ${binary:Version})
-Description: debugging symbols for libostree-1-1
- This package contains the debugging symbols for libostree-1-1.

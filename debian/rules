@@ -17,8 +17,5 @@ override_dh_auto_configure:
 		--enable-gtk-doc \
 		--with-dracut \
 		--with-grub2 \
-		--with-systemdsystemunitdir=/lib/systemd/system
-
-override_dh_strip:
-	dh_strip -postree --dbg-package=ostree-dbg
-	dh_strip -plibostree-1-1 --dbg-package=ostree-dbg
+		--with-systemdsystemunitdir=/lib/systemd/system \
+		$(NULL)
