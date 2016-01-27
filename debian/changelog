@@ -10,6 +10,7 @@ ostree (2016.1-1) UNRELEASED; urgency=medium
   * debian/control: remove redundant Section
   * debian/control: change Section to admin
   * Remove unnecessary uses of dh-exec
+  * debian/patches: remove all patches, no longer needed or applied
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 
