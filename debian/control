@@ -33,11 +33,13 @@ Depends:
  ${misc:Depends},
  ${shlibs:Depends}
 Suggests: dracut
-Description: git for operating system binaries
+Description: content-addressed filesystem for operating system binaries
  OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
  It is not a package system; nor is it a tool for managing full disk images.
  Instead, it sits between those levels, offering a blend of the advantages (and
- disadvantages) of both. 
+ disadvantages) of both.
+ .
+ This package contains the executables.
 
 Package: libostree-1-1
 Architecture: any
@@ -46,11 +48,13 @@ Depends:
  ${shlibs:Depends}
 Pre-Depends: ${misc:Pre-Depends}
 Multi-arch: same
-Description: git for operating system binaries (library)
+Description: content-addressed filesystem for operating system binaries (library)
  OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
  It is not a package system; nor is it a tool for managing full disk images.
  Instead, it sits between those levels, offering a blend of the advantages (and
- disadvantages) of both. 
+ disadvantages) of both.
+ .
+ This package contains the shared library.
 
 Package: gir1.2-ostree-1.0
 Architecture: any
@@ -58,7 +62,12 @@ Section: introspection
 Depends:
  ${misc:Depends},
  ${gir:Depends}
-Description: git for operating system binaries (introspection)
+Description: content-addressed filesystem for operating system binaries (introspection)
+ OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
+ It is not a package system; nor is it a tool for managing full disk images.
+ Instead, it sits between those levels, offering a blend of the advantages (and
+ disadvantages) of both.
+ .
  This package can be used by other packages using the GIRepository format to
  generate dynamic bindings.
 
@@ -72,7 +81,12 @@ Depends:
  pkg-config
 Suggests: libostree-doc
 Description: Development files for the ostree library
- Development headers and pkg-config file for ostree.
+ OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
+ It is not a package system; nor is it a tool for managing full disk images.
+ Instead, it sits between those levels, offering a blend of the advantages (and
+ disadvantages) of both.
+ .
+ This package contains development headers and the pkg-config file for ostree.
 
 Package: libostree-doc
 Architecture: all
@@ -80,7 +94,12 @@ Section: doc
 Depends: ${misc:Depends}
 Suggests: devhelp
 Description: Development documentation for the ostree library
- Development documentation for ostree.
+ OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
+ It is not a package system; nor is it a tool for managing full disk images.
+ Instead, it sits between those levels, offering a blend of the advantages (and
+ disadvantages) of both.
+ .
+ This package contains development documentation for ostree.
 
 Package: ostree-grub2
 Architecture: all
@@ -89,4 +108,9 @@ Depends:
  ${misc:Depends},
  grub2
 Description: GRUB 2 configuration for ostree
- Configuration snippets for using ostree with GRUB 2.
+ OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
+ It is not a package system; nor is it a tool for managing full disk images.
+ Instead, it sits between those levels, offering a blend of the advantages (and
+ disadvantages) of both.
+ .
+ This package contains configuration snippets for using ostree with GRUB 2.
