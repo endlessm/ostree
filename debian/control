@@ -48,6 +48,7 @@ Description: content-addressed filesystem for operating system binaries (introsp
 
 Package: libostree-1-1
 Architecture: any
+Section: libs
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
