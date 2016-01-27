@@ -1,7 +1,9 @@
 Source: ostree
 Section: devel
 Priority: optional
-Maintainer: Alexander Larsson <alexander.larsson@gmail.com>
+Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
+Uploaders:
+ Simon McVittie <smcv@debian.org>,
 Build-Depends:
  debhelper (>= 9),
  dh-autoreconf,
@@ -26,6 +28,8 @@ Build-Depends:
  zlib1g-dev
 Standards-Version: 3.9.6
 Homepage: https://wiki.gnome.org/Projects/OSTree
+Vcs-Git: https://anonscm.debian.org/git/pkg-utopia/ostree.git
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-utopia/ostree.git
 
 Package: ostree
 Architecture: any

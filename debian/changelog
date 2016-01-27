@@ -4,6 +4,7 @@ ostree (2016.1-1) UNRELEASED; urgency=medium
   * Extend package descriptions a bit
   * debian/.gitignore: add
   * debian/copyright: fill in all copyright holders and licenses
+  * debian/control: set Maintainer to the pkg-utopia team
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 
