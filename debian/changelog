@@ -13,6 +13,7 @@ ostree (2016.1-1) UNRELEASED; urgency=medium
   * debian/patches: remove all patches, no longer needed or applied
   * Use dh_install --fail-missing to catch mistakes
   * Add a symbols file
+  * Add missing dependency on libglib2.0-dev
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 

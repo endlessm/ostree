@@ -67,6 +67,7 @@ Architecture: any
 Section: libdevel
 Depends:
  gir1.2-ostree-1.0 (= ${binary:Version}),
+ libglib2.0-dev,
  ostree (= ${binary:Version}),
  pkg-config,
  ${misc:Depends},
