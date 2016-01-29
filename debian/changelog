@@ -19,6 +19,9 @@ ostree (2016.1+deb-1) UNRELEASED; urgency=medium
     on installation
   * Don't override dh_auto_clean to nothing
   * Adjust upstream version number to work around mis-versioned PPA packages
+  * ostree-grub2: recommend concrete GRUB packages instead of hard-depending
+    on a transitional package. This is only a Recommends because you
+    could be using some other architecture's grub packages.
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 

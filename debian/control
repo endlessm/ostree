@@ -115,8 +115,9 @@ Description: content-addressed filesystem for operating system binaries
 Package: ostree-grub2
 Architecture: all
 Depends:
- grub2,
  ${misc:Depends},
+Recommends:
+ grub-efi-amd64 | grub-pc,
 Description: GRUB 2 configuration for ostree
  OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
  It is not a package system; nor is it a tool for managing full disk images.
