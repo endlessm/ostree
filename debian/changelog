@@ -17,6 +17,7 @@ ostree (2016.1-1) UNRELEASED; urgency=medium
   * Add an ostree-tests package, and use it for autopkgtest
   * Enable systemd helpers, but do not start the early-boot systemd services
     on installation
+  * Don't override dh_auto_clean to nothing
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 
