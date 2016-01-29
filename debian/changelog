@@ -1,4 +1,4 @@
-ostree (2016.1-1) UNRELEASED; urgency=medium
+ostree (2016.1+deb-1) UNRELEASED; urgency=medium
 
   * Remove -dbg package, rely on automatic dbgsym packages instead
   * Extend package descriptions a bit
@@ -18,6 +18,7 @@ ostree (2016.1-1) UNRELEASED; urgency=medium
   * Enable systemd helpers, but do not start the early-boot systemd services
     on installation
   * Don't override dh_auto_clean to nothing
+  * Adjust upstream version number to work around mis-versioned PPA packages
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 
