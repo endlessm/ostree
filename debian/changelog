@@ -15,6 +15,8 @@ ostree (2016.1-1) UNRELEASED; urgency=medium
   * Add a symbols file
   * Add missing dependency on libglib2.0-dev
   * Add an ostree-tests package, and use it for autopkgtest
+  * Enable systemd helpers, but do not start the early-boot systemd services
+    on installation
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 

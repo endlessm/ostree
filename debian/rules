@@ -4,7 +4,7 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 %:
-	dh $@ --parallel --with=autoreconf,gir
+	dh $@ --parallel --with=autoreconf,gir,systemd
 
 override_dh_auto_clean:
 
@@ -32,3 +32,6 @@ override_dh_fixperms:
 	chmod -v +x debian/tmp/usr/lib/*/ostree/installed-tests/*.js
 	chmod -v +x debian/tmp/usr/lib/*/ostree/installed-tests/*.py
 	chmod -v +x debian/tmp/usr/lib/*/ostree/installed-tests/*.sh
+
+override_dh_systemd_start:
+	dh_systemd_start --no-start

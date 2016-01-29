@@ -8,6 +8,7 @@ Build-Depends:
  bison,
  debhelper (>= 9),
  dh-autoreconf,
+ dh-systemd,
  docbook-xml,
  docbook-xsl,
  e2fslibs-dev,
