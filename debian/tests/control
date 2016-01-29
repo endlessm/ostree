@@ -1,0 +1,5 @@
+Tests: gnome-desktop-testing
+Depends: gnome-desktop-testing, ostree-tests
+
+Tests: build
+Depends: build-essential, libostree-dev, pkg-config

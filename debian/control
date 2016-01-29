@@ -123,3 +123,23 @@ Description: GRUB 2 configuration for ostree
  disadvantages) of both.
  .
  This package contains configuration snippets for using ostree with GRUB 2.
+
+Package: ostree-tests
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+ attr,
+ ca-certificates,
+ gir1.2-gsystem-1.0,
+ gir1.2-ostree-1.0,
+ gjs,
+ ostree,
+ python,
+Description: content-addressed filesystem for operating system binaries - tests
+ OSTree is a tool for managing bootable, immutable, versioned filesystem trees.
+ It is not a package system; nor is it a tool for managing full disk images.
+ Instead, it sits between those levels, offering a blend of the advantages (and
+ disadvantages) of both.
+ .
+ This package contains automated tests.

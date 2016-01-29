@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -e
+exec 2>&1
+set -x
+
+cd "$ADTTMP"
+
+cat > trivial.c <<EOF
+#include <ostree.h>
+
+int main (void)
+{
+    g_object_unref (ostree_repo_new_default ());
+    return 0;
+}
+EOF
+
+gcc -o trivial trivial.c $(pkg-config --cflags --libs ostree-1 gobject-2.0)
+test -x trivial
+./trivial
+echo "ok 3 run it"
