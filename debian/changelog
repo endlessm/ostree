@@ -1,5 +1,6 @@
 ostree (2016.1+deb-1) UNRELEASED; urgency=medium
 
+  * Prepare package for Debian (Closes: #813308)
   * Remove -dbg package, rely on automatic dbgsym packages instead
   * Extend package descriptions a bit
   * debian/.gitignore: add
