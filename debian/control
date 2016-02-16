@@ -3,6 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
 Uploaders:
+ Matthias Klumpp <mak@debian.org>,
  Simon McVittie <smcv@debian.org>,
 Build-Depends:
  bison,
@@ -28,8 +29,8 @@ Build-Depends:
  zlib1g-dev,
 Standards-Version: 3.9.6
 Homepage: https://wiki.gnome.org/Projects/OSTree
-Vcs-Git: https://anonscm.debian.org/git/pkg-utopia/ostree.git
-Vcs-Browser: https://anonscm.debian.org/cgit/pkg-utopia/ostree.git
+Vcs-Git: https://anonscm.debian.org/git/collab-maint/ostree.git
+Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ostree.git
 
 Package: gir1.2-ostree-1.0
 Architecture: any

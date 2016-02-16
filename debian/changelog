@@ -4,7 +4,8 @@ ostree (2016.1+deb-1) UNRELEASED; urgency=medium
   * Extend package descriptions a bit
   * debian/.gitignore: add
   * debian/copyright: fill in all copyright holders and licenses
-  * debian/control: set Maintainer to the pkg-utopia team
+  * debian/control: set Maintainer to the pkg-utopia team, with packaging
+    in collab-maint git, and myself and Matthias Klumpp as uploaders
   * Normalize packaging via `wrap-and-sort -abst`
   * debian/control: move shared library to Section: libs
   * debian/control: remove redundant Section
