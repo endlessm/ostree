@@ -17,6 +17,7 @@ override_dh_auto_configure:
 		--disable-silent-rules \
 		--enable-gtk-doc \
 		--enable-installed-tests \
+		--libexecdir='$${prefix}/lib' \
 		--with-dracut \
 		--with-grub2 \
 		--with-systemdsystemunitdir=/lib/systemd/system \
@@ -25,14 +26,14 @@ override_dh_auto_configure:
 
 override_dh_install:
 	rm -f debian/tmp/usr/lib/*/*.la
-	rm -f debian/tmp/usr/lib/*/ostree/installed-tests/*.la
+	rm -f debian/tmp/usr/lib/ostree/installed-tests/*.la
 	dh_install --fail-missing
 
 override_dh_fixperms:
 	dh_fixperms -X'*.js'
-	chmod -v +x debian/tmp/usr/lib/*/ostree/installed-tests/*.js
-	chmod -v +x debian/tmp/usr/lib/*/ostree/installed-tests/*.py
-	chmod -v +x debian/tmp/usr/lib/*/ostree/installed-tests/*.sh
+	chmod -v +x debian/tmp/usr/lib/ostree/installed-tests/*.js
+	chmod -v +x debian/tmp/usr/lib/ostree/installed-tests/*.py
+	chmod -v +x debian/tmp/usr/lib/ostree/installed-tests/*.sh
 
 override_dh_systemd_start:
 	dh_systemd_start --no-start

@@ -22,6 +22,9 @@ ostree (2016.1+deb-1) UNRELEASED; urgency=medium
   * ostree-grub2: recommend concrete GRUB packages instead of hard-depending
     on a transitional package. This is only a Recommends because you
     could be using some other architecture's grub packages.
+  * Redirect libexecdir to /usr/lib (not /usr/lib/${multiarch}) since we don't
+    need multiarch for anything that's installed there, fixing a broken
+    symlink in ostree-grub2
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 
