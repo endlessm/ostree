@@ -27,6 +27,8 @@ ostree (2016.1+deb-1) UNRELEASED; urgency=medium
   * Redirect libexecdir to /usr/lib (not /usr/lib/${multiarch}) since we don't
     need multiarch for anything that's installed there, fixing a broken
     symlink in ostree-grub2
+  * Document the limited situations in which ostree-grub2 will work in
+    practice
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 

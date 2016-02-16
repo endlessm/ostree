@@ -116,6 +116,7 @@ Description: content-addressed filesystem for operating system binaries
 Package: ostree-grub2
 Architecture: all
 Depends:
+ dracut,
  ${misc:Depends},
 Recommends:
  grub-efi-amd64 | grub-pc,
@@ -126,6 +127,15 @@ Description: GRUB 2 configuration for ostree
  disadvantages) of both.
  .
  This package contains configuration snippets for using ostree with GRUB 2.
+ This integration currently has some limitations:
+ .
+  - the initramfs must have been made using dracut
+  - the root filesystem must be one that dracut can mount without a root=
+    command-line argument (an EFI partition with the GUID defined in
+    the Discoverable Partitions specification)
+  - /boot must be a separate partition
+ .
+ See README.Debian.gz for more details.
 
 Package: ostree-tests
 Architecture: any
