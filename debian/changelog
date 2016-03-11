@@ -1,6 +1,7 @@
-ostree (2016.1+deb-1) UNRELEASED; urgency=medium
+ostree (2016.3-1) UNRELEASED; urgency=medium
 
   * Prepare package for Debian (Closes: #813308)
+  * New upstream release
   * Remove -dbg package, rely on automatic dbgsym packages instead
   * Extend package descriptions a bit
   * debian/.gitignore: add
@@ -20,7 +21,6 @@ ostree (2016.1+deb-1) UNRELEASED; urgency=medium
   * Enable systemd helpers, but do not start the early-boot systemd services
     on installation
   * Don't override dh_auto_clean to nothing
-  * Adjust upstream version number to work around mis-versioned PPA packages
   * ostree-grub2: recommend concrete GRUB packages instead of hard-depending
     on a transitional package. This is only a Recommends because you
     could be using some other architecture's grub packages.
@@ -29,7 +29,6 @@ ostree (2016.1+deb-1) UNRELEASED; urgency=medium
     symlink in ostree-grub2
   * Document the limited situations in which ostree-grub2 will work in
     practice
-  * debian/control: improve description based on v2016.3's README
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 

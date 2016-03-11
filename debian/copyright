@@ -7,8 +7,8 @@ Copyright:
  © 1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald
  © 1999-2000, 2002-2005 Free Software Foundation, Inc.
  © 2010-2015 Red Hat, Inc
+ © 2011-2016 Colin Walters <walters@verbum.org>
  © 2011 Avery Pennarun
- © 2011-2015 Colin Walters <walters@verbum.org>
  © 2013 Collabora Ltd.
  © 2013 Stef Walter <stef@redhat.com>
  © 2013 Javier Martinez <javier.martinez@collabora.co.uk>
@@ -52,7 +52,8 @@ License: BSD-2-clause
 
 Files: debian/*
 Copyright:
- 2015 David King <amigadave@amigadave.com>
+ © 2015 David King <amigadave@amigadave.com>
+ © 2016 Collabora Ltd.
 License: GPL-2+
 
 License: GPL-2+
