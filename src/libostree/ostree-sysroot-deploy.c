@@ -528,6 +528,11 @@ checkout_deployment_tree (OstreeSysroot     *sysroot,
   glnx_fd_close int osdeploy_dfd = -1;
   int ret_fd;
 
+  /* We end up using syncfs for the entire filesystem, so turn off
+   * OstreeRepo level fsync.
+   */
+  checkout_opts.disable_fsync = TRUE;
+
   osdeploy_path = g_strconcat ("ostree/deploy/", ostree_deployment_get_osname (deployment), "/deploy", NULL);
   checkout_target_name = g_strdup_printf ("%s.%d", csum, ostree_deployment_get_deployserial (deployment));
 
@@ -2030,9 +2035,12 @@ ostree_sysroot_deploy_tree (OstreeSysroot     *self,
                                       cancellable, error))
     goto out;
 
-  if (!ostree_sysroot_deployment_set_mutable (self, new_deployment, FALSE,
-                                              cancellable, error))
-    goto out;
+  if (!(self->debug_flags & OSTREE_SYSROOT_DEBUG_MUTABLE_DEPLOYMENTS))
+    {
+      if (!ostree_sysroot_deployment_set_mutable (self, new_deployment, FALSE,
+                                                  cancellable, error))
+        goto out;
+    }
 
   { ostree_cleanup_sepolicy_fscreatecon gpointer dummy = NULL;
 

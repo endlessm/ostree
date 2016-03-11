@@ -95,11 +95,6 @@ HTML_IMAGES=
 # Extra SGML files that are included by $(DOC_MAIN_SGML_FILE).
 # e.g. content_files=running.sgml building.sgml changes-2.0.sgml
 content_files= \
-	overview.xml \
-	repo.xml \
-	deployment.xml \
-	atomic-upgrades.xml \
-	adapting-existing.xml \
 	$(NULL)
 
 # SGML files where gtk-doc abbrevations (#GtkWidget) are expanded
@@ -116,53 +111,13 @@ expand_content_files= \
 # e.g. GTKDOC_LIBS=$(top_builddir)/gtk/$(gtktargetlib)
 GTKDOC_LIBS=
 
-# Hacks around gtk-doc brokenness for out of tree builds
-ostree-sections.txt: $(srcdir)/ostree-sections.txt
-	cp $< $@
-
 version.xml:
 	echo -n $(VERSION) > "$@"
 
 # This includes the standard gtk-doc make rules, copied by gtkdocize.
 include $(top_srcdir)/gtk-doc.make
 
-man1_MANS = ostree.1 ostree-admin-cleanup.1 ostree-admin-config-diff.1 ostree-admin-deploy.1 ostree-admin-init-fs.1 ostree-admin-instutil.1 ostree-admin-os-init.1 ostree-admin-status.1 ostree-admin-set-origin.1 ostree-admin-switch.1 ostree-admin-undeploy.1 ostree-admin-upgrade.1 ostree-admin.1 ostree-cat.1 ostree-checkout.1 ostree-checksum.1 ostree-commit.1 ostree-gpg-sign.1 ostree-config.1 ostree-diff.1 ostree-fsck.1 ostree-init.1 ostree-log.1 ostree-ls.1 ostree-prune.1 ostree-pull-local.1 ostree-pull.1 ostree-refs.1 ostree-remote.1 ostree-reset.1 ostree-rev-parse.1 ostree-show.1 ostree-summary.1 ostree-static-delta.1 ostree-trivial-httpd.1
-
-man5_MANS = ostree.repo.5 ostree.repo-config.5
-
-if ENABLE_GTK_DOC
-
-XSLTPROC_FLAGS = \
-        --nonet \
-        --stringparam man.output.quietly 1 \
-        --stringparam funcsynopsis.style ansi \
-        --stringparam man.th.extra1.suppress 1 \
-        --stringparam man.authors.section.enabled 0 \
-        --stringparam man.copyright.section.enabled 0
-
-XSLTPROC_MAN = \
-	$(XSLTPROC) $(XSLTPROC_FLAGS) http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl
-
-.xml.1:
-	$(AM_V_GEN) $(XSLTPROC_MAN) $<
-.xml.5:
-	$(AM_V_GEN) $(XSLTPROC_MAN) $<
-
-CLEANFILES += \
-	$(man1_MANS) \
-	$(man5_MANS) \
-	$(NULL)
-
-endif # ENABLE_GTK_DOC
-
-MAN_IN_FILES = \
-	$(man1_MANS:.1=.xml) \
-	$(man5_MANS:.5=.xml) \
-	$(NULL)
-
 EXTRA_DIST += \
-	$(MAN_IN_FILES) \
 	version.xml \
-	ostree.xml \
 	ostree-sections.txt \
 	$(NULL)

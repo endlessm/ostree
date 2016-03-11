@@ -27,6 +27,7 @@ testfiles = test-basic \
 	test-remote-add \
 	test-remote-gpg-import \
         test-commit-sign \
+        test-export \
 	test-help \
 	test-libarchive \
 	test-pull-archive-z \
@@ -61,6 +62,11 @@ testfiles = test-basic \
 	test-auto-summary \
 	test-prune \
 	$(NULL)
+
+if BUILDOPT_FUSE
+testfiles += test-rofiles-fuse
+endif
+
 insttest_SCRIPTS = $(addprefix tests/,$(testfiles:=.sh))
 
 # This one uses corrupt-repo-ref.js
@@ -79,6 +85,8 @@ insttest_DATA = tests/archive-test.sh \
 	tests/test-basic-user.sh \
 	tests/test-local-pull.sh \
 	tests/corrupt-repo-ref.js \
+	tests/pre-endian-deltas-repo-big.tar.xz \
+	tests/pre-endian-deltas-repo-little.tar.xz \
 	$(NULL)
 
 insttest_SCRIPTS += \
@@ -134,6 +142,10 @@ TESTS = tests/test-varint tests/test-ot-unix-utils tests/test-bsdiff tests/test-
 	tests/test-keyfile-utils tests/test-ot-opt-utils tests/test-ot-tool-util \
 	tests/test-gpg-verify-result tests/test-checksum tests/test-lzma tests/test-rollsum
 
+if USE_LIBARCHIVE
+TESTS += tests/test-libarchive-import
+endif
+
 check_PROGRAMS =  $(TESTS)
 TESTS_ENVIRONMENT = \
 	G_TEST_SRCDIR=$(abs_srcdir)/tests \
@@ -165,6 +177,10 @@ tests_test_bsdiff_LDADD = libbsdiff.la $(TESTS_LDADD)
 tests_test_checksum_SOURCES = src/libostree/ostree-core.c tests/test-checksum.c
 tests_test_checksum_CFLAGS = $(TESTS_CFLAGS) $(libglnx_cflags)
 tests_test_checksum_LDADD = $(TESTS_LDADD)
+
+tests_test_libarchive_import_SOURCES = tests/test-libarchive-import.c
+tests_test_libarchive_import_CFLAGS = $(TESTS_CFLAGS) $(libglnx_cflags)
+tests_test_libarchive_import_LDADD = $(TESTS_LDADD)
 
 tests_test_keyfile_utils_CFLAGS = $(TESTS_CFLAGS)
 tests_test_keyfile_utils_LDADD = $(TESTS_LDADD)

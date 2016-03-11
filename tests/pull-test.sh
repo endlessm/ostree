@@ -17,7 +17,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
-set -e
+set -euo pipefail
 
 function repo_init() {
     cd ${test_tmpdir}
@@ -73,6 +73,21 @@ assert_file_has_content main-meta "HANCOCK"
 echo "ok pull detached metadata"
 
 cd ${test_tmpdir}
+mkdir parentpullrepo
+${CMD_PREFIX} ostree --repo=parentpullrepo init --mode=archive-z2
+${CMD_PREFIX} ostree --repo=parentpullrepo remote add --set=gpg-verify=false origin file://$(pwd)/ostree-srv/gnomerepo
+parent_rev=$(ostree --repo=ostree-srv/gnomerepo rev-parse main^)
+rev=$(ostree --repo=ostree-srv/gnomerepo rev-parse main)
+${CMD_PREFIX} ostree --repo=parentpullrepo pull origin main@${parent_rev}
+${CMD_PREFIX} ostree --repo=parentpullrepo rev-parse origin:main > main.txt
+assert_file_has_content main.txt ${parent_rev}
+${CMD_PREFIX} ostree --repo=parentpullrepo fsck
+${CMD_PREFIX} ostree --repo=parentpullrepo pull origin main
+${CMD_PREFIX} ostree --repo=parentpullrepo rev-parse origin:main > main.txt
+assert_file_has_content main.txt ${rev}
+echo "ok pull specific commit"
+
+cd ${test_tmpdir}
 repo_init
 ${CMD_PREFIX} ostree --repo=repo pull origin main
 ${CMD_PREFIX} ostree --repo=repo fsck
@@ -91,12 +106,30 @@ cd ..
 rm main-files -rf
 # Generate delta that we'll use
 ${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo static-delta generate main
+prev_rev=$(ostree --repo=ostree-srv/gnomerepo rev-parse main^)
+new_rev=$(ostree --repo=ostree-srv/gnomerepo rev-parse main)
+ostree --repo=ostree-srv/gnomerepo summary -u
 
 cd ${test_tmpdir}
-${CMD_PREFIX} ostree --repo=repo pull origin main
+repo_init
+${CMD_PREFIX} ostree --repo=repo pull origin main@${prev_rev}
+${CMD_PREFIX} ostree --repo=repo pull --dry-run --require-static-deltas origin main >dry-run-pull.txt
+assert_file_has_content dry-run-pull.txt 'Delta update: 0/1 parts'
+rev=$(${CMD_PREFIX} ostree --repo=repo rev-parse origin:main)
+assert_streq "${prev_rev}" "${rev}"
 ${CMD_PREFIX} ostree --repo=repo fsck
 
 cd ${test_tmpdir}
+repo_init
+${CMD_PREFIX} ostree --repo=repo pull origin main@${prev_rev}
+${CMD_PREFIX} ostree --repo=repo pull --require-static-deltas origin main
+rev=$(${CMD_PREFIX} ostree --repo=repo rev-parse origin:main)
+assert_streq "${new_rev}" "${rev}"
+${CMD_PREFIX} ostree --repo=repo fsck
+
+cd ${test_tmpdir}
+repo_init
+${CMD_PREFIX} ostree --repo=repo pull origin main@${prev_rev}
 ${CMD_PREFIX} ostree --repo=repo pull --disable-static-deltas origin main
 ${CMD_PREFIX} ostree --repo=repo fsck
 
@@ -110,6 +143,33 @@ assert_not_has_file baz/saucer
 echo "ok static delta"
 
 cd ${test_tmpdir}
+${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo static-delta generate --swap-endianness main
+${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo summary -u
+
+repo_init
+${CMD_PREFIX} ostree --repo=repo pull origin main@${prev_rev}
+${CMD_PREFIX} ostree --repo=repo pull --require-static-deltas --dry-run origin main >byteswapped-dry-run-pull.txt
+${CMD_PREFIX} ostree --repo=repo fsck
+
+if ! diff -u dry-run-pull.txt byteswapped-dry-run-pull.txt; then
+    assert_not_reached "byteswapped delta differs in size"
+fi
+
+echo "ok pull byteswapped delta"
+
+cd ${test_tmpdir}
+rm ostree-srv/gnomerepo/deltas -rf
+ostree --repo=ostree-srv/gnomerepo summary -u
+repo_init
+if ${CMD_PREFIX} ostree --repo=repo pull --require-static-deltas origin main 2>err.txt; then
+    assert_not_reached "--require-static-deltas unexpectedly succeeded"
+fi
+assert_file_has_content err.txt "deltas required, but none found"
+${CMD_PREFIX} ostree --repo=repo fsck
+
+echo "ok delta required but don't exist"
+
+cd ${test_tmpdir}
 rm main-files -rf
 ${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo checkout main main-files
 cd main-files
@@ -119,6 +179,7 @@ cd ..
 rm main-files -rf
 # Generate new delta that we'll use
 ${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo static-delta generate --inline main
+ostree --repo=ostree-srv/gnomerepo summary -u
 
 cd ${test_tmpdir}
 ${CMD_PREFIX} ostree --repo=repo pull origin main
@@ -142,6 +203,7 @@ ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo commit -b main -
 cd ..
 rm main-files -rf
 ${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo static-delta generate main
+ostree --repo=ostree-srv/gnomerepo summary -u
 
 cd ${test_tmpdir}
 ${CMD_PREFIX} ostree --repo=repo pull origin main

@@ -241,7 +241,7 @@ glnx_console_progress_text_percent (const char *text,
 
   if (textlen > 0)
     {
-      fwrite (text, 1, textlen - 1, stdout);
+      fwrite (text, 1, textlen, stdout);
       fputc (' ', stdout);
     }
   
@@ -285,5 +285,5 @@ glnx_console_unlock (GLnxConsoleRef *console)
   if (console->is_tty)
     fputc ('\n', stdout);
       
-  locked = FALSE;
+  locked = console->locked = FALSE;
 }

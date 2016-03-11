@@ -32,7 +32,7 @@ DISTCHECK_CONFIGURE_FLAGS += --enable-gtk-doc --disable-maintainer-mode
 SUBDIRS += .
 
 if ENABLE_GTK_DOC
-SUBDIRS += doc
+SUBDIRS += apidoc
 endif
 
 EXTRA_DIST += autogen.sh COPYING README.md
@@ -43,8 +43,8 @@ OT_INTERNAL_SOUP_CFLAGS = $(OT_DEP_SOUP_CFLAGS)
 OT_INTERNAL_SOUP_LIBS = $(OT_DEP_SOUP_LIBS)
 
 # This canonicalizes the PKG_CHECK_MODULES or AM_PATH_GPGME results
-OT_INTERNAL_GPGME_CFLAGS = $(OT_DEP_GPGME_CFLAGS) $(GPGME_CFLAGS)
-OT_INTERNAL_GPGME_LIBS = $(OT_DEP_GPGME_LIBS) $(GPGME_LIBS)
+OT_INTERNAL_GPGME_CFLAGS = $(OT_DEP_GPGME_CFLAGS) $(GPGME_PTHREAD_CFLAGS)
+OT_INTERNAL_GPGME_LIBS = $(OT_DEP_GPGME_LIBS) $(GPGME_PTHREAD_LIBS)
 
 if BUILDOPT_INTROSPECTION
 include $(INTROSPECTION_MAKEFILE)
@@ -68,8 +68,10 @@ include Makefile-otutil.am
 include Makefile-libostree.am
 include Makefile-ostree.am
 include Makefile-switchroot.am
+include src/rofiles-fuse/Makefile-inc.am
 include Makefile-tests.am
 include Makefile-boot.am
+include Makefile-man.am
 
 release-tag:
 	git tag -m "Release $(VERSION)" v$(VERSION)

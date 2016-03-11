@@ -412,12 +412,12 @@ add_size_index_to_metadata (OstreeRepo        *self,
 
       for (i = 0; i < sorted_keys->len; i++)
         {
-          guint8 csum[32];
+          guint8 csum[OSTREE_SHA256_DIGEST_LEN];
           const char *e_checksum = sorted_keys->pdata[i];
           GString *buffer = g_string_new (NULL);
 
           ostree_checksum_inplace_to_bytes (e_checksum, csum);
-          g_string_append_len (buffer, (char*)csum, 32);
+          g_string_append_len (buffer, (char*)csum, sizeof (csum));
 
           e_size = g_hash_table_lookup (self->object_sizes, e_checksum);
           _ostree_write_varuint64 (buffer, e_size->archived);
@@ -1144,7 +1144,8 @@ ostree_repo_scan_hardlinks (OstreeRepo    *self,
  * ostree_repo_prepare_transaction:
  * @self: An #OstreeRepo
  * @out_transaction_resume: (allow-none) (out): Whether this transaction
- * is resuming from a previous one.
+ * is resuming from a previous one.  This is a legacy state, now OSTree
+ * pulls use per-commit `state/.commitpartial` files.
  * @cancellable: Cancellable
  * @error: Error
  *

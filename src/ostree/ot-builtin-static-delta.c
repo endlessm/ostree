@@ -23,6 +23,7 @@
 #include "ot-main.h"
 #include "ot-builtins.h"
 #include "ostree.h"
+#include "ostree-cmdprivate.h"
 #include "ot-main.h"
 #include "otutil.h"
 
@@ -31,13 +32,16 @@ static char *opt_to_rev;
 static char *opt_min_fallback_size;
 static char *opt_max_bsdiff_size;
 static char *opt_max_chunk_size;
+static char *opt_endianness;
 static gboolean opt_empty;
+static gboolean opt_swap_endianness;
 static gboolean opt_inline;
 static gboolean opt_disable_bsdiff;
 
 #define BUILTINPROTO(name) static gboolean ot_static_delta_builtin_ ## name (int argc, char **argv, GCancellable *cancellable, GError **error)
 
 BUILTINPROTO(list);
+BUILTINPROTO(show);
 BUILTINPROTO(generate);
 BUILTINPROTO(apply_offline);
 
@@ -45,6 +49,7 @@ BUILTINPROTO(apply_offline);
 
 static OstreeCommand static_delta_subcommands[] = {
   { "list", ot_static_delta_builtin_list },
+  { "show", ot_static_delta_builtin_show },
   { "generate", ot_static_delta_builtin_generate },
   { "apply-offline", ot_static_delta_builtin_apply_offline },
   { NULL, NULL }
@@ -57,6 +62,8 @@ static GOptionEntry generate_options[] = {
   { "inline", 0, 0, G_OPTION_ARG_NONE, &opt_inline, "Inline delta parts into main delta", NULL },
   { "to", 0, 0, G_OPTION_ARG_STRING, &opt_to_rev, "Create delta to revision REV", "REV" },
   { "disable-bsdiff", 0, 0, G_OPTION_ARG_NONE, &opt_disable_bsdiff, "Disable use of bsdiff", NULL },
+  { "set-endianness", 0, 0, G_OPTION_ARG_STRING, &opt_endianness, "Choose metadata endianness ('l' or 'B')", "ENDIAN" },
+  { "swap-endianness", 0, 0, G_OPTION_ARG_NONE, &opt_swap_endianness, "Swap metadata endianness from host order", NULL },
   { "min-fallback-size", 0, 0, G_OPTION_ARG_STRING, &opt_min_fallback_size, "Minimum uncompressed size in megabytes for individual HTTP request", NULL},
   { "max-bsdiff-size", 0, 0, G_OPTION_ARG_STRING, &opt_max_bsdiff_size, "Maximum size in megabytes to consider bsdiff compression for input files", NULL},
   { "max-chunk-size", 0, 0, G_OPTION_ARG_STRING, &opt_max_chunk_size, "Maximum size of delta chunks in megabytes", NULL},
@@ -130,6 +137,38 @@ ot_static_delta_builtin_list (int argc, char **argv, GCancellable *cancellable, 
 }
 
 static gboolean
+ot_static_delta_builtin_show (int argc, char **argv, GCancellable *cancellable, GError **error)
+{
+  gboolean ret = FALSE;
+  GOptionContext *context;
+  glnx_unref_object OstreeRepo *repo = NULL;
+  const char *delta_id = NULL;
+
+  context = g_option_context_new ("SHOW - Dump information on a delta");
+
+  if (!ostree_option_context_parse (context, list_options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+    goto out;
+
+  if (argc < 3)
+    {
+      g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                           "DELTA must be specified");
+      goto out;
+    }
+
+  delta_id = argv[2];
+
+  if (!ostree_cmd__private__ ()->ostree_static_delta_dump (repo, delta_id, cancellable, error))
+    goto out;
+      
+  ret = TRUE;
+ out:
+  if (context)
+    g_option_context_free (context);
+  return ret;
+}
+
+static gboolean
 ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   gboolean ret = FALSE;
@@ -159,6 +198,7 @@ ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellab
       g_autofree char *to_resolved = NULL;
       g_autofree char *from_parent_str = NULL;
       g_autoptr(GVariantBuilder) parambuilder = NULL;
+      int endianness;
 
       g_assert (opt_to_rev);
 
@@ -189,6 +229,37 @@ ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellab
         }
       if (!ostree_repo_resolve_rev (repo, opt_to_rev, FALSE, &to_resolved, error))
         goto out;
+      
+      if (opt_endianness)
+        {
+          if (strcmp (opt_endianness, "l") == 0)
+            endianness = G_LITTLE_ENDIAN;
+          else if (strcmp (opt_endianness, "B") == 0)
+            endianness = G_BIG_ENDIAN;
+          else
+            {
+              g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                           "Invalid endianness '%s'", opt_endianness);
+              goto out;
+            }
+        }
+      else
+        endianness = G_BYTE_ORDER;
+          
+      if (opt_swap_endianness)
+        {
+          switch (endianness)
+            {
+            case G_LITTLE_ENDIAN:
+              endianness = G_BIG_ENDIAN;
+              break;
+            case G_BIG_ENDIAN:
+              endianness = G_LITTLE_ENDIAN;
+              break;
+            default:
+              g_assert_not_reached ();
+            }
+        }
 
       parambuilder = g_variant_builder_new (G_VARIANT_TYPE ("a{sv}"));
       if (opt_min_fallback_size)
@@ -208,6 +279,8 @@ ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellab
                                "inline-parts", g_variant_new_boolean (TRUE));
 
       g_variant_builder_add (parambuilder, "{sv}", "verbose", g_variant_new_boolean (TRUE));
+      if (opt_endianness || opt_swap_endianness)
+        g_variant_builder_add (parambuilder, "{sv}", "endianness", g_variant_new_uint32 (endianness));
 
       g_print ("Generating static delta:\n");
       g_print ("  From: %s\n", from_resolved ? from_resolved : "empty");

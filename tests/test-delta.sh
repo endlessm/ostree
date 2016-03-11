@@ -17,7 +17,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
-set -e
+set -euo pipefail
 
 . $(dirname $0)/libtest.sh
 
@@ -113,6 +113,41 @@ if ${CMD_PREFIX} ostree --repo=repo static-delta generate --from=${origrev} --to
 fi
 
 echo 'ok generate'
+
+${CMD_PREFIX} ostree --repo=repo static-delta show ${origrev}-${newrev} > show.txt
+assert_file_has_content show.txt 'Endianness: \(little\|big\)'
+
+echo 'ok show'
+
+${CMD_PREFIX} ostree --repo=repo static-delta generate --swap-endianness --from=${origrev} --to=${newrev}
+${CMD_PREFIX} ostree --repo=repo static-delta show ${origrev}-${newrev} > show-swapped.txt
+totalsize_orig=$(grep 'Total Size:' show.txt)
+totalsize_swapped=$(grep 'Total Size:' show-swapped.txt)
+assert_not_streq "${totalsize_orig}" ""
+assert_streq "${totalsize_orig}" "${totalsize_swapped}"
+
+echo 'ok generate + show endian swapped'
+
+tar xf ${SRCDIR}/pre-endian-deltas-repo-big.tar.xz
+mv pre-endian-deltas-repo{,-big}
+tar xf ${SRCDIR}/pre-endian-deltas-repo-little.tar.xz
+mv pre-endian-deltas-repo{,-little}
+legacy_origrev=$(${CMD_PREFIX} ostree --repo=pre-endian-deltas-repo-big rev-parse main^)
+legacy_newrev=$(${CMD_PREFIX} ostree --repo=pre-endian-deltas-repo-big rev-parse main)
+${CMD_PREFIX} ostree --repo=pre-endian-deltas-repo-big static-delta show ${legacy_origrev}-${legacy_newrev} > show-legacy-big.txt
+totalsize_legacy_big=$(grep 'Total Size:' show-legacy-big.txt)
+${CMD_PREFIX} ostree --repo=pre-endian-deltas-repo-big static-delta show ${legacy_origrev}-${legacy_newrev} > show-legacy-little.txt
+totalsize_legacy_little=$(grep 'Total Size:' show-legacy-little.txt)
+for f in show-legacy-{big,little}.txt; do
+    if grep 'Endianness:.*heuristic' $f; then
+	found_heuristic=yes
+	break
+    fi
+done
+assert_streq "${found_heuristic}" "yes"
+assert_streq "${totalsize_legacy_big}" "${totalsize_legacy_little}"
+
+echo 'ok heuristic endian detection'
 
 mkdir repo2 && ${CMD_PREFIX} ostree --repo=repo2 init --mode=archive-z2
 ${CMD_PREFIX} ostree --repo=repo2 pull-local repo ${newrev}
