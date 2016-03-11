@@ -151,6 +151,7 @@ Depends:
  ${shlibs:Depends},
  attr,
  ca-certificates,
+ fuse,
  gir1.2-gsystem-1.0,
  gir1.2-ostree-1.0,
  gjs,
