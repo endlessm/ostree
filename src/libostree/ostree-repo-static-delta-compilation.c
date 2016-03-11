@@ -59,6 +59,7 @@ typedef struct {
   guint n_rollsum;
   guint n_bsdiff;
   guint n_fallback;
+  gboolean swap_endian;
 } OstreeStaticDeltaBuilder;
 
 typedef enum {
@@ -228,7 +229,7 @@ objtype_checksum_array_new (GPtrArray *objects)
       GVariant *serialized_key = objects->pdata[i];
       OstreeObjectType objtype;
       const char *checksum;
-      guint8 csum[32];
+      guint8 csum[OSTREE_SHA256_DIGEST_LEN];
       guint8 objtype_v;
         
       ostree_object_name_deserialize (serialized_key, &checksum, &objtype);
@@ -678,7 +679,7 @@ process_one_rollsum (OstreeRepo                       *repo,
 
   { gsize mode_offset, xattr_offset, from_csum_offset;
     gboolean reading_payload = TRUE;
-    guchar source_csum[32];
+    guchar source_csum[OSTREE_SHA256_DIGEST_LEN];
     guint i;
 
     write_content_mode_xattrs (repo, current_part, content_finfo, content_xattrs,
@@ -799,7 +800,7 @@ process_one_bsdiff (OstreeRepo                       *repo,
   g_ptr_array_add (current_part->objects, ostree_object_name_serialize (to_checksum, OSTREE_OBJECT_TYPE_FILE));
 
   { gsize mode_offset, xattr_offset;
-    guchar source_csum[32];
+    guchar source_csum[OSTREE_SHA256_DIGEST_LEN];
 
     write_content_mode_xattrs (repo, current_part, content_finfo, content_xattrs,
                                &mode_offset, &xattr_offset);
@@ -1191,7 +1192,8 @@ get_fallback_headers (OstreeRepo               *self,
                                    g_variant_new ("(y@aytt)",
                                                   objtype,
                                                   ostree_checksum_to_bytes_v (checksum),
-                                                  compressed_size, uncompressed_size));
+                                                  maybe_swap_endian_u64 (builder->swap_endian, compressed_size),
+                                                  maybe_swap_endian_u64 (builder->swap_endian, uncompressed_size)));
     }
 
   ret_headers = g_variant_ref_sink (g_variant_builder_end (fallback_builder));
@@ -1228,6 +1230,7 @@ get_fallback_headers (OstreeRepo               *self,
  *   - bsdiff-enabled: b: Enable bsdiff compression.  Default TRUE.
  *   - inline-parts: b: Put part data in header, to get a single file delta.  Default FALSE.
  *   - verbose: b: Print diagnostic messages.  Default FALSE.
+ *   - endianness: b: Deltas use host byte order by default; this option allows choosing (G_BIG_ENDIAN or G_LITTLE_ENDIAN)
  *   - filename: ay: Save delta superblock to this filename, and parts in the same directory.  Default saves to repository.
  */
 gboolean
@@ -1262,6 +1265,7 @@ ostree_repo_static_delta_generate (OstreeRepo                   *self,
   g_autoptr(GVariant) fallback_headers = NULL;
   g_autoptr(GVariant) detached = NULL;
   gboolean inline_parts;
+  guint endianness = G_BYTE_ORDER; 
   g_autoptr(GFile) tmp_dir = NULL;
   builder.parts = g_ptr_array_new_with_free_func ((GDestroyNotify)ostree_static_delta_part_builder_unref);
   builder.fallback_objects = g_ptr_array_new_with_free_func ((GDestroyNotify)g_variant_unref);
@@ -1276,6 +1280,11 @@ ostree_repo_static_delta_generate (OstreeRepo                   *self,
   if (!g_variant_lookup (params, "max-chunk-size", "u", &max_chunk_size))
     max_chunk_size = 32;
   builder.max_chunk_size_bytes = ((guint64)max_chunk_size) * 1000 * 1000;
+
+  (void) g_variant_lookup (params, "endianness", "u", &endianness);
+  g_return_val_if_fail (endianness == G_BIG_ENDIAN || endianness == G_LITTLE_ENDIAN, FALSE);
+
+  builder.swap_endian = endianness != G_BYTE_ORDER;
 
   { gboolean use_bsdiff;
     if (!g_variant_lookup (params, "bsdiff-enabled", "b", &use_bsdiff))
@@ -1306,6 +1315,10 @@ ostree_repo_static_delta_generate (OstreeRepo                   *self,
                                   cancellable, error))
     goto out;
 
+  /* NOTE: Add user-supplied metadata first.  This is used by at least
+   * xdg-app as a way to provide MIME content sniffing, since the
+   * metadata appears first in the file.
+   */
   g_variant_builder_init (&metadata_builder, G_VARIANT_TYPE ("a{sv}"));
   if (metadata != NULL)
     {
@@ -1319,6 +1332,22 @@ ostree_repo_static_delta_generate (OstreeRepo                   *self,
           g_variant_unref (item);
         }
     }
+
+  { guint8 endianness_char;
+    
+    switch (endianness)
+      {
+      case G_LITTLE_ENDIAN:
+        endianness_char = 'l';
+        break;
+      case G_BIG_ENDIAN:
+        endianness_char = 'B';
+        break;
+      default:
+        g_assert_not_reached ();
+      }
+    g_variant_builder_add (&metadata_builder, "{sv}", "ostree.endianness", g_variant_new_byte (endianness_char));
+  }
 
   if (opt_filename)
     {
@@ -1411,13 +1440,13 @@ ostree_repo_static_delta_generate (OstreeRepo                   *self,
                                        cancellable, error))
         goto out;
 
-      checksum_bytes = g_bytes_new (part_checksum, 32);
+      checksum_bytes = g_bytes_new (part_checksum, OSTREE_SHA256_DIGEST_LEN);
       objtype_checksum_array = objtype_checksum_array_new (part_builder->objects);
       delta_part_header = g_variant_new ("(u@aytt@ay)",
-                                         OSTREE_DELTAPART_VERSION,
+                                         maybe_swap_endian_u32 (builder.swap_endian, OSTREE_DELTAPART_VERSION),
                                          ot_gvariant_new_ay_bytes (checksum_bytes),
-                                         (guint64) g_variant_get_size (delta_part),
-                                         part_builder->uncompressed_size,
+                                         maybe_swap_endian_u64 (builder.swap_endian, (guint64) g_variant_get_size (delta_part)),
+                                         maybe_swap_endian_u64 (builder.swap_endian, part_builder->uncompressed_size),
                                          ot_gvariant_new_ay_bytes (objtype_checksum_array));
 
       g_variant_builder_add_value (part_headers, g_variant_ref (delta_part_header));

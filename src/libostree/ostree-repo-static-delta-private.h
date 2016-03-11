@@ -46,10 +46,10 @@ G_BEGIN_DECLS
 /**
  * OSTREE_STATIC_DELTA_META_ENTRY_FORMAT:
  *
- *   u: version
+ *   u: version     (non-canonical endian)
  *   ay checksum
- *   guint64 size:   Total size of delta (sum of parts)
- *   guint64 usize:   Uncompressed size of resulting objects on disk
+ *   guint64 size:   Total size of delta (sum of parts) (non-canonical endian)
+ *   guint64 usize:   Uncompressed size of resulting objects on disk (non-canonical endian)
  *   ARRAY[(guint8 objtype, csum object)]
  *
  * The checksum is of the delta payload, and each entry in the array
@@ -64,8 +64,8 @@ G_BEGIN_DECLS
  *
  * y: objtype
  * ay: checksum
- * t: compressed size
- * t: uncompressed size
+ * t: compressed size (non-canonical endian)
+ * t: uncompressed size (non-canonical endian)
  *
  * Object to fetch invididually; includes compressed/uncompressed size.
  */
@@ -79,7 +79,7 @@ G_BEGIN_DECLS
  *
  * delta-descriptor:
  *   metadata: a{sv}
- *   t: timestamp
+ *   t: timestamp (big endian)
  *   from: ay checksum
  *   to: ay checksum
  *   commit: new commit object
@@ -103,38 +103,11 @@ G_BEGIN_DECLS
  */ 
 #define OSTREE_STATIC_DELTA_SUPERBLOCK_FORMAT "(a{sv}tayay" OSTREE_COMMIT_GVARIANT_STRING "aya" OSTREE_STATIC_DELTA_META_ENTRY_FORMAT "a" OSTREE_STATIC_DELTA_FALLBACK_FORMAT ")"
 
-gboolean _ostree_static_delta_part_validate (OstreeRepo     *repo,
-                                             GInputStream   *in,
-                                             guint           part_offset,
-                                             const char     *expected_checksum,
-                                             GCancellable   *cancellable,
-                                             GError        **error);
-
-gboolean _ostree_static_delta_part_execute (OstreeRepo      *repo,
-                                            GVariant        *header,
-                                            GBytes          *partdata,
-                                            gboolean         trusted,
-                                            GCancellable    *cancellable,
-                                            GError         **error);
-
-gboolean _ostree_static_delta_part_execute_raw (OstreeRepo      *repo,
-                                                GVariant        *header,
-                                                GVariant        *part,
-                                                gboolean         trusted,
-                                                GCancellable    *cancellable,
-                                                GError         **error);
-
-void _ostree_static_delta_part_execute_async (OstreeRepo      *repo,
-                                              GVariant        *header,
-                                              GBytes          *partdata,
-                                              gboolean         trusted,
-                                              GCancellable    *cancellable,
-                                              GAsyncReadyCallback  callback,
-                                              gpointer         user_data);
-
-gboolean _ostree_static_delta_part_execute_finish (OstreeRepo      *repo,
-                                                   GAsyncResult    *result,
-                                                   GError         **error); 
+typedef enum {
+  OSTREE_STATIC_DELTA_OPEN_FLAGS_NONE = 0,
+  OSTREE_STATIC_DELTA_OPEN_FLAGS_SKIP_CHECKSUM = (1 << 0),
+  OSTREE_STATIC_DELTA_OPEN_FLAGS_VARIANT_TRUSTED = (1 << 1)
+} OstreeStaticDeltaOpenFlags;
 
 typedef enum {
   OSTREE_STATIC_DELTA_OP_OPEN_SPLICE_AND_CLOSE = 'S',
@@ -145,6 +118,46 @@ typedef enum {
   OSTREE_STATIC_DELTA_OP_CLOSE = 'c',
   OSTREE_STATIC_DELTA_OP_BSPATCH = 'B'
 } OstreeStaticDeltaOpCode;
+#define OSTREE_STATIC_DELTA_N_OPS 7
+
+gboolean
+_ostree_static_delta_part_open (GInputStream   *part_in,
+                                GBytes         *inline_part_bytes,
+                                OstreeStaticDeltaOpenFlags flags,
+                                const char     *expected_checksum,
+                                GVariant    **out_part,
+                                GCancellable *cancellable,
+                                GError      **error);
+
+gboolean _ostree_static_delta_dump (OstreeRepo     *repo,
+                                    const char *delta_id,
+                                    GCancellable   *cancellable,
+                                    GError        **error);
+
+typedef struct {
+  guint n_ops_executed[OSTREE_STATIC_DELTA_N_OPS];
+} OstreeDeltaExecuteStats;
+
+gboolean _ostree_static_delta_part_execute (OstreeRepo      *repo,
+                                            GVariant        *header,
+                                            GVariant        *part_payload,
+                                            gboolean         trusted,
+                                            gboolean         stats_only,
+                                            OstreeDeltaExecuteStats *stats,
+                                            GCancellable    *cancellable,
+                                            GError         **error);
+
+void _ostree_static_delta_part_execute_async (OstreeRepo      *repo,
+                                              GVariant        *header,
+                                              GVariant        *part_payload,
+                                              gboolean         trusted,
+                                              GCancellable    *cancellable,
+                                              GAsyncReadyCallback  callback,
+                                              gpointer         user_data);
+
+gboolean _ostree_static_delta_part_execute_finish (OstreeRepo      *repo,
+                                                   GAsyncResult    *result,
+                                                   GError         **error); 
 
 gboolean
 _ostree_static_delta_parse_checksum_array (GVariant      *array,
@@ -176,5 +189,44 @@ _ostree_delta_compute_similar_objects (OstreeRepo                 *repo,
                                        GHashTable                **out_modified_regfile_content,
                                        GCancellable               *cancellable,
                                        GError                    **error);
+
+gboolean
+_ostree_repo_static_delta_dump (OstreeRepo                 *repo,
+                                const char                 *delta_id,
+                                GCancellable               *cancellable,
+                                GError                    **error);
+
+/* Used for static deltas which due to a historical mistake are
+ * inconsistent endian.
+ *
+ * https://bugzilla.gnome.org/show_bug.cgi?id=762515
+ */
+static inline guint32
+maybe_swap_endian_u32 (gboolean swap,
+                       guint32 v)
+{
+  if (!swap)
+    return v;
+  return GUINT32_SWAP_LE_BE (v);
+}
+
+static inline guint64
+maybe_swap_endian_u64 (gboolean swap,
+                       guint64 v)
+{
+  if (!swap)
+    return v;
+  return GUINT64_SWAP_LE_BE (v);
+}
+
+typedef enum {
+  OSTREE_DELTA_ENDIAN_BIG,
+  OSTREE_DELTA_ENDIAN_LITTLE,
+  OSTREE_DELTA_ENDIAN_INVALID
+} OstreeDeltaEndianness;
+
+OstreeDeltaEndianness _ostree_delta_get_endianness (GVariant *superblock, gboolean *out_was_heuristic);
+
+gboolean _ostree_delta_needs_byteswap (GVariant *superblock);
 
 G_END_DECLS

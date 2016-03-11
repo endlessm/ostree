@@ -48,7 +48,9 @@ typedef struct {
   GCancellable *cancellable;
   OstreeAsyncProgress *progress;
 
-  gboolean      transaction_resuming;
+  gboolean      dry_run;
+  gboolean      dry_run_emitted_progress;
+  gboolean      legacy_transaction_resuming;
   enum {
     OSTREE_PULL_PHASE_FETCHING_REFS,
     OSTREE_PULL_PHASE_FETCHING_OBJECTS
@@ -78,6 +80,7 @@ typedef struct {
   guint             n_outstanding_deltapart_write_requests;
   guint             n_total_deltaparts;
   guint64           total_deltapart_size;
+  guint64           total_deltapart_usize;
   gint              n_requested_metadata;
   gint              n_requested_content;
   guint             n_fetched_deltaparts;
@@ -123,7 +126,7 @@ typedef struct {
 } FetchStaticDeltaData;
 
 typedef struct {
-  guchar csum[32];
+  guchar csum[OSTREE_SHA256_DIGEST_LEN];
   OstreeObjectType objtype;
   guint recursion_depth;
 } ScanObjectQueueData;
@@ -227,6 +230,8 @@ update_progress (gpointer user_data)
                                   pull_data->n_total_deltaparts);
   ostree_async_progress_set_uint64 (pull_data->progress, "total-delta-part-size",
                                     pull_data->total_deltapart_size);
+  ostree_async_progress_set_uint64 (pull_data->progress, "total-delta-part-usize",
+                                    pull_data->total_deltapart_usize);
   ostree_async_progress_set_uint (pull_data->progress, "total-delta-superblocks",
                                   pull_data->static_delta_superblocks->len);
 
@@ -242,6 +247,9 @@ update_progress (gpointer user_data)
     }
   else
     ostree_async_progress_set_status (pull_data->progress, NULL);
+
+  if (pull_data->dry_run)
+    pull_data->dry_run_emitted_progress = TRUE;
 
   return TRUE;
 }
@@ -261,6 +269,9 @@ pull_termination_condition (OtPullData          *pull_data)
 
   if (pull_data->caught_error)
     return TRUE;
+
+  if (pull_data->dry_run)
+    return pull_data->dry_run_emitted_progress;
 
   switch (pull_data->phase)
     {
@@ -935,8 +946,7 @@ static_deltapart_fetch_on_complete (GObject           *object,
   g_autoptr(GVariant) metadata = NULL;
   g_autofree char *temp_path = NULL;
   g_autoptr(GInputStream) in = NULL;
-  g_autofree char *actual_checksum = NULL;
-  g_autofree guint8 *csum = NULL;
+  g_autoptr(GVariant) part = NULL;
   GError *local_error = NULL;
   GError **error = &local_error;
   gs_fd_close int fd = -1;
@@ -950,54 +960,33 @@ static_deltapart_fetch_on_complete (GObject           *object,
   fd = openat (_ostree_fetcher_get_dfd (fetcher), temp_path, O_RDONLY | O_CLOEXEC);
   if (fd == -1)
     {
-      gs_set_error_from_errno (error, errno);
+      glnx_set_error_from_errno (error);
       goto out;
     }
+
+  /* From here on, if we fail to apply the delta, we'll re-fetch it */
+  if (unlinkat (_ostree_fetcher_get_dfd (fetcher), temp_path, 0) < 0)
+    {
+      glnx_set_error_from_errno (error);
+      goto out;
+    }
+
   in = g_unix_input_stream_new (fd, FALSE);
 
-  /* TODO - consider making async */
-  if (!ot_gio_checksum_stream (in, &csum, pull_data->cancellable, error))
+  /* TODO - make async */
+  if (!_ostree_static_delta_part_open (in, NULL, 0, fetch_data->expected_checksum,
+                                       &part, pull_data->cancellable, error))
     goto out;
 
-  actual_checksum = ostree_checksum_from_bytes (csum);
-
-  if (strcmp (actual_checksum, fetch_data->expected_checksum) != 0)
-    {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Corrupted static delta part; checksum expected='%s' actual='%s'",
-                   fetch_data->expected_checksum, actual_checksum);
-      goto out;
-    }
-
-  /* Might as well close the fd here */
-  (void) g_input_stream_close (in, NULL, NULL);
-
-  {
-    GMappedFile *mfile = NULL;
-    g_autoptr(GBytes) delta_data = NULL;
-
-    mfile = g_mapped_file_new_from_fd (fd, FALSE, error);
-    if (!mfile)
-      goto out;
-    delta_data = g_mapped_file_get_bytes (mfile);
-    g_mapped_file_unref (mfile);
-
-    /* Unlink now while we're holding an open fd, so that on success
-     * or error, the file will be gone.  This is particularly
-     * important if say we hit e.g. ENOSPC.
-     */
-    (void) unlinkat (_ostree_fetcher_get_dfd (fetcher), temp_path, 0);
-
-    _ostree_static_delta_part_execute_async (pull_data->repo,
-                                             fetch_data->objects,
-                                             delta_data,
-                                             /* Trust checksums if summary was gpg signed */
-                                             pull_data->gpg_verify_summary && pull_data->summary_data_sig,
-                                             pull_data->cancellable,
-                                             on_static_delta_written,
-                                             fetch_data);
-    pull_data->n_outstanding_deltapart_write_requests++;
-  }
+  _ostree_static_delta_part_execute_async (pull_data->repo,
+                                           fetch_data->objects,
+                                           part,
+                                           /* Trust checksums if summary was gpg signed */
+                                           pull_data->gpg_verify_summary && pull_data->summary_data_sig,
+                                           pull_data->cancellable,
+                                           on_static_delta_written,
+                                           fetch_data);
+  pull_data->n_outstanding_deltapart_write_requests++;
 
  out:
   g_assert (pull_data->n_outstanding_deltapart_fetches > 0);
@@ -1150,7 +1139,7 @@ queue_scan_one_metadata_object (OtPullData         *pull_data,
                                 OstreeObjectType    objtype,
                                 guint               recursion_depth)
 {
-  guchar buf[32];
+  guchar buf[OSTREE_SHA256_DIGEST_LEN];
   ostree_checksum_inplace_to_bytes (csum, buf);
   queue_scan_one_metadata_object_c (pull_data, buf, objtype, recursion_depth);
 }
@@ -1227,7 +1216,7 @@ scan_one_metadata_object_c (OtPullData         *pull_data,
     }
   else if (is_stored)
     {
-      gboolean do_scan = pull_data->transaction_resuming || is_requested || pull_data->commitpartial_exists;
+      gboolean do_scan = pull_data->legacy_transaction_resuming || is_requested || pull_data->commitpartial_exists;
 
       /* For commits, always refetch detached metadata. */
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
@@ -1454,6 +1443,7 @@ request_static_delta_superblock_sync (OtPullData  *pull_data,
 
 static gboolean
 process_one_static_delta_fallback (OtPullData   *pull_data,
+                                   gboolean      delta_byteswap,
                                    GVariant     *fallback_object,
                                    GCancellable *cancellable,
                                    GError      **error)
@@ -1473,10 +1463,20 @@ process_one_static_delta_fallback (OtPullData   *pull_data,
   if (!ostree_validate_structureof_csum_v (csum_v, error))
     goto out;
 
-  objtype = (OstreeObjectType)objtype_y;
-  checksum = ostree_checksum_from_bytes_v (csum_v);
+  compressed_size = maybe_swap_endian_u64 (delta_byteswap, compressed_size);
+  uncompressed_size = maybe_swap_endian_u64 (delta_byteswap, uncompressed_size);
 
   pull_data->total_deltapart_size += compressed_size;
+  pull_data->total_deltapart_usize += uncompressed_size;
+
+  if (pull_data->dry_run)
+    {
+      ret = TRUE;
+      goto out;
+    }
+
+  objtype = (OstreeObjectType)objtype_y;
+  checksum = ostree_checksum_from_bytes_v (csum_v);
 
   if (!ostree_repo_has_object (pull_data->repo, objtype, checksum,
                                &is_stored,
@@ -1522,10 +1522,13 @@ process_one_static_delta (OtPullData   *pull_data,
                           GError      **error)
 {
   gboolean ret = FALSE;
+  gboolean delta_byteswap;
   g_autoptr(GVariant) metadata = NULL;
   g_autoptr(GVariant) headers = NULL;
   g_autoptr(GVariant) fallback_objects = NULL;
   guint i, n;
+
+  delta_byteswap = _ostree_delta_needs_byteswap (delta_superblock);
 
   /* Parsing OSTREE_STATIC_DELTA_SUPERBLOCK_FORMAT */
   metadata = g_variant_get_child_value (delta_superblock, 0);
@@ -1539,13 +1542,14 @@ process_one_static_delta (OtPullData   *pull_data,
       g_autoptr(GVariant) fallback_object =
         g_variant_get_child_value (fallback_objects, i);
 
-      if (!process_one_static_delta_fallback (pull_data,
+      if (!process_one_static_delta_fallback (pull_data, delta_byteswap,
                                               fallback_object,
                                               cancellable, error))
         goto out;
     }
 
   /* Write the to-commit object */
+  if (!pull_data->dry_run)
   {
     g_autoptr(GVariant) to_csum_v = NULL;
     g_autofree char *to_checksum = NULL;
@@ -1604,13 +1608,17 @@ process_one_static_delta (OtPullData   *pull_data,
       FetchStaticDeltaData *fetch_data;
       g_autoptr(GVariant) csum_v = NULL;
       g_autoptr(GVariant) objects = NULL;
-      g_autoptr(GVariant) part_data = NULL;
-      g_autoptr(GBytes) delta_data = NULL;
+      g_autoptr(GBytes) inline_part_bytes = NULL;
       guint64 size, usize;
       guint32 version;
+      const gboolean trusted = pull_data->gpg_verify_summary && pull_data->summary_data_sig;
 
       header = g_variant_get_child_value (headers, i);
       g_variant_get (header, "(u@aytt@ay)", &version, &csum_v, &size, &usize, &objects);
+
+      version = maybe_swap_endian_u32 (delta_byteswap, version);
+      size = maybe_swap_endian_u64 (delta_byteswap, size);
+      usize = maybe_swap_endian_u64 (delta_byteswap, usize);
 
       if (version > OSTREE_DELTAPART_VERSION)
         {
@@ -1622,31 +1630,6 @@ process_one_static_delta (OtPullData   *pull_data,
       csum = ostree_checksum_bytes_peek_validate (csum_v, error);
       if (!csum)
         goto out;
-
-      deltapart_path = _ostree_get_relative_static_delta_part_path (from_revision, to_revision, i);
-
-      part_data = g_variant_lookup_value (metadata, deltapart_path, G_VARIANT_TYPE ("(yay)"));
-      if (part_data)
-        {
-          g_autofree char *actual_checksum = NULL;
-          g_autofree char *expected_checksum = ostree_checksum_from_bytes_v (csum_v);
-
-          delta_data = g_variant_get_data_as_bytes (part_data);
-
-          /* For inline parts we are relying on per-commit GPG, so this isn't strictly necessary for security.
-           * See https://github.com/GNOME/ostree/pull/139
-           */
-          actual_checksum = g_compute_checksum_for_bytes (G_CHECKSUM_SHA256, delta_data);
-          if (strcmp (actual_checksum, expected_checksum) != 0)
-            {
-              g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                           "Corrupted static delta part; checksum expected='%s' actual='%s'",
-                           expected_checksum, actual_checksum);
-              goto out;
-            }
-        }
-
-      pull_data->total_deltapart_size += size;
 
       if (!_ostree_repo_static_delta_part_have_all_objects (pull_data->repo,
                                                             objects,
@@ -1663,18 +1646,42 @@ process_one_static_delta (OtPullData   *pull_data,
           continue;
         }
 
+      deltapart_path = _ostree_get_relative_static_delta_part_path (from_revision, to_revision, i);
+
+      { g_autoptr(GVariant) part_datav =
+          g_variant_lookup_value (metadata, deltapart_path, G_VARIANT_TYPE ("(yay)"));
+
+        if (part_datav)
+          inline_part_bytes = g_variant_get_data_as_bytes (part_datav);
+      }
+
+      pull_data->total_deltapart_size += size;
+      pull_data->total_deltapart_usize += usize;
+
+      if (pull_data->dry_run)
+        continue;
+      
       fetch_data = g_new0 (FetchStaticDeltaData, 1);
       fetch_data->pull_data = pull_data;
       fetch_data->objects = g_variant_ref (objects);
       fetch_data->expected_checksum = ostree_checksum_from_bytes_v (csum_v);
 
-      if (delta_data != NULL)
+      if (inline_part_bytes != NULL)
         {
+          g_autoptr(GInputStream) memin = g_memory_input_stream_new_from_bytes (inline_part_bytes);
+          g_autoptr(GVariant) inline_delta_part = NULL;
+
+          /* For inline parts we are relying on per-commit GPG, so don't bother checksumming. */
+          if (!_ostree_static_delta_part_open (memin, inline_part_bytes,
+                                               OSTREE_STATIC_DELTA_OPEN_FLAGS_SKIP_CHECKSUM,
+                                               NULL, &inline_delta_part,
+                                               cancellable, error))
+            goto out;
+                                               
           _ostree_static_delta_part_execute_async (pull_data->repo,
                                                    fetch_data->objects,
-                                                   delta_data,
-                                                   /* Trust checksums if summary was gpg signed */
-                                                   pull_data->gpg_verify_summary && pull_data->summary_data_sig,
+                                                   inline_delta_part,
+                                                   trusted,
                                                    pull_data->cancellable,
                                                    on_static_delta_written,
                                                    fetch_data);
@@ -1789,8 +1796,10 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   OstreeRepoPullFlags flags = 0;
   const char *dir_to_pull = NULL;
   char **refs_to_fetch = NULL;
+  char **override_commit_ids = NULL;
   GSource *update_timeout = NULL;
   gboolean disable_static_deltas = FALSE;
+  gboolean require_static_deltas = FALSE;
 
   if (options)
     {
@@ -1803,12 +1812,23 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       (void) g_variant_lookup (options, "override-remote-name", "s", &pull_data->remote_name);
       (void) g_variant_lookup (options, "depth", "i", &pull_data->maxdepth);
       (void) g_variant_lookup (options, "disable-static-deltas", "b", &disable_static_deltas);
+      (void) g_variant_lookup (options, "require-static-deltas", "b", &require_static_deltas);
+      (void) g_variant_lookup (options, "override-commit-ids", "^a&s", &override_commit_ids);
+      (void) g_variant_lookup (options, "dry-run", "b", &pull_data->dry_run);
     }
 
   g_return_val_if_fail (pull_data->maxdepth >= -1, FALSE);
+  if (refs_to_fetch && override_commit_ids)
+    g_return_val_if_fail (g_strv_length (refs_to_fetch) == g_strv_length (override_commit_ids), FALSE);
 
   if (dir_to_pull)
     g_return_val_if_fail (dir_to_pull[0] == '/', FALSE);
+
+  g_return_val_if_fail (!(disable_static_deltas && require_static_deltas), FALSE);
+  /* We only do dry runs with static deltas, because we don't really have any
+   * in-advance information for bare fetches.
+   */
+  g_return_val_if_fail (!pull_data->dry_run || require_static_deltas, FALSE);
 
   pull_data->is_mirror = (flags & OSTREE_REPO_PULL_FLAGS_MIRROR) > 0;
   pull_data->is_commit_only = (flags & OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY) > 0;
@@ -1992,6 +2012,13 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         goto out;
       }
 
+    if (!bytes_summary && require_static_deltas)
+      {
+        g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                     "Fetch configured to require static deltas, but no summary found");
+        goto out;
+      }
+
     if (bytes_summary)
       {
         uri = suburi_new (pull_data->base_uri, "summary.sig", NULL);
@@ -2067,7 +2094,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
           {
             const char *delta;
             GVariant *csum_v = NULL;
-            guchar *csum_data = g_malloc (32);
+            guchar *csum_data = g_malloc (OSTREE_SHA256_DIGEST_LEN);
             g_autoptr(GVariant) ref = g_variant_get_child_value (deltas, i);
 
             g_variant_get_child (ref, 0, "&s", &delta);
@@ -2096,8 +2123,10 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     } 
   else if (refs_to_fetch != NULL)
     {
-      char **strviter;
-      for (strviter = refs_to_fetch; *strviter; strviter++)
+      char **strviter = refs_to_fetch;
+      char **commitid_strviter = override_commit_ids ? override_commit_ids : NULL;
+
+      while (*strviter)
         {
           const char *branch = *strviter;
 
@@ -2108,8 +2137,13 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
             }
           else
             {
-              g_hash_table_insert (requested_refs_to_fetch, g_strdup (branch), NULL);
+              char *commitid = commitid_strviter ? g_strdup (*commitid_strviter) : NULL;
+              g_hash_table_insert (requested_refs_to_fetch, g_strdup (branch), commitid);
             }
+          
+          strviter++;
+          if (commitid_strviter)
+            commitid_strviter++;
         }
     }
   else
@@ -2136,28 +2170,36 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   while (g_hash_table_iter_next (&hash_iter, &key, &value))
     {
       const char *branch = key;
+      const char *override_commitid = value;
       char *contents = NULL;
 
-      if (pull_data->summary)
+      /* Support specifying "" for an override commitid */
+      if (override_commitid && *override_commitid)
         {
-          gsize commit_size = 0;
-          guint64 *malloced_size;
-
-          if (!lookup_commit_checksum_from_summary (pull_data, branch, &contents, &commit_size, error))
-            goto out;
-
-          malloced_size = g_new0 (guint64, 1);
-          *malloced_size = commit_size;
-          g_hash_table_insert (pull_data->expected_commit_sizes, g_strdup (contents), malloced_size);
+          g_hash_table_replace (requested_refs_to_fetch, g_strdup (branch), g_strdup (override_commitid));
         }
-      else
+      else    
         {
-          if (!fetch_ref_contents (pull_data, branch, &contents, cancellable, error))
-            goto out;
+          if (pull_data->summary)
+            {
+              gsize commit_size = 0;
+              guint64 *malloced_size;
+
+              if (!lookup_commit_checksum_from_summary (pull_data, branch, &contents, &commit_size, error))
+                goto out;
+
+              malloced_size = g_new0 (guint64, 1);
+              *malloced_size = commit_size;
+              g_hash_table_insert (pull_data->expected_commit_sizes, g_strdup (contents), malloced_size);
+            }
+          else
+            {
+              if (!fetch_ref_contents (pull_data, branch, &contents, cancellable, error))
+                goto out;
+            }
+          /* Transfer ownership of contents */
+          g_hash_table_replace (requested_refs_to_fetch, g_strdup (branch), contents);
         }
-      
-      /* Transfer ownership of contents */
-      g_hash_table_replace (requested_refs_to_fetch, g_strdup (branch), contents);
     }
 
   /* Create the state directory here - it's new with the commitpartial code,
@@ -2182,11 +2224,12 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   if (pull_data->fetcher == NULL)
     goto out;
 
-  if (!ostree_repo_prepare_transaction (pull_data->repo, &pull_data->transaction_resuming,
+  if (!ostree_repo_prepare_transaction (pull_data->repo, &pull_data->legacy_transaction_resuming,
                                         cancellable, error))
     goto out;
 
-  g_debug ("resuming transaction: %s", pull_data->transaction_resuming ? "true" : " false");
+  if (pull_data->legacy_transaction_resuming)
+    g_debug ("resuming legacy transaction");
 
   g_hash_table_iter_init (&hash_iter, commits_to_fetch);
   while (g_hash_table_iter_next (&hash_iter, &key, &value))
@@ -2207,17 +2250,22 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
                                     &from_revision, error))
         goto out;
 
-#ifdef BUILDOPT_STATIC_DELTAS
       if (!disable_static_deltas && (from_revision == NULL || g_strcmp0 (from_revision, to_revision) != 0))
         {
           if (!request_static_delta_superblock_sync (pull_data, from_revision, to_revision,
                                                      &delta_superblock, cancellable, error))
             goto out;
         }
-#endif
           
       if (!delta_superblock)
         {
+          if (require_static_deltas)
+            {
+              g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                           "Static deltas required, but none found for %s to %s",
+                           from_revision, to_revision);
+              goto out;
+            }
           g_debug ("no delta superblock for %s-%s", from_revision ? from_revision : "empty", to_revision);
           queue_scan_one_metadata_object (pull_data, to_revision, OSTREE_OBJECT_TYPE_COMMIT, 0);
         }
@@ -2234,7 +2282,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
   if (pull_data->progress)
     {
-      update_timeout = g_timeout_source_new_seconds (1);
+      update_timeout = g_timeout_source_new_seconds (pull_data->dry_run ? 0 : 1);
       g_source_set_priority (update_timeout, G_PRIORITY_HIGH);
       g_source_set_callback (update_timeout, update_progress, pull_data, NULL);
       g_source_attach (update_timeout, pull_data->main_context);
@@ -2247,6 +2295,12 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
   if (pull_data->caught_error)
     goto out;
+
+  if (pull_data->dry_run)
+    {
+      ret = TRUE;
+      goto out;
+    }
   
   g_assert_cmpint (pull_data->n_outstanding_metadata_fetches, ==, 0);
   g_assert_cmpint (pull_data->n_outstanding_metadata_write_requests, ==, 0);

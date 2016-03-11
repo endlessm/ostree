@@ -518,8 +518,6 @@ ostree_repo_finalize (GObject *object)
   g_clear_object (&self->tmp_dir);
   if (self->tmp_dir_fd)
     (void) close (self->tmp_dir_fd);
-  g_clear_object (&self->local_heads_dir);
-  g_clear_object (&self->remote_heads_dir);
   g_clear_object (&self->objects_dir);
   if (self->objects_dir_fd != -1)
     (void) close (self->objects_dir_fd);
@@ -605,8 +603,6 @@ ostree_repo_constructed (GObject *object)
   g_assert (self->repodir != NULL);
 
   self->tmp_dir = g_file_resolve_relative_path (self->repodir, "tmp");
-  self->local_heads_dir = g_file_resolve_relative_path (self->repodir, "refs/heads");
-  self->remote_heads_dir = g_file_resolve_relative_path (self->repodir, "refs/remotes");
 
   self->objects_dir = g_file_get_child (self->repodir, "objects");
   self->deltas_dir = g_file_get_child (self->repodir, "deltas");
@@ -2384,6 +2380,19 @@ ostree_repo_set_disable_fsync (OstreeRepo    *self,
   self->disable_fsync = disable_fsync;
 }
 
+/**
+ * ostree_repo_get_disable_fsync:
+ * @self: An #OstreeRepo
+ *
+ * For more information see ostree_repo_set_disable_fsync().
+ *
+ * Returns: Whether or not fsync() is enabled for this repo.
+ */
+gboolean
+ostree_repo_get_disable_fsync (OstreeRepo    *self)
+{
+  return self->disable_fsync;
+}
 
 /* Replace the contents of a file, honoring the repository's fsync
  * policy.
@@ -3775,6 +3784,7 @@ ostree_repo_pull_one_dir (OstreeRepo               *self,
  *   * flags (i): An instance of #OstreeRepoPullFlags
  *   * refs: (as): Array of string refs
  *   * depth: (i): How far in the history to traverse; default is 0, -1 means infinite
+ *   * override-commit-ids: (as): Array of specific commit IDs to fetch for refs
  */
 gboolean
 ostree_repo_pull_with_options (OstreeRepo             *self,
@@ -4594,8 +4604,8 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
         gs_free char *from = NULL;
         gs_free char *to = NULL;
         gs_free guchar *csum = NULL;
-        gs_free char *superblock;
-        gs_fd_close int superblock_file_fd;
+        gs_free char *superblock = NULL;
+        gs_fd_close int superblock_file_fd = -1;
         g_autoptr(GInputStream) in_stream = NULL;
 
         _ostree_parse_delta_name (delta_names->pdata[i], &from, &to);

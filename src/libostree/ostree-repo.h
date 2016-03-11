@@ -56,6 +56,8 @@ gboolean      ostree_repo_open   (OstreeRepo     *self,
 void          ostree_repo_set_disable_fsync (OstreeRepo    *self,
                                              gboolean       disable_fsync);
 
+gboolean      ostree_repo_get_disable_fsync (OstreeRepo    *self);
+
 gboolean      ostree_repo_is_system (OstreeRepo   *repo);
 
 gboolean      ostree_repo_is_writable (OstreeRepo  *self,
@@ -439,6 +441,7 @@ gboolean      ostree_repo_write_dfd_to_mtree (OstreeRepo                 *self,
                                               GCancellable               *cancellable,
                                               GError                    **error);
 
+
 gboolean      ostree_repo_write_archive_to_mtree (OstreeRepo                   *self,
                                                   GFile                        *archive,
                                                   OstreeMutableTree            *mtree,
@@ -446,6 +449,53 @@ gboolean      ostree_repo_write_archive_to_mtree (OstreeRepo                   *
                                                   gboolean                      autocreate_parents,
                                                   GCancellable                 *cancellable,
                                                   GError                      **error);
+
+/**
+ * OstreeRepoImportArchiveOptions:
+ *
+ * An extensible options structure controlling archive import.  Ensure that
+ * you have entirely zeroed the structure, then set just the desired
+ * options.  This is used by ostree_repo_import_archive_to_mtree().
+ */
+typedef struct {
+  guint ignore_unsupported_content : 1;
+  guint autocreate_parents : 1;
+  guint reserved : 30;
+
+  guint unused_uint[8];
+  gpointer unused_ptrs[8];
+} OstreeRepoImportArchiveOptions;
+
+gboolean      ostree_repo_import_archive_to_mtree (OstreeRepo                   *self,
+                                                   OstreeRepoImportArchiveOptions  *opts,
+                                                   void                         *archive, /* Really struct archive * */
+                                                   OstreeMutableTree            *mtree,
+                                                   OstreeRepoCommitModifier     *modifier,
+                                                   GCancellable                 *cancellable,
+                                                   GError                      **error);
+/**
+ * OstreeRepoExportArchiveOptions:
+ *
+ * An extensible options structure controlling archive creation.  Ensure that
+ * you have entirely zeroed the structure, then set just the desired
+ * options.  This is used by ostree_repo_export_tree_to_archive().
+ */
+typedef struct {
+  guint disable_xattrs : 1;
+  guint reserved : 31;
+
+  guint64 timestamp_secs;
+
+  guint unused_uint[8];
+  gpointer unused_ptrs[8];
+} OstreeRepoExportArchiveOptions;
+
+gboolean ostree_repo_export_tree_to_archive (OstreeRepo                *self,
+                                             OstreeRepoExportArchiveOptions  *opts,
+                                             OstreeRepoFile            *root,
+                                             void                      *archive,  /* Really struct archive * */
+                                             GCancellable             *cancellable,
+                                             GError                  **error);
 
 gboolean      ostree_repo_write_mtree (OstreeRepo         *self,
                                        OstreeMutableTree  *mtree,
@@ -530,7 +580,9 @@ typedef struct {
   OstreeRepoCheckoutOverwriteMode overwrite_mode;
   
   guint enable_uncompressed_cache : 1;
-  guint unused : 31;
+  guint disable_fsync : 1;
+  guint process_whiteouts : 1;
+  guint reserved : 29;
 
   const char *subpath;
 
