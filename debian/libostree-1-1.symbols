@@ -128,6 +128,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_devino_cache_new@Base 2016.1
  ostree_repo_devino_cache_ref@Base 2016.1
  ostree_repo_devino_cache_unref@Base 2016.1
+ ostree_repo_export_tree_to_archive@Base 2016.3
  ostree_repo_file_ensure_resolved@Base 2016.1
  ostree_repo_file_get_checksum@Base 2016.1
  ostree_repo_file_get_repo@Base 2016.1
@@ -142,11 +143,13 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_file_tree_query_child@Base 2016.1
  ostree_repo_file_tree_set_metadata@Base 2016.1
  ostree_repo_get_config@Base 2016.1
+ ostree_repo_get_disable_fsync@Base 2016.3
  ostree_repo_get_mode@Base 2016.1
  ostree_repo_get_parent@Base 2016.1
  ostree_repo_get_path@Base 2016.1
  ostree_repo_get_type@Base 2016.1
  ostree_repo_has_object@Base 2016.1
+ ostree_repo_import_archive_to_mtree@Base 2016.3
  ostree_repo_import_object_from@Base 2016.1
  ostree_repo_is_system@Base 2016.1
  ostree_repo_is_writable@Base 2016.1
