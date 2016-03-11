@@ -31,6 +31,7 @@ ostree (2016.3-1) UNRELEASED; urgency=medium
     practice
   * Only build on Linux architectures; this package is specifically
     not portable
+  * Add patch to fix underlinking of test-archive
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 
