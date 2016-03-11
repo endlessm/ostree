@@ -32,6 +32,8 @@ ostree (2016.3-1) UNRELEASED; urgency=medium
   * Only build on Linux architectures; this package is specifically
     not portable
   * Add patch to fix underlinking of test-archive
+  * Add patch to skip one build-time test if /var/tmp cannot support xattrs,
+    for example if it is on tmpfs
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 
