@@ -1,2 +1,3 @@
 test-libarchive-fix-underlinking.patch
 Skip-test_libarchive_ignore_device_file-if-we-cannot-writ.patch
+tests-admin-test.sh-add-bin-sh.patch

@@ -1,0 +1,20 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Sat, 19 Mar 2016 17:54:38 +0000
+Subject: tests/admin-test.sh: add #!/bin/sh
+
+This is executable and appears to be intended to be executed directly,
+so it should have a #! line.
+---
+ tests/admin-test.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/admin-test.sh b/tests/admin-test.sh
+index c4644d3..531cf99 100755
+--- a/tests/admin-test.sh
++++ b/tests/admin-test.sh
+@@ -1,4 +1,4 @@
+-#
++#!/bin/sh
+ # Copyright (C) 2011,2014 Colin Walters <walters@verbum.org>
+ #
+ # This library is free software; you can redistribute it and/or
