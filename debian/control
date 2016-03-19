@@ -147,8 +147,6 @@ Description: GRUB 2 configuration for ostree
 Package: ostree-tests
 Architecture: linux-any
 Depends:
- ${misc:Depends},
- ${shlibs:Depends},
  attr,
  ca-certificates,
  fuse,
@@ -157,6 +155,8 @@ Depends:
  gjs,
  ostree,
  python,
+ ${misc:Depends},
+ ${shlibs:Depends},
 Description: content-addressed filesystem for operating system binaries - tests
  OSTree is a tool for managing bootable, immutable, versioned filesystem
  trees. See the ostree package's description for more details.
