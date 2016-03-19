@@ -33,11 +33,13 @@ override_dh_makeshlibs:
 	# this is an LD_PRELOAD, not a real shared library
 	dh_makeshlibs -Xostree/installed-tests/libreaddir-rand.so
 
-override_dh_fixperms:
+override_dh_fixperms-arch:
 	dh_fixperms -X'*.js'
-	chmod -v +x debian/tmp/usr/lib/ostree/installed-tests/*.js
-	chmod -v +x debian/tmp/usr/lib/ostree/installed-tests/*.py
-	chmod -v +x debian/tmp/usr/lib/ostree/installed-tests/*.sh
+	chmod -v 0755 debian/ostree-tests/usr/lib/ostree/installed-tests/*.js
+	chmod -v 0755 debian/ostree-tests/usr/lib/ostree/installed-tests/*.py
+	chmod -v 0755 debian/ostree-tests/usr/lib/ostree/installed-tests/*.sh
+	# this one is a library, not a script
+	chmod -v 0644 debian/ostree-tests/usr/lib/ostree/installed-tests/libtest.sh
 
 override_dh_systemd_start:
 	dh_systemd_start --no-start
