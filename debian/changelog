@@ -34,6 +34,8 @@ ostree (2016.3-1) UNRELEASED; urgency=medium
   * Add patch to fix underlinking of test-archive
   * Add patch to skip one build-time test if /var/tmp cannot support xattrs,
     for example if it is on tmpfs
+  * Stop dh_makeshlibs thinking that the LD_PRELOAD module libreaddir-rand.so
+    (part of the tests) is meant to be a shared library
 
  -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
 

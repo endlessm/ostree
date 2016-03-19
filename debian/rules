@@ -29,6 +29,10 @@ override_dh_install:
 	rm -f debian/tmp/usr/lib/ostree/installed-tests/*.la
 	dh_install --fail-missing
 
+override_dh_makeshlibs:
+	# this is an LD_PRELOAD, not a real shared library
+	dh_makeshlibs -Xostree/installed-tests/libreaddir-rand.so
+
 override_dh_fixperms:
 	dh_fixperms -X'*.js'
 	chmod -v +x debian/tmp/usr/lib/ostree/installed-tests/*.js
