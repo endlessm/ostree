@@ -1,4 +1,4 @@
-ostree (2016.3-1) UNRELEASED; urgency=medium
+ostree (2016.3-1) experimental; urgency=medium
 
   * Prepare package for Debian (Closes: #813308)
   * New upstream release
@@ -38,7 +38,7 @@ ostree (2016.3-1) UNRELEASED; urgency=medium
     (part of the tests) is meant to be a shared library
   * Add a missing #!/bin/sh to one test
 
- -- Simon McVittie <smcv@debian.org>  Wed, 27 Jan 2016 13:04:34 +0100
+ -- Simon McVittie <smcv@debian.org>  Sat, 19 Mar 2016 17:56:21 +0000
 
 ostree (2016.1-alexlarsson1~wily1) wily; urgency=medium
 
