@@ -347,10 +347,9 @@ ostree_sepolicy_get_label (OstreeSePolicy    *self,
       res = selabel_lookup_raw (self->selinux_hnd, &con, relpath, unix_mode);
       if (res != 0)
         {
-          int errsv = errno;
-          if (errsv != ENOENT)
+          if (errno != ENOENT)
             {
-              gs_set_error_from_errno (error, errsv);
+              glnx_set_error_from_errno (error);
               goto out;
             }
         }
@@ -443,14 +442,15 @@ ostree_sepolicy_restorecon (OstreeSePolicy    *self,
           int res = lsetfilecon (gs_file_get_path_cached (target), label);
           if (res != 0)
             {
-              gs_set_error_from_errno (error, errno);
+              glnx_set_error_from_errno (error);
               goto out;
             }
         }
     }
 
   ret = TRUE;
-  gs_transfer_out_value (out_new_label, &label);
+  if (out_new_label)
+    *out_new_label = g_steal_pointer (&label);
  out:
   return ret;
 #else
@@ -490,7 +490,7 @@ ostree_sepolicy_setfscreatecon (OstreeSePolicy   *self,
 
   if (setfscreatecon_raw (label) != 0)
     {
-      gs_set_error_from_errno (error, errno);
+      glnx_set_error_from_errno (error);
       return FALSE;
     }
 

@@ -49,6 +49,7 @@ struct OstreeSysroot {
   int bootversion;
   int subbootversion;
   OstreeDeployment *booted_deployment;
+  struct timespec loaded_ts;
 
   /* Only access through ostree_sysroot_get_repo() */
   OstreeRepo *repo;
@@ -57,6 +58,9 @@ struct OstreeSysroot {
 };
 
 #define OSTREE_SYSROOT_LOCKFILE "ostree/lock"
+/* We keep some transient state in /run */
+#define _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_DIR "/run/ostree/deployment-state/"
+#define _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_FLAG_DEVELOPMENT "unlocked-development"
 
 gboolean
 _ostree_sysroot_read_boot_loader_configs (OstreeSysroot *self,
@@ -97,6 +101,9 @@ gboolean _ostree_sysroot_query_bootloader (OstreeSysroot     *sysroot,
                                            OstreeBootloader **out_bootloader,
                                            GCancellable      *cancellable,
                                            GError           **error);
+
+gboolean _ostree_sysroot_bump_mtime (OstreeSysroot *sysroot,
+                                     GError       **error);
 
 typedef enum {
   OSTREE_SYSROOT_CLEANUP_BOOTVERSIONS = 1 << 0,

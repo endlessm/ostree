@@ -54,12 +54,12 @@ modes: `bare`, `bare-user`, and `archive-z2`.  A bare repository is
 one where content files are just stored as regular files; it's
 designed to be the source of a "hardlink farm", where each operating
 system checkout is merely links into it.  If you want to store files
-owned by e.g. root in this mode, you must run OSTree as root.  
+owned by e.g. root in this mode, you must run OSTree as root.
 
 The `bare-user` is a later addition that is like `bare` in that files
 are unpacked, but it can (and should generally) be created as
 non-root.  In this mode, extended metadata such as owner uid, gid, and
-extended attributes are stored but not actually applied.  
+extended attributes are stored but not actually applied.
 The `bare-user` mode is useful for build systems that run as non-root
 but want to generate root-owned content, as well as non-root container
 systems.
@@ -74,9 +74,13 @@ command, it will operate on the system repository.
 
 ## Refs
 
-Like git, OSTree uses "refs" to which are text files that point to
-particular commits (i.e. filesystem trees).  For example, the
-gnome-ostree operating system creates trees named like
+Like git, OSTree uses the terminology "references" (abbreviated
+"refs") which are text files that name (refer to) to particular
+commits.  See the
+[Git Documentation](https://git-scm.com/book/en/v2/Git-Internals-Git-References)
+for information on how git uses them.  Unlike git though, it doesn't
+usually make sense to have a "master" branch.  There is a convention
+for references in OSTree that looks like this:
 `exampleos/buildmaster/x86_64-runtime` and
 `exampleos/buildmaster/x86_64-devel-debug`.  These two refs point to
 two different generated filesystem trees.  In this example, the
@@ -88,3 +92,30 @@ the parent of a given commit.  For example,
 `exampleos/buildmaster/x86_64-runtime^` refers to the previous build,
 and `exampleos/buildmaster/x86_64-runtime^^` refers to the one before
 that.
+
+## The summary file
+
+A later addition to OSTree is the concept of a "summary" file, created
+via the `ostree summary -u` command.  This was introduced for a few
+reasons.  A primary use case is to be a target a
+(Metalink)[https://en.wikipedia.org/wiki/Metalink], which requires a
+single file with a known checksum as a target.
+
+The summary file primarily contains two mappings:
+
+ - A mapping of the refs and their checksums, equivalent to fetching
+   the ref file individually
+ - A list of all static deltas, along with their metadata checksums
+
+This currently means that it grows linearly with both items.  On the
+other hand, using the summary file, a client can enumerate branches.
+
+Further, the summary file is fetched over e.g. pinned TLS, this
+creates a strong end-to-end verification of the commit or static delta.
+
+The summary file can also be GPG signed (detached), and currently this
+is the only way provide GPG signatures (transitively) on deltas.
+
+If a repository administrator creates a summary file, they must
+thereafter run `ostree summary -u` to update it whenever a commit is
+made or a static delta is generated.

@@ -155,7 +155,8 @@ ostree_parse_refspec (const char   *refspec,
 
   ret = TRUE;
 
-  gs_transfer_out_value (out_remote, &remote);
+  if (out_remote)
+    *out_remote = g_steal_pointer (&remote);
   if (out_ref != NULL)
     *out_ref = g_match_info_fetch (match, 2);
  out:
@@ -766,7 +767,8 @@ ostree_checksum_file (GFile            *f,
 
   if (objtype == OSTREE_OBJECT_TYPE_FILE)
     {
-      if (!gs_file_get_all_xattrs (f, &xattrs, cancellable, error))
+      if (!glnx_dfd_name_get_all_xattrs (AT_FDCWD, gs_file_get_path_cached (f),
+                                         &xattrs, cancellable, error))
         goto out;
     }
 
@@ -950,7 +952,8 @@ _ostree_make_temporary_symlink_at (int             tmp_dirfd,
     }
 
   ret = TRUE;
-  gs_transfer_out_value (out_name, &tmpname);
+  if (out_name)
+    *out_name = g_steal_pointer (&tmpname);
  out:
   return ret;
 }

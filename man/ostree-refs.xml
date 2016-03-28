@@ -57,7 +57,7 @@ Boston, MA 02111-1307, USA.
     <refsect1>
         <title>Description</title>
         <para>
-            Lists all refs available on the host.  If pecified, PREFIX assigns the refspec prefix; default prefix is null, which lists all refs.
+            Lists all refs available on the host.  If specified, PREFIX assigns the refspec prefix; default prefix is null, which lists all refs.
         </para>
     </refsect1>
 
@@ -65,6 +65,16 @@ Boston, MA 02111-1307, USA.
         <title>Options</title>
 
         <variablelist>
+            <varlistentry>
+                <term><option>--list</option></term>
+
+                <listitem><para> For historical reasons, <literal>refs</literal>
+                without this option will strip the specified prefix
+                from the output.  Normally, one wants to see the full
+                ref, so providing this option ensures the refs are
+                printed in full, rather than
+                truncated. </para></listitem>
+            </varlistentry>
             <varlistentry>
                 <term><option>--delete</option></term>
 

@@ -456,7 +456,7 @@ get_unpacked_unlinked_content (OstreeRepo       *repo,
 {
   gboolean ret = FALSE;
   g_autofree char *tmpname = g_strdup ("tmpostree-deltaobj-XXXXXX");
-  gs_fd_close int fd = -1;
+  glnx_fd_close int fd = -1;
   g_autoptr(GBytes) ret_content = NULL;
   g_autoptr(GInputStream) istream = NULL;
   g_autoptr(GFileInfo) ret_finfo = NULL;
@@ -465,7 +465,7 @@ get_unpacked_unlinked_content (OstreeRepo       *repo,
   fd = g_mkstemp (tmpname);
   if (fd == -1)
     {
-      gs_set_error_from_errno (error, errno);
+      glnx_set_error_from_errno (error);
       goto out;
     }
   /* Doesn't need a name */
@@ -488,7 +488,8 @@ get_unpacked_unlinked_content (OstreeRepo       *repo,
   }
 
   ret = TRUE;
-  gs_transfer_out_value (out_content, &ret_content);
+  if (out_content)
+    *out_content = g_steal_pointer (&ret_content);
  out:
   return ret;
 }
@@ -532,7 +533,8 @@ try_content_bsdiff (OstreeRepo                       *repo,
   ret_bsdiff->tmp_to = tmp_to; tmp_to = NULL;
 
   ret = TRUE;
-  gs_transfer_out_value (out_bsdiff, &ret_bsdiff);
+  if (out_bsdiff)
+    *out_bsdiff = g_steal_pointer (&ret_bsdiff);
  out:
   return ret;
 }
@@ -597,7 +599,8 @@ try_content_rollsum (OstreeRepo                       *repo,
   ret_rollsum->tmp_to = tmp_to; tmp_to = NULL;
   
   ret = TRUE;
-  gs_transfer_out_value (out_rollsum, &ret_rollsum);
+  if (out_rollsum)
+    *out_rollsum = g_steal_pointer (&ret_rollsum);
  out:
   if (matches)
     _ostree_rollsum_matches_free (matches);
@@ -1199,7 +1202,8 @@ get_fallback_headers (OstreeRepo               *self,
   ret_headers = g_variant_ref_sink (g_variant_builder_end (fallback_builder));
 
   ret = TRUE;
-  gs_transfer_out_value (out_headers, &ret_headers);
+  if (out_headers)
+    *out_headers = g_steal_pointer (&ret_headers);
  out:
   return ret;
 }

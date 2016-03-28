@@ -112,6 +112,68 @@ maybe_prune_loose_object (OtPruneData        *data,
   return ret;
 }
 
+static gboolean
+_ostree_repo_prune_tmp (OstreeRepo *self,
+                        GCancellable *cancellable,
+                        GError **error)
+{
+  gboolean ret = FALSE;
+  g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
+  glnx_fd_close int fd = -1;
+
+  fd = glnx_opendirat_with_errno (self->repo_dir_fd, _OSTREE_SUMMARY_CACHE_PATH, FALSE);
+  if (fd < 0)
+    {
+      if (errno == ENOENT)
+        ret = TRUE;
+      else
+        glnx_set_error_from_errno (error);
+      goto out;
+    }
+
+  if (!glnx_dirfd_iterator_init_take_fd (dup (fd), &dfd_iter, error))
+    goto out;
+
+  while (TRUE)
+    {
+      size_t len;
+      gboolean has_sig_suffix = FALSE;
+      struct dirent *dent;
+
+      if (!glnx_dirfd_iterator_next_dent (&dfd_iter, &dent, cancellable, error))
+        goto out;
+
+      if (dent == NULL)
+        break;
+
+      len = strlen (dent->d_name);
+      if (len > 4 && g_strcmp0 (dent->d_name + len - 4, ".sig") == 0)
+        {
+          has_sig_suffix = TRUE;
+          dent->d_name[len - 4] = '\0';
+        }
+
+      if (!g_hash_table_contains (self->remotes, dent->d_name))
+        {
+          /* Restore the previous value to get the file name.  */
+          if (has_sig_suffix)
+            dent->d_name[len - 4] = '.';
+
+          if (unlinkat (fd, dent->d_name, 0) < 0)
+            {
+              glnx_set_error_from_errno (error);
+              goto out;
+            }
+        }
+    }
+
+  ret = TRUE;
+
+ out:
+  return ret;
+}
+
+
 /**
  * ostree_repo_prune_static_deltas:
  * @self: Repo
@@ -174,7 +236,7 @@ ostree_repo_prune_static_deltas (OstreeRepo *self, const char *commit,
 
       deltadir = _ostree_get_relative_static_delta_path (from, to, NULL);
 
-      if (!gs_shutil_rm_rf_at (self->repo_dir_fd, deltadir,
+      if (!glnx_shutil_rm_rf_at (self->repo_dir_fd, deltadir,
                                cancellable, error))
         goto out;
     }
@@ -241,10 +303,28 @@ ostree_repo_prune (OstreeRepo        *self,
       while (g_hash_table_iter_next (&hash_iter, &key, &value))
         {
           const char *checksum = value;
-          
-          if (!ostree_repo_traverse_commit_union (self, checksum, depth, data.reachable,
-                                            cancellable, error))
+          OstreeRepoCommitState commitstate;
+          GError *local_error = NULL;
+
+          if (!ostree_repo_load_commit (self, checksum, NULL, &commitstate,
+                                        error))
             goto out;
+
+          if (!ostree_repo_traverse_commit_union (self, checksum, depth, data.reachable,
+                                                  cancellable, &local_error))
+            {
+              /* Don't fail traversing a partial commit */
+              if ((commitstate & OSTREE_REPO_COMMIT_STATE_PARTIAL) > 0 &&
+                  g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+                {
+                  g_clear_error (&local_error);
+                }
+              else
+                {
+                  g_propagate_error (error, local_error);
+                  goto out;
+                }
+            }
         }
     }
 
@@ -260,15 +340,33 @@ ostree_repo_prune (OstreeRepo        *self,
           GVariant *serialized_key = key;
           const char *checksum;
           OstreeObjectType objtype;
+          OstreeRepoCommitState commitstate;
+          GError *local_error = NULL;
 
           ostree_object_name_deserialize (serialized_key, &checksum, &objtype);
 
           if (objtype != OSTREE_OBJECT_TYPE_COMMIT)
             continue;
-          
-          if (!ostree_repo_traverse_commit_union (self, checksum, depth, data.reachable,
-                                                  cancellable, error))
+
+          if (!ostree_repo_load_commit (self, checksum, NULL, &commitstate,
+                                        error))
             goto out;
+
+          if (!ostree_repo_traverse_commit_union (self, checksum, depth, data.reachable,
+                                                  cancellable, &local_error))
+            {
+              /* Don't fail traversing a partial commit */
+              if ((commitstate & OSTREE_REPO_COMMIT_STATE_PARTIAL) > 0 &&
+                  g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+                {
+                  g_clear_error (&local_error);
+                }
+              else
+                {
+                  g_propagate_error (error, local_error);
+                  goto out;
+                }
+            }
         }
     }
 
@@ -293,6 +391,9 @@ ostree_repo_prune (OstreeRepo        *self,
     }
 
   if (!ostree_repo_prune_static_deltas (self, NULL, cancellable, error))
+    goto out;
+
+  if (!_ostree_repo_prune_tmp (self, cancellable, error))
     goto out;
 
   ret = TRUE;

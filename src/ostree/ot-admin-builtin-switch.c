@@ -34,6 +34,7 @@ static gboolean opt_reboot;
 static char *opt_osname;
 
 static GOptionEntry options[] = {
+  { "reboot", 'r', 0, G_OPTION_ARG_NONE, &opt_reboot, "Reboot after switching trees", NULL },
   { "os", 0, 0, G_OPTION_ARG_STRING, &opt_osname, "Use a different operating system root than the current one", "OSNAME" },
   { NULL }
 };
@@ -162,16 +163,11 @@ ot_admin_builtin_switch (int argc, char **argv, GCancellable *cancellable, GErro
   if (!ostree_repo_commit_transaction (repo, NULL, cancellable, error))
     goto out;
   
-  {
-    g_autoptr(GFile) real_sysroot = g_file_new_for_path ("/");
-      
-    if (opt_reboot && g_file_equal (ostree_sysroot_get_path (sysroot), real_sysroot))
-      {
-        gs_subprocess_simple_run_sync (NULL, GS_SUBPROCESS_STREAM_DISPOSITION_INHERIT,
-                                       cancellable, error,
-                                       "systemctl", "reboot", NULL);
-      }
-  }
+  if (opt_reboot)
+    {
+      if (!ot_admin_execve_reboot (sysroot, error))
+        goto out;
+    }
 
   ret = TRUE;
  out:

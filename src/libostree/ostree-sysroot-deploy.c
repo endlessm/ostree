@@ -22,6 +22,12 @@
 
 #include <gio/gunixinputstream.h>
 #include <gio/gunixoutputstream.h>
+#include <sys/mount.h>
+#include <sys/statvfs.h>
+
+#ifdef HAVE_LIBMOUNT
+#include <libmount.h>
+#endif
 
 #include "ostree-sysroot-private.h"
 #include "ostree-deployment-private.h"
@@ -97,26 +103,26 @@ dirfd_copy_attributes_and_xattrs (int            src_parent_dfd,
    * right.  This will allow other users access if they have ACLs, but
    * oh well.
    */ 
-  if (!gs_dfd_and_name_get_all_xattrs (src_parent_dfd, src_name,
+  if (!glnx_dfd_name_get_all_xattrs (src_parent_dfd, src_name,
                                        &xattrs, cancellable, error))
     goto out;
-  if (!gs_fd_set_all_xattrs (dest_dfd, xattrs,
+  if (!glnx_fd_set_all_xattrs (dest_dfd, xattrs,
                              cancellable, error))
     goto out;
 
   if (fstat (src_dfd, &src_stbuf) != 0)
     {
-      gs_set_error_from_errno (error, errno);
+      glnx_set_error_from_errno (error);
       goto out;
     }
   if (fchown (dest_dfd, src_stbuf.st_uid, src_stbuf.st_gid) != 0)
     {
-      gs_set_error_from_errno (error, errno);
+      glnx_set_error_from_errno (error);
       goto out;
     }
   if (fchmod (dest_dfd, src_stbuf.st_mode) != 0)
     {
-      gs_set_error_from_errno (error, errno);
+      glnx_set_error_from_errno (error);
       goto out;
     }
 
@@ -144,7 +150,7 @@ copy_dir_recurse (int              src_parent_dfd,
   /* Create with mode 0700, we'll fchmod/fchown later */
   if (mkdirat (dest_parent_dfd, name, 0700) != 0)
     {
-      gs_set_error_from_errno (error, errno);
+      glnx_set_error_from_errno (error);
       goto out;
     }
 
@@ -158,7 +164,7 @@ copy_dir_recurse (int              src_parent_dfd,
   srcd = fdopendir (src_dfd);
   if (!srcd)
     {
-      gs_set_error_from_errno (error, errno);
+      glnx_set_error_from_errno (error);
       goto out;
     }
 
@@ -174,7 +180,7 @@ copy_dir_recurse (int              src_parent_dfd,
       if (fstatat (src_dfd, name, &child_stbuf,
                    AT_SYMLINK_NOFOLLOW) != 0)
         {
-          gs_set_error_from_errno (error, errno);
+          glnx_set_error_from_errno (error);
           goto out;
         }
 
@@ -256,7 +262,7 @@ ensure_directory_from_template (int                 orig_etc_fd,
         }
       else
         {
-          gs_set_error_from_errno (error, errno);
+          glnx_set_error_from_errno (error);
           g_prefix_error (error, "mkdirat: ");
           goto out;
         }
@@ -306,7 +312,7 @@ copy_modified_config_file (int                 orig_etc_fd,
 
   if (fstatat (modified_etc_fd, path, &modified_stbuf, AT_SYMLINK_NOFOLLOW) < 0)
     {
-      gs_set_error_from_errno (error, errno);
+      glnx_set_error_from_errno (error);
       g_prefix_error (error, "Failed to read modified config file '%s': ", path);
       goto out;
     }
@@ -324,7 +330,7 @@ copy_modified_config_file (int                 orig_etc_fd,
       dest_parent_dfd = dup (new_etc_fd);
       if (dest_parent_dfd == -1)
         {
-          gs_set_error_from_errno (error, errno);
+          glnx_set_error_from_errno (error);
           goto out;
         }
     }
@@ -337,7 +343,7 @@ copy_modified_config_file (int                 orig_etc_fd,
         ;
       else
         {
-          gs_set_error_from_errno (error, errno);
+          glnx_set_error_from_errno (error);
           goto out;
         }
     }
@@ -363,7 +369,7 @@ copy_modified_config_file (int                 orig_etc_fd,
     {
       if (unlinkat (new_etc_fd, path, 0) < 0)
         {
-          gs_set_error_from_errno (error, errno);
+          glnx_set_error_from_errno (error);
           goto out;
         }
     }
@@ -450,11 +456,14 @@ merge_etc_changes (GFile          *orig_etc,
                                 removed->len,
                                 added->len);
 
-  if (!gs_file_open_dir_fd (orig_etc, &orig_etc_fd, cancellable, error))
+  if (!glnx_opendirat (AT_FDCWD, gs_file_get_path_cached (orig_etc), TRUE,
+                       &orig_etc_fd, error))
     goto out;
-  if (!gs_file_open_dir_fd (modified_etc, &modified_etc_fd, cancellable, error))
+  if (!glnx_opendirat (AT_FDCWD, gs_file_get_path_cached (modified_etc), TRUE,
+                       &modified_etc_fd, error))
     goto out;
-  if (!gs_file_open_dir_fd (new_etc, &new_etc_fd, cancellable, error))
+  if (!glnx_opendirat (AT_FDCWD, gs_file_get_path_cached (new_etc), TRUE,
+                       &new_etc_fd, error))
     goto out;
 
   for (i = 0; i < removed->len; i++)
@@ -467,7 +476,7 @@ merge_etc_changes (GFile          *orig_etc,
       g_assert (path);
       target_file = g_file_resolve_relative_path (new_etc, path);
 
-      if (!gs_shutil_rm_rf (target_file, cancellable, error))
+      if (!glnx_shutil_rm_rf_at (AT_FDCWD, gs_file_get_path_cached (target_file), cancellable, error))
         goto out;
     }
 
@@ -873,7 +882,8 @@ merge_configuration (OstreeSysroot         *sysroot,
     }
 
   ret = TRUE;
-  gs_transfer_out_value (out_sepolicy, &sepolicy);
+  if (out_sepolicy)
+    *out_sepolicy = g_steal_pointer (&sepolicy);
  out:
   return ret;
 }
@@ -941,8 +951,8 @@ get_kernel_from_tree (int             deployment_dfd,
   g_auto(GLnxDirFdIterator) dfditer = { 0, };
   g_autofree char *ret_kernel_name = NULL;
   g_autofree char *ret_initramfs_name = NULL;
-  gs_free char *kernel_checksum = NULL;
-  gs_free char *initramfs_checksum = NULL;
+  g_autofree char *kernel_checksum = NULL;
+  g_autofree char *initramfs_checksum = NULL;
 
   ret_boot_dfd = glnx_opendirat_with_errno (deployment_dfd, "usr/lib/ostree-boot", TRUE);
   if (ret_boot_dfd == -1)
@@ -1360,7 +1370,7 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
     {
       if (errno != ENOENT)
         {
-          gs_set_error_from_errno (error, errno);
+          glnx_set_error_from_errno (error);
           goto out;
         }
       else
@@ -1645,6 +1655,47 @@ cleanup_legacy_current_symlinks (OstreeSysroot         *self,
   return ret;
 }
 
+static gboolean
+is_ro_mount (const char *path)
+{
+#ifdef HAVE_LIBMOUNT
+  /* Dragging in all of this crud is apparently necessary just to determine
+   * whether something is a mount point.
+   *
+   * Systemd has a totally different implementation in
+   * src/basic/mount-util.c.
+   */
+  struct libmnt_table *tb = mnt_new_table_from_file ("/proc/self/mountinfo");
+  struct libmnt_fs *fs;
+  struct libmnt_cache *cache;
+  gboolean is_mount = FALSE;
+  struct statvfs stvfsbuf;
+
+  if (!tb)
+    return FALSE;
+
+  /* to canonicalize all necessary paths */
+  cache = mnt_new_cache ();
+  mnt_table_set_cache (tb, cache);
+
+  fs = mnt_table_find_target(tb, path, MNT_ITER_BACKWARD);
+  is_mount = fs && mnt_fs_get_target (fs);
+  mnt_free_cache (cache);
+  mnt_free_table (tb);
+
+  if (!is_mount)
+    return FALSE;
+
+  /* We *could* parse the options, but it seems more reliable to
+   * introspect the actual mount at runtime.
+   */
+  if (statvfs (path, &stvfsbuf) == 0)
+    return (stvfsbuf.f_flag & ST_RDONLY) != 0;
+
+#endif
+  return FALSE;
+}
+
 /**
  * ostree_sysroot_write_deployments:
  * @self: Sysroot
@@ -1666,6 +1717,7 @@ ostree_sysroot_write_deployments (OstreeSysroot     *self,
   gboolean requires_new_bootversion = FALSE;
   gboolean found_booted_deployment = FALSE;
   gboolean bootloader_is_atomic = FALSE;
+  gboolean boot_was_ro_mount = FALSE;
 
   g_assert (self->loaded);
 
@@ -1753,12 +1805,26 @@ ostree_sysroot_write_deployments (OstreeSysroot     *self,
       glnx_unref_object OstreeRepo *repo = NULL;
       gboolean show_osname = FALSE;
 
+      if (self->booted_deployment)
+        boot_was_ro_mount = is_ro_mount ("/boot");
+
+      g_debug ("boot is ro: %s", boot_was_ro_mount ? "yes" : "no");
+
+      if (boot_was_ro_mount)
+        {
+          if (mount ("/boot", "/boot", NULL, MS_REMOUNT | MS_SILENT, NULL) < 0)
+            {
+              glnx_set_prefix_error_from_errno (error, "%s", "Remounting /boot read-write");
+              goto out;
+            }
+        }
+
       if (!_ostree_sysroot_query_bootloader (self, &bootloader, cancellable, error))
         goto out;
 
       new_loader_entries_dir = ot_gfile_resolve_path_printf (self->path, "boot/loader.%d/entries",
                                                              new_bootversion);
-      if (!gs_shutil_rm_rf (new_loader_entries_dir, cancellable, error))
+      if (!glnx_shutil_rm_rf_at (AT_FDCWD, gs_file_get_path_cached (new_loader_entries_dir), cancellable, error))
         goto out;
       if (!ot_util_ensure_directory_and_fsync (new_loader_entries_dir, cancellable, error))
         goto out;
@@ -1855,6 +1921,9 @@ ostree_sysroot_write_deployments (OstreeSysroot     *self,
                                 requires_new_bootversion ? "yes" : "no",
                                 new_deployments->len - self->deployments->len);
 
+  if (!_ostree_sysroot_bump_mtime (self, error))
+    goto out;
+
   /* Now reload from disk */
   if (!ostree_sysroot_load (self, cancellable, error))
     {
@@ -1875,6 +1944,18 @@ ostree_sysroot_write_deployments (OstreeSysroot     *self,
 
   ret = TRUE;
  out:
+  if (boot_was_ro_mount)
+    {
+      if (mount ("/boot", "/boot", NULL, MS_REMOUNT | MS_RDONLY | MS_SILENT, NULL) < 0)
+        {
+          /* Only make this a warning because we don't want to
+           * completely bomb out if some other process happened to
+           * jump in and open a file there.
+           */
+          int errsv = errno;
+          g_printerr ("warning: Failed to remount /boot read-only: %s\n", strerror (errsv));
+        }
+    }
   return ret;
 }
 

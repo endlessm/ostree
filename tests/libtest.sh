@@ -18,9 +18,29 @@
 # Boston, MA 02111-1307, USA.
 
 SRCDIR=$(dirname $0)
+
+assert_not_reached () {
+    echo $@ 1>&2; exit 1
+}
+
 test_tmpdir=$(pwd)
 
+# Sanity check that we're in a tmpdir that has
+# just .testtmp (created by tap-driver for `make check`,
+# or nothing at all (as ginstest-runner does)
+if ! test -f .testtmp; then
+    files=$(ls)
+    if test -n "${files}"; then
+	assert_not_reached "test tmpdir=${test_tmpdir} is not empty; run this test via \`make check TESTS=\`, not directly"
+    fi
+fi
+
 export G_DEBUG=fatal-warnings
+
+# Also, unbreak `tar` inside `make check`...Automake will inject
+# TAR_OPTIONS: --owner=0 --group=0 --numeric-owner presumably so that
+# tarballs are predictable, except we don't want this in our tests.
+unset TAR_OPTIONS
 
 # Don't flag deployments as immutable so that test harnesses can
 # easily clean up.
@@ -33,6 +53,7 @@ export TEST_GPG_KEYID_3="DF444D67"
 # GPG when creating signatures demands a writable
 # homedir in order to create lockfiles.  Work around
 # this by copying locally.
+echo "Copying gpghome to ${test_tmpdir}"
 cp -a ${SRCDIR}/gpghome ${test_tmpdir}
 export TEST_GPG_KEYHOME=${test_tmpdir}/gpghome
 export OSTREE_GPG_HOME=${test_tmpdir}/gpghome/trusted
@@ -46,10 +67,6 @@ if test -n "${OT_TESTS_VALGRIND:-}"; then
 else
     CMD_PREFIX="env LD_PRELOAD=${SRCDIR}/libreaddir-rand.so"
 fi
-
-assert_not_reached () {
-    echo $@ 1>&2; exit 1
-}
 
 assert_streq () {
     test "$1" = "$2" || (echo 1>&2 "$1 != $2"; exit 1)

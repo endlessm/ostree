@@ -260,6 +260,7 @@ ostree_repo_write_content_async
 ostree_repo_write_content_finish
 ostree_repo_resolve_rev
 ostree_repo_list_refs
+ostree_repo_list_refs_ext
 ostree_repo_remote_list_refs
 ostree_repo_load_variant
 ostree_repo_load_commit
@@ -380,6 +381,7 @@ ostree_sysroot_new
 ostree_sysroot_new_default
 ostree_sysroot_get_path
 ostree_sysroot_load
+ostree_sysroot_load_if_changed
 ostree_sysroot_lock
 ostree_sysroot_try_lock
 ostree_sysroot_lock_async
@@ -396,6 +398,7 @@ ostree_sysroot_get_deployment_origin_path
 ostree_sysroot_cleanup
 ostree_sysroot_prepare_cleanup
 ostree_sysroot_get_repo
+ostree_sysroot_init_osname
 ostree_sysroot_deployment_set_kargs
 ostree_sysroot_write_deployments
 ostree_sysroot_deploy_tree
