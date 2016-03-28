@@ -26,6 +26,7 @@ Build-Depends:
  libgpgme11-dev (>= 1.1.8),
  libgsystem-dev (>= 2015.1),
  liblzma-dev (>= 5.0.5),
+ libmount-dev (>= 2.23),
  libselinux1-dev,
  libsoup2.4-dev (>= 2.39.1),
  zlib1g-dev,

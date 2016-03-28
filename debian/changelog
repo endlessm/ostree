@@ -3,6 +3,7 @@ ostree (2016.4-1) UNRELEASED; urgency=medium
   * New upstream release
     - Remove all patches, applied upstream
     - debian/libostree-1-1.symbols: update for new versioned symbols
+    - Build-depend on libmount-dev
   * debian/gbp.conf: use DEP-14 branch names
   * Fix ITP bug number in changelog (was #813308, should have been #697477)
 
