@@ -1,3 +1,9 @@
+ostree (2016.3-2) UNRELEASED; urgency=medium
+
+  * debian/gbp.conf: use DEP-14 branch names
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 28 Mar 2016 12:02:59 +0100
+
 ostree (2016.3-1) experimental; urgency=medium
 
   * Prepare package for Debian (Closes: #813308)
