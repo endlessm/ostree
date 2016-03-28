@@ -4,12 +4,13 @@ ostree (2016.4-1) UNRELEASED; urgency=medium
     - Remove all patches, applied upstream
     - debian/libostree-1-1.symbols: update for new versioned symbols
   * debian/gbp.conf: use DEP-14 branch names
+  * Fix ITP bug number in changelog (was #813308, should have been #697477)
 
  -- Simon McVittie <smcv@debian.org>  Mon, 28 Mar 2016 12:02:59 +0100
 
 ostree (2016.3-1) experimental; urgency=medium
 
-  * Prepare package for Debian (Closes: #813308)
+  * Prepare package for Debian (Closes: #697477)
   * New upstream release
   * Remove -dbg package, rely on automatic dbgsym packages instead
   * Extend package descriptions a bit
