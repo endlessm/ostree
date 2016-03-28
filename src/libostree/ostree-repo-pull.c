@@ -28,6 +28,7 @@
 #include "ostree-repo-static-delta-private.h"
 #include "ostree-metalink.h"
 #include "otutil.h"
+#include "ot-fs-utils.h"
 
 #include <gio/gunixinputstream.h>
 
@@ -794,7 +795,7 @@ meta_fetch_on_complete (GObject           *object,
   OstreeObjectType objtype;
   GError *local_error = NULL;
   GError **error = &local_error;
-  gs_fd_close int fd = -1;
+  glnx_fd_close int fd = -1;
 
   ostree_object_name_deserialize (fetch_data->object, &checksum, &objtype);
   g_debug ("fetch of %s%s complete", ostree_object_to_string (checksum, objtype),
@@ -840,7 +841,7 @@ meta_fetch_on_complete (GObject           *object,
   fd = openat (_ostree_fetcher_get_dfd (fetcher), temp_path, O_RDONLY | O_CLOEXEC);
   if (fd == -1)
     {
-      gs_set_error_from_errno (error, errno);
+      glnx_set_error_from_errno (error);
       goto out;
     }
 
@@ -949,7 +950,7 @@ static_deltapart_fetch_on_complete (GObject           *object,
   g_autoptr(GVariant) part = NULL;
   GError *local_error = NULL;
   GError **error = &local_error;
-  gs_fd_close int fd = -1;
+  glnx_fd_close int fd = -1;
 
   g_debug ("fetch static delta part %s complete", fetch_data->expected_checksum);
 
@@ -1187,7 +1188,8 @@ scan_one_metadata_object_c (OtPullData         *pull_data,
 
   if (pull_data->remote_repo_local)
     {
-      if (!ostree_repo_import_object_from (pull_data->repo, pull_data->remote_repo_local,
+      if (!is_stored &&
+          !ostree_repo_import_object_from (pull_data->repo, pull_data->remote_repo_local,
                                            objtype, tmp_checksum,
                                            cancellable, error))
         goto out;
@@ -1398,8 +1400,8 @@ request_static_delta_superblock_sync (OtPullData  *pull_data,
   if (delta_superblock_data)
     {
       {
-        gs_free gchar *delta = NULL;
-        gs_free guchar *ret_csum = NULL;
+        g_autofree gchar *delta = NULL;
+        g_autofree guchar *ret_csum = NULL;
         guchar *summary_csum;
         g_autoptr (GInputStream) summary_is = NULL;
 
@@ -1436,7 +1438,8 @@ request_static_delta_superblock_sync (OtPullData  *pull_data,
     }
   
   ret = TRUE;
-  gs_transfer_out_value (out_delta_superblock, &ret_delta_superblock);
+  if (out_delta_superblock)
+    *out_delta_superblock = g_steal_pointer (&ret_delta_superblock);
  out:
   return ret;
 }
@@ -1767,6 +1770,102 @@ ostree_repo_pull_one_dir (OstreeRepo               *self,
                                         progress, cancellable, error);
 }
 
+gboolean
+_ostree_repo_load_cache_summary_if_same_sig (OstreeRepo        *self,
+                                             const char        *remote,
+                                             GBytes            *summary_sig,
+                                             GBytes            **summary,
+                                             GCancellable      *cancellable,
+                                             GError           **error)
+{
+  gboolean ret = FALSE;
+  const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_PATH, "/", remote, ".sig");
+
+  glnx_fd_close int prev_fd = -1;
+  g_autoptr(GBytes) old_sig_contents = NULL;
+
+  if (!ot_openat_ignore_enoent (self->repo_dir_fd, summary_cache_sig_file, &prev_fd, error))
+    goto out;
+
+  if (prev_fd < 0)
+    {
+      ret = TRUE;
+      goto out;
+    }
+
+  old_sig_contents = glnx_fd_readall_bytes (prev_fd, cancellable, error);
+  if (!old_sig_contents)
+    goto out;
+
+  if (g_bytes_compare (old_sig_contents, summary_sig) == 0)
+    {
+      const char *summary_cache_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_PATH, "/", remote);
+      glnx_fd_close int summary_fd = -1;
+      GBytes *summary_data;
+
+
+      summary_fd = openat (self->repo_dir_fd, summary_cache_file, O_CLOEXEC | O_RDONLY);
+      if (summary_fd < 0)
+        {
+          if (errno == ENOENT)
+            {
+              (void) unlinkat (self->repo_dir_fd, summary_cache_sig_file, 0);
+              ret = TRUE;
+              goto out;
+            }
+
+          glnx_set_error_from_errno (error);
+          goto out;
+        }
+
+      summary_data = glnx_fd_readall_bytes (summary_fd, cancellable, error);
+      if (!summary_data)
+        goto out;
+      *summary = summary_data;
+    }
+  ret = TRUE;
+
+ out:
+  return ret;
+}
+
+gboolean
+_ostree_repo_cache_summary (OstreeRepo        *self,
+                            const char        *remote,
+                            GBytes            *summary,
+                            GBytes            *summary_sig,
+                            GCancellable      *cancellable,
+                            GError           **error)
+{
+  gboolean ret = FALSE;
+  const char *summary_cache_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_PATH, "/", remote);
+  const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_PATH, "/", remote, ".sig");
+
+  if (!glnx_shutil_mkdir_p_at (self->repo_dir_fd, _OSTREE_SUMMARY_CACHE_PATH, 0775, cancellable, error))
+    goto out;
+
+  if (!glnx_file_replace_contents_at (self->repo_dir_fd,
+                                      summary_cache_file,
+                                      g_bytes_get_data (summary, NULL),
+                                      g_bytes_get_size (summary),
+                                      self->disable_fsync ? GLNX_FILE_REPLACE_NODATASYNC : GLNX_FILE_REPLACE_DATASYNC_NEW,
+                                      cancellable, error))
+    goto out;
+
+  if (!glnx_file_replace_contents_at (self->repo_dir_fd,
+                                      summary_cache_sig_file,
+                                      g_bytes_get_data (summary_sig, NULL),
+                                      g_bytes_get_size (summary_sig),
+                                      self->disable_fsync ? GLNX_FILE_REPLACE_NODATASYNC : GLNX_FILE_REPLACE_DATASYNC_NEW,
+                                      cancellable, error))
+    goto out;
+
+  ret = TRUE;
+ out:
+  return ret;
+
+}
+
 /* Documented in ostree-repo.c */
 gboolean
 ostree_repo_pull_with_options (OstreeRepo             *self,
@@ -1995,15 +2094,36 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     g_autoptr(GVariant) refs = NULL;
     g_autoptr(GVariant) deltas = NULL;
     g_autoptr(GVariant) additional_metadata = NULL;
-      
-    if (!pull_data->summary)
+    gboolean summary_from_cache = FALSE;
+
+    if (!pull_data->summary_data_sig)
+      {
+        uri = suburi_new (pull_data->base_uri, "summary.sig", NULL);
+        if (!fetch_uri_contents_membuf_sync (pull_data, uri, FALSE, TRUE,
+                                             &bytes_sig, cancellable, error))
+          goto out;
+        soup_uri_free (uri);
+      }
+
+    if (bytes_sig && !_ostree_repo_load_cache_summary_if_same_sig (self,
+                                                                   remote_name_or_baseurl,
+                                                                   bytes_sig,
+                                                                   &bytes_summary,
+                                                                   cancellable,
+                                                                   error))
+      goto out;
+
+    if (bytes_summary)
+      summary_from_cache = TRUE;
+
+    if (!pull_data->summary && !bytes_summary)
       {
         uri = suburi_new (pull_data->base_uri, "summary", NULL);
         if (!fetch_uri_contents_membuf_sync (pull_data, uri, FALSE, TRUE,
                                              &bytes_summary, cancellable, error))
           goto out;
         soup_uri_free (uri);
-     }
+      }
 
     if (!bytes_summary && pull_data->gpg_verify_summary)
       {
@@ -2017,15 +2137,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                      "Fetch configured to require static deltas, but no summary found");
         goto out;
-      }
-
-    if (bytes_summary)
-      {
-        uri = suburi_new (pull_data->base_uri, "summary.sig", NULL);
-        if (!fetch_uri_contents_membuf_sync (pull_data, uri, FALSE, TRUE,
-                                             &bytes_sig, cancellable, error))
-          goto out;
-        soup_uri_free (uri);
       }
 
     if (!bytes_sig && pull_data->gpg_verify_summary)
@@ -2042,6 +2153,18 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
         if (bytes_sig)
           pull_data->summary_data_sig = g_bytes_ref (bytes_sig);
+      }
+
+
+    if (!summary_from_cache && bytes_summary && bytes_sig)
+      {
+        if (!_ostree_repo_cache_summary (self,
+                                         remote_name_or_baseurl,
+                                         bytes_summary,
+                                         bytes_sig,
+                                         cancellable,
+                                         error))
+          goto out;
       }
 
     if (pull_data->gpg_verify_summary && bytes_summary && bytes_sig)

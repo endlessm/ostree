@@ -377,9 +377,8 @@ traverse_dirtree (OstreeRepo           *repo,
   ostree_cleanup_repo_commit_traverse_iter
     OstreeRepoCommitTraverseIter iter = { 0, };
 
-  if (!ostree_repo_load_variant_if_exists (repo, OSTREE_OBJECT_TYPE_DIR_TREE,
-                                           checksum, &dirtree,
-                                           error))
+  if (!ostree_repo_load_variant (repo, OSTREE_OBJECT_TYPE_DIR_TREE, checksum,
+                                 &dirtree, error))
     goto out;
 
   if (!ostree_repo_commit_traverse_iter_init_dirtree (&iter, repo, dirtree,
@@ -503,7 +502,8 @@ ostree_repo_traverse_commit (OstreeRepo      *repo,
     goto out;
 
   ret = TRUE;
-  gs_transfer_out_value (out_reachable, &ret_reachable);
+  if (out_reachable)
+    *out_reachable = g_steal_pointer (&ret_reachable);
  out:
   return ret;
 }

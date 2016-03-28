@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-echo "1..48"
+echo "1..50"
 
 $OSTREE checkout test2 checkout-test2
 echo "ok checkout"
@@ -40,14 +40,6 @@ echo "ok shortened checksum"
 
 (cd repo && ${CMD_PREFIX} ostree rev-parse test2)
 echo "ok repo-in-cwd"
-
-$OSTREE refs > reflist
-assert_file_has_content reflist '^test2$'
-rm reflist
-
-$OSTREE refs --delete 2>/dev/null && (echo 1>&2 "refs --delete (without prefix) unexpectedly succeeded!"; exit 1)
-
-echo "ok refs"
 
 cd checkout-test2
 assert_has_file firstfile
@@ -247,15 +239,6 @@ fi
 echo "ok prune in archive-z2 deleted everything"
 
 cd ${test_tmpdir}
-$OSTREE commit -b test3 -s "Another commit" --tree=ref=test2
-${CMD_PREFIX} ostree --repo=repo refs > reflist
-assert_file_has_content reflist '^test3$'
-${CMD_PREFIX} ostree --repo=repo refs --delete test3
-${CMD_PREFIX} ostree --repo=repo refs > reflist
-assert_not_file_has_content reflist '^test3$'
-echo "ok reflist --delete"
-
-cd ${test_tmpdir}
 rm -rf test2-checkout
 $OSTREE checkout test2 test2-checkout
 (cd test2-checkout && $OSTREE commit --link-checkout-speedup -b test2 -s "tmp")
@@ -442,6 +425,8 @@ if test "$(id -u)" != "0"; then
     assert_has_file expected-fail
     assert_file_has_content error-message "Permission denied"
     echo "ok unwritable repo was caught"
+else
+    echo "ok # SKIP not run when root"
 fi
 
 cd ${test_tmpdir}
@@ -449,10 +434,12 @@ rm -rf test2-checkout
 mkdir -p test2-checkout
 cd test2-checkout
 touch blah
-stat --printf="%Z\n" ${test_tmpdir}/repo > ${test_tmpdir}/timestamp-orig.txt
+stat --printf="%.Y\n" ${test_tmpdir}/repo > ${test_tmpdir}/timestamp-orig.txt
 $OSTREE commit -b test2 -s "Should bump the mtime"
-stat --printf="%Z\n" ${test_tmpdir}/repo > ${test_tmpdir}/timestamp-new.txt
+stat --printf="%.Y\n" ${test_tmpdir}/repo > ${test_tmpdir}/timestamp-new.txt
 cd ..
-if ! cmp timestamp-{orig,new}.txt; then
+if cmp timestamp-{orig,new}.txt; then
     assert_not_reached "failed to update mtime on repo"
 fi
+
+echo "ok mtime updated"

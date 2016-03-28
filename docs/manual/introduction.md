@@ -1,6 +1,6 @@
 # OSTree Overview
 
-## Introduction 
+## Introduction
 
 OSTree an upgrade system for Linux-based operating systems that
 performs atomic upgrades of complete filesystem trees.  It is
@@ -15,7 +15,7 @@ content-addressed object store, and layered on top of that is
 bootloader configuration, management of
 `/etc`, and other functions to perform an
 upgrade beyond just replicating files.
-    
+
 You can use OSTree standalone in the pure replication model,
 but another approach is to add a package manager on top,
 thus creating a hybrid tree/package system.
@@ -46,7 +46,7 @@ HTTP, and where the OS includes (if desired) an entirely
 separate mechanism to install applications, stored in `/var` if they're system global, or
 `/home` for per-user
 application installation.  An example application mechanism is
-http://docker.io/
+<http://docker.io/>
 
 However, it is entirely possible to use OSTree underneath a
 package system, where the contents of `/usr` are computed on the client.
@@ -78,6 +78,13 @@ into plain ext4, BTRFS, XFS, or in general any Unix-compatible
 filesystem that supports hard links.  Note: OSTree will
 transparently take advantage of some BTRFS features if deployed
 on it.
+
+OSTree is orthogonal to virtualization mechanisms like AMIs and qcow2
+images, though it's most useful though if you plan to update stateful
+VMs in-place, rather than generating new images.
+
+In practice, users of "bare metal" configurations will find the OSTree
+model most useful.
 
 ## Atomic transitions between parallel-installable read-only filesystem trees
 

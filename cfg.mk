@@ -1,4 +1,4 @@
-export VC_LIST_EXCEPT_DEFAULT=^(lib/.*|m4/.*|md5/.*|build-aux/.*|src/gettext\.h|.*ChangeLog)$$
+export VC_LIST_EXCEPT_DEFAULT=^(lib/.*|m4/.*|md5/.*|build-aux/.*|src/gettext\.h|.*ChangeLog|buildutil/.*)$$
 
 local-checks-to-skip = \
     sc_const_long_option \
@@ -27,4 +27,4 @@ local-checks-to-skip = \
 show-vc-list-except:
 	@$(VC_LIST_EXCEPT)
 
-VC_LIST_ALWAYS_EXCLUDE_REGEX = ^ABOUT-NLS|maint.mk|*.gpg|*.sig$$
+VC_LIST_ALWAYS_EXCLUDE_REGEX = ^ABOUT-NLS|maint.mk|*.gpg|*.sig|.xz$$

@@ -19,10 +19,15 @@
 
 set -euo pipefail
 
-echo "1..5"
+if ! fusermount --version >/dev/null 2>&1; then
+    echo "1..0 # SKIP no fusermount"
+    exit 0
+fi
 
 . $(dirname $0)/libtest.sh
 setup_test_repository "bare-user"
+
+echo "1..5"
 
 mkdir mnt
 
@@ -64,11 +69,6 @@ assert_not_has_dir checkout-test2/baz/another
 
 echo "ok deletion"
 
-ostree --repo=repo commit -b test2 -s fromfuse --link-checkout-speedup --tree=dir=checkout-test2
+${CMD_PREFIX} ostree --repo=repo commit -b test2 -s fromfuse --link-checkout-speedup --tree=dir=checkout-test2
 
 echo "ok commit"
-
-
-
-
-

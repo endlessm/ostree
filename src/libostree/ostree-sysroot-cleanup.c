@@ -255,28 +255,28 @@ cleanup_other_bootversions (OstreeSysroot       *self,
   cleanup_subbootversion = self->subbootversion == 0 ? 1 : 0;
 
   cleanup_boot_dir = ot_gfile_resolve_path_printf (self->path, "boot/loader.%d", cleanup_bootversion);
-  if (!gs_shutil_rm_rf (cleanup_boot_dir, cancellable, error))
+  if (!glnx_shutil_rm_rf_at (AT_FDCWD, gs_file_get_path_cached (cleanup_boot_dir), cancellable, error))
     goto out;
   g_clear_object (&cleanup_boot_dir);
 
   cleanup_boot_dir = ot_gfile_resolve_path_printf (self->path, "ostree/boot.%d", cleanup_bootversion);
-  if (!gs_shutil_rm_rf (cleanup_boot_dir, cancellable, error))
+  if (!glnx_shutil_rm_rf_at (AT_FDCWD, gs_file_get_path_cached (cleanup_boot_dir), cancellable, error))
     goto out;
   g_clear_object (&cleanup_boot_dir);
 
   cleanup_boot_dir = ot_gfile_resolve_path_printf (self->path, "ostree/boot.%d.0", cleanup_bootversion);
-  if (!gs_shutil_rm_rf (cleanup_boot_dir, cancellable, error))
+  if (!glnx_shutil_rm_rf_at (AT_FDCWD, gs_file_get_path_cached (cleanup_boot_dir), cancellable, error))
     goto out;
   g_clear_object (&cleanup_boot_dir);
 
   cleanup_boot_dir = ot_gfile_resolve_path_printf (self->path, "ostree/boot.%d.1", cleanup_bootversion);
-  if (!gs_shutil_rm_rf (cleanup_boot_dir, cancellable, error))
+  if (!glnx_shutil_rm_rf_at (AT_FDCWD, gs_file_get_path_cached (cleanup_boot_dir), cancellable, error))
     goto out;
   g_clear_object (&cleanup_boot_dir);
 
   cleanup_boot_dir = ot_gfile_resolve_path_printf (self->path, "ostree/boot.%d.%d", self->bootversion,
                                                    cleanup_subbootversion);
-  if (!gs_shutil_rm_rf (cleanup_boot_dir, cancellable, error))
+  if (!glnx_shutil_rm_rf_at (AT_FDCWD, gs_file_get_path_cached (cleanup_boot_dir), cancellable, error))
     goto out;
   g_clear_object (&cleanup_boot_dir);
 
@@ -377,7 +377,7 @@ cleanup_old_deployments (OstreeSysroot       *self,
       if (g_hash_table_lookup (active_boot_checksums, bootcsum))
         continue;
 
-      if (!gs_shutil_rm_rf (bootdir, cancellable, error))
+      if (!glnx_shutil_rm_rf_at (AT_FDCWD, gs_file_get_path_cached (bootdir), cancellable, error))
         goto out;
     }
 
@@ -401,7 +401,7 @@ cleanup_ref_prefix (OstreeRepo         *repo,
 
   prefix = g_strdup_printf ("ostree/%d/%d", bootversion, subbootversion);
 
-  if (!ostree_repo_list_refs (repo, prefix, &refs, cancellable, error))
+  if (!ostree_repo_list_refs_ext (repo, prefix, &refs, OSTREE_REPO_LIST_REFS_EXT_NONE, cancellable, error))
     goto out;
 
   if (!ostree_repo_prepare_transaction (repo, NULL, cancellable, error))
@@ -410,8 +410,7 @@ cleanup_ref_prefix (OstreeRepo         *repo,
   g_hash_table_iter_init (&hashiter, refs);
   while (g_hash_table_iter_next (&hashiter, &hashkey, &hashvalue))
     {
-      const char *suffix = hashkey;
-      g_autofree char *ref = g_strconcat (prefix, "/", suffix, NULL);
+      const char *ref = hashkey;
       ostree_repo_transaction_set_refspec (repo, ref, NULL);
     }
 
