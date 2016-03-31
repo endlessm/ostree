@@ -1,0 +1,53 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Thu, 31 Mar 2016 13:44:27 +0100
+Subject: Skip tests that run rofiles-fuse if /dev/fuse or /etc/mtab
+ unavailable
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ tests/test-demo-buildsystem.sh | 10 ++++++++++
+ tests/test-rofiles-fuse.sh     | 10 ++++++++++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/tests/test-demo-buildsystem.sh b/tests/test-demo-buildsystem.sh
+index e5b1f87..a4377bd 100755
+--- a/tests/test-demo-buildsystem.sh
++++ b/tests/test-demo-buildsystem.sh
+@@ -24,6 +24,16 @@ if ! fusermount --version >/dev/null 2>&1; then
+     exit 0
+ fi
+ 
++if ! [ -w /dev/fuse ]; then
++    echo "1..0 # SKIP no write access to /dev/fuse"
++    exit 0
++fi
++
++if ! [ -e /etc/mtab ]; then
++    echo "1..0 # SKIP no /etc/mtab"
++    exit 0
++fi
++
+ . $(dirname $0)/libtest.sh
+ 
+ touch test-xattrs
+diff --git a/tests/test-rofiles-fuse.sh b/tests/test-rofiles-fuse.sh
+index 346c8fe..145d7e8 100755
+--- a/tests/test-rofiles-fuse.sh
++++ b/tests/test-rofiles-fuse.sh
+@@ -24,6 +24,16 @@ if ! fusermount --version >/dev/null 2>&1; then
+     exit 0
+ fi
+ 
++if ! [ -w /dev/fuse ]; then
++    echo "1..0 # SKIP no write access to /dev/fuse"
++    exit 0
++fi
++
++if ! [ -e /etc/mtab ]; then
++    echo "1..0 # SKIP no /etc/mtab"
++    exit 0
++fi
++
+ . $(dirname $0)/libtest.sh
+ 
+ touch test-xattrs
