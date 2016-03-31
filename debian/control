@@ -6,6 +6,7 @@ Uploaders:
  Matthias Klumpp <mak@debian.org>,
  Simon McVittie <smcv@debian.org>,
 Build-Depends:
+ attr,
  bison,
  debhelper (>= 9),
  dh-autoreconf,
