@@ -15,6 +15,8 @@ ostree (2016.4-1) UNRELEASED; urgency=medium
   * debian/rules: warn if there are leftover daemon processes after testing
   * debian/patches: add patches to get the build-time tests passing under
     sbuild
+  * debian/ostree-tests.lintian-overrides: override a couple of false
+    positives
 
  -- Simon McVittie <smcv@debian.org>  Mon, 28 Mar 2016 12:02:59 +0100
 
