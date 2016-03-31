@@ -36,20 +36,20 @@ override_dh_auto_test:
 
 override_dh_install:
 	rm -f debian/tmp/usr/lib/*/*.la
-	rm -f debian/tmp/usr/lib/ostree/installed-tests/*.la
+	rm -f debian/tmp/usr/lib/installed-tests/ostree/*.la
 	dh_install --fail-missing
 
 override_dh_makeshlibs:
 	# this is an LD_PRELOAD, not a real shared library
-	dh_makeshlibs -Xostree/installed-tests/libreaddir-rand.so
+	dh_makeshlibs -Xinstalled-tests/ostree/libreaddir-rand.so
 
 override_dh_fixperms-arch:
 	dh_fixperms -X'*.js'
-	chmod -v 0755 debian/ostree-tests/usr/lib/ostree/installed-tests/*.js
-	chmod -v 0755 debian/ostree-tests/usr/lib/ostree/installed-tests/*.py
-	chmod -v 0755 debian/ostree-tests/usr/lib/ostree/installed-tests/*.sh
+	chmod -v 0755 debian/ostree-tests/usr/lib/installed-tests/ostree/*.js
+	chmod -v 0755 debian/ostree-tests/usr/lib/installed-tests/ostree/*.py
+	chmod -v 0755 debian/ostree-tests/usr/lib/installed-tests/ostree/*.sh
 	# this one is a library, not a script
-	chmod -v 0644 debian/ostree-tests/usr/lib/ostree/installed-tests/libtest.sh
+	chmod -v 0644 debian/ostree-tests/usr/lib/installed-tests/ostree/libtest.sh
 
 override_dh_systemd_start:
 	dh_systemd_start --no-start
