@@ -1,0 +1,28 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Thu, 31 Mar 2016 08:24:56 +0100
+Subject: tap-test: clean up temporary test directories as intended
+
+The script created ./.testtmp but looked for ./.test, which isn't
+going to work.
+
+This means the various "ostree trivial-httpd --autoexit" processes
+actually exit, because their web roots are cleaned up now.
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ buildutil/tap-test | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/buildutil/tap-test b/buildutil/tap-test
+index e791454..6b2eb5c 100755
+--- a/buildutil/tap-test
++++ b/buildutil/tap-test
+@@ -13,7 +13,7 @@ touch ${tempdir}/.testtmp
+ function cleanup () {
+     if test -n "${TEST_SKIP_CLEANUP:-}"; then
+ 	echo "Skipping cleanup of ${tempdir}"
+-    else if test -f ${tempdir}/.test; then
++    else if test -f ${tempdir}/.testtmp; then
+ 	rm "${tempdir}" -rf
+     fi
+     fi

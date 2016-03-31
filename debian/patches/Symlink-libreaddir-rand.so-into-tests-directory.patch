@@ -1,0 +1,51 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Mon, 28 Mar 2016 13:46:23 +0100
+Subject: Symlink libreaddir-rand.so into tests directory
+
+This means it can be LD_PRELOADed during build-time testing.
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ .gitignore        | 1 +
+ Makefile-decls.am | 3 +++
+ Makefile-tests.am | 4 ++++
+ 3 files changed, 8 insertions(+)
+
+diff --git a/.gitignore b/.gitignore
+index d241cab..f37ca48 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -70,6 +70,7 @@ _build
+ /test-remote-add.test
+ /test-setuid.test
+ /test-xattrs.test
++/tests/libreaddir-rand.so
+ test-varint
+ test*.test
+ *.trs
+diff --git a/Makefile-decls.am b/Makefile-decls.am
+index a5c9d50..eefffd6 100644
+--- a/Makefile-decls.am
++++ b/Makefile-decls.am
+@@ -49,3 +49,6 @@ GITIGNOREFILES =
+ # This is a special facility to chain together hooks easily
+ INSTALL_DATA_HOOKS =
+ install-data-hook: $(INSTALL_DATA_HOOKS)
++
++ALL_LOCAL_RULES =
++all-local: $(ALL_LOCAL_RULES)
+diff --git a/Makefile-tests.am b/Makefile-tests.am
+index 9f359ad..9eb9ad8 100644
+--- a/Makefile-tests.am
++++ b/Makefile-tests.am
+@@ -211,6 +211,10 @@ EXTRA_DIST += \
+ 	tests/gpg-verify-data/trustdb.gpg \
+ 	tests/gpg-verify-data/gpg.conf
+ 
++tests-libreaddir-rand-so-symlink:
++	ln -fns ../.libs/libreaddir-rand.so tests
++ALL_LOCAL_RULES += tests-libreaddir-rand-so-symlink
++
+ # Unfortunately the glib test data APIs don't actually handle
+ # non-recursive Automake, so we change our code to canonically look
+ # for tests/ which is just a symlink when installed.

@@ -1,0 +1,23 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Mon, 28 Mar 2016 13:08:32 +0100
+Subject: test-xattrs: use TAP syntax to skip test
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ tests/test-xattrs.sh | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tests/test-xattrs.sh b/tests/test-xattrs.sh
+index 6a83a0b..2f2d99c 100755
+--- a/tests/test-xattrs.sh
++++ b/tests/test-xattrs.sh
+@@ -21,7 +21,8 @@ set -euo pipefail
+ 
+ touch test-xattrs
+ if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
+-    exit 77
++    echo "1..0 # SKIP: cannot run setfattr"
++    exit 0
+ fi
+ 
+ echo "1..2"

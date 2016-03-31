@@ -1,0 +1,120 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Mon, 28 Mar 2016 13:18:42 +0100
+Subject: various tests: skip if temp directory lacks xattr support
+
+Some autobuilder environments place the entire build chroot on tmpfs, so
+even /var/tmp might not have this.
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ tests/test-basic-user.sh       | 6 ++++++
+ tests/test-delta.sh            | 7 +++++++
+ tests/test-demo-buildsystem.sh | 6 ++++++
+ tests/test-local-pull.sh       | 6 ++++++
+ tests/test-prune.sh            | 6 ++++++
+ tests/test-rofiles-fuse.sh     | 6 ++++++
+ 6 files changed, 37 insertions(+)
+
+diff --git a/tests/test-basic-user.sh b/tests/test-basic-user.sh
+index f53de89..efe723c 100755
+--- a/tests/test-basic-user.sh
++++ b/tests/test-basic-user.sh
+@@ -19,6 +19,12 @@
+ 
+ set -euo pipefail
+ 
++touch test-xattrs
++if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
++    echo "1..0 # SKIP bare-user repository requires xattr support"
++    exit 0
++fi
++
+ echo "1..1"
+ 
+ . $(dirname $0)/libtest.sh
+diff --git a/tests/test-delta.sh b/tests/test-delta.sh
+index 12f54c7..4335779 100755
+--- a/tests/test-delta.sh
++++ b/tests/test-delta.sh
+@@ -156,6 +156,13 @@ ${CMD_PREFIX} ostree --repo=repo2 ls ${newrev} >/dev/null
+ 
+ echo 'ok pull delta'
+ 
++touch test-xattrs
++if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
++    echo "ok apply offline # SKIP bare-user repository requires xattr support"
++    echo "ok apply offline inline # SKIP bare-user repository requires xattr support"
++    exit 0
++fi
++
+ rm repo2 -rf
+ mkdir repo2 && ${CMD_PREFIX} ostree --repo=repo2 init --mode=bare-user
+ mkdir deltadir
+diff --git a/tests/test-demo-buildsystem.sh b/tests/test-demo-buildsystem.sh
+index 500eac6..6708e61 100755
+--- a/tests/test-demo-buildsystem.sh
++++ b/tests/test-demo-buildsystem.sh
+@@ -24,6 +24,12 @@ if ! fusermount --version >/dev/null 2>&1; then
+     exit 0
+ fi
+ 
++touch test-xattrs
++if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
++    echo "1..0 # SKIP bare-user repository requires xattr support"
++    exit 0
++fi
++
+ . $(dirname $0)/libtest.sh
+ 
+ echo "1..1"
+diff --git a/tests/test-local-pull.sh b/tests/test-local-pull.sh
+index a9beb08..c6df6ea 100755
+--- a/tests/test-local-pull.sh
++++ b/tests/test-local-pull.sh
+@@ -19,6 +19,12 @@
+ 
+ set -euo pipefail
+ 
++touch test-xattrs
++if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
++    echo "1..0 # SKIP bare-user repository requires xattr support"
++    exit 0
++fi
++
+ echo "1..1"
+ 
+ . $(dirname $0)/libtest.sh
+diff --git a/tests/test-prune.sh b/tests/test-prune.sh
+index 7184ea9..c2f4eb9 100755
+--- a/tests/test-prune.sh
++++ b/tests/test-prune.sh
+@@ -127,6 +127,12 @@ assert_file_has_content deltascount "^1$"
+ 
+ echo "ok prune"
+ 
++touch test-xattrs
++if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
++    echo "ok prune with partial repo # SKIP bare-user repository requires xattr support"
++    exit 0
++fi
++
+ rm repo -rf
+ ostree --repo=repo init --mode=bare-user
+ ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
+diff --git a/tests/test-rofiles-fuse.sh b/tests/test-rofiles-fuse.sh
+index 444fbce..d609cae 100755
+--- a/tests/test-rofiles-fuse.sh
++++ b/tests/test-rofiles-fuse.sh
+@@ -24,6 +24,12 @@ if ! fusermount --version >/dev/null 2>&1; then
+     exit 0
+ fi
+ 
++touch test-xattrs
++if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
++    echo "1..0 # SKIP bare-user repository requires xattr support"
++    exit 0
++fi
++
+ . $(dirname $0)/libtest.sh
+ setup_test_repository "bare-user"
+ 

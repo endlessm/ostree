@@ -1,0 +1,31 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Thu, 31 Mar 2016 09:02:23 +0100
+Subject: Load g-i bindings from builddir during build-time testing
+
+Previously, the build-time tests would only pass if the g-i bindings to
+OSTree were already installed, with a reasonably similar version.
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ Makefile-tests.am | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile-tests.am b/Makefile-tests.am
+index 9eb9ad8..97f0541 100644
+--- a/Makefile-tests.am
++++ b/Makefile-tests.am
+@@ -22,8 +22,12 @@ include $(top_srcdir)/buildutil/glib-tap.mk
+ # We should probably consider flipping the default for DEBUG.  Also,
+ # include the builddir in $PATH so we find our just-built ostree
+ # binary.
+-TESTS_ENVIRONMENT += OT_TESTS_DEBUG=1 \
+-	PATH=$$(cd $(top_builddir) && pwd):$${PATH}
++TESTS_ENVIRONMENT += \
++	GI_TYPELIB_PATH=$$(cd $(top_builddir) && pwd) \
++	LD_LIBRARY_PATH=$$(cd $(top_builddir)/.libs && pwd) \
++	OT_TESTS_DEBUG=1 \
++	PATH=$$(cd $(top_builddir) && pwd):$${PATH} \
++	$(NULL)
+ 
+ test_scripts = \
+ 	tests/test-basic.sh \
