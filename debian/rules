@@ -24,6 +24,14 @@ override_dh_auto_configure:
 		$(NULL)
 	chmod +x tests/*.js
 
+override_dh_auto_test:
+	dh_auto_test
+	if pgrep lt-ostree || pgrep --full "gpg-agent --homedir /var/tmp/tap-test."; then \
+		echo "WARNING: daemon processes were leaked"; \
+		pgrep gpg-agent | xargs --no-run-if-empty ps ww; \
+		pgrep lt-ostree | xargs --no-run-if-empty ps ww; \
+	fi
+
 override_dh_install:
 	rm -f debian/tmp/usr/lib/*/*.la
 	rm -f debian/tmp/usr/lib/ostree/installed-tests/*.la
