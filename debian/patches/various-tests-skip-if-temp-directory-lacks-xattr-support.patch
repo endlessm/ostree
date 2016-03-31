@@ -1,5 +1,5 @@
 From: Simon McVittie <smcv@debian.org>
-Date: Mon, 28 Mar 2016 13:18:42 +0100
+Date: Thu, 31 Mar 2016 11:06:05 +0100
 Subject: various tests: skip if temp directory lacks xattr support
 
 Some autobuilder environments place the entire build chroot on tmpfs, so
@@ -8,21 +8,25 @@ even /var/tmp might not have this.
 Signed-off-by: Simon McVittie <smcv@debian.org>
 Forwarded: https://github.com/ostreedev/ostree/pull/232
 ---
- tests/test-basic-user.sh       | 6 ++++++
- tests/test-delta.sh            | 7 +++++++
- tests/test-demo-buildsystem.sh | 6 ++++++
- tests/test-local-pull.sh       | 6 ++++++
- tests/test-prune.sh            | 6 ++++++
- tests/test-rofiles-fuse.sh     | 6 ++++++
- 6 files changed, 37 insertions(+)
+ tests/test-basic-user.sh       | 10 ++++++++--
+ tests/test-delta.sh            |  7 +++++++
+ tests/test-demo-buildsystem.sh |  6 ++++++
+ tests/test-local-pull.sh       | 10 ++++++++--
+ tests/test-prune.sh            |  6 ++++++
+ tests/test-rofiles-fuse.sh     |  7 +++++++
+ 6 files changed, 42 insertions(+), 4 deletions(-)
 
 diff --git a/tests/test-basic-user.sh b/tests/test-basic-user.sh
-index f53de89..efe723c 100755
+index f53de89..b5b976d 100755
 --- a/tests/test-basic-user.sh
 +++ b/tests/test-basic-user.sh
-@@ -19,6 +19,12 @@
+@@ -19,10 +19,16 @@
  
  set -euo pipefail
+ 
+-echo "1..1"
+-
+ . $(dirname $0)/libtest.sh
  
 +touch test-xattrs
 +if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
@@ -30,9 +34,11 @@ index f53de89..efe723c 100755
 +    exit 0
 +fi
 +
- echo "1..1"
++echo "1..1"
++
+ setup_test_repository "bare-user"
+ echo "ok setup"
  
- . $(dirname $0)/libtest.sh
 diff --git a/tests/test-delta.sh b/tests/test-delta.sh
 index 12f54c7..4335779 100755
 --- a/tests/test-delta.sh
@@ -52,12 +58,12 @@ index 12f54c7..4335779 100755
  mkdir repo2 && ${CMD_PREFIX} ostree --repo=repo2 init --mode=bare-user
  mkdir deltadir
 diff --git a/tests/test-demo-buildsystem.sh b/tests/test-demo-buildsystem.sh
-index 500eac6..6708e61 100755
+index 500eac6..e5b1f87 100755
 --- a/tests/test-demo-buildsystem.sh
 +++ b/tests/test-demo-buildsystem.sh
-@@ -24,6 +24,12 @@ if ! fusermount --version >/dev/null 2>&1; then
-     exit 0
- fi
+@@ -26,6 +26,12 @@ fi
+ 
+ . $(dirname $0)/libtest.sh
  
 +touch test-xattrs
 +if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
@@ -65,26 +71,32 @@ index 500eac6..6708e61 100755
 +    exit 0
 +fi
 +
- . $(dirname $0)/libtest.sh
- 
  echo "1..1"
+ 
+ # Run "triggers" like ldconfig, gtk-update-icon-cache, etc.
 diff --git a/tests/test-local-pull.sh b/tests/test-local-pull.sh
-index a9beb08..c6df6ea 100755
+index a9beb08..958e8c2 100755
 --- a/tests/test-local-pull.sh
 +++ b/tests/test-local-pull.sh
-@@ -19,6 +19,12 @@
+@@ -19,10 +19,16 @@
  
  set -euo pipefail
  
+-echo "1..1"
+-
+ . $(dirname $0)/libtest.sh
+ 
 +touch test-xattrs
 +if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
 +    echo "1..0 # SKIP bare-user repository requires xattr support"
 +    exit 0
 +fi
 +
- echo "1..1"
++echo "1..1"
++
+ setup_test_repository "archive-z2"
+ echo "ok setup"
  
- . $(dirname $0)/libtest.sh
 diff --git a/tests/test-prune.sh b/tests/test-prune.sh
 index 7184ea9..c2f4eb9 100755
 --- a/tests/test-prune.sh
@@ -103,19 +115,20 @@ index 7184ea9..c2f4eb9 100755
  ostree --repo=repo init --mode=bare-user
  ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
 diff --git a/tests/test-rofiles-fuse.sh b/tests/test-rofiles-fuse.sh
-index 444fbce..d609cae 100755
+index 444fbce..346c8fe 100755
 --- a/tests/test-rofiles-fuse.sh
 +++ b/tests/test-rofiles-fuse.sh
-@@ -24,6 +24,12 @@ if ! fusermount --version >/dev/null 2>&1; then
-     exit 0
+@@ -25,6 +25,13 @@ if ! fusermount --version >/dev/null 2>&1; then
  fi
  
+ . $(dirname $0)/libtest.sh
++
 +touch test-xattrs
 +if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
 +    echo "1..0 # SKIP bare-user repository requires xattr support"
 +    exit 0
 +fi
 +
- . $(dirname $0)/libtest.sh
  setup_test_repository "bare-user"
  
+ echo "1..5"
