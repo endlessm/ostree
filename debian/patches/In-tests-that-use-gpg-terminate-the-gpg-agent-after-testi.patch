@@ -5,6 +5,7 @@ Subject: In tests that use gpg, terminate the gpg-agent after testing
 Otherwise we leak those processes.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/232
 ---
  tests/test-commit-sign.sh         | 1 +
  tests/test-gpg-signed-commit.sh   | 2 ++

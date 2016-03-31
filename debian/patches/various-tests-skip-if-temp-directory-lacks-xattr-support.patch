@@ -6,6 +6,7 @@ Some autobuilder environments place the entire build chroot on tmpfs, so
 even /var/tmp might not have this.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/232
 ---
  tests/test-basic-user.sh       | 6 ++++++
  tests/test-delta.sh            | 7 +++++++

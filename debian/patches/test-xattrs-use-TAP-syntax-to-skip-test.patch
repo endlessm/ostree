@@ -3,6 +3,7 @@ Date: Mon, 28 Mar 2016 13:08:32 +0100
 Subject: test-xattrs: use TAP syntax to skip test
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/232
 ---
  tests/test-xattrs.sh | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)

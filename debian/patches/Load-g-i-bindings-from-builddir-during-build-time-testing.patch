@@ -6,6 +6,7 @@ Previously, the build-time tests would only pass if the g-i bindings to
 OSTree were already installed, with a reasonably similar version.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/232
 ---
  Makefile-tests.am | 8 ++++++--
  1 file changed, 6 insertions(+), 2 deletions(-)

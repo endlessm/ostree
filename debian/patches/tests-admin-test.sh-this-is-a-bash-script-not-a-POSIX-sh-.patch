@@ -7,6 +7,7 @@ PR #226 that he prefers to require bash rather than trying to support
 every POSIX shell.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/232
 ---
  tests/admin-test.sh | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
