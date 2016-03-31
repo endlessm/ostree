@@ -5,7 +5,7 @@ Subject: Symlink libreaddir-rand.so into tests directory
 This means it can be LD_PRELOADed during build-time testing.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
-Forwarded: https://github.com/ostreedev/ostree/pull/232
+Applied-upstream: 2016.5, https://github.com/ostreedev/ostree/commit/f8bef792cb9cdd8b9cd174dad5856727db3b9bad
 ---
  .gitignore        | 1 +
  Makefile-decls.am | 3 +++

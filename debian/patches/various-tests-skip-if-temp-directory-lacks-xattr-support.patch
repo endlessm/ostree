@@ -6,21 +6,38 @@ Some autobuilder environments place the entire build chroot on tmpfs, so
 even /var/tmp might not have this.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
-Forwarded: https://github.com/ostreedev/ostree/pull/232
+Applied-upstream: 2016.5, https://github.com/ostreedev/ostree/commit/3e3755c497bd85e22b01829c5715119d46394687
 ---
- tests/test-basic-user.sh       | 10 ++++++++--
- tests/test-delta.sh            |  7 +++++++
- tests/test-demo-buildsystem.sh |  6 ++++++
- tests/test-local-pull.sh       | 10 ++++++++--
- tests/test-prune.sh            |  6 ++++++
- tests/test-rofiles-fuse.sh     |  7 +++++++
- 6 files changed, 42 insertions(+), 4 deletions(-)
+ tests/libtest.sh               | 8 ++++++++
+ tests/test-basic-user.sh       | 6 ++++--
+ tests/test-delta.sh            | 2 ++
+ tests/test-demo-buildsystem.sh | 2 ++
+ tests/test-local-pull.sh       | 6 ++++--
+ tests/test-prune.sh            | 2 ++
+ tests/test-rofiles-fuse.sh     | 3 +++
+ 7 files changed, 25 insertions(+), 4 deletions(-)
 
+diff --git a/tests/libtest.sh b/tests/libtest.sh
+index 06982d2..21de2e8 100755
+--- a/tests/libtest.sh
++++ b/tests/libtest.sh
+@@ -324,3 +324,11 @@ os_repository_new_commit ()
+     ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit  --add-metadata-string "version=${version}" -b testos/buildmaster/x86_64-runtime -s "Build"
+     cd ${test_tmpdir}
+ }
++
++skip_without_user_xattrs () {
++    touch test-xattrs
++    if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
++        echo "1..0 # SKIP this test requires xattr support"
++        exit 0
++    fi
++}
 diff --git a/tests/test-basic-user.sh b/tests/test-basic-user.sh
-index f53de89..b5b976d 100755
+index f53de89..42e6a86 100755
 --- a/tests/test-basic-user.sh
 +++ b/tests/test-basic-user.sh
-@@ -19,10 +19,16 @@
+@@ -19,10 +19,12 @@
  
  set -euo pipefail
  
@@ -28,11 +45,7 @@ index f53de89..b5b976d 100755
 -
  . $(dirname $0)/libtest.sh
  
-+touch test-xattrs
-+if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
-+    echo "1..0 # SKIP bare-user repository requires xattr support"
-+    exit 0
-+fi
++skip_without_user_xattrs
 +
 +echo "1..1"
 +
@@ -40,45 +53,36 @@ index f53de89..b5b976d 100755
  echo "ok setup"
  
 diff --git a/tests/test-delta.sh b/tests/test-delta.sh
-index 12f54c7..4335779 100755
+index 12f54c7..a6fd6f8 100755
 --- a/tests/test-delta.sh
 +++ b/tests/test-delta.sh
-@@ -156,6 +156,13 @@ ${CMD_PREFIX} ostree --repo=repo2 ls ${newrev} >/dev/null
- 
- echo 'ok pull delta'
- 
-+touch test-xattrs
-+if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
-+    echo "ok apply offline # SKIP bare-user repository requires xattr support"
-+    echo "ok apply offline inline # SKIP bare-user repository requires xattr support"
-+    exit 0
-+fi
-+
- rm repo2 -rf
- mkdir repo2 && ${CMD_PREFIX} ostree --repo=repo2 init --mode=bare-user
- mkdir deltadir
-diff --git a/tests/test-demo-buildsystem.sh b/tests/test-demo-buildsystem.sh
-index 500eac6..e5b1f87 100755
---- a/tests/test-demo-buildsystem.sh
-+++ b/tests/test-demo-buildsystem.sh
-@@ -26,6 +26,12 @@ fi
+@@ -21,6 +21,8 @@ set -euo pipefail
  
  . $(dirname $0)/libtest.sh
  
-+touch test-xattrs
-+if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
-+    echo "1..0 # SKIP bare-user repository requires xattr support"
-+    exit 0
-+fi
++skip_without_user_xattrs
++
+ bindatafiles="bash true ostree"
+ morebindatafiles="false ls"
+ 
+diff --git a/tests/test-demo-buildsystem.sh b/tests/test-demo-buildsystem.sh
+index 500eac6..bffa59c 100755
+--- a/tests/test-demo-buildsystem.sh
++++ b/tests/test-demo-buildsystem.sh
+@@ -26,6 +26,8 @@ fi
+ 
+ . $(dirname $0)/libtest.sh
+ 
++skip_without_user_xattrs
 +
  echo "1..1"
  
  # Run "triggers" like ldconfig, gtk-update-icon-cache, etc.
 diff --git a/tests/test-local-pull.sh b/tests/test-local-pull.sh
-index a9beb08..958e8c2 100755
+index a9beb08..50ecbcb 100755
 --- a/tests/test-local-pull.sh
 +++ b/tests/test-local-pull.sh
-@@ -19,10 +19,16 @@
+@@ -19,10 +19,12 @@
  
  set -euo pipefail
  
@@ -86,11 +90,7 @@ index a9beb08..958e8c2 100755
 -
  . $(dirname $0)/libtest.sh
  
-+touch test-xattrs
-+if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
-+    echo "1..0 # SKIP bare-user repository requires xattr support"
-+    exit 0
-+fi
++skip_without_user_xattrs
 +
 +echo "1..1"
 +
@@ -98,36 +98,28 @@ index a9beb08..958e8c2 100755
  echo "ok setup"
  
 diff --git a/tests/test-prune.sh b/tests/test-prune.sh
-index 7184ea9..c2f4eb9 100755
+index 7184ea9..e1796a3 100755
 --- a/tests/test-prune.sh
 +++ b/tests/test-prune.sh
-@@ -127,6 +127,12 @@ assert_file_has_content deltascount "^1$"
+@@ -21,6 +21,8 @@ set -euo pipefail
  
- echo "ok prune"
+ . $(dirname $0)/libtest.sh
  
-+touch test-xattrs
-+if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
-+    echo "ok prune with partial repo # SKIP bare-user repository requires xattr support"
-+    exit 0
-+fi
++skip_without_user_xattrs
 +
- rm repo -rf
- ostree --repo=repo init --mode=bare-user
- ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
+ setup_fake_remote_repo1 "archive-z2"
+ 
+ echo '1..2'
 diff --git a/tests/test-rofiles-fuse.sh b/tests/test-rofiles-fuse.sh
-index 444fbce..346c8fe 100755
+index 444fbce..ba45959 100755
 --- a/tests/test-rofiles-fuse.sh
 +++ b/tests/test-rofiles-fuse.sh
-@@ -25,6 +25,13 @@ if ! fusermount --version >/dev/null 2>&1; then
+@@ -25,6 +25,9 @@ if ! fusermount --version >/dev/null 2>&1; then
  fi
  
  . $(dirname $0)/libtest.sh
 +
-+touch test-xattrs
-+if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
-+    echo "1..0 # SKIP bare-user repository requires xattr support"
-+    exit 0
-+fi
++skip_without_user_xattrs
 +
  setup_test_repository "bare-user"
  

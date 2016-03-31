@@ -9,7 +9,7 @@ This means the various "ostree trivial-httpd --autoexit" processes
 actually exit, because their web roots are cleaned up now.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
-Forwarded: https://github.com/ostreedev/ostree/pull/232
+Applied-upstream: 2016.5, https://github.com/ostreedev/ostree/commit/47fd5c74f1428d4cc02ff0061a4958c4b714e852
 ---
  buildutil/tap-test | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

@@ -4,50 +4,73 @@ Subject: Skip tests that run rofiles-fuse if /dev/fuse or /etc/mtab
  unavailable
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Applied-upstream: 2016.5, https://github.com/ostreedev/ostree/commit/e1ce859368b41c863fe096df84f1ff33e90d725f
 ---
- tests/test-demo-buildsystem.sh | 10 ++++++++++
- tests/test-rofiles-fuse.sh     | 10 ++++++++++
- 2 files changed, 20 insertions(+)
+ tests/libtest.sh               | 17 +++++++++++++++++
+ tests/test-demo-buildsystem.sh |  6 +-----
+ tests/test-rofiles-fuse.sh     |  6 +-----
+ 3 files changed, 19 insertions(+), 10 deletions(-)
 
+diff --git a/tests/libtest.sh b/tests/libtest.sh
+index 21de2e8..3e4c4bd 100755
+--- a/tests/libtest.sh
++++ b/tests/libtest.sh
+@@ -332,3 +332,20 @@ skip_without_user_xattrs () {
+         exit 0
+     fi
+ }
++
++skip_without_fuse () {
++    if ! fusermount --version >/dev/null 2>&1; then
++        echo "1..0 # SKIP no fusermount"
++        exit 0
++    fi
++
++    if ! [ -w /dev/fuse ]; then
++        echo "1..0 # SKIP no write access to /dev/fuse"
++        exit 0
++    fi
++
++    if ! [ -e /etc/mtab ]; then
++        echo "1..0 # SKIP no /etc/mtab"
++        exit 0
++    fi
++}
 diff --git a/tests/test-demo-buildsystem.sh b/tests/test-demo-buildsystem.sh
-index e5b1f87..a4377bd 100755
+index bffa59c..97915f9 100755
 --- a/tests/test-demo-buildsystem.sh
 +++ b/tests/test-demo-buildsystem.sh
-@@ -24,6 +24,16 @@ if ! fusermount --version >/dev/null 2>&1; then
-     exit 0
- fi
+@@ -19,13 +19,9 @@
  
-+if ! [ -w /dev/fuse ]; then
-+    echo "1..0 # SKIP no write access to /dev/fuse"
-+    exit 0
-+fi
-+
-+if ! [ -e /etc/mtab ]; then
-+    echo "1..0 # SKIP no /etc/mtab"
-+    exit 0
-+fi
-+
+ set -euo pipefail
+ 
+-if ! fusermount --version >/dev/null 2>&1; then
+-    echo "1..0 # SKIP no fusermount"
+-    exit 0
+-fi
+-
  . $(dirname $0)/libtest.sh
  
- touch test-xattrs
++skip_without_fuse
+ skip_without_user_xattrs
+ 
+ echo "1..1"
 diff --git a/tests/test-rofiles-fuse.sh b/tests/test-rofiles-fuse.sh
-index 346c8fe..145d7e8 100755
+index ba45959..d021df0 100755
 --- a/tests/test-rofiles-fuse.sh
 +++ b/tests/test-rofiles-fuse.sh
-@@ -24,6 +24,16 @@ if ! fusermount --version >/dev/null 2>&1; then
-     exit 0
- fi
+@@ -19,13 +19,9 @@
  
-+if ! [ -w /dev/fuse ]; then
-+    echo "1..0 # SKIP no write access to /dev/fuse"
-+    exit 0
-+fi
-+
-+if ! [ -e /etc/mtab ]; then
-+    echo "1..0 # SKIP no /etc/mtab"
-+    exit 0
-+fi
-+
+ set -euo pipefail
+ 
+-if ! fusermount --version >/dev/null 2>&1; then
+-    echo "1..0 # SKIP no fusermount"
+-    exit 0
+-fi
+-
  . $(dirname $0)/libtest.sh
  
- touch test-xattrs
++skip_without_fuse
+ skip_without_user_xattrs
+ 
+ setup_test_repository "bare-user"

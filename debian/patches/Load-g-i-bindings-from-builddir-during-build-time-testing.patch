@@ -6,25 +6,25 @@ Previously, the build-time tests would only pass if the g-i bindings to
 OSTree were already installed, with a reasonably similar version.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
-Forwarded: https://github.com/ostreedev/ostree/pull/232
+Applied-upstream: 2016.5, https://github.com/ostreedev/ostree/commit/07aa8e1c76463e3de0ffc79d0271773ababf05b4
+[smcv: rebased on 2016.4]
 ---
- Makefile-tests.am | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ Makefile-tests.am | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/Makefile-tests.am b/Makefile-tests.am
-index 9eb9ad8..97f0541 100644
+index 9eb9ad8..f10c23f 100644
 --- a/Makefile-tests.am
 +++ b/Makefile-tests.am
-@@ -22,8 +22,12 @@ include $(top_srcdir)/buildutil/glib-tap.mk
- # We should probably consider flipping the default for DEBUG.  Also,
+@@ -23,7 +23,12 @@ include $(top_srcdir)/buildutil/glib-tap.mk
  # include the builddir in $PATH so we find our just-built ostree
  # binary.
--TESTS_ENVIRONMENT += OT_TESTS_DEBUG=1 \
+ TESTS_ENVIRONMENT += OT_TESTS_DEBUG=1 \
 -	PATH=$$(cd $(top_builddir) && pwd):$${PATH}
-+TESTS_ENVIRONMENT += \
++	SRCDIR=$$(cd $(top_srcdir) && pwd) \
++	BUILDDIR=$$(cd $(top_builddir) && pwd) \
 +	GI_TYPELIB_PATH=$$(cd $(top_builddir) && pwd) \
 +	LD_LIBRARY_PATH=$$(cd $(top_builddir)/.libs && pwd) \
-+	OT_TESTS_DEBUG=1 \
 +	PATH=$$(cd $(top_builddir) && pwd):$${PATH} \
 +	$(NULL)
  
