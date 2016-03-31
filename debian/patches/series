@@ -4,3 +4,4 @@ Symlink-libreaddir-rand.so-into-tests-directory.patch
 tap-test-clean-up-temporary-test-directories-as-intended.patch
 In-tests-that-use-gpg-terminate-the-gpg-agent-after-testi.patch
 Load-g-i-bindings-from-builddir-during-build-time-testing.patch
+tests-admin-test.sh-this-is-a-bash-script-not-a-POSIX-sh-.patch
