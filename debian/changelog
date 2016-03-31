@@ -9,6 +9,7 @@ ostree (2016.4-1) UNRELEASED; urgency=medium
   * Fix ITP bug number in changelog (was #813308, should have been #697477)
   * debian/control: build-depend on attr, for the tests (only required if
     /var/tmp supports extended attributes)
+  * debian/rules: clean up stale gpg-agent processes after testing
   * debian/rules: warn if there are leftover daemon processes after testing
   * debian/patches: add patches to get the build-time tests passing under
     sbuild

@@ -26,6 +26,8 @@ override_dh_auto_configure:
 
 override_dh_auto_test:
 	dh_auto_test
+	# One test creates multiple GPG homedirs, each with its own agent
+	pkill --full "gpg-agent --homedir /var/tmp/tap-test\\.[^/]+/repo/tmp/ostree-gpg-[^/]+ " || :
 	if pgrep lt-ostree || pgrep --full "gpg-agent --homedir /var/tmp/tap-test."; then \
 		echo "WARNING: daemon processes were leaked"; \
 		pgrep gpg-agent | xargs --no-run-if-empty ps ww; \
