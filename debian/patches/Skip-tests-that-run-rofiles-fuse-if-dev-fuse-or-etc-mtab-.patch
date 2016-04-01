@@ -4,7 +4,7 @@ Subject: Skip tests that run rofiles-fuse if /dev/fuse or /etc/mtab
  unavailable
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
-Applied-upstream: 2016.5, https://github.com/ostreedev/ostree/commit/e1ce859368b41c863fe096df84f1ff33e90d725f
+Applied-upstream: 2016.5, commit:https://github.com/ostreedev/ostree/commit/e1ce859368b41c863fe096df84f1ff33e90d725f
 ---
  tests/libtest.sh               | 17 +++++++++++++++++
  tests/test-demo-buildsystem.sh |  6 +-----

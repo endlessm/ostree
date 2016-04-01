@@ -16,7 +16,7 @@ some versions optionally supported an incompatible command-line syntax
 taken from moreutils parallel.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
-Applied-upstream: 2016.5, https://github.com/ostreedev/ostree/commit/9dafc820241ed6e663ad4093660fc255f549aa26
+Applied-upstream: 2016.5, commit:https://github.com/ostreedev/ostree/commit/9dafc820241ed6e663ad4093660fc255f549aa26
 ---
  tests/test-admin-locking.sh | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)

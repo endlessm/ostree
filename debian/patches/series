@@ -7,3 +7,6 @@ Load-g-i-bindings-from-builddir-during-build-time-testing.patch
 tests-admin-test.sh-this-is-a-bash-script-not-a-POSIX-sh-.patch
 Skip-tests-that-run-rofiles-fuse-if-dev-fuse-or-etc-mtab-.patch
 Probe-for-GNU-parallel-more-accurately.patch
+libtest.sh-use-G_TEST_SRCDIR-G_TEST_BUILDDIR-to-find-reso.patch
+test-xattrs-sync-how-this-is-skipped-with-test-rofiles-fu.patch
+libtest.sh-only-check-whether-pwd-is-empty-once.patch

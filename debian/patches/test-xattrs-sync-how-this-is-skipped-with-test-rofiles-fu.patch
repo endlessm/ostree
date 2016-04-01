@@ -1,0 +1,38 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Thu, 31 Mar 2016 17:47:36 +0100
+Subject: test-xattrs: sync how this is skipped with test-rofiles-fuse
+
+If we touch test-xattrs before sourcing libtest.sh, we get:
+
+test tmpdir=/tmp/test-tmp-ostree_test-xattrs.sh.test-HSEXEY is not
+empty; run this test via `make check TESTS=`, not directly
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+Applied-upstream: 2016.5, commit:https://github.com/ostreedev/ostree/commit/9c4babf316cfbfad61cfcd0ab8fd5e77e9df13be
+---
+ tests/test-xattrs.sh | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/tests/test-xattrs.sh b/tests/test-xattrs.sh
+index 2f2d99c..cdc06e8 100755
+--- a/tests/test-xattrs.sh
++++ b/tests/test-xattrs.sh
+@@ -19,15 +19,11 @@
+ 
+ set -euo pipefail
+ 
+-touch test-xattrs
+-if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
+-    echo "1..0 # SKIP: cannot run setfattr"
+-    exit 0
+-fi
++. $(dirname $0)/libtest.sh
+ 
+-echo "1..2"
++skip_without_user_xattrs
+ 
+-. $(dirname $0)/libtest.sh
++echo "1..2"
+ 
+ setup_test_repository "archive-z2"
+ 
