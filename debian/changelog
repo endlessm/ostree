@@ -7,6 +7,7 @@ ostree (2016.5-1) UNRELEASED; urgency=medium
     - debian/copyright: update
     - debian/rules, debian/ostree-tests.install: adjust for new installation
       directory for installed-tests
+    - debian/rules: use Debian's grub2-mkconfig path
   * debian/gbp.conf: use DEP-14 branch names; disable numbered patches
   * Fix ITP bug number in changelog (was #813308, should have been #697477)
   * debian/control: build-depend on attr, for the tests (only required if

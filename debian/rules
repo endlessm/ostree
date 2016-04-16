@@ -20,6 +20,7 @@ override_dh_auto_configure:
 		--libexecdir='$${prefix}/lib' \
 		--with-dracut \
 		--with-grub2 \
+		--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
 		--with-systemdsystemunitdir=/lib/systemd/system \
 		$(NULL)
 	chmod +x tests/*.js
