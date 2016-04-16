@@ -17,7 +17,17 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
-SRCDIR=$(dirname $0)
+if [ -n "${G_TEST_SRCDIR:-}" ]; then
+  test_srcdir="${G_TEST_SRCDIR}/tests"
+else
+  test_srcdir=$(dirname $0)
+fi
+
+if [ -n "${G_TEST_BUILDDIR:-}" ]; then
+  test_builddir="${G_TEST_BUILDDIR}/tests"
+else
+  test_builddir=$(dirname $0)
+fi
 
 assert_not_reached () {
     echo $@ 1>&2; exit 1
@@ -31,8 +41,12 @@ test_tmpdir=$(pwd)
 if ! test -f .testtmp; then
     files=$(ls)
     if test -n "${files}"; then
+	ls -l
 	assert_not_reached "test tmpdir=${test_tmpdir} is not empty; run this test via \`make check TESTS=\`, not directly"
     fi
+    # Remember that this is an acceptable test $(pwd), for the benefit of
+    # C and JS tests which may source this file again
+    touch .testtmp
 fi
 
 export G_DEBUG=fatal-warnings
@@ -54,7 +68,7 @@ export TEST_GPG_KEYID_3="DF444D67"
 # homedir in order to create lockfiles.  Work around
 # this by copying locally.
 echo "Copying gpghome to ${test_tmpdir}"
-cp -a ${SRCDIR}/gpghome ${test_tmpdir}
+cp -a "${test_srcdir}/gpghome" ${test_tmpdir}
 export TEST_GPG_KEYHOME=${test_tmpdir}/gpghome
 export OSTREE_GPG_HOME=${test_tmpdir}/gpghome/trusted
 
@@ -63,9 +77,9 @@ if test -n "${OT_TESTS_DEBUG:-}"; then
 fi
 
 if test -n "${OT_TESTS_VALGRIND:-}"; then
-    CMD_PREFIX="env G_SLICE=always-malloc valgrind -q --leak-check=full --num-callers=30 --suppressions=${SRCDIR}/ostree-valgrind.supp"
+    CMD_PREFIX="env G_SLICE=always-malloc valgrind -q --leak-check=full --num-callers=30 --suppressions=${test_srcdir}/ostree-valgrind.supp"
 else
-    CMD_PREFIX="env LD_PRELOAD=${SRCDIR}/libreaddir-rand.so"
+    CMD_PREFIX="env LD_PRELOAD=${test_builddir}/libreaddir-rand.so"
 fi
 
 assert_streq () {
@@ -215,6 +229,20 @@ setup_os_boot_uboot() {
     ln -s loader/uEnv.txt sysroot/boot/uEnv.txt
 }
 
+setup_os_boot_grub2() {
+    grub2_options=$1
+    mkdir -p sysroot/boot/grub2/
+    ln -s ../loader/grub.cfg sysroot/boot/grub2/grub.cfg
+    export OSTREE_BOOT_PARTITION="/boot"
+    case "$grub2_options" in
+        *ostree-grub-generator*)
+            cp ${test_srcdir}/ostree-grub-generator ${test_tmpdir}
+            chmod +x ${test_tmpdir}/ostree-grub-generator
+            export OSTREE_GRUB2_EXEC=${test_tmpdir}/ostree-grub-generator
+            ;;
+    esac
+}
+
 setup_os_repository () {
     mode=$1
     bootmode=$2
@@ -287,6 +315,9 @@ EOF
         "uboot")
 	    setup_os_boot_uboot
             ;;
+        *grub2*)
+        setup_os_boot_grub2 "${bootmode}"
+            ;;
     esac
     
     cd ${test_tmpdir}
@@ -323,4 +354,33 @@ os_repository_new_commit ()
 
     ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit  --add-metadata-string "version=${version}" -b testos/buildmaster/x86_64-runtime -s "Build"
     cd ${test_tmpdir}
+}
+
+skip_without_user_xattrs () {
+    touch test-xattrs
+    if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
+        echo "1..0 # SKIP this test requires xattr support"
+        exit 0
+    fi
+}
+
+skip_without_fuse () {
+    if ! fusermount --version >/dev/null 2>&1; then
+        echo "1..0 # SKIP no fusermount"
+        exit 0
+    fi
+
+    if ! [ -w /dev/fuse ]; then
+        echo "1..0 # SKIP no write access to /dev/fuse"
+        exit 0
+    fi
+
+    if ! [ -e /etc/mtab ]; then
+        echo "1..0 # SKIP no /etc/mtab"
+        exit 0
+    fi
+}
+
+libtest_cleanup_gpg () {
+    gpg-connect-agent --homedir ${test_tmpdir}/gpghome killagent /bye || true
 }

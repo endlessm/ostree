@@ -64,6 +64,13 @@ void          ostree_repo_set_disable_fsync (OstreeRepo    *self,
                                              gboolean       disable_fsync);
 
 _OSTREE_PUBLIC
+gboolean      ostree_repo_set_cache_dir (OstreeRepo    *self,
+                                         int            dfd,
+                                         const char    *path,
+                                         GCancellable   *cancellable,
+                                         GError        **error);
+
+_OSTREE_PUBLIC
 gboolean      ostree_repo_get_disable_fsync (OstreeRepo    *self);
 
 _OSTREE_PUBLIC
@@ -146,6 +153,29 @@ gboolean      ostree_repo_remote_get_gpg_verify_summary (OstreeRepo  *self,
                                                          const char  *name,
                                                          gboolean    *out_gpg_verify_summary,
                                                          GError     **error);
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_get_remote_option (OstreeRepo  *self,
+                                             const char  *remote_name,
+                                             const char  *option_name,
+                                             const char  *default_value,
+                                             char       **out_value,
+                                             GError     **error);
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_get_remote_list_option (OstreeRepo   *self,
+                                                  const char   *remote_name,
+                                                  const char   *option_name,
+                                                  char       ***out_value,
+                                                  GError      **error);
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_get_remote_boolean_option (OstreeRepo  *self,
+                                                     const char  *remote_name,
+                                                     const char  *option_name,
+                                                     gboolean     default_value,
+                                                     gboolean    *out_value,
+                                                     GError     **error);
 
 _OSTREE_PUBLIC
 gboolean      ostree_repo_remote_gpg_import (OstreeRepo         *self,
@@ -423,6 +453,14 @@ gboolean      ostree_repo_import_object_from (OstreeRepo           *self,
                                               const char           *checksum,
                                               GCancellable         *cancellable,
                                               GError              **error);
+_OSTREE_PUBLIC
+gboolean      ostree_repo_import_object_from_with_trust (OstreeRepo           *self,
+                                                         OstreeRepo           *source,
+                                                         OstreeObjectType      objtype,
+                                                         const char           *checksum,
+                                                         gboolean              trusted,
+                                                         GCancellable         *cancellable,
+                                                         GError              **error);
 
 _OSTREE_PUBLIC
 gboolean      ostree_repo_delete_object (OstreeRepo           *self,
@@ -891,11 +929,13 @@ gboolean ostree_repo_prune (OstreeRepo        *self,
  * @OSTREE_REPO_PULL_FLAGS_NONE: No special options for pull
  * @OSTREE_REPO_PULL_FLAGS_MIRROR: Write out refs suitable for mirrors
  * @OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY: Fetch only the commit metadata
+ * @OSTREE_REPO_PULL_FLAGS_UNTRUSTED: Don't trust local remote
  */
 typedef enum {
   OSTREE_REPO_PULL_FLAGS_NONE,
   OSTREE_REPO_PULL_FLAGS_MIRROR = (1 << 0),
-  OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY = (1 << 1)
+  OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY = (1 << 1),
+  OSTREE_REPO_PULL_FLAGS_UNTRUSTED = (1 << 2)
 } OstreeRepoPullFlags;
 
 _OSTREE_PUBLIC

@@ -132,5 +132,6 @@ if ${CMD_PREFIX} ostree --repo=repo show main | grep -o 'Found [[:digit:]] signa
 fi
 
 rm -rf repo gnomerepo-files
+libtest_cleanup_gpg
 
 echo "ok"

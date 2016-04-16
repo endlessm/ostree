@@ -23,7 +23,12 @@ include $(top_srcdir)/buildutil/glib-tap.mk
 # include the builddir in $PATH so we find our just-built ostree
 # binary.
 TESTS_ENVIRONMENT += OT_TESTS_DEBUG=1 \
-	PATH=$$(cd $(top_builddir) && pwd):$${PATH}
+	GI_TYPELIB_PATH=$$(cd $(top_builddir) && pwd) \
+	LD_LIBRARY_PATH=$$(cd $(top_builddir)/.libs && pwd) \
+	PATH=$$(cd $(top_builddir) && pwd):$${PATH} \
+	$(NULL)
+
+uninstalled_test_scripts = tests/test-abi.sh
 
 test_scripts = \
 	tests/test-basic.sh \
@@ -35,6 +40,7 @@ test_scripts = \
 	tests/test-export.sh \
 	tests/test-help.sh \
 	tests/test-libarchive.sh \
+	tests/test-parent.sh \
 	tests/test-pull-archive-z.sh \
 	tests/test-pull-commit-only.sh \
 	tests/test-pull-corruption.sh \
@@ -44,6 +50,8 @@ test_scripts = \
 	tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh \
 	tests/test-pull-resume.sh \
+	tests/test-pull-untrusted.sh \
+	tests/test-local-pull.sh \
 	tests/test-local-pull-depth.sh \
 	tests/test-gpg-signed-commit.sh \
 	tests/test-admin-upgrade-unconfigured.sh \
@@ -53,6 +61,7 @@ test_scripts = \
 	tests/test-admin-deploy-switch.sh \
 	tests/test-admin-deploy-etcmerge-cornercases.sh \
 	tests/test-admin-deploy-uboot.sh \
+	tests/test-admin-deploy-grub2.sh \
 	tests/test-admin-instutil-set-kargs.sh \
 	tests/test-admin-upgrade-not-backwards.sh \
 	tests/test-admin-pull-deploy-commit.sh \
@@ -85,13 +94,13 @@ installed_test_data = tests/archive-test.sh \
 	tests/admin-test.sh \
 	tests/basic-test.sh \
 	tests/test-basic-user.sh \
-	tests/test-local-pull.sh \
 	tests/corrupt-repo-ref.js \
 	tests/pre-endian-deltas-repo-big.tar.xz \
 	tests/pre-endian-deltas-repo-little.tar.xz \
 	$(NULL)
 
-test_extra_scripts = tests/syslinux-entries-crosscheck.py
+test_extra_scripts = tests/bootloader-entries-crosscheck.py \
+     tests/ostree-grub-generator
 
 # We can't use nobase_ as we need to strip off the tests/, can't
 # use plain installed_ as we do need the gpghome/ prefix.
@@ -123,6 +132,9 @@ libreaddir_rand_la_SOURCES = tests/readdir-rand.c
 libreaddir_rand_la_CFLAGS = $(OT_INTERNAL_GIO_UNIX_CFLAGS)
 libreaddir_rand_la_LIBADD = $(OT_INTERNAL_GIO_UNIX_LIBS)
 libreaddir_rand_la_LDFLAGS = -avoid-version
+if !ENABLE_INSTALLED_TESTS
+libreaddir_rand_la_LDFLAGS += -rpath $(abs_builddir)
+endif
 
 test_programs = tests/test-varint tests/test-ot-unix-utils tests/test-bsdiff tests/test-mutable-tree \
 	tests/test-keyfile-utils tests/test-ot-opt-utils tests/test-ot-tool-util \
@@ -203,6 +215,7 @@ tests_test_gpg_verify_result_CFLAGS = $(TESTS_CFLAGS) $(OT_INTERNAL_GPGME_CFLAGS
 tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 
 EXTRA_DIST += \
+	tests/libostreetest.h \
 	tests/gpg-verify-data/README.md \
 	tests/gpg-verify-data/lgpl2 \
 	tests/gpg-verify-data/lgpl2.sig \
@@ -210,6 +223,11 @@ EXTRA_DIST += \
 	tests/gpg-verify-data/secring.gpg \
 	tests/gpg-verify-data/trustdb.gpg \
 	tests/gpg-verify-data/gpg.conf
+
+tests/libreaddir-rand.so: Makefile
+	$(AM_V_GEN) ln -fns ../.libs/libreaddir-rand.so tests
+ALL_LOCAL_RULES += tests/libreaddir-rand.so
+CLEANFILES += tests/libreaddir-rand.so
 
 # Unfortunately the glib test data APIs don't actually handle
 # non-recursive Automake, so we change our code to canonically look

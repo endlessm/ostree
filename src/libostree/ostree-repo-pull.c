@@ -93,6 +93,7 @@ typedef struct {
 
   gboolean          is_mirror;
   gboolean          is_commit_only;
+  gboolean          is_untrusted;
 
   char         *dir;
   gboolean      commitpartial_exists;
@@ -447,12 +448,7 @@ scan_dirtree_object (OtPullData   *pull_data,
   files_variant = g_variant_get_child_value (tree, 0);
   dirs_variant = g_variant_get_child_value (tree, 1);
 
-  /* Skip files if we're traversing a request only directory */
-  if (pull_data->dir)
-    n = 0;
-  else
-    n = g_variant_n_children (files_variant);
-
+  n = g_variant_n_children (files_variant);
   for (i = 0; i < n; i++)
     {
       const char *filename;
@@ -465,6 +461,14 @@ scan_dirtree_object (OtPullData   *pull_data,
       if (!ot_util_filename_validate (filename, error))
         goto out;
 
+      /* Skip files if we're traversing a request only directory, unless it exactly
+       * matches the path */
+      if (pull_data->dir &&
+          /* Should always an initial slash, we assert it in scan_dirtree_object */
+          pull_data->dir[0] == '/' &&
+          strcmp (pull_data->dir+1, filename) != 0)
+        continue;
+
       file_checksum = ostree_checksum_from_bytes_v (csum);
 
       if (!ostree_repo_has_object (pull_data->repo, OSTREE_OBJECT_TYPE_FILE, file_checksum,
@@ -473,9 +477,9 @@ scan_dirtree_object (OtPullData   *pull_data,
 
       if (!file_is_stored && pull_data->remote_repo_local)
         {
-          if (!ostree_repo_import_object_from (pull_data->repo, pull_data->remote_repo_local,
-                                               OSTREE_OBJECT_TYPE_FILE, file_checksum,
-                                               cancellable, error))
+          if (!ostree_repo_import_object_from_with_trust (pull_data->repo, pull_data->remote_repo_local,
+                                                          OSTREE_OBJECT_TYPE_FILE, file_checksum, !pull_data->is_untrusted,
+                                                          cancellable, error))
             goto out;
         }
       else if (!file_is_stored && !g_hash_table_lookup (pull_data->requested_content, file_checksum))
@@ -1189,9 +1193,9 @@ scan_one_metadata_object_c (OtPullData         *pull_data,
   if (pull_data->remote_repo_local)
     {
       if (!is_stored &&
-          !ostree_repo_import_object_from (pull_data->repo, pull_data->remote_repo_local,
-                                           objtype, tmp_checksum,
-                                           cancellable, error))
+          !ostree_repo_import_object_from_with_trust (pull_data->repo, pull_data->remote_repo_local,
+                                                      objtype, tmp_checksum, !pull_data->is_untrusted,
+                                                      cancellable, error))
         goto out;
       is_stored = TRUE;
       is_requested = TRUE;
@@ -1779,12 +1783,15 @@ _ostree_repo_load_cache_summary_if_same_sig (OstreeRepo        *self,
                                              GError           **error)
 {
   gboolean ret = FALSE;
-  const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_PATH, "/", remote, ".sig");
+  const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote, ".sig");
 
   glnx_fd_close int prev_fd = -1;
   g_autoptr(GBytes) old_sig_contents = NULL;
 
-  if (!ot_openat_ignore_enoent (self->repo_dir_fd, summary_cache_sig_file, &prev_fd, error))
+  if (self->cache_dir_fd == -1)
+    return TRUE;
+
+  if (!ot_openat_ignore_enoent (self->cache_dir_fd, summary_cache_sig_file, &prev_fd, error))
     goto out;
 
   if (prev_fd < 0)
@@ -1799,17 +1806,17 @@ _ostree_repo_load_cache_summary_if_same_sig (OstreeRepo        *self,
 
   if (g_bytes_compare (old_sig_contents, summary_sig) == 0)
     {
-      const char *summary_cache_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_PATH, "/", remote);
+      const char *summary_cache_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote);
       glnx_fd_close int summary_fd = -1;
       GBytes *summary_data;
 
 
-      summary_fd = openat (self->repo_dir_fd, summary_cache_file, O_CLOEXEC | O_RDONLY);
+      summary_fd = openat (self->cache_dir_fd, summary_cache_file, O_CLOEXEC | O_RDONLY);
       if (summary_fd < 0)
         {
           if (errno == ENOENT)
             {
-              (void) unlinkat (self->repo_dir_fd, summary_cache_sig_file, 0);
+              (void) unlinkat (self->cache_dir_fd, summary_cache_sig_file, 0);
               ret = TRUE;
               goto out;
             }
@@ -1838,13 +1845,16 @@ _ostree_repo_cache_summary (OstreeRepo        *self,
                             GError           **error)
 {
   gboolean ret = FALSE;
-  const char *summary_cache_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_PATH, "/", remote);
-  const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_PATH, "/", remote, ".sig");
+  const char *summary_cache_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote);
+  const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote, ".sig");
 
-  if (!glnx_shutil_mkdir_p_at (self->repo_dir_fd, _OSTREE_SUMMARY_CACHE_PATH, 0775, cancellable, error))
+  if (self->cache_dir_fd == -1)
+    return TRUE;
+
+  if (!glnx_shutil_mkdir_p_at (self->cache_dir_fd, _OSTREE_SUMMARY_CACHE_DIR, 0775, cancellable, error))
     goto out;
 
-  if (!glnx_file_replace_contents_at (self->repo_dir_fd,
+  if (!glnx_file_replace_contents_at (self->cache_dir_fd,
                                       summary_cache_file,
                                       g_bytes_get_data (summary, NULL),
                                       g_bytes_get_size (summary),
@@ -1852,7 +1862,7 @@ _ostree_repo_cache_summary (OstreeRepo        *self,
                                       cancellable, error))
     goto out;
 
-  if (!glnx_file_replace_contents_at (self->repo_dir_fd,
+  if (!glnx_file_replace_contents_at (self->cache_dir_fd,
                                       summary_cache_sig_file,
                                       g_bytes_get_data (summary_sig, NULL),
                                       g_bytes_get_size (summary_sig),
@@ -1899,16 +1909,20 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   GSource *update_timeout = NULL;
   gboolean disable_static_deltas = FALSE;
   gboolean require_static_deltas = FALSE;
+  gboolean opt_gpg_verify = FALSE;
+  gboolean opt_gpg_verify_summary = FALSE;
 
   if (options)
     {
-      int flags_i;
+      int flags_i = OSTREE_REPO_PULL_FLAGS_NONE;
       (void) g_variant_lookup (options, "refs", "^a&s", &refs_to_fetch);
       (void) g_variant_lookup (options, "flags", "i", &flags_i);
       /* Reduce risk of issues if enum happens to be 64 bit for some reason */
       flags = flags_i;
       (void) g_variant_lookup (options, "subdir", "&s", &dir_to_pull);
       (void) g_variant_lookup (options, "override-remote-name", "s", &pull_data->remote_name);
+      (void) g_variant_lookup (options, "gpg-verify", "b", &opt_gpg_verify);
+      (void) g_variant_lookup (options, "gpg-verify-summary", "b", &opt_gpg_verify_summary);
       (void) g_variant_lookup (options, "depth", "i", &pull_data->maxdepth);
       (void) g_variant_lookup (options, "disable-static-deltas", "b", &disable_static_deltas);
       (void) g_variant_lookup (options, "require-static-deltas", "b", &require_static_deltas);
@@ -1931,6 +1945,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
   pull_data->is_mirror = (flags & OSTREE_REPO_PULL_FLAGS_MIRROR) > 0;
   pull_data->is_commit_only = (flags & OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY) > 0;
+  pull_data->is_untrusted = (flags & OSTREE_REPO_PULL_FLAGS_UNTRUSTED) > 0;
 
   if (error)
     pull_data->async_error = &pull_data->cached_async_error;
@@ -1965,18 +1980,26 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   if (_ostree_repo_remote_name_is_file (remote_name_or_baseurl))
     {
       /* For compatibility with pull-local, don't gpg verify local
-       * pulls.
+       * pulls by default.
        */
-      pull_data->gpg_verify = FALSE;
-      pull_data->gpg_verify_summary = FALSE;
+      pull_data->gpg_verify = opt_gpg_verify;
+      pull_data->gpg_verify_summary = opt_gpg_verify_summary;
+
+      if ((pull_data->gpg_verify || pull_data->gpg_verify_summary) &&
+          pull_data->remote_name == NULL)
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                       "Must specify remote name to enable gpg verification");
+          goto out;
+        }
     }
   else
     {
       pull_data->remote_name = g_strdup (remote_name_or_baseurl);
-      if (!ostree_repo_remote_get_gpg_verify (self, remote_name_or_baseurl,
+      if (!ostree_repo_remote_get_gpg_verify (self, pull_data->remote_name,
                                               &pull_data->gpg_verify, error))
         goto out;
-      if (!ostree_repo_remote_get_gpg_verify_summary (self, remote_name_or_baseurl,
+      if (!ostree_repo_remote_get_gpg_verify_summary (self, pull_data->remote_name,
                                                       &pull_data->gpg_verify_summary, error))
         goto out;
     }
@@ -1991,9 +2014,9 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   requested_refs_to_fetch = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   commits_to_fetch = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
-  if (!_ostree_repo_get_remote_option (self,
-                                       remote_name_or_baseurl, "metalink",
-                                       NULL, &metalink_url_str, error))
+  if (!ostree_repo_get_remote_option (self,
+                                      remote_name_or_baseurl, "metalink",
+                                      NULL, &metalink_url_str, error))
     goto out;
 
   if (!metalink_url_str)
@@ -2047,9 +2070,9 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
                                                      summary_bytes, FALSE);
     }
 
-  if (!_ostree_repo_get_remote_list_option (self,
-                                            remote_name_or_baseurl, "branches",
-                                            &configured_branches, error))
+  if (!ostree_repo_get_remote_list_option (self,
+                                           remote_name_or_baseurl, "branches",
+                                           &configured_branches, error))
     goto out;
 
   if (strcmp (soup_uri_get_scheme (pull_data->base_uri), "file") == 0)
@@ -2105,12 +2128,14 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         soup_uri_free (uri);
       }
 
-    if (bytes_sig && !_ostree_repo_load_cache_summary_if_same_sig (self,
-                                                                   remote_name_or_baseurl,
-                                                                   bytes_sig,
-                                                                   &bytes_summary,
-                                                                   cancellable,
-                                                                   error))
+    if (bytes_sig &&
+        !pull_data->remote_repo_local &&
+        !_ostree_repo_load_cache_summary_if_same_sig (self,
+                                                      remote_name_or_baseurl,
+                                                      bytes_sig,
+                                                      &bytes_summary,
+                                                      cancellable,
+                                                      error))
       goto out;
 
     if (bytes_summary)
@@ -2158,7 +2183,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
     if (!summary_from_cache && bytes_summary && bytes_sig)
       {
-        if (!_ostree_repo_cache_summary (self,
+        if (!pull_data->remote_repo_local &&
+            !_ostree_repo_cache_summary (self,
                                          remote_name_or_baseurl,
                                          bytes_summary,
                                          bytes_sig,
@@ -2176,7 +2202,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         result = _ostree_repo_gpg_verify_with_metadata (self,
                                                         bytes_summary,
                                                         sig_variant,
-                                                        remote_name_or_baseurl,
+                                                        pull_data->remote_name,
                                                         NULL,
                                                         NULL,
                                                         cancellable,

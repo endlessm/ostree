@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2011 Colin Walters <walters@verbum.org>
+# Copyright (C) 2016 Colin Walters <walters@verbum.org>
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -19,13 +19,10 @@
 
 set -euo pipefail
 
-. $(dirname $0)/libtest.sh
+echo '1..1'
 
-skip_without_user_xattrs
+grep ' ostree_[A-Za-z0-9_]*;' ${G_TEST_SRCDIR}/src/libostree/libostree.sym | sed -e 's,^ *\([A-Za-z0-9_]*\);,\1,' | sort -u > expected-symbols.txt
+eu-readelf -a ${G_TEST_BUILDDIR}/.libs/libostree-1.so | grep 'FUNC.*GLOBAL.*DEFAULT.*@@LIBOSTREE_' | sed -e 's,^.* \(ostree_[A-Za-z0-9_]*\)@@LIBOSTREE_[0-9_.]*,\1,' |sort -u > found-symbols.txt
+diff -u expected-symbols.txt found-symbols.txt
 
-echo "1..1"
-
-setup_test_repository "bare-user"
-echo "ok setup"
-
-. $(dirname $0)/basic-test.sh
+echo 'ok'
