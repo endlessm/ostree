@@ -14,6 +14,7 @@ Build-Depends:
  docbook-xml,
  docbook-xsl,
  e2fslibs-dev,
+ elfutils,
  fuse,
  gjs,
  gobject-introspection,
