@@ -14,11 +14,18 @@ Copyright:
  © 2013 Javier Martinez <javier.martinez@collabora.co.uk>
  © 2013 Jeremy Whiting <jeremy.whiting@collabora.com>
  © 2013 Sjoerd Simons <sjoerd.simons@collabora.co.uk>
- © 2014 Alexander Larsson <alexl@redhat.com>
+ © 2014-2016 Alexander Larsson <alexl@redhat.com>
  © 2014 Owen Taylor <otaylor@redhat.com>
  © 2015 Dan Nicholson <nicholson@endlessm.com>
  © 2015 Canonical Ltd.
 License: LGPL-2+
+
+Files:
+ git.mk
+Copyright:
+ © 2009 Red Hat, Inc.
+ © 2010-2013 Behdad Esfahbod
+License: GNU-permissive
 
 Files:
  libglnx/glnx-lockfile.*
@@ -199,3 +206,8 @@ License: ISC
  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+License: GNU-permissive
+ Copying and distribution of this file, with or without modification,
+ is permitted in any medium without royalty provided the copyright
+ notice and this notice are preserved.
