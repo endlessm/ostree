@@ -2,6 +2,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
 * Build-Depends-Package: libostree-dev
  LIBOSTREE_2016.3@LIBOSTREE_2016.3 2016.4
  LIBOSTREE_2016.4@LIBOSTREE_2016.4 2016.4
+ LIBOSTREE_2016.5@LIBOSTREE_2016.5 2016.5
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_type@LIBOSTREE_2016.3 2016.4
@@ -152,10 +153,14 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_get_mode@LIBOSTREE_2016.3 2016.4
  ostree_repo_get_parent@LIBOSTREE_2016.3 2016.4
  ostree_repo_get_path@LIBOSTREE_2016.3 2016.4
+ ostree_repo_get_remote_boolean_option@LIBOSTREE_2016.5 2016.5
+ ostree_repo_get_remote_list_option@LIBOSTREE_2016.5 2016.5
+ ostree_repo_get_remote_option@LIBOSTREE_2016.5 2016.5
  ostree_repo_get_type@LIBOSTREE_2016.3 2016.4
  ostree_repo_has_object@LIBOSTREE_2016.3 2016.4
  ostree_repo_import_archive_to_mtree@LIBOSTREE_2016.3 2016.3
  ostree_repo_import_object_from@LIBOSTREE_2016.3 2016.4
+ ostree_repo_import_object_from_with_trust@LIBOSTREE_2016.5 2016.5
  ostree_repo_is_system@LIBOSTREE_2016.3 2016.4
  ostree_repo_is_writable@LIBOSTREE_2016.3 2016.4
  ostree_repo_list_commit_objects_starting_with@LIBOSTREE_2016.3 2016.4
@@ -196,6 +201,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_remote_list_refs@LIBOSTREE_2016.3 2016.4
  ostree_repo_resolve_rev@LIBOSTREE_2016.3 2016.4
  ostree_repo_scan_hardlinks@LIBOSTREE_2016.3 2016.4
+ ostree_repo_set_cache_dir@LIBOSTREE_2016.5 2016.5
  ostree_repo_set_disable_fsync@LIBOSTREE_2016.3 2016.4
  ostree_repo_set_ref_immediate@LIBOSTREE_2016.3 2016.4
  ostree_repo_sign_commit@LIBOSTREE_2016.3 2016.4
@@ -229,6 +235,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_write_metadata_trusted@LIBOSTREE_2016.3 2016.4
  ostree_repo_write_mtree@LIBOSTREE_2016.3 2016.4
  ostree_sepolicy_fscreatecon_cleanup@LIBOSTREE_2016.3 2016.4
+ ostree_sepolicy_get_csum@LIBOSTREE_2016.5 2016.5
  ostree_sepolicy_get_label@LIBOSTREE_2016.3 2016.4
  ostree_sepolicy_get_name@LIBOSTREE_2016.3 2016.4
  ostree_sepolicy_get_path@LIBOSTREE_2016.3 2016.4
