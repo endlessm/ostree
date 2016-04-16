@@ -33,16 +33,20 @@ static gboolean opt_commit_only;
 static gboolean opt_dry_run;
 static gboolean opt_disable_static_deltas;
 static gboolean opt_require_static_deltas;
+static gboolean opt_untrusted;
 static char* opt_subpath;
+static char* opt_cache_dir;
 static int opt_depth = 0;
  
 static GOptionEntry options[] = {
    { "commit-metadata-only", 0, 0, G_OPTION_ARG_NONE, &opt_commit_only, "Fetch only the commit metadata", NULL },
+   { "cache-dir", 0, 0, G_OPTION_ARG_STRING, &opt_cache_dir, "Use custom cache dir", NULL },
    { "disable-fsync", 0, 0, G_OPTION_ARG_NONE, &opt_disable_fsync, "Do not invoke fsync()", NULL },
    { "disable-static-deltas", 0, 0, G_OPTION_ARG_NONE, &opt_disable_static_deltas, "Do not use static deltas", NULL },
    { "require-static-deltas", 0, 0, G_OPTION_ARG_NONE, &opt_require_static_deltas, "Require static deltas", NULL },
    { "mirror", 0, 0, G_OPTION_ARG_NONE, &opt_mirror, "Write refs suitable for a mirror", NULL },
    { "subpath", 0, 0, G_OPTION_ARG_STRING, &opt_subpath, "Only pull the provided subpath", NULL },
+   { "untrusted", 0, 0, G_OPTION_ARG_NONE, &opt_untrusted, "Do not trust (local) sources", NULL },
    { "dry-run", 0, 0, G_OPTION_ARG_NONE, &opt_dry_run, "Only print information on what will be downloaded (requires static deltas)", NULL },
    { "depth", 0, 0, G_OPTION_ARG_INT, &opt_depth, "Traverse DEPTH parents (-1=infinite) (default: 0)", "DEPTH" },
    { NULL }
@@ -128,11 +132,20 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
   if (opt_disable_fsync)
     ostree_repo_set_disable_fsync (repo, TRUE);
 
+  if (opt_cache_dir)
+    {
+      if (!ostree_repo_set_cache_dir (repo, AT_FDCWD, opt_cache_dir, cancellable, error))
+        goto out;
+    }
+
   if (opt_mirror)
     pullflags |= OSTREE_REPO_PULL_FLAGS_MIRROR;
 
   if (opt_commit_only)
     pullflags |= OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY;
+
+  if (opt_untrusted)
+    pullflags |= OSTREE_REPO_PULL_FLAGS_UNTRUSTED;
 
   if (opt_dry_run && !opt_require_static_deltas)
     {

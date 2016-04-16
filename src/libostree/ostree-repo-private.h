@@ -33,7 +33,8 @@ G_BEGIN_DECLS
 
 #define _OSTREE_OBJECT_SIZES_ENTRY_SIGNATURE "ay"
 
-#define _OSTREE_SUMMARY_CACHE_PATH "tmp/cache/summaries"
+#define _OSTREE_SUMMARY_CACHE_DIR "summaries"
+#define _OSTREE_CACHE_DIR "cache"
 
 /**
  * OstreeRepo:
@@ -52,6 +53,8 @@ struct OstreeRepo {
   int    repo_dir_fd;
   GFile *tmp_dir;
   int    tmp_dir_fd;
+  int    cache_dir_fd;
+  char  *cache_dir;
   GFile *objects_dir;
   GFile *state_dir;
   int objects_dir_fd;
@@ -60,6 +63,7 @@ struct OstreeRepo {
   int uncompressed_objects_dir_fd;
   GFile *config_file;
   GFile *sysroot_dir;
+  char *remotes_config_dir;
 
   GFile *transaction_lock_path;
   GHashTable *txn_refs;
@@ -194,36 +198,6 @@ _ostree_repo_commit_modifier_apply (OstreeRepo               *self,
 
 gboolean
 _ostree_repo_remote_name_is_file (const char *remote_name);
-
-gboolean
-_ostree_repo_get_remote_option (OstreeRepo  *self,
-                                const char  *remote_name,
-                                const char  *option_name,
-                                const char  *default_value,
-                                char       **out_value,
-                                GError     **error);
-
-gboolean
-_ostree_repo_get_remote_list_option (OstreeRepo   *self,
-                                     const char   *remote_name,
-                                     const char   *option_name,
-                                     char       ***out_value,
-                                     GError      **error);
-
-gboolean
-_ostree_repo_get_remote_boolean_option (OstreeRepo  *self,
-                                        const char  *remote_name,
-                                        const char  *option_name,
-                                        gboolean     default_value,
-                                        gboolean    *out_value,
-                                        GError     **error);
-
-gboolean
-_ostree_repo_get_remote_option_inherit (OstreeRepo  *self,
-                                        const char  *remote_name,
-                                        const char  *option_name,
-                                        char       **out_value,
-                                        GError     **error);
 
 #ifdef HAVE_LIBSOUP
 OstreeFetcher *

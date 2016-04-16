@@ -21,10 +21,12 @@ set -euo pipefail
 
 . $(dirname $0)/libtest.sh
 
+skip_without_user_xattrs
+
 bindatafiles="bash true ostree"
 morebindatafiles="false ls"
 
-echo '1..7'
+echo '1..8'
 
 mkdir repo
 ${CMD_PREFIX} ostree --repo=repo init --mode=archive-z2
@@ -128,9 +130,9 @@ assert_streq "${totalsize_orig}" "${totalsize_swapped}"
 
 echo 'ok generate + show endian swapped'
 
-tar xf ${SRCDIR}/pre-endian-deltas-repo-big.tar.xz
+tar xf ${test_srcdir}/pre-endian-deltas-repo-big.tar.xz
 mv pre-endian-deltas-repo{,-big}
-tar xf ${SRCDIR}/pre-endian-deltas-repo-little.tar.xz
+tar xf ${test_srcdir}/pre-endian-deltas-repo-little.tar.xz
 mv pre-endian-deltas-repo{,-little}
 legacy_origrev=$(${CMD_PREFIX} ostree --repo=pre-endian-deltas-repo-big rev-parse main^)
 legacy_newrev=$(${CMD_PREFIX} ostree --repo=pre-endian-deltas-repo-big rev-parse main)
@@ -184,3 +186,18 @@ ${CMD_PREFIX} ostree --repo=repo2 fsck
 ${CMD_PREFIX} ostree --repo=repo2 ls ${newrev} >/dev/null
 
 echo 'ok apply offline inline'
+
+${CMD_PREFIX} ostree --repo=repo static-delta list | grep ^${origrev}-${newrev}$ || exit 1
+${CMD_PREFIX} ostree --repo=repo static-delta list | grep ^${origrev}$ || exit 1
+
+${CMD_PREFIX} ostree --repo=repo static-delta delete ${origrev} || exit 1
+
+${CMD_PREFIX} ostree --repo=repo static-delta list | grep ^${origrev}-${newrev}$ || exit 1
+${CMD_PREFIX} ostree --repo=repo static-delta list | grep ^${origrev}$ && exit 1
+
+${CMD_PREFIX} ostree --repo=repo static-delta delete ${origrev}-${newrev} || exit 1
+
+${CMD_PREFIX} ostree --repo=repo static-delta list | grep ^${origrev}-${newrev}$ && exit 1
+${CMD_PREFIX} ostree --repo=repo static-delta list | grep ^${origrev}$ && exit 1
+
+echo 'ok delete'

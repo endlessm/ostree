@@ -18,7 +18,7 @@ date, and relatively agnostic.
 Broadly speaking, projects in this area fall into two camps; either
 a tool to snapshot systems on the client side (dpkg/rpm + BTRFS/LVM),
 or a tool to compose on a server and replicate (ChromiumOS, Clear
-Linux).  OSTree is flexible enough to do both. 
+Linux).  OSTree is flexible enough to do both.
 
 ## Combining dpkg/rpm + (BTRFS/LVM)
 
@@ -63,7 +63,7 @@ awareness of BTRFS in dpkg/rpm itself) will be required.
 The OSTree author believes that having total freedom at the block
 storage layer is better for general purpose operating systems. For
 example, with OSTree, one is free to use BTRFS in any way you like -
-you can use a subvolume for `/home`, or you can not.
+you may decide to use a subvolume for `/home`, or not.
 
 Furthermore, in its most basic incarnation, the rpm/dpkg + BTRFS
 doesn't solve the race conditions that happen when unpacking packages

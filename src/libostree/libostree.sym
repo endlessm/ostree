@@ -328,8 +328,12 @@ global:
  *                         NOTE NOTE NOTE
  */
 
-/* UNCOMMENT WITH NEW SYMBOLS HERE:
 LIBOSTREE_2016.5 {
 global:
+        ostree_repo_import_object_from_with_trust;
+        ostree_sepolicy_get_csum;
+        ostree_repo_get_remote_option;
+        ostree_repo_get_remote_list_option;
+        ostree_repo_get_remote_boolean_option;
+        ostree_repo_set_cache_dir;
 } LIBOSTREE_2016.4;
-*/

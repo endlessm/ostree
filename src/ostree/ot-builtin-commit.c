@@ -32,6 +32,8 @@
 
 static char *opt_subject;
 static char *opt_body;
+static char *opt_parent;
+static gboolean opt_orphan;
 static char *opt_branch;
 static char *opt_statoverride_file;
 static char **opt_metadata_strings;
@@ -67,9 +69,11 @@ parse_fsync_cb (const char  *option_name,
 }
 
 static GOptionEntry options[] = {
+  { "parent", 0, 0, G_OPTION_ARG_STRING, &opt_parent, "Parent ref, or \"none\"", "REF" },
   { "subject", 's', 0, G_OPTION_ARG_STRING, &opt_subject, "One line subject", "SUBJECT" },
   { "body", 'm', 0, G_OPTION_ARG_STRING, &opt_body, "Full description", "BODY" },
   { "branch", 'b', 0, G_OPTION_ARG_STRING, &opt_branch, "Branch", "BRANCH" },
+  { "orphan", 0, 0, G_OPTION_ARG_NONE, &opt_orphan, "Create a commit without writing a ref", NULL },
   { "tree", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_trees, "Overlay the given argument as a tree", "dir=PATH or tar=TARFILE or ref=COMMIT" },
   { "add-metadata-string", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_metadata_strings, "Add a key/value pair to metadata", "KEY=VALUE" },
   { "add-detached-metadata-string", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_detached_metadata_strings, "Add a key/value pair to detached metadata", "KEY=VALUE" },
@@ -190,9 +194,8 @@ commit_editor (OstreeRepo     *repo,
   input = g_strdup_printf ("\n"
       "# Please enter the commit message for your changes. The first line will\n"
       "# become the subject, and the remainder the body. Lines starting\n"
-      "# with '#' will be ignored, and an empty message aborts the commit.\n"
-      "#\n"
-      "# Branch: %s\n", branch);
+      "# with '#' will be ignored, and an empty message aborts the commit."
+      "%s%s\n", branch ? "\n#\n# Branch: " : "", branch ?: "");
 
   output = ot_editor_prompt (repo, input, cancellable, error);
   if (output == NULL)
@@ -338,10 +341,10 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
         goto out;
     }
       
-  if (!opt_branch)
+  if (!(opt_branch || opt_orphan))
     {
       g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                           "A branch must be specified with --branch");
+                           "A branch must be specified with --branch, or use --orphan");
       goto out;
     }
 
@@ -361,8 +364,22 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
       modifier = ostree_repo_commit_modifier_new (flags, commit_filter, mode_adds, NULL);
     }
 
-  if (!ostree_repo_resolve_rev (repo, opt_branch, TRUE, &parent, error))
-    goto out;
+  if (opt_parent)
+    {
+      if (g_str_equal (opt_parent, "none"))
+        parent = NULL;
+      else
+        {
+          if (!ostree_validate_checksum_string (opt_parent, error))
+            goto out;
+          parent = g_strdup (opt_parent);
+        }
+    }
+  else if (!opt_orphan)
+    {
+      if (!ostree_repo_resolve_rev (repo, opt_branch, TRUE, &parent, error))
+        goto out;
+    }
 
   if (!opt_subject && !opt_body)
     {
@@ -547,7 +564,10 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
             }
         }
 
-      ostree_repo_transaction_set_ref (repo, NULL, opt_branch, commit_checksum);
+      if (opt_branch)
+        ostree_repo_transaction_set_ref (repo, NULL, opt_branch, commit_checksum);
+      else
+        g_assert (opt_orphan);
 
       if (!ostree_repo_commit_transaction (repo, &stats, cancellable, error))
         goto out;
