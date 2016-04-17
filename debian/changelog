@@ -18,6 +18,7 @@ ostree (2016.5-1) UNRELEASED; urgency=medium
     positives
   * Run dh_auto_test with VERBOSE=1, to get logs with older debhelper
   * Build-depend on elfutils, for test-abi.sh
+  * Work around #821235 to avoid undefined macro 'AQ' in some man pages
 
  -- Simon McVittie <smcv@debian.org>  Mon, 28 Mar 2016 12:02:59 +0100
 

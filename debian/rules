@@ -35,6 +35,15 @@ override_dh_auto_test:
 		pgrep lt-ostree | xargs --no-run-if-empty ps ww; \
 	fi
 
+override_dh_auto_install:
+	dh_auto_install
+	# docbook-xsl capitalizes the whole heading, including the macro
+	# used to represent a single quote... https://bugs.debian.org/821235
+	sed -i -e 's,\*(AQ,*(Aq,g' \
+		debian/tmp/usr/share/man/man1/ostree-remote.1 \
+		debian/tmp/usr/share/man/man1/ostree-static-delta.1 \
+		$(NULL)
+
 override_dh_install:
 	rm -f debian/tmp/usr/lib/*/*.la
 	rm -f debian/tmp/usr/lib/installed-tests/ostree/*.la
