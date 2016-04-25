@@ -1,4 +1,4 @@
-ostree (2016.5-1) UNRELEASED; urgency=medium
+ostree (2016.5-1) experimental; urgency=medium
 
   * New upstream release
     - Remove all patches, applied upstream
@@ -24,7 +24,7 @@ ostree (2016.5-1) UNRELEASED; urgency=medium
     I can no longer reproduce
   * Standards-version: 3.9.8 (no changes needed)
 
- -- Simon McVittie <smcv@debian.org>  Mon, 28 Mar 2016 12:02:59 +0100
+ -- Simon McVittie <smcv@debian.org>  Mon, 25 Apr 2016 07:46:16 +0100
 
 ostree (2016.3-1) experimental; urgency=medium
 
