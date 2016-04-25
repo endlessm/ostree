@@ -1,0 +1,22 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Mon, 25 Apr 2016 12:50:32 +0100
+Subject: test-parent: this test requires user xattrs
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ tests/test-parent.sh | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/tests/test-parent.sh b/tests/test-parent.sh
+index 05b102a..d1f5d7c 100755
+--- a/tests/test-parent.sh
++++ b/tests/test-parent.sh
+@@ -21,6 +21,8 @@ set -euo pipefail
+ 
+ . $(dirname $0)/libtest.sh
+ 
++skip_without_user_xattrs
++
+ echo '1..2'
+ 
+ setup_test_repository "archive-z2"

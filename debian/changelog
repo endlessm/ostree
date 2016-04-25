@@ -1,3 +1,10 @@
+ostree (2016.5-2) experimental; urgency=medium
+
+  * Add a patch to skip the test-parent test if /var/tmp doesn't support
+    user xattrs, hopefully fixing FTBFS on x86-csail-02 buildd
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 25 Apr 2016 12:51:33 +0100
+
 ostree (2016.5-1) experimental; urgency=medium
 
   * New upstream release
