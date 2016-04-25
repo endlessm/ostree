@@ -9,6 +9,8 @@ file in the test's failing output so that if the failure comes back,
 it can be debugged.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/264
+Applied-upstream: 2016.6, commit:24cab773a2c849a8153529e3eb5f967302339f68
 ---
  tests/libtest.sh | 16 ++++++++++++----
  1 file changed, 12 insertions(+), 4 deletions(-)
