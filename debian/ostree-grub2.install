@@ -1,0 +1,2 @@
+etc/grub.d/15_ostree
+usr/lib/ostree/grub2-15_ostree

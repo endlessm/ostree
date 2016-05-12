@@ -1,37 +1,65 @@
 #!/usr/bin/make -f
-# -*- makefile -*-
-# Sample debian/rules that uses debhelper.
-# This file was originally written by Joey Hess and Craig Small.
-# As a special exception, when this file is copied by dh-make into a
-# dh-make output file, you may use that output file without restriction.
-# This special exception was added by Craig Small in version 0.37 of dh-make.
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 %:
-	mkdir -p m4
-	dh $@  --with gir,systemd,autoreconf
+	dh $@ --parallel --with=autoreconf,gir,systemd
 
-CONFFLAGS = \
-	--with-dracut \
-	--with-gpgme \
-	--enable-introspection \
-	--enable-gtk-doc \
-	--without-grub2 \
-	$(NULL)
+override_dh_auto_clean:
+	if [ -e Makefile ]; then dh_auto_clean; fi
+
+override_dh_autoreconf:
+	env NOCONFIGURE=1 dh_autoreconf ./autogen.sh
 
 override_dh_auto_configure:
-	dh_auto_configure -- $(CONFFLAGS)
+	dh_auto_configure -- \
+		--disable-silent-rules \
+		--enable-gtk-doc \
+		--enable-installed-tests \
+		--libexecdir='$${prefix}/lib' \
+		--with-dracut \
+		--with-grub2 \
+		--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
+		--with-systemdsystemunitdir=/lib/systemd/system \
+		$(NULL)
+	chmod +x tests/*.js
+
+override_dh_auto_test:
+	VERBOSE=1 dh_auto_test
+	# One test creates multiple GPG homedirs, each with its own agent
+	pkill --full "gpg-agent --homedir /var/tmp/tap-test\\.[^/]+/.*" || :
+	if pgrep lt-ostree || pgrep --full "gpg-agent --homedir /var/tmp/tap-test."; then \
+		echo "WARNING: daemon processes were leaked"; \
+		pgrep gpg-agent | xargs --no-run-if-empty ps ww; \
+		pgrep lt-ostree | xargs --no-run-if-empty ps ww; \
+	fi
+
+override_dh_auto_install:
+	dh_auto_install
+	# docbook-xsl capitalizes the whole heading, including the macro
+	# used to represent a single quote... https://bugs.debian.org/821235
+	sed -i -e 's,\*(AQ,*(Aq,g' \
+		debian/tmp/usr/share/man/man1/ostree-remote.1 \
+		debian/tmp/usr/share/man/man1/ostree-static-delta.1 \
+		$(NULL)
+
+override_dh_install:
+	rm -f debian/tmp/usr/lib/*/*.la
+	rm -f debian/tmp/usr/lib/installed-tests/ostree/*.la
+	dh_install --fail-missing
+
+override_dh_makeshlibs:
+	# this is an LD_PRELOAD, not a real shared library
+	dh_makeshlibs -Xinstalled-tests/ostree/libreaddir-rand.so
+
+override_dh_fixperms-arch:
+	dh_fixperms -X'*.js'
+	chmod -v 0755 debian/ostree-tests/usr/lib/installed-tests/ostree/*.js
+	chmod -v 0755 debian/ostree-tests/usr/lib/installed-tests/ostree/*.py
+	chmod -v 0755 debian/ostree-tests/usr/lib/installed-tests/ostree/*.sh
+	# this one is a library, not a script
+	chmod -v 0644 debian/ostree-tests/usr/lib/installed-tests/ostree/libtest.sh
 
 override_dh_systemd_start:
 	dh_systemd_start --no-start
-
-# debhelper gets confused by the presence of GNUmakefile, which is only
-# needed by the ostree maintainer.
-override_dh_auto_clean:
-	rm -f GNUmakefile
-	dh_auto_clean
-
-override_dh_strip:
-	dh_strip --dbg-package=ostree-dbg

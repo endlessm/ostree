@@ -1,244 +1,108 @@
-ostree (2015.7-0) master; urgency=medium
+ostree (2016.5-2) experimental; urgency=medium
+
+  * Add a patch to skip the test-parent test if /var/tmp doesn't support
+    user xattrs, hopefully fixing FTBFS on x86-csail-02 buildd
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 25 Apr 2016 12:51:33 +0100
+
+ostree (2016.5-1) experimental; urgency=medium
 
   * New upstream release
-    + Removed ostree-daemon, now in eos-updater.
-    + Updated dependencies.
-  * Added ostree-doc and ostree-dbg packages.
-  [endlessm/eos-shell#1965]
-
- -- Dan Nicholson <nicholson@endlessm.com>  Fri, 05 Jun 2015 10:38:00 -0700
-
-ostree (2013.6+git20131014.1-2endless10) eos; urgency=medium
-
-  + endless-add-rw-parameter.patch
-    Add 'rw' kernel param during upgrades, to match new image builds.
-    Allows generation of random machine-id. eos-shell #3171
-
- -- Daniel Drake <drake@endlessm.com>  Mon, 21 Jul 2014 09:16:52 +0100
-
-ostree (2013.6+git20131014.1-2endless9) eos; urgency=low
-
-  * debian/patches/endless-pull-local-full.patch:
-    Allow pull-local to include the .sig and .sizes2 files to fully
-    clone commits from the staging repository.
-    [endlessm/eos-shell#2703]
-
- -- Dan Nicholson <nicholson@endlessm.com>  Tue, 17 Jun 2014 16:07:08 +0000
-
-ostree (2013.6+git20131014.1-2endless8) eos; urgency=low
-
-  * debian/patches/endless-pull-local-depth.patch:
-    Add a --depth option for pull-local.
-    [endlessm/eos-shell#2703]
-
- -- Dan Nicholson <nicholson@endlessm.com>  Wed, 11 Jun 2014 18:58:01 +0000
-
-ostree (2013.6+git20131014.1-2endless7) unstable; urgency=low
-
-  * debian/patches/endless-no-var-log-journal.patch:
-    Don't create /var/log/journal at deploy.
-
- -- Cosimo Cecchi <cosimo@endlessm.com>  Mon, 21 Apr 2014 18:22:34 -0700
-
-ostree (2013.6+git20131014.1-2endless6) eos; urgency=low
-
-  * debian/patches/endless-also-create-a-symlink-for-var-lock.patch:
-    Backport a patch from upstream to create a symlink for /var/lock
-    on deploy.
-    [endlessm/eos-shell#1936] 
-
- -- Cosimo Cecchi <cosimo@endlessm.com>  Wed, 12 Mar 2014 08:36:13 -0700
-
-ostree (2013.6+git20131014.1-2endless5) eos; urgency=low
-
-  * endless-set-file-mtimes-0.patch
-    Update patch to skip symlinks since we only care about real files
-    and the process may fail on dangling symlinks.
-
- -- Dan Nicholson <nicholson@endlessm.com>  Wed, 05 Mar 2014 11:56:31 -0800
-
-ostree (2013.6+git20131014.1-2endless4) eos; urgency=low
-
-  * endless-set-file-mtimes-0.patch
-    Set all mtimes to 0 (backport of upstream fix).
-
- -- Roddy Shuler <roddy@endlessm.com>  Tue, 04 Mar 2014 10:23:39 -0800
-
-ostree (2013.6+git20131014.1-2endless3) eos; urgency=low
-
-  * endless-fetcher-set-timeouts-on-HTTP-connections.patch
-    Upstream patch to set timeouts on HTTP connections. Might help
-    eos-shell #1939.
-
- -- Daniel Drake <drake@endlessm.com>  Thu, 13 Feb 2014 14:14:15 -0600
-
-ostree (2013.6+git20131014.1-2endless2) unstable; urgency=low
-
-  * debian/patches/0004-ostree-order-after-tmpfiles.patch:
-    Run before systemd-tmpfiles-setup.service.
-
- -- Cosimo Cecchi <cosimo@endlessm.com>  Tue, 11 Feb 2014 13:30:21 -0800
-
-ostree (2013.6+git20131014.1-2endless1) eos; urgency=low
-  * debian/patches/0002-boot-ostree-remount.service-Run-before-plymouth-read.patch:
-    debian/patches/0003-ostree-prepare-root.service-Also-order-before-plymou.patch:
-    Run properly before plymouth.
-    [endlessm/eos-shell#1604]
-
- -- Juan A. Suarez Romero <jasuarez@igalia.com>  Tue, 28 Jan 2014 16:05:01 +0100
-
-ostree (2013.6+git20131014.1-2) alphacentauri; urgency=low
-
-  * debian/patches/0001-Make-gs_shutil_cp_a-copy-ownership-as-well.patch
-    + Added. Make gs_shutil_cp_a copy directory ownership metadata as well to
-      ensure proper deployments of the default etc directory
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Tue, 29 Oct 2013 09:38:52 +0100
-
-ostree (2013.6+git20131014.1-1) alphacentauri; urgency=low
-
-  * New snapshot from the internal ostree repository, commit
-     3d28a0faeaecfad639f13bc01ce94bcbdec8877c
-     + Allow Poll in UpdateAvailable and UpdateReady states as well
-     + Remove spurious state change from UpdateAvailable -> UpdateAvailable
-     + Allow root to access the introspection dbus interfaces
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Mon, 14 Oct 2013 15:55:02 +0200
-
-ostree (2013.6+git20131002.1-1) alphacentauri; urgency=low
-
-  * New snapshot from the internal ostree repository, commit
-     10f3ca045151bd88a315c42b4418942d801b74bc
-     * Have the state machine be more rigid to prevent confusion
-     * Fix accounting of sizes to include metadata
-     * Fix download progress reporting
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Wed, 02 Oct 2013 14:34:18 +0200
-
-ostree (2013.6+git20130930.1-1) alphacentauri; urgency=low
-
-  * New snapshot from the internal ostree repository, commit
-    d540ed7fd67a53eb87295261a352f33801d123fd
-    * Fix error on pull after a metadata pull..
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Mon, 30 Sep 2013 15:03:21 +0200
-
-ostree (2013.6+git20130925.2-1) alphacentauri; urgency=low
-
-  * New snapshot from the internal ostree repository, commit
-    2e9252e084ef0eaa6313ef4e4e50f51e55df5d3c
-    * Fix error on pull..
-
- -- Sjoerd Simons <sjoerd@debian.org>  Wed, 25 Sep 2013 23:11:29 +0200
-
-ostree (2013.6+git20130925.1-1) alphacentauri; urgency=low
-
-  * New snapshot from the internal ostree repository, commit
-    06a2e21274100e336830b318b3587da795d7b1ea
-    * Fix race condition in downloading signatures
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Wed, 25 Sep 2013 20:25:00 +0200
-
-ostree (2013.6+git20130918.2-1) alphacentauri; urgency=low
-
-  * New snapshot from the internal ostree repository, commit
-    fd6042fd5f56b55f38fb6f93bc12ef8218338733
-  * Fix race condition during update
-  * Report DownloadedBytes
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Wed, 18 Sep 2013 21:26:55 +0200
-
-ostree (2013.6+git20130918.1-1) alphacentauri; urgency=low
-
-  * New snapshot from the internal ostree repository, commit
-    ea2a0b3fa16d260dab9c2691ba3c460f711c1943
-  * Fix crash when staging metadata
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Wed, 18 Sep 2013 11:05:27 +0200
-
-ostree (2013.6+git20130917.2-1) alphacentauri; urgency=low
-
-  * New snapshot from the internal ostree repository, commit
-    3af48ac4e15f4a04924101462e15f434d54d171d
-  * Fix a typo in the .service file due to documentation lies Names -> Name
-
- -- Sjoerd Simons <sjoerd.simons@colllabora.co.uk>  Tue, 17 Sep 2013 13:19:39 +0200
-
-ostree (2013.6+git20130917-1) alphacentauri; urgency=low
-
-  * Make commit signature verification the default behaviour
-  * Allow multiple keyrings to be specified
-  * Update signature verification tests to cover more cases
-
- -- Vivek Dasmohapatra <vivek@collabora.com>  Tue, 17 Sep 2013 01:32:07 +0100
-
-ostree (2013.6+git20130916-2) alphacentauri; urgency=low
-
-  * Request signature verification inside the daemon
-
- -- Vivek Dasmohapatra <vivek@collabora.com>  Mon, 16 Sep 2013 15:33:21 +0100
-
-ostree (2013.6+git20130916-1) alphacentauri; urgency=low
-
-  * Fix destinations of dbus policy and service files:
-  * They were swapped in the last commit
-
- -- Vivek Dasmohapatra <vivek@collabora.com>  Mon, 16 Sep 2013 14:15:38 +0100
-
-ostree (2013.6+git20130912-2) alphacentauri; urgency=low
-
-  * Updated daemon-related build system to create dbus policy and service files
-  * Re-exported from latest check-in to endless branch
-
- -- Vivek Dasmohapatra <vivek@collabora.com>  Fri, 13 Sep 2013 16:36:13 +0100
-
-ostree (2013.6+git20130912-1) alphacentauri; urgency=low
-
-  * Update with latest changes from git end0006 branch
-
- -- Jeremy Whiting <jeremy.whiting@collabora.com>  Thu, 12 Sep 2013 10:59:20 -0600
-
-ostree (2013.6+git20130903-1) alphacentauri; urgency=low
-
-  * New upstream snapshot (git dd7d2f7b43bf4d9)
-  * d/p/prepare-root-Fix-parsing-of-ostree-at-the-end-of-the.patch:
-    + Dropped, fixed upstream
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Tue, 03 Sep 2013 08:22:19 +0200
-
-ostree (2013.6+git20130830-2) alphacentauri; urgency=low
-
-  * debian/patches/prepare-root-Fix-parsing-of-ostree-at-the-end-of-the.patch:
-    + Fix parsing of ostree= argument at the end of the kernel command line
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Mon, 02 Sep 2013 16:52:26 +0200
-
-ostree (2013.6+git20130830-1) alphacentauri; urgency=low
-
-  * Fresh git snapshot: 4cdd444dcfa031f11361d21e0f5b7f047ca50207
-  * debian/ostree.install: Install the dracut configuration files
-  * d/p/Install-systemd-units-in-the-right-location.patch:
-    - Removed. Fixed upstream
-  * debian/rules: explicitely enable documentation
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Fri, 30 Aug 2013 11:14:27 +0200
-
-ostree (2013.4+git20130812-2) alphacentauri; urgency=low
-
-  * d/p/Install-systemd-units-in-the-right-location.patch:
-    - Added. Correct installation location of the systemd units
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Mon, 12 Aug 2013 19:36:16 +0200
-
-ostree (2013.4+git20130812-1) alphacentauri; urgency=low
-
-  * Upstream git snapshot
-  * Split out library and gir
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Mon, 12 Aug 2013 12:20:09 +0200
-
-ostree (2013.4-1) singularity; urgency=low
-
-  * Initial release 
-
- -- Sjoerd Simons <sjoerd.simons@collabora.co.uk>  Mon, 05 Aug 2013 17:21:45 +0200
+    - Remove all patches, applied upstream
+    - debian/libostree-1-1.symbols: update for new versioned symbols
+    - Build-depend on libmount-dev
+    - debian/copyright: update
+    - debian/rules, debian/ostree-tests.install: adjust for new installation
+      directory for installed-tests
+    - debian/rules: use Debian's grub2-mkconfig path
+  * debian/gbp.conf: use DEP-14 branch names; disable numbered patches
+  * Fix ITP bug number in changelog (was #813308, should have been #697477)
+  * debian/control: build-depend on attr, for the tests (only required if
+    /var/tmp supports extended attributes)
+  * debian/rules: clean up stale gpg-agent processes after testing
+  * debian/rules: warn if there are leftover daemon processes after testing
+  * debian/ostree-tests.lintian-overrides: override a couple of false
+    positives
+  * Run dh_auto_test with VERBOSE=1, to get logs with older debhelper
+  * Build-depend on elfutils, for test-abi.sh
+  * Work around #821235 to avoid undefined macro 'AQ' in some man pages
+  * Add a patch to put more information in the log if tests fail,
+    in an attempt to debug a failure in test/pull-resume.sh which
+    I can no longer reproduce
+  * Standards-version: 3.9.8 (no changes needed)
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 25 Apr 2016 07:46:16 +0100
+
+ostree (2016.3-1) experimental; urgency=medium
+
+  * Prepare package for Debian (Closes: #697477)
+  * New upstream release
+  * Remove -dbg package, rely on automatic dbgsym packages instead
+  * Extend package descriptions a bit
+  * debian/.gitignore: add
+  * debian/copyright: fill in all copyright holders and licenses
+  * debian/control: set Maintainer to the pkg-utopia team, with packaging
+    in collab-maint git, and myself and Matthias Klumpp as uploaders
+  * Normalize packaging via `wrap-and-sort -abst`
+  * debian/control: move shared library to Section: libs
+  * debian/control: remove redundant Section
+  * debian/control: change Section to admin
+  * Remove unnecessary uses of dh-exec
+  * debian/patches: remove all patches, no longer needed or applied
+  * Use dh_install --fail-missing to catch mistakes
+  * Add a symbols file
+  * Add missing dependency on libglib2.0-dev
+  * Add an ostree-tests package, and use it for autopkgtest
+  * Enable systemd helpers, but do not start the early-boot systemd services
+    on installation
+  * Don't override dh_auto_clean to nothing
+  * ostree-grub2: recommend concrete GRUB packages instead of hard-depending
+    on a transitional package. This is only a Recommends because you
+    could be using some other architecture's grub packages.
+  * Redirect libexecdir to /usr/lib (not /usr/lib/${multiarch}) since we don't
+    need multiarch for anything that's installed there, fixing a broken
+    symlink in ostree-grub2
+  * Document the limited situations in which ostree-grub2 will work in
+    practice
+  * Only build on Linux architectures; this package is specifically
+    not portable
+  * Add patch to fix underlinking of test-archive
+  * Add patch to skip one build-time test if /var/tmp cannot support xattrs,
+    for example if it is on tmpfs
+  * Stop dh_makeshlibs thinking that the LD_PRELOAD module libreaddir-rand.so
+    (part of the tests) is meant to be a shared library
+  * Add a missing #!/bin/sh to one test
+
+ -- Simon McVittie <smcv@debian.org>  Sat, 19 Mar 2016 17:56:21 +0000
+
+ostree (2016.1-alexlarsson1~wily1) wily; urgency=medium
+
+  * New upstream release
+
+ -- Alexander Larsson <alexander.larsson@gmail.com>  Thu, 01 Oct 2015 11:28:39 +0200
+
+ostree (2015.11-alexlarsson1~vivid1) vivid; urgency=medium
+
+  * New upstream release
+
+ -- Alexander Larsson <alexander.larsson@gmail.com>  Thu, 01 Oct 2015 11:28:39 +0200
+
+ostree (2015.9-alexlarsson1) vivid; urgency=medium
+
+  * New upstream release
+
+ -- Alexander Larsson <alexander.larsson@gmail.com>  Thu, 01 Oct 2015 11:28:39 +0200
+
+ostree (2015.4-0amigadave2) trusty; urgency=low
+
+  [ David King ]
+  * Add build dependency on libattr1-dev. 
+
+ -- David King <amigadave@amigadave.com>  Wed, 08 Apr 2015 13:10:39 +0100
+
+ostree (2015.4-0amigadave1) trusty; urgency=low
+
+  [ David King ]
+  * Initial packaging.
+
+ -- David King <amigadave@amigadave.com>  Thu, 02 Apr 2015 15:40:52 +0000
