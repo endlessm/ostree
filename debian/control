@@ -43,6 +43,9 @@ Section: introspection
 Depends:
  ${gir:Depends},
  ${misc:Depends},
+Provides: gir1.2-ostree
+Conflicts: gir1.2-ostree
+Breaks: gir1.2-ostree
 Description: content-addressed filesystem for operating system binaries (introspection)
  OSTree is a tool for managing bootable, immutable, versioned filesystem
  trees. See the ostree package's description for more details.
@@ -58,6 +61,9 @@ Depends:
  ${shlibs:Depends},
 Pre-Depends:
  ${misc:Pre-Depends},
+Provides: libostree-1
+Conflicts: libostree-1
+Replaces: libostree-1
 Multi-arch: same
 Description: content-addressed filesystem for operating system binaries (library)
  OSTree is a tool and library for managing bootable, immutable, versioned
@@ -101,6 +107,9 @@ Depends:
  ${misc:Depends},
 Suggests:
  devhelp,
+Provides: ostree-doc
+Conflicts: ostree-doc
+Replaces: ostree-doc
 Description: Development documentation for the ostree library
  OSTree is a tool for managing bootable, immutable, versioned filesystem
  trees. See the ostree package's description for more details.
