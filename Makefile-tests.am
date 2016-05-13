@@ -112,14 +112,14 @@ dist_test_extra_scripts = tests/bootloader-entries-crosscheck.py \
 # use plain installed_ as we do need the gpghome/ prefix.
 if ENABLE_INSTALLED_TESTS
 gpginsttestdir = $(installed_testdir)/gpghome
-gpginsttest_DATA = tests/gpghome/secring.gpg \
+dist_gpginsttest_DATA = tests/gpghome/secring.gpg \
 	tests/gpghome/pubring.gpg \
 	tests/gpghome/trustdb.gpg \
 	tests/gpghome/key1.asc \
 	tests/gpghome/key2.asc \
 	tests/gpghome/key3.asc
 gpginsttest_trusteddir = $(installed_testdir)/gpghome/trusted
-gpginsttest_trusted_DATA = tests/gpghome/trusted/pubring.gpg
+dist_gpginsttest_trusted_DATA = tests/gpghome/trusted/pubring.gpg
 
 gpgvinsttestdir = $(installed_testdir)/gpg-verify-data
 gpgvinsttest_DATA = $(addprefix tests/gpg-verify-data/, \
