@@ -122,7 +122,7 @@ gpginsttest_trusteddir = $(installed_testdir)/gpghome/trusted
 dist_gpginsttest_trusted_DATA = tests/gpghome/trusted/pubring.gpg
 
 gpgvinsttestdir = $(installed_testdir)/gpg-verify-data
-gpgvinsttest_DATA = $(addprefix tests/gpg-verify-data/, \
+dist_gpgvinsttest_DATA = $(addprefix tests/gpg-verify-data/, \
 	gpg.conf lgpl2 lgpl2.sig pubring.gpg secring.gpg trustdb.gpg)
 endif
 
@@ -223,12 +223,7 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 EXTRA_DIST += \
 	tests/libostreetest.h \
 	tests/gpg-verify-data/README.md \
-	tests/gpg-verify-data/lgpl2 \
-	tests/gpg-verify-data/lgpl2.sig \
-	tests/gpg-verify-data/pubring.gpg \
-	tests/gpg-verify-data/secring.gpg \
-	tests/gpg-verify-data/trustdb.gpg \
-	tests/gpg-verify-data/gpg.conf
+	$(NULL)
 
 # Compat repo tests
 if ENABLE_INSTALLED_TESTS
