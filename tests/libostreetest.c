@@ -32,7 +32,7 @@ static gboolean
 run_libtest (const char *cmd, GError **error)
 {
   gboolean ret = FALSE;
-  const char *builddir = g_getenv ("G_TEST_BUILDDIR");
+  const char *srcdir = g_getenv ("G_TEST_SRCDIR");
   int estatus;
   g_autoptr(GPtrArray) argv = g_ptr_array_new ();
   g_autoptr(GString) cmdstr = g_string_new ("");
@@ -41,7 +41,7 @@ run_libtest (const char *cmd, GError **error)
   g_ptr_array_add (argv, "-c");
 
   g_string_append (cmdstr, ". ");
-  g_string_append (cmdstr, builddir);
+  g_string_append (cmdstr, srcdir);
   g_string_append (cmdstr, "/tests/libtest.sh; ");
   g_string_append (cmdstr, cmd);
 
@@ -93,6 +93,9 @@ ot_test_setup_sysroot (GCancellable *cancellable,
 
   if (!run_libtest ("setup_os_repository \"archive-z2\" \"syslinux\"", error))
     goto out;
+
+  /* Make sure deployments are mutable */
+  g_setenv ("OSTREE_SYSROOT_DEBUG", "mutable-deployments", TRUE);
 
   ret_sysroot = ostree_sysroot_new (sysroot_path);
 
