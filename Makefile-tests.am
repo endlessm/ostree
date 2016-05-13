@@ -226,8 +226,8 @@ EXTRA_DIST += \
 	$(NULL)
 
 # Compat repo tests
-if ENABLE_INSTALLED_TESTS
 EXTRA_DIST += tests/compat-repo
+if ENABLE_INSTALLED_TESTS
 install-compat-repo-hook:
 	mkdir -p $(DESTDIR)$(installed_testdir)
 	cp -r $(srcdir)/tests/compat-repo $(DESTDIR)$(installed_testdir)
