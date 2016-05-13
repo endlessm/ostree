@@ -33,10 +33,6 @@ TESTS_ENVIRONMENT += OT_TESTS_DEBUG=1 \
 	PATH=$$(cd $(top_builddir)/tests && pwd):$${PATH} \
 	$(NULL)
 
-uninstalled_test_data = tests/ostree-symlink-stamp
-
-dist_uninstalled_test_scripts = tests/test-symbols.sh
-
 dist_test_scripts = \
 	tests/test-basic.sh \
 	tests/test-pull-subpath.sh \
