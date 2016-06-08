@@ -1,3 +1,10 @@
+ostree (2016.5-3) UNRELEASED; urgency=medium
+
+  * Rename ostree-grub2 to ostree-boot. Move all initramfs and bootloader
+    integration there. (Closes: #824650)
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 08 Jun 2016 11:58:01 +0100
+
 ostree (2016.5-2) experimental; urgency=medium
 
   * Add a patch to skip the test-parent test if /var/tmp doesn't support

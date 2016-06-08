@@ -1,10 +1,5 @@
-etc/dracut.conf.d/ostree.conf
 etc/ostree
-lib/systemd/system/ostree*.service
 usr/bin/ostree
 usr/bin/rofiles-fuse
-usr/lib/dracut/modules.d/98ostree
-usr/sbin/ostree-prepare-root
-usr/sbin/ostree-remount
 usr/share/man
 usr/share/ostree/trusted.gpg.d
