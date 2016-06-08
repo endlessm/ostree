@@ -1,0 +1,32 @@
+Package: ostree-boot
+Architecture: linux-any
+Depends:
+ dracut,
+ ostree (= ${binary:Version}),
+ ${misc:Depends},
+ ${shlibs:Depends},
+Recommends:
+ grub-efi-amd64 | grub-pc | extlinux | syslinux | u-boot,
+Breaks:
+ ostree (<< ${binary:Version}),
+ ostree-grub2 (<< ${binary:Version}),
+Replaces:
+ ostree (<< ${binary:Version}),
+ ostree-grub2 (<< ${binary:Version}),
+Provides:
+ ostree-grub2 (= ${binary:Version}),
+Description: ostree boot loader and initramfs integration
+ OSTree is a tool for managing bootable, immutable, versioned filesystem
+ trees. See the ostree package's description for more details.
+ .
+ This package contains configuration snippets and executables needed to
+ boot a Debian derivative using OSTree. This integration currently has some
+ limitations:
+ .
+  - the initramfs must have been made using dracut
+  - the root filesystem must be one that dracut can mount without a root=
+    command-line argument (an EFI partition with the GUID defined in
+    the Discoverable Partitions specification)
+  - /boot must be a separate partition
+  - the boot loader must be one that is supported by ostree, currently
+    GNU GRUB 2, syslinux/extlinux or Das U-Boot

@@ -47,6 +47,19 @@ override_dh_auto_install:
 override_dh_install:
 	rm -f debian/tmp/usr/lib/*/*.la
 	rm -f debian/tmp/usr/lib/installed-tests/ostree/*.la
+	:
+	# FIXME: when someone documents how to test these (#824649) they
+	# should be installed in a new ostree-boot package: see
+	# debian/ostree-boot.* and https://bugs.debian.org/824650
+	rm -f debian/tmp/etc/dracut.conf.d/ostree.conf
+	rm -f debian/tmp/etc/grub.d/15_ostree
+	rm -f debian/tmp/lib/systemd/system/ostree-prepare-root.service
+	rm -f debian/tmp/lib/systemd/system/ostree-remount.service
+	rm -fr debian/tmp/usr/lib/dracut/modules.d/98ostree/
+	rm -f debian/tmp/usr/lib/ostree/grub2-15_ostree
+	rm -f debian/tmp/usr/sbin/ostree-prepare-root
+	rm -f debian/tmp/usr/sbin/ostree-remount
+	:
 	dh_install --fail-missing
 
 override_dh_makeshlibs:

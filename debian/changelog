@@ -1,7 +1,11 @@
 ostree (2016.5-3) UNRELEASED; urgency=medium
 
-  * Rename ostree-grub2 to ostree-boot. Move all initramfs and bootloader
-    integration there. (Closes: #824650)
+  * Remove ostree-grub2 and the boot-related parts of ostree, leaving
+    the library and the command-line tool, which are also used by
+    Flatpak.
+    When we have documentation for how to use and test OSTree
+    deployments with a Debian derivative (see #824649), they should be
+    reinstated in an ostree-boot package (see #824650).
 
  -- Simon McVittie <smcv@debian.org>  Wed, 08 Jun 2016 11:58:01 +0100
 
