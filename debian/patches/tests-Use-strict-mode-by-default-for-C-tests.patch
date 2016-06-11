@@ -1,0 +1,37 @@
+From: Colin Walters <walters@verbum.org>
+Date: Mon, 6 Jun 2016 15:00:13 -0400
+Subject: tests: Use strict mode by default for C tests
+
+I was extending the C-based test suite to cover more, and noticed that
+we weren't aborting if a command failed.  That made the tests somewhat
+less useful, so let's fix it.
+
+Closes: #321
+Approved by: jlebon
+Origin: upstream, commit:085801185125893a53d7a65732c6832f875ed5d6
+---
+ tests/libostreetest.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tests/libostreetest.c b/tests/libostreetest.c
+index 5828336..a557ee3 100644
+--- a/tests/libostreetest.c
++++ b/tests/libostreetest.c
+@@ -40,7 +40,7 @@ run_libtest (const char *cmd, GError **error)
+   g_ptr_array_add (argv, "bash");
+   g_ptr_array_add (argv, "-c");
+ 
+-  g_string_append (cmdstr, ". ");
++  g_string_append (cmdstr, "set -xeuo pipefail; . ");
+   g_string_append (cmdstr, builddir);
+   g_string_append (cmdstr, "/tests/libtest.sh; ");
+   g_string_append (cmdstr, cmd);
+@@ -68,7 +68,7 @@ ot_test_setup_repo (GCancellable *cancellable,
+   g_autoptr(GFile) repo_path = g_file_new_for_path ("repo");
+   glnx_unref_object OstreeRepo* ret_repo = NULL;
+ 
+-  if (!run_libtest ("setup_test_repository", error))
++  if (!run_libtest ("setup_test_repository archive-z2", error))
+     goto out;
+ 
+   ret_repo = ostree_repo_new (repo_path);

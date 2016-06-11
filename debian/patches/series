@@ -1,2 +1,4 @@
 libtest-show-files-contents-when-assertions-about-them-fa.patch
 test-parent-this-test-requires-user-xattrs.patch
+tests-Use-strict-mode-by-default-for-C-tests.patch
+test-sysroot.js-set-strict-mode-when-sourcing-libtest.sh.patch
