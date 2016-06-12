@@ -3,6 +3,7 @@ ostree (2016.5-4) UNRELEASED; urgency=medium
   * d/p/test-sysroot.js-set-strict-mode-when-sourcing-libtest.sh.patch,
     d/p/tests-Use-strict-mode-by-default-for-C-tests.patch: add patches
     to make sure the tests fail as soon as something goes wrong
+  * Build-depend on procps, used to check for leaked processes
 
  -- Simon McVittie <smcv@debian.org>  Sat, 11 Jun 2016 19:52:40 +0100
 
