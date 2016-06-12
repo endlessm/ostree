@@ -4,6 +4,8 @@ ostree (2016.5-4) UNRELEASED; urgency=medium
     d/p/tests-Use-strict-mode-by-default-for-C-tests.patch: add patches
     to make sure the tests fail as soon as something goes wrong
   * Build-depend on procps, used to check for leaked processes
+  * debian/test.sh: factor out our dh_auto_test wrapper, and clean
+    up any stray processes even if the test fails
 
  -- Simon McVittie <smcv@debian.org>  Sat, 11 Jun 2016 19:52:40 +0100
 
