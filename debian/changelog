@@ -1,6 +1,10 @@
 ostree (2016.6-0) master; urgency=medium
 
+  [ Dan Nicholson ]
   * New upstream release
+
+  [ Simon McVittie ]
+  * Build-depend on procps, used to check for leaked processes
 
  -- Dan Nicholson <nicholson@endlessm.com>  Fri, 24 Jun 2016 09:56:56 -0700
 
