@@ -7,6 +7,7 @@ fails as soon as something goes wrong.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
 Forwarded: https://github.com/ostreedev/ostree/pull/335
+Applied-upstream: 2016.6, commit:0cf0fa815414eebb3e642429085fa75dda05c24d
 ---
  tests/test-sysroot.js | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

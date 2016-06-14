@@ -3,6 +3,7 @@ Date: Mon, 25 Apr 2016 12:50:32 +0100
 Subject: test-parent: this test requires user xattrs
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Applied-upstream: 2016.6, commit:542df553e2c51a9d2f9cfc4212dfd996f54b3f8b
 ---
  tests/test-parent.sh | 2 ++
  1 file changed, 2 insertions(+)
