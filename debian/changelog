@@ -8,7 +8,7 @@ ostree (2016.6-0) master; urgency=medium
   * debian/test.sh: factor out our dh_auto_test wrapper, and clean
     up any stray processes even if the test fails
   * If build-time tests fail, try 4 more times to get an idea of
-    whether the failure is reproducible
+    whether the failure is reproducible (hoping to diagnose #826858)
 
  -- Dan Nicholson <nicholson@endlessm.com>  Fri, 24 Jun 2016 09:56:56 -0700
 
