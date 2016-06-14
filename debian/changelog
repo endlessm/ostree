@@ -8,6 +8,8 @@ ostree (2016.5-4) UNRELEASED; urgency=medium
     up any stray processes even if the test fails
   * If build-time tests fail, try 4 more times to get an idea of
     whether the failure is reproducible
+  * Add a patch to link libreaddir-rand to libdl, which should fix
+    test failures on Ubuntu (Closes: #826857)
 
  -- Simon McVittie <smcv@debian.org>  Sat, 11 Jun 2016 19:52:40 +0100
 
