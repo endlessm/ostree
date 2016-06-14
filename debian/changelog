@@ -7,7 +7,7 @@ ostree (2016.5-4) UNRELEASED; urgency=medium
   * debian/test.sh: factor out our dh_auto_test wrapper, and clean
     up any stray processes even if the test fails
   * If build-time tests fail, try 4 more times to get an idea of
-    whether the failure is reproducible
+    whether the failure is reproducible (hoping to diagnose #826858)
   * Add a patch to link libreaddir-rand to libdl, which should fix
     test failures on Ubuntu (Closes: #826857)
 
