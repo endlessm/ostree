@@ -1,4 +1,4 @@
-ostree (2016.5-4) UNRELEASED; urgency=medium
+ostree (2016.5-4) unstable; urgency=medium
 
   * d/p/test-sysroot.js-set-strict-mode-when-sourcing-libtest.sh.patch,
     d/p/tests-Use-strict-mode-by-default-for-C-tests.patch: add patches
@@ -11,7 +11,7 @@ ostree (2016.5-4) UNRELEASED; urgency=medium
   * Add a patch to link libreaddir-rand to libdl, which should fix
     test failures on Ubuntu (Closes: #826857)
 
- -- Simon McVittie <smcv@debian.org>  Sat, 11 Jun 2016 19:52:40 +0100
+ -- Simon McVittie <smcv@debian.org>  Tue, 14 Jun 2016 15:35:18 -0400
 
 ostree (2016.5-3) unstable; urgency=medium
 
