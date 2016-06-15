@@ -3,3 +3,5 @@ test-parent-this-test-requires-user-xattrs.patch
 tests-Use-strict-mode-by-default-for-C-tests.patch
 test-sysroot.js-set-strict-mode-when-sourcing-libtest.sh.patch
 Link-libreaddir-rand-to-libdl.patch
+Build-on-older-versions-of-glib.patch
+tests-Fix-build-with-old-glib.patch
