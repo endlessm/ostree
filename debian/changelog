@@ -1,8 +1,12 @@
 ostree (2016.5-5) UNRELEASED; urgency=medium
 
+  [ Simon McVittie ]
   * d/p/Build-on-older-versions-of-glib.patch,
     d/p/tests-Fix-build-with-old-glib.patch: apply patches from
     upstream to make ostree buildable on Debian jessie
+
+  [ Jeremy Bicha ]
+  * Fix debian/watch (Closes: #827440)
 
  -- Simon McVittie <smcv@debian.org>  Wed, 15 Jun 2016 14:05:53 -0400
 
