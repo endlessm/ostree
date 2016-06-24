@@ -1,7 +1,8 @@
 ostree (2016.6-0) master; urgency=medium
 
   [ Dan Nicholson ]
-  * New upstream release
+  * New upstream release, rebase debian packaging
+    - Debian's ostree-boot package split left out for now.
   * Add missing test dependency on cpio
 
   [ Simon McVittie ]
@@ -11,7 +12,7 @@ ostree (2016.6-0) master; urgency=medium
   * If build-time tests fail, try 4 more times to get an idea of
     whether the failure is reproducible (hoping to diagnose #826858)
 
- -- Dan Nicholson <nicholson@endlessm.com>  Fri, 24 Jun 2016 09:56:56 -0700
+ -- Dan Nicholson <nicholson@endlessm.com>  Fri, 24 Jun 2016 10:04:51 -0700
 
 ostree (2016.5-2) experimental; urgency=medium
 
