@@ -1,3 +1,9 @@
+ostree (2016.6-0) master; urgency=medium
+
+  * New upstream release
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Fri, 24 Jun 2016 09:56:56 -0700
+
 ostree (2016.5-2) experimental; urgency=medium
 
   * Add a patch to skip the test-parent test if /var/tmp doesn't support
