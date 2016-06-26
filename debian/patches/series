@@ -1,1 +1,2 @@
 libostree.sym-Fix-test-symbols.patch
+pull-Correctly-handle-repo-parent_repo-when-applying-stat.patch

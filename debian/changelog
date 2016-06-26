@@ -12,6 +12,9 @@ ostree (2016.6-1) UNRELEASED; urgency=medium
     (add https://github.com/ostreedev/ostree as a remote)
   * d/p/libostree.sym-Fix-test-symbols.patch: apply patch from upstream
     to fix a build-time test
+  * d/p/pull-Correctly-handle-repo-parent_repo-when-applying-stat.patch:
+    apply patch from upstream to fix a bug that flatpak currently works
+    around
 
  -- Simon McVittie <smcv@debian.org>  Wed, 15 Jun 2016 14:05:53 -0400
 
