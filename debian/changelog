@@ -25,6 +25,9 @@ ostree (2016.6-1) UNRELEASED; urgency=medium
     of ostree that we just built
   * d/p/entry_pathname_test_helper-these-tests-need-extended-attr.patch:
     skip more tests if /var/tmp doesn't support extended attributes
+  * d/control: ostree no longer needs its Suggests on dracut. A stronger
+    dependency on dracut will be needed in the ostree-boot package when
+    the boot integration is reinstated (see #824650).
 
  -- Simon McVittie <smcv@debian.org>  Wed, 15 Jun 2016 14:05:53 -0400
 

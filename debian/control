@@ -114,8 +114,6 @@ Architecture: linux-any
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
-Suggests:
- dracut,
 Description: content-addressed filesystem for operating system binaries
  OSTree is a tool and library for managing bootable, immutable, versioned
  filesystem trees. It is like git in that it checksums individual files
