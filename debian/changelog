@@ -1,12 +1,11 @@
-ostree (2016.5-5) UNRELEASED; urgency=medium
+ostree (2016.6-1) UNRELEASED; urgency=medium
 
   [ Jeremy Bicha ]
   * Fix debian/watch (Closes: #827440)
 
   [ Simon McVittie ]
-  * d/p/Build-on-older-versions-of-glib.patch,
-    d/p/tests-Fix-build-with-old-glib.patch: apply patches from
-    upstream to make ostree buildable on Debian jessie
+  * New upstream release
+    - drop all patches, included upstream
   * d/watch: fetch releases from GitHub instead of GNOME
   * d/gbp.conf: configure to use upstream/latest for upstream imports
   * d/gbp.conf: configure to merge upstream tags into upstream/latest
