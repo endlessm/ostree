@@ -22,9 +22,9 @@
 
 #include "config.h"
 
+#include "libglnx.h"
 #include "ot-editor.h"
 #include "libgsystem.h"
-#include "libglnx.h"
 
 #include <sys/wait.h>
 #include <string.h>
@@ -101,7 +101,8 @@ ot_editor_prompt (OstreeRepo *repo,
       goto out;
     }
 
-  ret = gs_file_load_contents_utf8 (file, cancellable, error);
+  ret = glnx_file_get_contents_utf8_at (AT_FDCWD, gs_file_get_path_cached (file), NULL,
+                                        cancellable, error);
 
 out:
   if (file)

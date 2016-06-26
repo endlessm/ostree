@@ -21,7 +21,9 @@
 libostree_public_headers = \
 	src/libostree/ostree.h \
 	src/libostree/ostree-async-progress.h \
+	src/libostree/ostree-autocleanups.h \
 	src/libostree/ostree-core.h \
+	src/libostree/ostree-dummy-enumtypes.h \
 	src/libostree/ostree-mutable-tree.h \
 	src/libostree/ostree-repo.h \
 	src/libostree/ostree-types.h \

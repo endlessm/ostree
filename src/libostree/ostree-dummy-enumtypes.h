@@ -1,6 +1,7 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
+/* This file declares a stub function that is only exported
+ * to pacify ABI checkers - no one could really have used it.
  *
- * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
+ * Copyright (C) 2016 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,16 +21,9 @@
 
 #pragma once
 
-#include <ostree-async-progress.h>
-#include <ostree-core.h>
-#include <ostree-repo.h>
-#include <ostree-mutable-tree.h>
-#include <ostree-repo-file.h>
-#include <ostree-sysroot.h>
-#include <ostree-sysroot-upgrader.h>
-#include <ostree-deployment.h>
-#include <ostree-bootconfig-parser.h>
-#include <ostree-diff.h>
-#include <ostree-gpg-verify-result.h>
+#include <glib-object.h>
 
-#include <ostree-autocleanups.h>
+#ifndef __GI_SCANNER__
+_OSTREE_PUBLIC GType
+ostree_fetcher_config_flags_get_type (void);
+#endif

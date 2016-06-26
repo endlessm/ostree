@@ -1,5 +1,5 @@
 <SECTION>
-<FILE>libostree-async-progress</FILE>
+<FILE>ostree-async-progress</FILE>
 OstreeAsyncProgress
 ostree_async_progress_new
 ostree_async_progress_new_and_connect
@@ -22,12 +22,14 @@ ostree_async_progress_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-bootconfig-parser</FILE>
+<FILE>ostree-bootconfig-parser</FILE>
 OstreeBootconfigParser
 ostree_bootconfig_parser_new
 ostree_bootconfig_parser_clone
 ostree_bootconfig_parser_parse
+ostree_bootconfig_parser_parse_at
 ostree_bootconfig_parser_write
+ostree_bootconfig_parser_write_at
 ostree_bootconfig_parser_set
 ostree_bootconfig_parser_get
 <SUBSECTION Standard>
@@ -38,7 +40,7 @@ ostree_bootconfig_parser_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-chain-input-stream</FILE>
+<FILE>ostree-chain-input-stream</FILE>
 OstreeChainInputStream
 ostree_chain_input_stream_new
 <SUBSECTION Standard>
@@ -54,7 +56,7 @@ ostree_chain_input_stream_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-checksum-input-stream</FILE>
+<FILE>ostree-checksum-input-stream</FILE>
 OstreeChecksumInputStream
 ostree_checksum_input_stream_new
 <SUBSECTION Standard>
@@ -70,7 +72,7 @@ ostree_checksum_input_stream_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-core</FILE>
+<FILE>ostree-core</FILE>
 OSTREE_MAX_METADATA_SIZE
 OSTREE_MAX_METADATA_WARN_SIZE
 OSTREE_MAX_RECURSION
@@ -97,10 +99,11 @@ ostree_checksum_inplace_from_bytes
 ostree_checksum_inplace_to_bytes
 ostree_checksum_bytes_peek
 ostree_checksum_bytes_peek_validate
+ostree_checksum_b64_inplace_from_bytes
+ostree_checksum_b64_inplace_to_bytes
 ostree_cmp_checksum_bytes
 ostree_validate_rev
 ostree_parse_refspec
-ostree_checksum_update_meta
 ostree_object_type_to_string
 ostree_object_type_from_string
 ostree_hash_object_name
@@ -110,6 +113,8 @@ ostree_object_to_string
 ostree_object_from_string
 ostree_content_stream_parse
 ostree_content_file_parse
+ostree_content_file_parse_at
+ostree_raw_file_to_archive_z2_stream
 ostree_raw_file_to_content_stream
 ostree_checksum_file_from_input
 ostree_checksum_file
@@ -128,7 +133,7 @@ ostree_commit_get_timestamp
 </SECTION>
 
 <SECTION>
-<FILE>libostree-deployment</FILE>
+<FILE>ostree-deployment</FILE>
 OstreeDeployment
 ostree_deployment_hash
 ostree_deployment_equal
@@ -141,11 +146,14 @@ ostree_deployment_get_bootcsum
 ostree_deployment_get_bootserial
 ostree_deployment_get_bootconfig
 ostree_deployment_get_origin
+ostree_deployment_get_origin_relpath
+ostree_deployment_get_unlocked
 ostree_deployment_set_index
 ostree_deployment_set_bootserial
 ostree_deployment_set_bootconfig
 ostree_deployment_set_origin
 ostree_deployment_clone
+ostree_deployment_unlocked_state_to_string
 <SUBSECTION Standard>
 OSTREE_DEPLOYMENT
 OSTREE_IS_DEPLOYMENT
@@ -154,7 +162,7 @@ ostree_deployment_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-diff</FILE>
+<FILE>ostree-diff</FILE>
 OstreeDiffFlags
 OstreeDiffItem
 ostree_diff_item_ref
@@ -166,7 +174,7 @@ ostree_diff_item_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-gpg-verify-result</FILE>
+<FILE>ostree-gpg-verify-result</FILE>
 OstreeGpgVerifyResult
 OstreeGpgSignatureAttr
 ostree_gpg_verify_result_count_all
@@ -177,6 +185,7 @@ ostree_gpg_verify_result_get_all
 OstreeGpgSignatureFormatFlags
 ostree_gpg_verify_result_describe
 ostree_gpg_verify_result_describe_variant
+ostree_gpg_verify_result_require_valid_signature
 <SUBSECTION Standard>
 OSTREE_GPG_VERIFY_RESULT
 OSTREE_IS_GPG_VERIFY_RESULT
@@ -184,8 +193,33 @@ OSTREE_TYPE_GPG_VERIFY_RESULT
 ostree_gpg_verify_result_get_type
 </SECTION>
 
+<FILE>ostree-lzma-compressor</FILE>
+<SUBSECTION Standard>
+OSTREE_IS_LZMA_COMPRESSOR
+OSTREE_IS_LZMA_COMPRESSOR_CLASS
+OSTREE_LZMA_COMPRESSOR
+OSTREE_LZMA_COMPRESSOR_CLASS
+OSTREE_LZMA_COMPRESSOR_GET_CLASS
+OSTREE_TYPE_LZMA_COMPRESSOR
+OstreeLzmaCompressor
+OstreeLzmaCompressorClass
+</SECTION>
+
 <SECTION>
-<FILE>libostree-mutable-tree</FILE>
+<FILE>ostree-lzma-decompressor</FILE>
+<SUBSECTION Standard>
+OSTREE_IS_LZMA_DECOMPRESSOR
+OSTREE_IS_LZMA_DECOMPRESSOR_CLASS
+OSTREE_LZMA_DECOMPRESSOR
+OSTREE_LZMA_DECOMPRESSOR_CLASS
+OSTREE_LZMA_DECOMPRESSOR_GET_CLASS
+OSTREE_TYPE_LZMA_DECOMPRESSOR
+OstreeLzmaDecompressor
+OstreeLzmaDecompressorClass
+</SECTION>
+
+<SECTION>
+<FILE>ostree-mutable-tree</FILE>
 OstreeMutableTree
 ostree_mutable_tree_new
 ostree_mutable_tree_set_metadata_checksum
@@ -211,7 +245,7 @@ ostree_mutable_tree_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-repo</FILE>
+<FILE>ostree-repo</FILE>
 OstreeRepo
 OstreeRepoMode
 ostree_repo_mode_from_string
@@ -227,6 +261,7 @@ ostree_repo_create
 ostree_repo_get_path
 ostree_repo_get_mode
 ostree_repo_get_config
+ostree_repo_get_dfd
 ostree_repo_copy_config
 ostree_repo_remote_add
 ostree_repo_remote_delete
@@ -238,6 +273,10 @@ ostree_repo_remote_get_gpg_verify
 ostree_repo_remote_get_gpg_verify_summary
 ostree_repo_remote_gpg_import
 ostree_repo_remote_fetch_summary
+ostree_repo_remote_fetch_summary_with_options
+ostree_repo_get_remote_boolean_option
+ostree_repo_get_remote_list_option
+ostree_repo_get_remote_option
 ostree_repo_get_parent
 ostree_repo_write_config
 OstreeRepoTransactionStats
@@ -248,6 +287,8 @@ ostree_repo_abort_transaction
 ostree_repo_transaction_set_refspec
 ostree_repo_transaction_set_ref
 ostree_repo_set_ref_immediate
+ostree_repo_set_cache_dir
+ostree_repo_sign_delta
 ostree_repo_has_object
 ostree_repo_write_metadata
 ostree_repo_write_metadata_async
@@ -270,6 +311,8 @@ ostree_repo_load_object_stream
 ostree_repo_query_object_storage_size
 ostree_repo_import_object_from
 ostree_repo_import_object_from_with_trust
+ostree_repo_import_archive_to_mtree
+ostree_repo_export_tree_to_archive
 ostree_repo_delete_object
 OstreeRepoCommitFilterResult
 OstreeRepoCommitFilter
@@ -285,6 +328,7 @@ ostree_repo_commit_modifier_unref
 ostree_repo_devino_cache_new
 ostree_repo_devino_cache_ref
 ostree_repo_devino_cache_unref
+ostree_repo_devino_cache_get_type
 ostree_repo_write_directory_to_mtree
 ostree_repo_write_dfd_to_mtree
 ostree_repo_write_archive_to_mtree
@@ -310,8 +354,16 @@ ostree_repo_static_delta_execute_offline
 ostree_repo_traverse_new_reachable
 ostree_repo_traverse_commit
 ostree_repo_traverse_commit_union
+ostree_repo_commit_traverse_iter_cleanup
+ostree_repo_commit_traverse_iter_clear
+ostree_repo_commit_traverse_iter_get_dir
+ostree_repo_commit_traverse_iter_get_file
+ostree_repo_commit_traverse_iter_init_commit
+ostree_repo_commit_traverse_iter_init_dirtree
+ostree_repo_commit_traverse_iter_next
 OstreeRepoPruneFlags
 ostree_repo_prune
+ostree_repo_prune_static_deltas
 OstreeRepoPullFlags
 ostree_repo_pull
 ostree_repo_pull_one_dir
@@ -319,6 +371,8 @@ ostree_repo_pull_with_options
 ostree_repo_pull_default_console_progress_changed
 ostree_repo_sign_commit
 ostree_repo_append_gpg_signature
+ostree_repo_add_gpg_signature_summary
+ostree_repo_gpg_verify_data
 ostree_repo_verify_commit
 ostree_repo_verify_commit_ext
 ostree_repo_verify_summary
@@ -333,13 +387,12 @@ ostree_repo_transaction_stats_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-repo-file</FILE>
+<FILE>ostree-repo-file</FILE>
 OstreeRepoFile
 ostree_repo_file_ensure_resolved
 ostree_repo_file_get_xattrs
 ostree_repo_file_get_repo
 ostree_repo_file_get_root
-ostree_repo_file_make_empty_tree
 ostree_repo_file_tree_set_metadata
 ostree_repo_file_tree_get_contents_checksum
 ostree_repo_file_tree_get_metadata_checksum
@@ -360,14 +413,17 @@ ostree_repo_file_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-sepolicy</FILE>
+<FILE>ostree-sepolicy</FILE>
 OstreeSePolicy
 ostree_sepolicy_new
 ostree_sepolicy_get_path
 ostree_sepolicy_get_name
 ostree_sepolicy_get_label
+ostree_sepolicy_get_csum
 OstreeSePolicyRestoreconFlags
 ostree_sepolicy_restorecon
+ostree_sepolicy_setfscreatecon
+ostree_sepolicy_fscreatecon_cleanup
 <SUBSECTION Standard>
 OSTREE_SEPOLICY
 OSTREE_IS_SEPOLICY
@@ -376,7 +432,7 @@ ostree_sepolicy_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-sysroot</FILE>
+<FILE>ostree-sysroot</FILE>
 OstreeSysroot
 ostree_sysroot_new
 ostree_sysroot_new_default
@@ -388,6 +444,7 @@ ostree_sysroot_try_lock
 ostree_sysroot_lock_async
 ostree_sysroot_lock_finish
 ostree_sysroot_unlock
+ostree_sysroot_unload
 ostree_sysroot_get_fd
 ostree_sysroot_ensure_initialized
 ostree_sysroot_get_bootversion
@@ -395,13 +452,17 @@ ostree_sysroot_get_subbootversion
 ostree_sysroot_get_deployments
 ostree_sysroot_get_booted_deployment
 ostree_sysroot_get_deployment_directory
+ostree_sysroot_get_deployment_dirpath
 ostree_sysroot_get_deployment_origin_path
 ostree_sysroot_cleanup
 ostree_sysroot_prepare_cleanup
 ostree_sysroot_get_repo
 ostree_sysroot_init_osname
 ostree_sysroot_deployment_set_kargs
+ostree_sysroot_deployment_set_mutable
+ostree_sysroot_deployment_unlock
 ostree_sysroot_write_deployments
+ostree_sysroot_write_origin_file
 ostree_sysroot_deploy_tree
 ostree_sysroot_get_merge_deployment
 ostree_sysroot_origin_new_from_refspec
@@ -415,7 +476,7 @@ ostree_sysroot_get_type
 </SECTION>
 
 <SECTION>
-<FILE>libostree-sysroot-upgrader</FILE>
+<FILE>ostree-sysroot-upgrader</FILE>
 OstreeSysrootUpgrader
 ostree_sysroot_upgrader_new
 ostree_sysroot_upgrader_new_for_os

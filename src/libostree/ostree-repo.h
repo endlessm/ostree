@@ -115,6 +115,10 @@ gboolean      ostree_repo_remote_delete (OstreeRepo     *self,
                                          GCancellable   *cancellable,
                                          GError        **error);
 
+/**
+ * OstreeRepoRemoteChange:
+ * The remote change operation.
+ */
 typedef enum {
   OSTREE_REPO_REMOTE_CHANGE_ADD,
   OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS,
@@ -195,6 +199,15 @@ gboolean      ostree_repo_remote_fetch_summary (OstreeRepo    *self,
                                                 GError       **error);
 
 _OSTREE_PUBLIC
+gboolean ostree_repo_remote_fetch_summary_with_options (OstreeRepo    *self,
+                                                        const char    *name,
+                                                        GVariant      *options,
+                                                        GBytes       **out_summary,
+                                                        GBytes       **out_signatures,
+                                                        GCancellable  *cancellable,
+                                                        GError       **error);
+
+_OSTREE_PUBLIC
 OstreeRepo * ostree_repo_get_parent (OstreeRepo  *self);
 
 _OSTREE_PUBLIC
@@ -214,6 +227,10 @@ gboolean      ostree_repo_write_config (OstreeRepo *self,
  * were written to the repository in this transaction.
  * @content_bytes_written: The amount of data added to the repository,
  * in bytes, counting only content objects.
+ * @padding1: reserved
+ * @padding2: reserved
+ * @padding3: reserved
+ * @padding4: reserved
  *
  * A list of statistics for each transaction that may be
  * interesting for reporting purposes.
@@ -582,7 +599,9 @@ gboolean      ostree_repo_write_archive_to_mtree (OstreeRepo                   *
 typedef struct {
   guint ignore_unsupported_content : 1;
   guint autocreate_parents : 1;
-  guint reserved : 30;
+  guint use_ostree_convention : 1;
+  guint callback_with_entry_pathname : 1;
+  guint reserved : 28;
 
   guint unused_uint[8];
   gpointer unused_ptrs[8];
@@ -610,7 +629,10 @@ typedef struct {
   guint64 timestamp_secs;
 
   guint unused_uint[8];
-  gpointer unused_ptrs[8];
+
+  char *path_prefix;
+
+  gpointer unused_ptrs[7];
 } OstreeRepoExportArchiveOptions;
 
 _OSTREE_PUBLIC
@@ -685,7 +707,8 @@ typedef enum {
   OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES = 1
 } OstreeRepoCheckoutOverwriteMode;
 
-_OSTREE_PUBLIC gboolean
+_OSTREE_PUBLIC
+gboolean
 ostree_repo_checkout_tree (OstreeRepo               *self,
                            OstreeRepoCheckoutMode    mode,
                            OstreeRepoCheckoutOverwriteMode    overwrite_mode,
@@ -852,14 +875,16 @@ typedef enum {
   OSTREE_REPO_COMMIT_TRAVERSE_FLAG_NONE = (1 << 0)
 } OstreeRepoCommitTraverseFlags;
 
-_OSTREE_PUBLIC gboolean
+_OSTREE_PUBLIC
+gboolean
 ostree_repo_commit_traverse_iter_init_commit (OstreeRepoCommitTraverseIter    *iter,
                                               OstreeRepo                      *repo,
                                               GVariant                        *commit,
                                               OstreeRepoCommitTraverseFlags    flags,
                                               GError                         **error);
 
-_OSTREE_PUBLIC gboolean
+_OSTREE_PUBLIC
+gboolean
 ostree_repo_commit_traverse_iter_init_dirtree (OstreeRepoCommitTraverseIter    *iter,
                                                OstreeRepo                      *repo,
                                                GVariant                        *dirtree,
@@ -889,8 +914,8 @@ void ostree_repo_commit_traverse_iter_get_dir (OstreeRepoCommitTraverseIter *ite
                                                char                        **out_content_checksum,
                                                char                        **out_meta_checksum);
 
-_OSTREE_PUBLIC void
-ostree_repo_commit_traverse_iter_clear (OstreeRepoCommitTraverseIter *iter);
+_OSTREE_PUBLIC
+void ostree_repo_commit_traverse_iter_clear (OstreeRepoCommitTraverseIter *iter);
 
 _OSTREE_PUBLIC
 void ostree_repo_commit_traverse_iter_cleanup (void *p);
@@ -909,7 +934,8 @@ typedef enum {
   OSTREE_REPO_PRUNE_FLAGS_REFS_ONLY
 } OstreeRepoPruneFlags;
 
-_OSTREE_PUBLIC gboolean
+_OSTREE_PUBLIC
+gboolean
 ostree_repo_prune_static_deltas (OstreeRepo *self, const char *commit,
                                  GCancellable      *cancellable,
                                  GError           **error);
@@ -947,7 +973,8 @@ gboolean ostree_repo_pull (OstreeRepo             *self,
                            GCancellable           *cancellable,
                            GError                **error);
 
-_OSTREE_PUBLIC gboolean
+_OSTREE_PUBLIC
+gboolean
 ostree_repo_pull_one_dir (OstreeRepo               *self,
                           const char               *remote_name,
                           const char               *dir_to_pull,
@@ -986,7 +1013,8 @@ gboolean ostree_repo_sign_delta (OstreeRepo     *self,
                                  GCancellable   *cancellable,
                                  GError        **error);
 
-_OSTREE_PUBLIC gboolean
+_OSTREE_PUBLIC
+gboolean
 ostree_repo_add_gpg_signature_summary (OstreeRepo     *self,
                                        const gchar    **key_id,
                                        const gchar    *homedir,
@@ -1015,6 +1043,16 @@ OstreeGpgVerifyResult * ostree_repo_verify_commit_ext (OstreeRepo    *self,
                                                        GFile         *extra_keyring,
                                                        GCancellable  *cancellable,
                                                        GError       **error);
+
+_OSTREE_PUBLIC
+OstreeGpgVerifyResult * ostree_repo_gpg_verify_data (OstreeRepo    *self,
+                                                     const gchar   *remote_name,
+                                                     GBytes        *data,
+                                                     GBytes        *signatures,
+                                                     GFile         *keyringdir,
+                                                     GFile         *extra_keyring,
+                                                     GCancellable  *cancellable,
+                                                     GError       **error);
 
 _OSTREE_PUBLIC
 OstreeGpgVerifyResult * ostree_repo_verify_summary (OstreeRepo    *self,

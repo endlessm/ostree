@@ -59,7 +59,7 @@ G_BEGIN_DECLS
  * @OSTREE_OBJECT_TYPE_DIR_TREE: List of children (trees or files), and metadata
  * @OSTREE_OBJECT_TYPE_DIR_META: Directory metadata
  * @OSTREE_OBJECT_TYPE_COMMIT: Toplevel object, refers to tree and dirmeta for root
- * @OSTREE_OBJECT_TYPE_COMMIT_TOMBSTONE: Toplevel object, refers to a deleted commit
+ * @OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT: Toplevel object, refers to a deleted commit
  *
  * Enumeration for core object types; %OSTREE_OBJECT_TYPE_FILE is for
  * content, the other types are metadata.
@@ -90,10 +90,10 @@ typedef enum {
 /**
  * OSTREE_DIRMETA_GVARIANT_FORMAT:
  *
- * u - uid
- * u - gid
- * u - mode
- * a(ayay) - xattrs
+ * - u - uid
+ * - u - gid
+ * - u - mode
+ * - a(ayay) - xattrs
  */
 #define OSTREE_DIRMETA_GVARIANT_STRING "(uuua(ayay))"
 #define OSTREE_DIRMETA_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_DIRMETA_GVARIANT_STRING)
@@ -106,10 +106,10 @@ typedef enum {
  * can't store in the real filesystem but we can still use a regular .file object
  * that we can hardlink to in the case of a user-mode checkout.
  *
- * u - uid
- * u - gid
- * u - mode
- * a(ayay) - xattrs
+ * - u - uid
+ * - u - gid
+ * - u - mode
+ * - a(ayay) - xattrs
  */
 #define OSTREE_FILEMETA_GVARIANT_STRING "(uuua(ayay))"
 #define OSTREE_FILEMETA_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_FILEMETA_GVARIANT_STRING)
@@ -117,8 +117,8 @@ typedef enum {
 /**
  * OSTREE_TREE_GVARIANT_FORMAT:
  *
- * a(say) - array of (filename, checksum) for files
- * a(sayay) - array of (dirname, tree_checksum, meta_checksum) for directories
+ * - a(say) - array of (filename, checksum) for files
+ * - a(sayay) - array of (dirname, tree_checksum, meta_checksum) for directories
  */
 #define OSTREE_TREE_GVARIANT_STRING "(a(say)a(sayay))"
 #define OSTREE_TREE_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_TREE_GVARIANT_STRING)
@@ -126,14 +126,14 @@ typedef enum {
 /**
  * OSTREE_COMMIT_GVARIANT_FORMAT:
  *
- * a{sv} - Metadata
- * ay - parent checksum (empty string for initial)
- * a(say) - Related objects
- * s - subject 
- * s - body
- * t - Timestamp in seconds since the epoch (UTC)
- * ay - Root tree contents
- * ay - Root tree metadata
+ * - a{sv} - Metadata
+ * - ay - parent checksum (empty string for initial)
+ * - a(say) - Related objects
+ * - s - subject
+ * - s - body
+ * - t - Timestamp in seconds since the epoch (UTC)
+ * - ay - Root tree contents
+ * - ay - Root tree metadata
  */
 #define OSTREE_COMMIT_GVARIANT_STRING "(a{sv}aya(say)sstayay)"
 #define OSTREE_COMMIT_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_COMMIT_GVARIANT_STRING)
@@ -141,8 +141,9 @@ typedef enum {
 /**
  * OSTREE_SUMMARY_GVARIANT_FORMAT:
  *
- * refs: a(s(taya{sv})) - Map of ref name -> (latest commit size, latest commit checksum, additional metadata), sorted by ref name
- * extensions: a{sv} - Additional metadata, none defined at the current time
+ * - a(s(taya{sv})) - Map of ref name -> (latest commit size, latest commit checksum, additional metadata), sorted by ref name
+ * - a{sv} - Additional metadata, at the current time the following are defined:
+ *   - key: "ostree.static-deltas", value: a{sv}, static delta name -> 32 bytes of checksum
  */
 #define OSTREE_SUMMARY_GVARIANT_STRING "(a(s(taya{sv}))a{sv})"
 #define OSTREE_SUMMARY_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_SUMMARY_GVARIANT_STRING)
@@ -152,9 +153,9 @@ typedef enum {
 
 /**
  * OstreeRepoMode:
- * @OSTREE_REPO_MODE_BARE: Files are stored as themselves; can only be written as root
+ * @OSTREE_REPO_MODE_BARE: Files are stored as themselves; checkouts are hardlinks; can only be written as root
  * @OSTREE_REPO_MODE_ARCHIVE_Z2: Files are compressed, should be owned by non-root.  Can be served via HTTP
- * @OSTREE_REPO_MODE_BARE_USER: Files are stored as themselves, except ownership; can be written by user
+ * @OSTREE_REPO_MODE_BARE_USER: Files are stored as themselves, except ownership; can be written by user. Hardlinks work only in user checkouts.
  *
  * See the documentation of #OstreeRepo for more information about the
  * possible modes.
@@ -165,8 +166,8 @@ typedef enum {
   OSTREE_REPO_MODE_BARE_USER
 } OstreeRepoMode;
 
-const _OSTREE_PUBLIC
-GVariantType *ostree_metadata_variant_type (OstreeObjectType objtype);
+_OSTREE_PUBLIC
+const GVariantType *ostree_metadata_variant_type (OstreeObjectType objtype);
 
 _OSTREE_PUBLIC
 gboolean ostree_validate_checksum_string (const char *sha256,
@@ -215,9 +216,6 @@ gboolean ostree_parse_refspec (const char *refspec,
                                GError    **error);
 
 _OSTREE_PUBLIC
-void ostree_checksum_update_meta (GChecksum *checksum, GFileInfo *file_info, GVariant  *xattrs);
-
-_OSTREE_PUBLIC
 const char * ostree_object_type_to_string (OstreeObjectType objtype);
 
 _OSTREE_PUBLIC
@@ -244,7 +242,8 @@ void ostree_object_from_string (const char *str,
                                 gchar     **out_checksum,
                                 OstreeObjectType *out_objtype);
 
-_OSTREE_PUBLIC gboolean
+_OSTREE_PUBLIC
+gboolean
 ostree_content_stream_parse (gboolean                compressed,
                              GInputStream           *input,
                              guint64                 input_length,
@@ -275,6 +274,15 @@ gboolean ostree_content_file_parse_at (gboolean                compressed,
                                        GVariant              **out_xattrs,
                                        GCancellable           *cancellable,
                                        GError                **error);
+
+_OSTREE_PUBLIC
+gboolean
+ostree_raw_file_to_archive_z2_stream (GInputStream       *input,
+                                      GFileInfo          *file_info,
+                                      GVariant           *xattrs,
+                                      GInputStream      **out_input,
+                                      GCancellable       *cancellable,
+                                      GError            **error);
 
 _OSTREE_PUBLIC
 gboolean ostree_raw_file_to_content_stream (GInputStream       *input,

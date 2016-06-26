@@ -69,6 +69,7 @@ export TEST_GPG_KEYID_3="DF444D67"
 # this by copying locally.
 echo "Copying gpghome to ${test_tmpdir}"
 cp -a "${test_srcdir}/gpghome" ${test_tmpdir}
+chmod -R u+w "${test_tmpdir}"
 export TEST_GPG_KEYHOME=${test_tmpdir}/gpghome
 export OSTREE_GPG_HOME=${test_tmpdir}/gpghome/trusted
 
@@ -77,13 +78,26 @@ if test -n "${OT_TESTS_DEBUG:-}"; then
 fi
 
 if test -n "${OT_TESTS_VALGRIND:-}"; then
-    CMD_PREFIX="env G_SLICE=always-malloc valgrind -q --leak-check=full --num-callers=30 --suppressions=${test_srcdir}/ostree-valgrind.supp"
+    CMD_PREFIX="env G_SLICE=always-malloc OSTREE_SUPPRESS_SYNCFS=1 valgrind -q --error-exitcode=1 --leak-check=full --num-callers=30 --suppressions=${test_srcdir}/glib.supp --suppressions=${test_srcdir}/ostree.supp"
 else
-    CMD_PREFIX="env LD_PRELOAD=${test_builddir}/libreaddir-rand.so"
+    # In some cases the LD_PRELOAD may cause obscure problems,
+    # e.g. right now it breaks for me with -fsanitize=address, so
+    # let's allow users to skip it.
+    if test -z "${OT_SKIP_READDIR_RAND:-}"; then
+	CMD_PREFIX="env LD_PRELOAD=${test_builddir}/libreaddir-rand.so"
+    else
+	CMD_PREFIX=""
+    fi
 fi
 
 assert_streq () {
     test "$1" = "$2" || (echo 1>&2 "$1 != $2"; exit 1)
+}
+
+assert_str_match () {
+    if ! echo "$1" | grep -E -q "$2"; then
+	(echo 1>&2 "$1 does not match regexp $2"; exit 1)
+    fi
 }
 
 assert_not_streq () {
@@ -100,13 +114,17 @@ assert_has_dir () {
 
 assert_not_has_file () {
     if test -f "$1"; then
-	echo 1>&2 "File '$1' exists"; exit 1
+        sed -e 's/^/# /' < "$1" >&2
+        echo 1>&2 "File '$1' exists"
+        exit 1
     fi
 }
 
 assert_not_file_has_content () {
     if grep -q -e "$2" "$1"; then
-	echo 1>&2 "File '$1' incorrectly matches regexp '$2'"; exit 1
+        sed -e 's/^/# /' < "$1" >&2
+        echo 1>&2 "File '$1' incorrectly matches regexp '$2'"
+        exit 1
     fi
 }
 
@@ -118,13 +136,38 @@ assert_not_has_dir () {
 
 assert_file_has_content () {
     if ! grep -q -e "$2" "$1"; then
-	echo 1>&2 "File '$1' doesn't match regexp '$2'"; exit 1
+        sed -e 's/^/# /' < "$1" >&2
+        echo 1>&2 "File '$1' doesn't match regexp '$2'"
+        exit 1
+    fi
+}
+
+assert_symlink_has_content () {
+    if ! test -L "$1"; then
+        echo 1>&2 "File '$1' is not a symbolic link"
+        exit 1
+    fi
+    if ! readlink "$1" | grep -q -e "$2"; then
+        sed -e 's/^/# /' < "$1" >&2
+        echo 1>&2 "Symbolic link '$1' doesn't match regexp '$2'"
+        exit 1
     fi
 }
 
 assert_file_empty() {
     if test -s "$1"; then
-	echo 1>&2 "File '$1' is not empty"; exit 1
+        sed -e 's/^/# /' < "$1" >&2
+        echo 1>&2 "File '$1' is not empty"
+        exit 1
+    fi
+}
+
+assert_files_hardlinked() {
+    f1=$(stat -c %i $1)
+    f2=$(stat -c %i $2)
+    if [ "$f1" != "$f2" ]; then
+        echo 1>&2 "Files '$1' and '$2' are not hardlinked"
+        exit 1
     fi
 }
 
@@ -367,6 +410,11 @@ skip_without_user_xattrs () {
 skip_without_fuse () {
     if ! fusermount --version >/dev/null 2>&1; then
         echo "1..0 # SKIP no fusermount"
+        exit 0
+    fi
+
+    if ! capsh --print | grep -q 'Bounding set.*[^a-z]cap_sys_admin'; then
+	echo "1..0 # SKIP No cap_sys_admin in bounding set, can't use FUSE"
         exit 0
     fi
 

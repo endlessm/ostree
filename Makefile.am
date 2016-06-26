@@ -24,11 +24,12 @@ AM_CPPFLAGS += -DDATADIR='"$(datadir)"' -DLIBEXECDIR='"$(libexecdir)"' \
 	-DLOCALEDIR=\"$(datadir)/locale\" -DSYSCONFDIR=\"$(sysconfdir)\" \
 	-DSHORTENED_SYSCONFDIR=\"$(shortened_sysconfdir)\" \
 	-DOSTREE_FEATURES='"$(OSTREE_FEATURES)"' \
+	-DOSTREE_COMPILATION \
 	-DG_LOG_DOMAIN=\"OSTree\" \
 	-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_40 -DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_40 \
 	-DSOUP_VERSION_MIN_REQUIRED=SOUP_VERSION_2_40 -DSOUP_VERSION_MAX_ALLOWED=SOUP_VERSION_2_48
-AM_CFLAGS += $(WARN_CFLAGS)
-DISTCHECK_CONFIGURE_FLAGS += --enable-gtk-doc --disable-maintainer-mode
+AM_CFLAGS += -std=gnu99 $(WARN_CFLAGS)
+AM_DISTCHECK_CONFIGURE_FLAGS += --enable-gtk-doc --disable-maintainer-mode
 
 GITIGNOREFILES = aclocal.m4 build-aux/ buildutil/*.m4 config.h.in gtk-doc.make
 
@@ -71,7 +72,9 @@ include Makefile-otutil.am
 include Makefile-libostree.am
 include Makefile-ostree.am
 include Makefile-switchroot.am
+if BUILDOPT_FUSE
 include src/rofiles-fuse/Makefile-inc.am
+endif
 include Makefile-tests.am
 include Makefile-boot.am
 include Makefile-man.am
