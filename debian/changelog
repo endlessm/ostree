@@ -9,6 +9,8 @@ ostree (2016.5-5) UNRELEASED; urgency=medium
     upstream to make ostree buildable on Debian jessie
   * d/watch: fetch releases from GitHub instead of GNOME
   * d/gbp.conf: configure to use upstream/latest for upstream imports
+  * d/gbp.conf: configure to merge upstream tags into upstream/latest
+    (add https://github.com/ostreedev/ostree as a remote)
 
  -- Simon McVittie <smcv@debian.org>  Wed, 15 Jun 2016 14:05:53 -0400
 
