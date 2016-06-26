@@ -8,6 +8,7 @@ Uploaders:
 Build-Depends:
  attr,
  bison,
+ cpio,
  debhelper (>= 9),
  dh-autoreconf,
  dh-systemd,
@@ -133,6 +134,7 @@ Architecture: linux-any
 Depends:
  attr,
  ca-certificates,
+ cpio,
  fuse,
  gir1.2-gsystem-1.0,
  gir1.2-ostree-1.0,
