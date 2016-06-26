@@ -32,10 +32,12 @@
 
 static char *opt_subject;
 static char *opt_body;
+static gboolean opt_editor;
 static char *opt_parent;
 static gboolean opt_orphan;
 static char *opt_branch;
 static char *opt_statoverride_file;
+static char *opt_skiplist_file;
 static char **opt_metadata_strings;
 static char **opt_detached_metadata_strings;
 static gboolean opt_link_checkout_speedup;
@@ -72,6 +74,7 @@ static GOptionEntry options[] = {
   { "parent", 0, 0, G_OPTION_ARG_STRING, &opt_parent, "Parent ref, or \"none\"", "REF" },
   { "subject", 's', 0, G_OPTION_ARG_STRING, &opt_subject, "One line subject", "SUBJECT" },
   { "body", 'm', 0, G_OPTION_ARG_STRING, &opt_body, "Full description", "BODY" },
+  { "editor", 'e', 0, G_OPTION_ARG_NONE, &opt_editor, "Use an editor to write the commit message", NULL },
   { "branch", 'b', 0, G_OPTION_ARG_STRING, &opt_branch, "Branch", "BRANCH" },
   { "orphan", 0, 0, G_OPTION_ARG_NONE, &opt_orphan, "Create a commit without writing a ref", NULL },
   { "tree", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_trees, "Overlay the given argument as a tree", "dir=PATH or tar=TARFILE or ref=COMMIT" },
@@ -84,6 +87,7 @@ static GOptionEntry options[] = {
   { "tar-autocreate-parents", 0, 0, G_OPTION_ARG_NONE, &opt_tar_autocreate_parents, "When loading tar archives, automatically create parent directories as needed", NULL },
   { "skip-if-unchanged", 0, 0, G_OPTION_ARG_NONE, &opt_skip_if_unchanged, "If the contents are unchanged from previous commit, do nothing", NULL },
   { "statoverride", 0, 0, G_OPTION_ARG_FILENAME, &opt_statoverride_file, "File containing list of modifications to make to permissions", "PATH" },
+  { "skip-list", 0, 0, G_OPTION_ARG_FILENAME, &opt_skiplist_file, "File containing list of files to skip", "PATH" },
   { "table-output", 0, 0, G_OPTION_ARG_NONE, &opt_table_output, "Output more information in a KEY: VALUE format", NULL },
   { "gpg-sign", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_key_ids, "GPG Key ID to sign the commit with", "KEY-ID"},
   { "gpg-homedir", 0, 0, G_OPTION_ARG_STRING, &opt_gpg_homedir, "GPG Homedir to use when looking for keyrings", "HOMEDIR"},
@@ -95,57 +99,75 @@ static GOptionEntry options[] = {
 };
 
 static gboolean
-parse_statoverride_file (GHashTable   **out_mode_add,
-                         GCancellable  *cancellable,
-                         GError        **error)
+parse_file_by_line (const char    *path,
+                    gboolean     (*cb)(const char*, void*, GError**),
+                    void          *cbdata,
+                    GCancellable  *cancellable,
+                    GError       **error)
 {
   gboolean ret = FALSE;
-  gsize len;
-  char **iter = NULL; /* nofree */
-  g_autoptr(GHashTable) ret_hash = NULL;
-  g_autoptr(GFile) path = NULL;
   g_autofree char *contents = NULL;
+  g_autoptr(GFile) file = NULL;
   char **lines = NULL;
 
-  path = g_file_new_for_path (opt_statoverride_file);
-
-  if (!g_file_load_contents (path, cancellable, &contents, &len, NULL,
-                             error))
+  file = g_file_new_for_path (path);
+  if (!g_file_load_contents (file, cancellable, &contents, NULL, NULL, error))
     goto out;
-  
-  ret_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
   lines = g_strsplit (contents, "\n", -1);
-
-  for (iter = lines; iter && *iter; iter++)
+  for (char **iter = lines; iter && *iter; iter++)
     {
-      const char *line = *iter;
+      /* skip empty lines at least */
+      if (**iter == '\0')
+        continue;
 
-      if (*line == '+')
-        {
-          const char *spc;
-          guint mode_add;
-
-          spc = strchr (line + 1, ' ');
-          if (!spc)
-            {
-              g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                           "Malformed statoverride file");
-              goto out;
-            }
-          
-          mode_add = (guint32)(gint32)g_ascii_strtod (line + 1, NULL);
-          g_hash_table_insert (ret_hash,
-                               g_strdup (spc + 1),
-                               GUINT_TO_POINTER((gint32)mode_add));
-        }
+      if (!cb (*iter, cbdata, error))
+        goto out;
     }
 
   ret = TRUE;
-  ot_transfer_out_value (out_mode_add, &ret_hash);
- out:
+out:
   g_strfreev (lines);
   return ret;
 }
+
+static gboolean
+handle_statoverride_line (const char  *line,
+                          void        *data,
+                          GError     **error)
+{
+  GHashTable *files = data;
+  const char *spc;
+  guint mode_add;
+
+  spc = strchr (line, ' ');
+  if (spc == NULL)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Malformed statoverride file (no space found)");
+      return FALSE;
+    }
+
+  mode_add = (guint32)(gint32)g_ascii_strtod (line, NULL);
+  g_hash_table_insert (files, g_strdup (spc + 1),
+                       GUINT_TO_POINTER((gint32)mode_add));
+  return TRUE;
+}
+
+static gboolean
+handle_skiplist_line (const char  *line,
+                      void        *data,
+                      GError     **error)
+{
+  GHashTable *files = data;
+  g_hash_table_add (files, g_strdup (line));
+  return TRUE;
+}
+
+struct CommitFilterData {
+  GHashTable *mode_adds;
+  GHashTable *skip_list;
+};
 
 static OstreeRepoCommitFilterResult
 commit_filter (OstreeRepo         *self,
@@ -153,7 +175,9 @@ commit_filter (OstreeRepo         *self,
                GFileInfo          *file_info,
                gpointer            user_data)
 {
-  GHashTable *mode_adds = user_data;
+  struct CommitFilterData *data = user_data;
+  GHashTable *mode_adds = data->mode_adds;
+  GHashTable *skip_list = data->skip_list;
   gpointer value;
 
   if (opt_owner_uid >= 0)
@@ -169,7 +193,13 @@ commit_filter (OstreeRepo         *self,
                                         current_mode | mode_add);
       g_hash_table_remove (mode_adds, path);
     }
-  
+
+  if (skip_list && g_hash_table_contains (skip_list, path))
+    {
+      g_hash_table_remove (skip_list, path);
+      return OSTREE_REPO_COMMIT_FILTER_SKIP;
+    }
+
   return OSTREE_REPO_COMMIT_FILTER_ALLOW;
 }
 
@@ -188,14 +218,18 @@ commit_editor (OstreeRepo     *repo,
   char **lines = NULL;
   int i;
 
-  *subject = NULL;
-  *body = NULL;
-
   input = g_strdup_printf ("\n"
       "# Please enter the commit message for your changes. The first line will\n"
       "# become the subject, and the remainder the body. Lines starting\n"
       "# with '#' will be ignored, and an empty message aborts the commit."
-      "%s%s\n", branch ? "\n#\n# Branch: " : "", branch ?: "");
+      "%s%s%s%s%s%s\n"
+              , branch ? "\n#\n# Branch: " : "", branch ? branch : ""
+              , *subject ? "\n" : "", *subject ? *subject : ""
+              , *body ? "\n" : "", *body ? *body : ""
+              );
+
+  *subject = NULL;
+  *body = NULL;
 
   output = ot_editor_prompt (repo, input, cancellable, error);
   if (output == NULL)
@@ -310,9 +344,11 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
   glnx_unref_object OstreeMutableTree *mtree = NULL;
   g_autofree char *tree_type = NULL;
   g_autoptr(GHashTable) mode_adds = NULL;
+  g_autoptr(GHashTable) skip_list = NULL;
   OstreeRepoCommitModifierFlags flags = 0;
   OstreeRepoCommitModifier *modifier = NULL;
   OstreeRepoTransactionStats stats;
+  struct CommitFilterData filter_data = { 0, };
 
   context = g_option_context_new ("[PATH] - Commit a new revision");
 
@@ -324,7 +360,17 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
 
   if (opt_statoverride_file)
     {
-      if (!parse_statoverride_file (&mode_adds, cancellable, error))
+      mode_adds = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+      if (!parse_file_by_line (opt_statoverride_file, handle_statoverride_line,
+                               mode_adds, cancellable, error))
+        goto out;
+    }
+
+  if (opt_skiplist_file)
+    {
+      skip_list = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+      if (!parse_file_by_line (opt_skiplist_file, handle_skiplist_line,
+                               skip_list, cancellable, error))
         goto out;
     }
 
@@ -359,9 +405,13 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
       || opt_owner_uid >= 0
       || opt_owner_gid >= 0
       || opt_statoverride_file != NULL
+      || opt_skiplist_file != NULL
       || opt_no_xattrs)
     {
-      modifier = ostree_repo_commit_modifier_new (flags, commit_filter, mode_adds, NULL);
+      filter_data.mode_adds = mode_adds;
+      filter_data.skip_list = skip_list;
+      modifier = ostree_repo_commit_modifier_new (flags, commit_filter,
+                                                  &filter_data, NULL);
     }
 
   if (opt_parent)
@@ -381,17 +431,10 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
         goto out;
     }
 
-  if (!opt_subject && !opt_body)
+  if (opt_editor)
     {
       if (!commit_editor (repo, opt_branch, &opt_subject, &opt_body, cancellable, error))
         goto out;
-    }
-
-  if (!opt_subject)
-    {
-      g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                           "A subject must be specified with --subject");
-      goto out;
     }
 
   if (!ostree_repo_prepare_transaction (repo, NULL, cancellable, error))
@@ -488,6 +531,22 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
         }
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                    "Unmatched statoverride paths");
+      goto out;
+    }
+
+  if (skip_list && g_hash_table_size (skip_list) > 0)
+    {
+      GHashTableIter hash_iter;
+      gpointer key;
+
+      g_hash_table_iter_init (&hash_iter, skip_list);
+
+      while (g_hash_table_iter_next (&hash_iter, &key, NULL))
+        {
+          g_printerr ("Unmatched skip-list path: %s\n", (char*)key);
+        }
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "Unmatched skip-list paths");
       goto out;
     }
 

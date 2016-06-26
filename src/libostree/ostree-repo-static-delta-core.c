@@ -126,8 +126,8 @@ ostree_repo_list_static_delta_names (OstreeRepo                  *self,
               if (g_file_info_get_file_type (file_info2) != G_FILE_TYPE_DIRECTORY)
                 continue;
 
-              name1 = gs_file_get_basename_cached (child);
-              name2 = gs_file_get_basename_cached (child2);
+              name1 = g_file_info_get_name (file_info);
+              name2 = g_file_info_get_name (file_info2);
 
               {
                 g_autoptr(GFile) meta_path = g_file_get_child (child2, "superblock");
@@ -159,7 +159,8 @@ ostree_repo_list_static_delta_names (OstreeRepo                  *self,
     }
 
   ret = TRUE;
-  gs_transfer_out_value (out_deltas, &ret_deltas);
+  if (out_deltas)
+    *out_deltas = g_steal_pointer (&ret_deltas);
  out:
   return ret;
 }
@@ -512,6 +513,7 @@ _ostree_static_delta_part_open (GInputStream   *part_in,
                                                                     g_bytes_get_size (inline_part_bytes) - 1);
           ret_part = g_variant_new_from_bytes (G_VARIANT_TYPE (OSTREE_STATIC_DELTA_PART_PAYLOAD_FORMAT_V0),
                                                content_bytes, trusted);
+          g_variant_ref_sink (ret_part);
         }
 
       if (!skip_checksum)
@@ -840,7 +842,7 @@ _ostree_repo_static_delta_dump (OstreeRepo                    *self,
 
   if (!ot_util_variant_map_at (self->repo_dir_fd, superblock_path,
                                (GVariantType*)OSTREE_STATIC_DELTA_SUPERBLOCK_FORMAT,
-                               TRUE, &delta_superblock, error))
+                               OT_VARIANT_MAP_TRUSTED, &delta_superblock, error))
     goto out;
 
   g_print ("%s\n", g_variant_print (delta_superblock, 1));

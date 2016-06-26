@@ -32,10 +32,14 @@
 #endif
 
 static char *opt_output_path;
+static char *opt_subpath;
+static char *opt_prefix;
 static gboolean opt_no_xattrs;
 
 static GOptionEntry options[] = {
   { "no-xattrs", 0, 0, G_OPTION_ARG_NONE, &opt_no_xattrs, "Skip output of extended attributes", NULL },
+  { "subpath", 0, 0, G_OPTION_ARG_STRING, &opt_subpath, "Checkout sub-directory PATH", "PATH" },
+  { "prefix", 0, 0, G_OPTION_ARG_STRING, &opt_prefix, "Add PATH as prefix to archive pathnames", "PATH" },
   { "output", 'o', 0, G_OPTION_ARG_STRING, &opt_output_path, "Output to PATH ", "PATH" },
   { NULL }
 };
@@ -60,6 +64,7 @@ ostree_builtin_export (int argc, char **argv, GCancellable *cancellable, GError 
   gboolean ret = FALSE;
   const char *rev;
   g_autoptr(GFile) root = NULL;
+  g_autoptr(GFile) subtree = NULL;
   g_autofree char *commit = NULL;
   g_autoptr(GVariant) commit_data = NULL;
   struct archive *a;
@@ -124,7 +129,14 @@ ostree_builtin_export (int argc, char **argv, GCancellable *cancellable, GError 
 
   opts.timestamp_secs = ostree_commit_get_timestamp (commit_data);
 
-  if (!ostree_repo_export_tree_to_archive (repo, &opts, (OstreeRepoFile*)root, a,
+  if (opt_subpath)
+    subtree = g_file_resolve_relative_path (root, opt_subpath);
+  else
+    subtree = g_object_ref (root);
+
+  opts.path_prefix = opt_prefix;
+
+  if (!ostree_repo_export_tree_to_archive (repo, &opts, (OstreeRepoFile*)subtree, a,
                                            cancellable, error))
     goto out;
 

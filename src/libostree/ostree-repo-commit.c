@@ -36,22 +36,6 @@
 #include <sys/xattr.h>
 #include <glib/gprintf.h>
 
-struct OstreeRepoCommitModifier {
-  volatile gint refcount;
-
-  OstreeRepoCommitModifierFlags flags;
-  OstreeRepoCommitFilter filter;
-  gpointer user_data;
-  GDestroyNotify destroy_notify;
-
-  OstreeRepoCommitModifierXattrCallback xattr_callback;
-  GDestroyNotify xattr_destroy;
-  gpointer xattr_user_data;
-
-  OstreeSePolicy *sepolicy;
-  GHashTable *devino_cache;
-};
-
 gboolean
 _ostree_repo_ensure_loose_objdir_at (int             dfd,
                                      const char     *loose_path,
@@ -226,7 +210,6 @@ commit_loose_object_trusted (OstreeRepo        *self,
   else
     {
       int res;
-      struct timespec times[2];
 
       if (objtype == OSTREE_OBJECT_TYPE_FILE && self->mode == OSTREE_REPO_MODE_BARE)
         {
@@ -282,12 +265,9 @@ commit_loose_object_trusted (OstreeRepo        *self,
         {
           /* To satisfy tools such as guile which compare mtimes
            * to determine whether or not source files need to be compiled,
-           * set the modification time to 0.
+           * set the modification time to OSTREE_TIMESTAMP.
            */
-          times[0].tv_sec = 0; /* atime */
-          times[0].tv_nsec = UTIME_OMIT;
-          times[1].tv_sec = 0; /* mtime */
-          times[1].tv_nsec = 0;
+          const struct timespec times[2] = { { OSTREE_TIMESTAMP, UTIME_OMIT }, { OSTREE_TIMESTAMP, 0} };
           do
             res = futimens (fd, times);
           while (G_UNLIKELY (res == -1 && errno == EINTR));
@@ -573,11 +553,8 @@ _ostree_repo_open_trusted_content_bare (OstreeRepo          *self,
   g_autofree char *temp_filename = NULL;
   g_autoptr(GOutputStream) ret_stream = NULL;
   gboolean have_obj;
-  char loose_objpath[_OSTREE_LOOSE_PATH_MAX];
 
-  if (!_ostree_repo_has_loose_object (self, checksum, OSTREE_OBJECT_TYPE_FILE,
-                                      &have_obj, loose_objpath,
-                                      NULL,
+  if (!_ostree_repo_has_loose_object (self, checksum, OSTREE_OBJECT_TYPE_FILE, &have_obj,
                                       cancellable, error))
     goto out;
 
@@ -662,7 +639,6 @@ write_object (OstreeRepo         *self,
   gboolean temp_file_is_regular;
   gboolean temp_file_is_symlink;
   gboolean object_is_symlink = FALSE;
-  char loose_objpath[_OSTREE_LOOSE_PATH_MAX];
   gssize unpacked_size = 0;
   gboolean indexable = FALSE;
 
@@ -673,9 +649,8 @@ write_object (OstreeRepo         *self,
 
   if (expected_checksum)
     {
-      if (!_ostree_repo_has_loose_object (self, expected_checksum, objtype,
-                                          &have_obj, loose_objpath,
-                                          NULL, cancellable, error))
+      if (!_ostree_repo_has_loose_object (self, expected_checksum, objtype, &have_obj,
+                                          cancellable, error))
         goto out;
       if (have_obj)
         {
@@ -852,8 +827,7 @@ write_object (OstreeRepo         *self,
       repo_store_size_entry (self, actual_checksum, unpacked_size, stbuf.st_size);
     }
 
-  if (!_ostree_repo_has_loose_object (self, actual_checksum, objtype,
-                                      &have_obj, loose_objpath, NULL,
+  if (!_ostree_repo_has_loose_object (self, actual_checksum, objtype, &have_obj,
                                       cancellable, error))
     goto out;
           
@@ -1167,7 +1141,6 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
 {
   gboolean ret = FALSE;
   gboolean ret_transaction_resume = FALSE;
-  g_autofree char *stagedir_boot_id_prefix = NULL;
   g_autofree char *stagedir_name = NULL;
   glnx_fd_close int stagedir_fd = -1;
   g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
@@ -1178,10 +1151,8 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
 
   self->in_transaction = TRUE;
 
-  stagedir_boot_id_prefix = g_strconcat ("staging-", self->boot_id, "-", NULL);
-
   if (!_ostree_repo_allocate_tmpdir (self->tmp_dir_fd,
-                                     stagedir_boot_id_prefix,
+                                     self->stagedir_prefix,
                                      &self->commit_stagedir_name,
                                      &self->commit_stagedir_fd,
                                      &self->commit_stagedir_lock,
@@ -1287,44 +1258,87 @@ cleanup_tmpdir (OstreeRepo        *self,
                 GError           **error)
 {
   gboolean ret = FALSE;
-  g_autoptr(GFileEnumerator) enumerator = NULL;
+  g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
   guint64 curtime_secs;
-
-  enumerator = g_file_enumerate_children (self->tmp_dir, "standard::name,time::modified",
-                                          G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-                                          cancellable,
-                                          error);
-  if (!enumerator)
-    goto out;
 
   curtime_secs = g_get_real_time () / 1000000;
 
+  if (!glnx_dirfd_iterator_init_at (self->tmp_dir_fd, ".", TRUE, &dfd_iter, error))
+    goto out;
+
   while (TRUE)
     {
-      GFileInfo *file_info;
-      GFile *path;
-      guint64 mtime;
       guint64 delta;
+      struct dirent *dent;
+      struct stat stbuf;
+      g_auto(GLnxLockFile) lockfile = GLNX_LOCK_FILE_INIT;
+      gboolean did_lock;
 
-      if (!gs_file_enumerator_iterate (enumerator, &file_info, &path,
-                                       cancellable, error))
+      if (!glnx_dirfd_iterator_next_dent (&dfd_iter, &dent, cancellable, error))
         goto out;
-      if (file_info == NULL)
+
+      if (dent == NULL)
         break;
 
-      mtime = g_file_info_get_attribute_uint64 (file_info, "time::modified");
-      if (mtime > curtime_secs)
-        continue;
-      /* Only delete files older than a day.  To do better, we would
-       * need to coordinate between multiple processes in a reliable
-       * fashion.  See
-       * https://bugzilla.gnome.org/show_bug.cgi?id=709115
-       */
-      delta = curtime_secs - mtime;
-      if (delta > 60*60*24)
+      if (TEMP_FAILURE_RETRY (fstatat (dfd_iter.fd, dent->d_name, &stbuf, AT_SYMLINK_NOFOLLOW)) < 0)
         {
-          if (!glnx_shutil_rm_rf_at (AT_FDCWD, gs_file_get_path_cached (path), cancellable, error))
+          if (errno == ENOENT) /* Did another cleanup win? */
+            continue;
+          glnx_set_error_from_errno (error);
+          goto out;
+        }
+
+      /* First, if it's a directory which needs locking, but it's
+       * busy, skip it.
+       */
+      if (_ostree_repo_is_locked_tmpdir (dent->d_name))
+        {
+          if (!_ostree_repo_try_lock_tmpdir (dfd_iter.fd, dent->d_name,
+                                             &lockfile, &did_lock, error))
             goto out;
+          if (!did_lock)
+            continue;
+        }
+
+      /* If however this is the staging directory for the *current*
+       * boot, then don't delete it now - we may end up reusing it, as
+       * is the point.
+       */
+      if (g_str_has_prefix (dent->d_name, self->stagedir_prefix))
+        continue;
+      else if (g_str_has_prefix (dent->d_name, OSTREE_REPO_TMPDIR_STAGING))
+        {
+          /* But, crucially we can now clean up staging directories
+           * from *other* boots
+           */
+          if (!glnx_shutil_rm_rf_at (dfd_iter.fd, dent->d_name, cancellable, error))
+            goto out;
+        }
+      /* FIXME - move OSTREE_REPO_TMPDIR_FETCHER underneath the
+       * staging/boot-id scheme as well, since all of the "did it get
+       * fsync'd" concerns apply to that as well.  Then we can skip
+       * this special case.
+       */
+      else if (g_str_has_prefix (dent->d_name, OSTREE_REPO_TMPDIR_FETCHER))
+        continue;
+      else
+        {
+          /* Now we do time-based cleanup.  Ignore it if it's somehow
+           * in the future...
+           */
+          if (stbuf.st_mtime > curtime_secs)
+            continue;
+
+          /* Now, we're pruning content based on the expiry, which
+           * defaults to a day.  That's what we were doing before we
+           * had locking...but in future we can be smarter here.
+           */
+          delta = curtime_secs - stbuf.st_mtime;
+          if (delta > self->tmp_expiry_seconds)
+            {
+              if (!glnx_shutil_rm_rf_at (dfd_iter.fd, dent->d_name, cancellable, error))
+                goto out;
+            }
         }
     }
 
@@ -1448,10 +1462,23 @@ ostree_repo_commit_transaction (OstreeRepo                  *self,
 
   g_return_val_if_fail (self->in_transaction == TRUE, FALSE);
 
-  if (syncfs (self->tmp_dir_fd) < 0)
+  if ((self->test_error_flags & OSTREE_REPO_TEST_ERROR_PRE_COMMIT) > 0)
     {
-      glnx_set_error_from_errno (error);
+      g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                           "OSTREE_REPO_TEST_ERROR_PRE_COMMIT specified");
       goto out;
+    }
+
+  /* FIXME: Added since valgrind in el7 doesn't know about
+   * `syncfs`...we should delete this later.
+   */
+  if (g_getenv ("OSTREE_SUPPRESS_SYNCFS") == NULL)
+    {
+      if (syncfs (self->tmp_dir_fd) < 0)
+        {
+          glnx_set_error_from_errno (error);
+          goto out;
+        }
     }
 
   if (!rename_pending_loose_objects (self, cancellable, error))
@@ -1937,7 +1964,7 @@ create_empty_gvariant_dict (void)
  * ostree_repo_write_commit:
  * @self: Repo
  * @parent: (allow-none): ASCII SHA256 checksum for parent, or %NULL for none
- * @subject: Subject
+ * @subject: (allow-none): Subject
  * @body: (allow-none): Body
  * @metadata: (allow-none): GVariant of type a{sv}, or %NULL for none
  * @root: The tree to point the commit to
@@ -1981,10 +2008,11 @@ ostree_repo_write_commit (OstreeRepo      *self,
  * ostree_repo_write_commit_with_time:
  * @self: Repo
  * @parent: (allow-none): ASCII SHA256 checksum for parent, or %NULL for none
- * @subject: Subject
+ * @subject: (allow-none): Subject
  * @body: (allow-none): Body
  * @metadata: (allow-none): GVariant of type a{sv}, or %NULL for none
  * @root: The tree to point the commit to
+ * @time: The time to use to stamp the commit
  * @out_commit: (out): Resulting ASCII SHA256 checksum for commit
  * @cancellable: Cancellable
  * @error: Error
@@ -2011,8 +2039,6 @@ ostree_repo_write_commit_with_time (OstreeRepo      *self,
   g_autofree guchar *commit_csum = NULL;
   OstreeRepoFile *repo_root = OSTREE_REPO_FILE (root);
 
-  g_return_val_if_fail (subject != NULL, FALSE);
-
   /* Add sizes information to our metadata object */
   if (!add_size_index_to_metadata (self, metadata, &new_metadata,
                                    cancellable, error))
@@ -2022,7 +2048,7 @@ ostree_repo_write_commit_with_time (OstreeRepo      *self,
                           new_metadata ? new_metadata : create_empty_gvariant_dict (),
                           parent ? ostree_checksum_to_bytes_v (parent) : ot_gvariant_new_bytearray (NULL, 0),
                           g_variant_new_array (G_VARIANT_TYPE ("(say)"), NULL, 0),
-                          subject, body ? body : "",
+                          subject ? subject : "", body ? body : "",
                           GUINT64_TO_BE (time),
                           ostree_checksum_to_bytes_v (ostree_repo_file_tree_get_contents_checksum (repo_root)),
                           ostree_checksum_to_bytes_v (ostree_repo_file_tree_get_metadata_checksum (repo_root)));
@@ -2073,21 +2099,13 @@ ostree_repo_read_commit_detached_metadata (OstreeRepo      *self,
   g_autoptr(GFile) metadata_path =
     _ostree_repo_get_commit_metadata_loose_path (self, checksum);
   g_autoptr(GVariant) ret_metadata = NULL;
-  GError *temp_error = NULL;
   
-  if (!ot_util_variant_map (metadata_path, G_VARIANT_TYPE ("a{sv}"),
-                            TRUE, &ret_metadata, &temp_error))
+  if (!ot_util_variant_map_at (AT_FDCWD, gs_file_get_path_cached (metadata_path),
+                               G_VARIANT_TYPE ("a{sv}"),
+                               OT_VARIANT_MAP_ALLOW_NOENT | OT_VARIANT_MAP_TRUSTED, &ret_metadata, error))
     {
-      if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-        {
-          g_clear_error (&temp_error);
-        }
-      else
-        {
-          g_prefix_error (error, "Unable to read existing detached metadata: ");
-          g_propagate_error (error, temp_error);
-          goto out;
-        }
+      g_prefix_error (error, "Unable to read existing detached metadata: ");
+      goto out;
     }
 
   ret = TRUE;
@@ -2184,6 +2202,10 @@ create_tree_variant_from_hashes (GHashTable            *file_checksums,
   while (g_hash_table_iter_next (&hash_iter, &key, &value))
     {
       const char *name = key;
+
+      /* Should have been validated earlier, but be paranoid */
+      g_assert (ot_util_filename_validate (name, NULL));
+
       sorted_filenames = g_slist_prepend (sorted_filenames, (char*)name);
     }
 
@@ -2355,7 +2377,7 @@ get_modified_xattrs (OstreeRepo                       *self,
 
       if (label)
         {
-          GVariantBuilder *builder;
+          g_autoptr(GVariantBuilder) builder = NULL;
 
           /* ret_xattrs may be NULL */
           builder = ot_util_variant_builder_from_variant (ret_xattrs,

@@ -1,5 +1,5 @@
 AC_PREREQ([2.63])
-AC_INIT([ostree], [2016.5], [walters@verbum.org])
+AC_INIT([ostree], [2016.6], [walters@verbum.org])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([buildutil])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -38,13 +38,15 @@ GLIB_TESTS
 
 AC_CHECK_HEADER([sys/xattr.h],,[AC_MSG_ERROR([You must have sys/xattr.h from glibc])])
 
-AC_CHECK_PROGS(YACC, 'bison -y', :)
-AS_IF([test "$YACC" = :], [AC_MSG_ERROR([bison not found but required])])
+AS_IF([test "$YACC" != "bison -y"], [AC_MSG_ERROR([bison not found but required])])
 
 PKG_PROG_PKG_CONFIG
 
 AM_PATH_GLIB_2_0
 
+dnl When bumping the gio-unix-2.0 dependency (or glib-2.0 in general),
+dnl remember to bump GLIB_VERSION_MIN_REQUIRED and
+dnl GLIB_VERSION_MAX_ALLOWED in Makefile.am
 GIO_DEPENDENCY="gio-unix-2.0 >= 2.40.0 libgsystem >= 2015.1"
 PKG_CHECK_MODULES(OT_DEP_GIO_UNIX, $GIO_DEPENDENCY)
 
@@ -57,6 +59,9 @@ PKG_CHECK_MODULES(OT_DEP_ZLIB, zlib)
 dnl We're not actually linking to this, just using the header
 PKG_CHECK_MODULES(OT_DEP_E2P, e2p)
 
+dnl When bumping the libsoup-2.4 dependency, remember to bump
+dnl SOUP_VERSION_MIN_REQUIRED and SOUP_VERSION_MAX_ALLOWED in
+dnl Makefile.am
 SOUP_DEPENDENCY="libsoup-2.4 >= 2.39.1"
 AC_ARG_WITH(soup,
 	    AS_HELP_STRING([--with-soup], [Use libsoup @<:@default=yes@:>@]),
@@ -222,7 +227,7 @@ AC_ARG_ENABLE(rofiles-fuse,
               [AS_HELP_STRING([--enable-rofiles-fuse],
                               [generate rofiles-fuse helper [default=yes]])],,
               enable_rofiles_fuse=yes)
-AS_IF([ test $enable_rofiles_fuse != xno ], [
+AS_IF([ test x$enable_rofiles_fuse != xno ], [
     PKG_CHECK_MODULES(BUILDOPT_FUSE, $FUSE_DEPENDENCY)
 ], [enable_rofiles_fuse=no])
 AM_CONDITIONAL(BUILDOPT_FUSE, test x$enable_rofiles_fuse = xyes)
@@ -231,7 +236,14 @@ AC_ARG_WITH(dracut,
             AS_HELP_STRING([--with-dracut],
                            [Install dracut module (default: no)]),,
               [with_dracut=no])
-AM_CONDITIONAL(BUILDOPT_DRACUT, test x$with_dracut = xyes)
+case x$with_dracut in
+    xno) ;;
+    xyes) ;;
+    xyesbutnoconf) ;;
+    *) AC_MSG_ERROR([Unknown --with-dracut value $with_dracut])
+esac    
+AM_CONDITIONAL(BUILDOPT_DRACUT, test x$with_dracut = xyes || test x$with_dracut = xyesbutnoconf)
+AM_CONDITIONAL(BUILDOPT_DRACUT_CONF, test x$with_dracut = xyes)
 
 AC_ARG_WITH(mkinitcpio,
             AS_HELP_STRING([--with-mkinitcpio],
@@ -239,7 +251,7 @@ AC_ARG_WITH(mkinitcpio,
               [with_mkinitcpio=no])
 AM_CONDITIONAL(BUILDOPT_MKINITCPIO, test x$with_mkinitcpio = xyes)
 
-AS_IF([test "x$with_dracut" = "xyes" || test "x$with_mkinitcpio" = "xyes"], [
+AS_IF([test "x$with_dracut" = "xyes" || test "x$with_dracut" = "xyesbutnoconf" || test "x$with_mkinitcpio" = "xyes"], [
   with_systemd=yes
   AC_ARG_WITH([systemdsystemunitdir],
               AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]),

@@ -33,7 +33,10 @@
 GVariant *
 ot_gvariant_new_empty_string_dict (void)
 {
-  return g_variant_builder_end (g_variant_builder_new (G_VARIANT_TYPE ("a{sv}")));
+  g_auto(GVariantBuilder) builder = {{0,}};
+
+  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{sv}"));
+  return g_variant_builder_end (&builder);
 }
 
 GVariant *
@@ -114,63 +117,31 @@ ot_util_variant_take_ref (GVariant *variant)
   return g_variant_take_ref (variant);
 }
 
-/**
- * ot_util_variant_map:
- * @src: a #GFile
- * @type: Use this for variant
- * @trusted: See documentation of g_variant_new_from_data()
- * @out_variant: (out): Return location for new variant
- * @error:
- *
- * Memory-map @src, and store a new #GVariant referring to this memory
- * in @out_variant.  Note the returned @out_variant is not floating.
- */
-gboolean
-ot_util_variant_map (GFile              *src,
-                     const GVariantType *type,
-                     gboolean            trusted,
-                     GVariant          **out_variant,
-                     GError            **error)
-{
-  gboolean ret = FALSE;
-  g_autoptr(GVariant) ret_variant = NULL;
-  GMappedFile *mfile = NULL;
-
-  mfile = gs_file_map_noatime (src, NULL, error);
-  if (!mfile)
-    goto out;
-
-  ret_variant = g_variant_new_from_data (type,
-                                         g_mapped_file_get_contents (mfile),
-                                         g_mapped_file_get_length (mfile),
-                                         trusted,
-                                         (GDestroyNotify) g_mapped_file_unref,
-                                         mfile);
-  g_variant_ref_sink (ret_variant);
-  
-  ret = TRUE;
-  ot_transfer_out_value(out_variant, &ret_variant);
- out:
-  return ret;
-}
-
 gboolean
 ot_util_variant_map_at (int dfd,
                         const char *path,
                         const GVariantType *type,
-                        gboolean trusted,
+                        OtVariantMapFlags flags,
                         GVariant **out_variant,
                         GError  **error)
 {
   glnx_fd_close int fd = -1;
-  g_autoptr(GVariant) ret_variant = NULL;
+  const gboolean trusted = (flags & OT_VARIANT_MAP_TRUSTED) > 0;
 
   fd = openat (dfd, path, O_RDONLY | O_CLOEXEC);
   if (fd < 0)
     {
-      glnx_set_error_from_errno (error);
-      g_prefix_error (error, "Opening %s: ", path);
-      return FALSE;
+      if (errno == ENOENT && (flags & OT_VARIANT_MAP_ALLOW_NOENT) > 0)
+        {
+          *out_variant = NULL;
+          return TRUE;
+        }
+      else
+        {
+          glnx_set_error_from_errno (error);
+          g_prefix_error (error, "Opening %s: ", path);
+          return FALSE;
+        }
     }
 
   return ot_util_variant_map_fd (fd, 0, type, trusted, out_variant, error);
@@ -186,6 +157,7 @@ variant_map_data_destroy (gpointer data)
 {
   VariantMapData *mdata = data;
   (void) munmap (mdata->addr, mdata->len);
+  g_free (mdata);
 }
 
 gboolean
@@ -221,8 +193,8 @@ ot_util_variant_map_fd (int                    fd,
   mdata->len = len;
 
   ret = TRUE;
-  *out_variant = g_variant_new_from_data (type, map, len, trusted,
-                                          variant_map_data_destroy, mdata);
+  *out_variant = g_variant_ref_sink (g_variant_new_from_data (type, map, len, trusted,
+                                                              variant_map_data_destroy, mdata));
  out:
   return ret;
 }

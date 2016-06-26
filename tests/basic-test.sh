@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-echo "1..53"
+echo "1..57"
 
 $OSTREE checkout test2 checkout-test2
 echo "ok checkout"
@@ -104,6 +104,12 @@ assert_streq $($OSTREE log test2-no-parent |grep '^commit' | wc -l) "1"
 echo "ok commit no parent"
 
 cd ${test_tmpdir}
+empty_rev=$($OSTREE commit -b test2-no-subject -s '' --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
+omitted_rev=$($OSTREE commit -b test2-no-subject-2 --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
+assert_streq $empty_rev $omitted_rev
+echo "ok commit no subject"
+
+cd ${test_tmpdir}
 $OSTREE commit -b test2-custom-parent -s '' $test_tmpdir/checkout-test2-4
 $OSTREE commit -b test2-custom-parent -s '' $test_tmpdir/checkout-test2-4
 $OSTREE commit -b test2-custom-parent -s '' $test_tmpdir/checkout-test2-4
@@ -179,13 +185,31 @@ cd ${test_tmpdir}/checkout-test2-4
 $OSTREE commit -b test2 -s "no xattrs" --no-xattrs
 echo "ok commit with no xattrs"
 
+# NB: The + is optional, but we need to make sure we support it
 cd ${test_tmpdir}
 cat > test-statoverride.txt <<EOF
-+2048 /a/nested/3
++1048 /a/nested/2
+2048 /a/nested/3
 EOF
 cd ${test_tmpdir}/checkout-test2-4
-$OSTREE commit -b test2 -s "with statoverride" --statoverride=../test-statoverride.txt
-echo "ok commit statoverridde"
+$OSTREE commit -b test2-override -s "with statoverride" --statoverride=../test-statoverride.txt
+cd ${test_tmpdir}
+$OSTREE checkout test2-override checkout-test2-override
+test -g checkout-test2-override/a/nested/2
+test -u checkout-test2-override/a/nested/3
+echo "ok commit statoverride"
+
+cd ${test_tmpdir}
+cat > test-skiplist.txt <<EOF
+/a/nested/3
+EOF
+cd ${test_tmpdir}/checkout-test2-4
+assert_has_file a/nested/3
+$OSTREE commit -b test2-skiplist -s "with skiplist" --skip-list=../test-skiplist.txt
+cd ${test_tmpdir}
+$OSTREE checkout test2-skiplist checkout-test2-skiplist
+assert_not_has_file checkout-test2-skiplist/a/nested/3
+echo "ok commit skiplist"
 
 cd ${test_tmpdir}
 $OSTREE prune
@@ -254,7 +278,7 @@ echo "ok prune"
 
 cd ${test_tmpdir}
 rm repo3 -rf
-${CMD_PREFIX} ostree --repo=repo3 init --mode=archive-z2
+${CMD_PREFIX} ostree --repo=repo3 init --mode=archive
 ${CMD_PREFIX} ostree --repo=repo3 pull-local --remote=aremote repo test2
 rm repo3/refs/remotes -rf
 mkdir repo3/refs/remotes
@@ -362,9 +386,9 @@ else
     $OSTREE checkout test2 test2-checkout
 fi
 stat '--format=%Y' test2-checkout/baz/cow > cow-mtime
-assert_file_has_content cow-mtime 0
+assert_file_has_content cow-mtime 1
 stat '--format=%Y' test2-checkout/baz/deeper > deeper-mtime
-assert_file_has_content deeper-mtime 0
+assert_file_has_content deeper-mtime 1
 echo "ok content mtime"
 
 cd ${test_tmpdir}
@@ -381,7 +405,7 @@ echo "ok commit of fifo was rejected"
 cd ${test_tmpdir}
 rm repo2 -rf
 mkdir repo2
-${CMD_PREFIX} ostree --repo=repo2 init --mode=archive-z2
+${CMD_PREFIX} ostree --repo=repo2 init --mode=archive
 ${CMD_PREFIX} ostree --repo=repo2 pull-local repo
 rm -rf test2-checkout
 ${CMD_PREFIX} ostree --repo=repo2 checkout -U --disable-cache test2 test2-checkout
@@ -396,6 +420,28 @@ ${CMD_PREFIX} ostree --repo=repo2 checkout -U test2 test2-checkout
 assert_file_has_content test2-checkout/baz/cow moo
 assert_has_dir repo2/uncompressed-objects-cache
 echo "ok disable cache checkout"
+
+cd ${test_tmpdir}
+rm checkout-test2 -rf
+$OSTREE checkout test2 checkout-test2
+date > checkout-test2/date.txt
+rm repo/tmp/* -rf
+export TEST_BOOTID=3072029c-8b10-60d1-d31b-8422eeff9b42
+if env OSTREE_REPO_TEST_ERROR=pre-commit OSTREE_BOOTID=${TEST_BOOTID} \
+       $OSTREE commit -b test2 -s '' $test_tmpdir/checkout-test2 2>err.txt; then
+    assert_not_reached "Should have hit OSTREE_REPO_TEST_ERROR_PRE_COMMIT"
+fi
+assert_file_has_content err.txt OSTREE_REPO_TEST_ERROR_PRE_COMMIT
+found_staging=0
+for d in $(find repo/tmp/ -maxdepth 1 -type d); do
+    bn=$(basename $d)
+    if test ${bn##staging-} != ${bn}; then
+	assert_str_match "${bn}" "^staging-${TEST_BOOTID}-"
+	found_staging=1
+    fi
+done
+assert_streq "${found_staging}" 1
+echo "ok test error pre commit/bootid"
 
 # Whiteouts
 cd ${test_tmpdir}
@@ -468,5 +514,9 @@ cd ..
 if cmp timestamp-{orig,new}.txt; then
     assert_not_reached "failed to update mtime on repo"
 fi
-
 echo "ok mtime updated"
+
+cd ${test_tmpdir}
+$OSTREE init --mode=bare --repo=repo-extensions
+assert_has_dir repo-extensions/extensions
+echo "ok extensions dir"

@@ -23,10 +23,6 @@
 #include "ostree-repo.h"
 #include "libglnx.h"
 
-#ifdef HAVE_LIBSOUP
-#include "ostree-fetcher.h"
-#endif
-
 G_BEGIN_DECLS
 
 #define OSTREE_DELTAPART_VERSION (0)
@@ -36,6 +32,28 @@ G_BEGIN_DECLS
 #define _OSTREE_SUMMARY_CACHE_DIR "summaries"
 #define _OSTREE_CACHE_DIR "cache"
 
+#define OSTREE_TIMESTAMP (1)
+
+typedef enum {
+  OSTREE_REPO_TEST_ERROR_PRE_COMMIT = (1 << 0)
+} OstreeRepoTestErrorFlags;
+
+struct OstreeRepoCommitModifier {
+  volatile gint refcount;
+
+  OstreeRepoCommitModifierFlags flags;
+  OstreeRepoCommitFilter filter;
+  gpointer user_data;
+  GDestroyNotify destroy_notify;
+
+  OstreeRepoCommitModifierXattrCallback xattr_callback;
+  GDestroyNotify xattr_destroy;
+  gpointer xattr_user_data;
+
+  OstreeSePolicy *sepolicy;
+  GHashTable *devino_cache;
+};
+
 /**
  * OstreeRepo:
  *
@@ -44,7 +62,7 @@ G_BEGIN_DECLS
 struct OstreeRepo {
   GObject parent;
 
-  char *boot_id;
+  char *stagedir_prefix;
   int commit_stagedir_fd;
   char *commit_stagedir_name;
   GLnxLockFile commit_stagedir_lock;
@@ -86,12 +104,15 @@ struct OstreeRepo {
   uid_t target_owner_uid;
   gid_t target_owner_gid;
 
+  guint test_error_flags; /* OstreeRepoTestErrorFlags */
+
   GKeyFile *config;
   GHashTable *remotes;
   GMutex remotes_lock;
   OstreeRepoMode mode;
   gboolean enable_uncompressed_cache;
   gboolean generate_sizes;
+  guint64 tmp_expiry_seconds;
 
   OstreeRepo *parent_repo;
 };
@@ -102,6 +123,9 @@ typedef struct {
   char checksum[65];
 } OstreeDevIno;
 
+#define OSTREE_REPO_TMPDIR_STAGING "staging-"
+#define OSTREE_REPO_TMPDIR_FETCHER "fetcher-"
+
 gboolean
 _ostree_repo_allocate_tmpdir (int           tmpdir_dfd,
                               const char   *tmpdir_prefix,
@@ -111,6 +135,16 @@ _ostree_repo_allocate_tmpdir (int           tmpdir_dfd,
                               gboolean *    reusing_dir_out,
                               GCancellable *cancellable,
                               GError      **error);
+
+gboolean
+_ostree_repo_is_locked_tmpdir (const char *filename);
+
+gboolean
+_ostree_repo_try_lock_tmpdir (int            tmpdir_dfd,
+                              const char    *tmpdir_name,
+                              GLnxLockFile  *file_lock_out,
+                              gboolean      *out_did_lock,
+                              GError       **error);
 
 gboolean
 _ostree_repo_ensure_loose_objdir_at (int             dfd,
@@ -135,8 +169,6 @@ _ostree_repo_has_loose_object (OstreeRepo           *self,
                                const char           *checksum,
                                OstreeObjectType      objtype,
                                gboolean             *out_is_stored,
-                               char                 *loose_path_buf,
-                               GFile               **out_stored_path,
                                GCancellable         *cancellable,
                                GError             **error);
 
@@ -198,13 +230,6 @@ _ostree_repo_commit_modifier_apply (OstreeRepo               *self,
 
 gboolean
 _ostree_repo_remote_name_is_file (const char *remote_name);
-
-#ifdef HAVE_LIBSOUP
-OstreeFetcher *
-_ostree_repo_remote_new_fetcher (OstreeRepo  *self,
-                                 const char  *remote_name,
-                                 GError     **error);
-#endif
 
 OstreeGpgVerifyResult *
 _ostree_repo_gpg_verify_with_metadata (OstreeRepo          *self,
@@ -292,23 +317,5 @@ _ostree_repo_read_bare_fd (OstreeRepo           *self,
 gboolean
 _ostree_repo_update_mtime (OstreeRepo        *self,
                            GError           **error);
-
-/* Load the summary from the cache if the provided .sig file is the same as the
-   cached version.  */
-gboolean
-_ostree_repo_load_cache_summary_if_same_sig (OstreeRepo        *self,
-                                             const char        *remote,
-                                             GBytes            *summary_sig,
-                                             GBytes            **summary,
-                                             GCancellable      *cancellable,
-                                             GError           **error);
-
-gboolean
-_ostree_repo_cache_summary (OstreeRepo        *self,
-                            const char        *remote,
-                            GBytes            *summary,
-                            GBytes            *summary_sig,
-                            GCancellable      *cancellable,
-                            GError           **error);
 
 G_END_DECLS

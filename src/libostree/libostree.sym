@@ -323,11 +323,6 @@ global:
         ostree_deployment_unlocked_state_to_string;
 } LIBOSTREE_2016.3;
 
-/*                         NOTE NOTE NOTE
- * Versions above here are released.  Only add symbols below this line.
- *                         NOTE NOTE NOTE
- */
-
 LIBOSTREE_2016.5 {
 global:
         ostree_repo_import_object_from_with_trust;
@@ -337,3 +332,24 @@ global:
         ostree_repo_get_remote_boolean_option;
         ostree_repo_set_cache_dir;
 } LIBOSTREE_2016.4;
+
+LIBOSTREE_2016.6 {
+global:
+        ostree_gpg_verify_result_require_valid_signature;
+        ostree_raw_file_to_archive_z2_stream;
+        ostree_repo_gpg_verify_data;
+        ostree_repo_remote_fetch_summary_with_options;
+} LIBOSTREE_2016.5;
+
+/*                         NOTE NOTE NOTE
+ * Versions above here are released.  Only add symbols below this line.
+ *                         NOTE NOTE NOTE
+ */
+
+/* Uncomment this when adding a new symbol */
+/*
+LIBOSTREE_2016.7 {
+global:
+        ostree_some_new_symbol;
+} LIBOSTREE_2016.6;
+*/

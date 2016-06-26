@@ -87,6 +87,39 @@ symlink_at_replace (const char    *oldpath,
   return ret;
 }
 
+/* Try a hardlink if we can, otherwise fall back to copying.  Used
+ * right now for kernels/initramfs in /boot, where we can just
+ * hardlink if we're on the same partition.
+ */
+static gboolean
+hardlink_or_copy_at (int         src_dfd,
+                     const char *src_subpath,
+                     int         dest_dfd,
+                     const char *dest_subpath,
+                     GCancellable  *cancellable,
+                     GError       **error)
+{
+  gboolean ret = FALSE;
+
+  if (linkat (src_dfd, src_subpath, dest_dfd, dest_subpath, 0) != 0)
+    {
+      if (errno == EMLINK || errno == EXDEV)
+        {
+          return glnx_file_copy_at (src_dfd, src_subpath, NULL, dest_dfd, dest_subpath, 0,
+                                    cancellable, error);
+        }
+      else
+        {
+          glnx_set_error_from_errno (error);
+          goto out;
+        }
+    }
+
+  ret = TRUE;
+ out:
+  return ret;
+}
+
 static gboolean
 dirfd_copy_attributes_and_xattrs (int            src_parent_dfd,
                                   const char    *src_name,
@@ -139,8 +172,8 @@ copy_dir_recurse (int              src_parent_dfd,
                   GError         **error)
 {
   gboolean ret = FALSE;
-  int src_dfd = -1;
-  int dest_dfd = -1;
+  glnx_fd_close int src_dfd = -1;
+  glnx_fd_close int dest_dfd = -1;
   DIR *srcd = NULL;
   struct dirent *dent;
 
@@ -207,10 +240,6 @@ copy_dir_recurse (int              src_parent_dfd,
       /* Note the srcd owns src_dfd */
       src_dfd = -1;
     }
-  if (src_dfd != -1)
-    (void) close (src_dfd);
-  if (dest_dfd != -1)
-    (void) close (dest_dfd);
   return ret;
 }
 
@@ -224,8 +253,8 @@ ensure_directory_from_template (int                 orig_etc_fd,
                                 GError            **error)
 {
   gboolean ret = FALSE;
-  int src_dfd = -1;
-  int target_dfd = -1;
+  glnx_fd_close int src_dfd = -1;
+  glnx_fd_close int target_dfd = -1;
 
   g_assert (path != NULL);
   g_assert (*path != '/' && *path != '\0');
@@ -283,10 +312,6 @@ ensure_directory_from_template (int                 orig_etc_fd,
       target_dfd = -1;
     }
  out:
-  if (src_dfd != -1)
-    (void) close (src_dfd);
-  if (target_dfd != -1)
-    (void) close (target_dfd);
   return ret;
 }
 
@@ -308,7 +333,7 @@ copy_modified_config_file (int                 orig_etc_fd,
   gboolean ret = FALSE;
   struct stat modified_stbuf;
   struct stat new_stbuf;
-  int dest_parent_dfd = -1;
+  glnx_fd_close int dest_parent_dfd = -1;
 
   if (fstatat (modified_etc_fd, path, &modified_stbuf, AT_SYMLINK_NOFOLLOW) < 0)
     {
@@ -398,8 +423,6 @@ copy_modified_config_file (int                 orig_etc_fd,
 
   ret = TRUE;
  out:
-  if (dest_parent_dfd != -1)
-    (void) close (dest_parent_dfd);
   return ret;
 }
 
@@ -426,9 +449,9 @@ merge_etc_changes (GFile          *orig_etc,
   g_autoptr(GPtrArray) removed = NULL;
   g_autoptr(GPtrArray) added = NULL;
   guint i;
-  int orig_etc_fd = -1;
-  int modified_etc_fd = -1;
-  int new_etc_fd = -1; 
+  glnx_fd_close int orig_etc_fd = -1;
+  glnx_fd_close int modified_etc_fd = -1;
+  glnx_fd_close int new_etc_fd = -1; 
 
   modified = g_ptr_array_new_with_free_func ((GDestroyNotify) ostree_diff_item_unref);
   removed = g_ptr_array_new_with_free_func ((GDestroyNotify) g_object_unref);
@@ -505,12 +528,6 @@ merge_etc_changes (GFile          *orig_etc,
 
   ret = TRUE;
  out:
-  if (orig_etc_fd != -1)
-    (void) close (orig_etc_fd);
-  if (modified_etc_fd != -1)
-    (void) close (modified_etc_fd);
-  if (new_etc_fd != -1)
-    (void) close (new_etc_fd);
   return ret;
 }
 
@@ -651,7 +668,7 @@ relabel_recursively (OstreeSysroot  *sysroot,
       if (file_info == NULL)
         break;
 
-      g_ptr_array_add (path_parts, (char*)gs_file_get_basename_cached (child));
+      g_ptr_array_add (path_parts, (char*)g_file_info_get_name (file_info));
 
       ftype = g_file_info_get_file_type (file_info);
       if (ftype == G_FILE_TYPE_DIRECTORY)
@@ -723,12 +740,12 @@ selinux_relabel_file (OstreeSysroot                 *sysroot,
     goto out;
 
   g_ptr_array_add (path_parts, (char*)prefix);
-  g_ptr_array_add (path_parts, (char*)gs_file_get_basename_cached (path));
+  g_ptr_array_add (path_parts, (char*)g_file_info_get_name (file_info));
   if (!relabel_one_path (sysroot, sepolicy, path, file_info, path_parts,
                          cancellable, error))
     {
       g_prefix_error (error, "Relabeling /%s/%s: ", prefix,
-                      gs_file_get_basename_cached (path));
+                      g_file_info_get_name (file_info));
       goto out;
     }
 
@@ -1277,7 +1294,6 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
   struct stat stbuf;
   const char *osname = ostree_deployment_get_osname (deployment);
   const char *bootcsum = ostree_deployment_get_bootcsum (deployment);
-  g_autoptr(GFile) bootdir = NULL;
   g_autofree char *bootcsumdir = NULL;
   g_autofree char *bootconfdir = NULL;
   g_autofree char *bootconf_name = NULL;
@@ -1293,10 +1309,6 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
   g_autofree char *contents = NULL;
   g_autofree char *deployment_version = NULL;
   g_autoptr(GHashTable) osrelease_values = NULL;
-  g_autofree char *linux_relpath = NULL;
-  g_autofree char *linux_key = NULL;
-  g_autofree char *initramfs_relpath = NULL;
-  g_autofree char *initrd_key = NULL;
   g_autofree char *version_key = NULL;
   g_autofree char *ostree_kernel_arg = NULL;
   g_autofree char *options_key = NULL;
@@ -1342,9 +1354,9 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
           glnx_set_prefix_error_from_errno (error, "fstat %s", dest_kernel_name);
           goto out;
         }
-      if (!glnx_file_copy_at (tree_boot_dfd, tree_kernel_name, NULL,
-                              bootcsum_dfd, dest_kernel_name, 0,
-                              cancellable, error))
+      if (!hardlink_or_copy_at (tree_boot_dfd, tree_kernel_name,
+                                bootcsum_dfd, dest_kernel_name,
+                                cancellable, error))
         goto out;
     }
 
@@ -1359,9 +1371,9 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
               glnx_set_prefix_error_from_errno (error, "fstat %s", dest_initramfs_name);
               goto out;
             }
-          if (!glnx_file_copy_at (tree_boot_dfd, tree_initramfs_name, NULL,
-                                  bootcsum_dfd, dest_initramfs_name, 0,
-                                  cancellable, error))
+          if (!hardlink_or_copy_at (tree_boot_dfd, tree_initramfs_name,
+                                    bootcsum_dfd, dest_initramfs_name,
+                                    cancellable, error))
             goto out;
         }
     }

@@ -254,7 +254,8 @@ ot_gfile_load_contents_utf8_allow_noent (GFile          *path,
   GError *temp_error = NULL;
   g_autofree char *ret_contents = NULL;
 
-  ret_contents = gs_file_load_contents_utf8 (path, cancellable, &temp_error);
+  ret_contents = glnx_file_get_contents_utf8_at (AT_FDCWD, gs_file_get_path_cached (path), NULL,
+                                                 cancellable, &temp_error);
   if (!ret_contents)
     {
       if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
@@ -356,8 +357,8 @@ ot_gfile_replace_contents_fsync (GFile          *path,
                                  GError        **error)
 {
   gboolean ret = FALSE;
-  int parent_dfd;
-  const char *target_basename = gs_file_get_basename_cached (path);
+  glnx_fd_close int parent_dfd = -1;
+  const char *target_basename = glnx_basename (gs_file_get_path_cached (path));
   g_autoptr(GFile) parent = NULL;
 
   parent = g_file_get_parent (path);
@@ -373,8 +374,6 @@ ot_gfile_replace_contents_fsync (GFile          *path,
 
   ret = TRUE;
  out:
-  if (parent_dfd != -1)
-    (void) close (parent_dfd);
   return ret;
 }
 
@@ -389,25 +388,12 @@ ot_gfile_ensure_unlinked (GFile         *path,
                           GCancellable  *cancellable,
                           GError       **error)
 {
-  gboolean ret = FALSE;
-  GError *temp_error = NULL;
-
-  if (!gs_file_unlink (path, cancellable, &temp_error))
+  if (unlink (gs_file_get_path_cached (path)) != 0)
     {
-      if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-        {
-          g_clear_error (&temp_error);
-        }
-      else
-        {
-          g_propagate_error (error, temp_error);
-          goto out;
-        }
+      if (errno != ENOENT)
+        return FALSE;
     }
-  
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -424,7 +410,7 @@ ot_util_fsync_directory (GFile         *dir,
                          GError       **error)
 {
   gboolean ret = FALSE;
-  int dfd = -1;
+  glnx_fd_close int dfd = -1;
 
   if (!glnx_opendirat (AT_FDCWD, gs_file_get_path_cached (dir), TRUE,
                        &dfd, error))
@@ -438,8 +424,6 @@ ot_util_fsync_directory (GFile         *dir,
 
   ret = TRUE;
  out:
-  if (dfd != -1)
-    (void) close (dfd);
   return ret;
 }
 
@@ -458,8 +442,8 @@ ot_util_ensure_directory_and_fsync (GFile         *dir,
                                     GError       **error)
 {
   gboolean ret = FALSE;
-  int parentfd = -1;
-  const char *basename = gs_file_get_basename_cached (dir);
+  glnx_fd_close int parentfd = -1;
+  const char *basename = glnx_basename (gs_file_get_path_cached (dir));
   g_autoptr(GFile) parent = g_file_get_parent (dir);
   
  again:
@@ -507,7 +491,5 @@ ot_util_ensure_directory_and_fsync (GFile         *dir,
 
   ret = TRUE;
  out:
-  if (parentfd != -1)
-    (void) close (parentfd);
   return ret;
 }
