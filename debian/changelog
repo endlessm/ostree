@@ -10,6 +10,8 @@ ostree (2016.6-1) UNRELEASED; urgency=medium
   * d/gbp.conf: configure to use upstream/latest for upstream imports
   * d/gbp.conf: configure to merge upstream tags into upstream/latest
     (add https://github.com/ostreedev/ostree as a remote)
+  * d/p/libostree.sym-Fix-test-symbols.patch: apply patch from upstream
+    to fix a build-time test
 
  -- Simon McVittie <smcv@debian.org>  Wed, 15 Jun 2016 14:05:53 -0400
 
