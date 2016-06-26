@@ -7,6 +7,9 @@ ostree (2016.6-1) UNRELEASED; urgency=medium
   * New upstream release
     - drop all patches, included upstream
     - update symbols file
+    - this version is more careful about thread-safety, which appears
+      to fix FTBFS due to test failures while running "ostree pull"
+      on the mipsel porterbox (Closes: #827473)
   * d/watch: fetch releases from GitHub instead of GNOME
   * d/gbp.conf: configure to use upstream/latest for upstream imports
   * d/gbp.conf: configure to merge upstream tags into upstream/latest
