@@ -16,6 +16,10 @@ ostree (2016.6-1) UNRELEASED; urgency=medium
   * d/p/pull-Correctly-handle-repo-parent_repo-when-applying-stat.patch:
     apply patch from upstream to fix a bug that flatpak currently works
     around
+  * d/p/tests-fail-the-build-if-symlinking-tests-ostree-fails.patch,
+    d/p/tests-use-our-own-generated-libtool-not-the-one-in-PATH.patch:
+    add patches to ensure that the build-time tests act on the copy
+    of ostree that we just built
 
  -- Simon McVittie <smcv@debian.org>  Wed, 15 Jun 2016 14:05:53 -0400
 

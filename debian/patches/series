@@ -1,2 +1,4 @@
 libostree.sym-Fix-test-symbols.patch
 pull-Correctly-handle-repo-parent_repo-when-applying-stat.patch
+tests-use-our-own-generated-libtool-not-the-one-in-PATH.patch
+tests-fail-the-build-if-symlinking-tests-ostree-fails.patch
