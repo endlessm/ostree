@@ -1,0 +1,23 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Sun, 26 Jun 2016 14:26:37 +0100
+Subject: entry_pathname_test_helper: these tests need extended attributes
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ tests/test-libarchive-import.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/tests/test-libarchive-import.c b/tests/test-libarchive-import.c
+index aaa3c37..3ef379e 100644
+--- a/tests/test-libarchive-import.c
++++ b/tests/test-libarchive-import.c
+@@ -433,6 +433,9 @@ entry_pathname_test_helper (gconstpointer data, gboolean on)
+   OstreeRepoCommitModifier *modifier = NULL;
+   gboolean met_etc_file = FALSE;
+ 
++  if (skip_if_no_xattr (td))
++    goto out;
++
+   modifier = ostree_repo_commit_modifier_new (0, NULL, NULL, NULL);
+   ostree_repo_commit_modifier_set_xattr_callback (modifier, path_cb,
+                                                   NULL, &met_etc_file);

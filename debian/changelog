@@ -20,6 +20,8 @@ ostree (2016.6-1) UNRELEASED; urgency=medium
     d/p/tests-use-our-own-generated-libtool-not-the-one-in-PATH.patch:
     add patches to ensure that the build-time tests act on the copy
     of ostree that we just built
+  * d/p/entry_pathname_test_helper-these-tests-need-extended-attr.patch:
+    skip more tests if /var/tmp doesn't support extended attributes
 
  -- Simon McVittie <smcv@debian.org>  Wed, 15 Jun 2016 14:05:53 -0400
 
