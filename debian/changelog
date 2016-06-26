@@ -8,6 +8,7 @@ ostree (2016.5-5) UNRELEASED; urgency=medium
     d/p/tests-Fix-build-with-old-glib.patch: apply patches from
     upstream to make ostree buildable on Debian jessie
   * d/watch: fetch releases from GitHub instead of GNOME
+  * d/gbp.conf: configure to use upstream/latest for upstream imports
 
  -- Simon McVittie <smcv@debian.org>  Wed, 15 Jun 2016 14:05:53 -0400
 
