@@ -70,6 +70,7 @@ echo "ok compat pull"
 cd ${test_tmpdir}
 rm -rf compat-repo
 cp -a ${test_srcdir}/compat-repo .
+chmod -R u+w compat-repo
 mkdir -p compat-repo/tmp
 
 rm -rf local
