@@ -2,6 +2,7 @@ ostree (2016.6-0) master; urgency=medium
 
   [ Dan Nicholson ]
   * New upstream release
+  * Add missing test dependency on cpio
 
   [ Simon McVittie ]
   * Build-depend on procps, used to check for leaked processes
