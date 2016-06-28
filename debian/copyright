@@ -1,6 +1,6 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: ostree
-Source: https://wiki.gnome.org/Projects/OSTree
+Upstream-Name: OSTree
+Source: https://github.com/ostreedev/ostree/
 
 Files: *
 Copyright:

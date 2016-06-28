@@ -3,6 +3,8 @@ ostree (2016.6-2) UNRELEASED; urgency=medium
   * d/p/tests-Improve-check-for-proc-cmdline-kargs.patch: add patch from
     upstream fixing FTBFS on host machines without root= in /proc/cmdline,
     such as the reproducible builds armhf workers
+  * d/control, d/copyright: use the GitHub repository as the Homepage
+    and Source: the GNOME wiki page is less frequently updated
 
  -- Simon McVittie <smcv@debian.org>  Tue, 28 Jun 2016 09:26:01 +0100
 

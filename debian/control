@@ -35,7 +35,7 @@ Build-Depends:
  procps,
  zlib1g-dev,
 Standards-Version: 3.9.8
-Homepage: https://wiki.gnome.org/Projects/OSTree
+Homepage: https://github.com/ostreedev/ostree/
 Vcs-Git: https://anonscm.debian.org/git/collab-maint/ostree.git
 Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ostree.git
 
