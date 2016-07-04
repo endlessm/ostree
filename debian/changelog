@@ -1,3 +1,13 @@
+ostree (2016.6-3) UNRELEASED; urgency=medium
+
+  * Ignore build-time test failures on mipsel. "ostree pull"
+    intermittently fails with a bus error on at least some mipsel CPUs,
+    and applying gdb to the resulting core dump does not produce any
+    useful information. Debugging help would be appreciated.
+    (Mitigates: #827473)
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 04 Jul 2016 09:55:09 +0100
+
 ostree (2016.6-2) unstable; urgency=medium
 
   * d/p/tests-Improve-check-for-proc-cmdline-kargs.patch: add patch from
