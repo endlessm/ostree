@@ -1,3 +1,10 @@
+ostree (2016.6-4) unstable; urgency=medium
+
+  * Switch sense of check in debian/test.sh so we really ignore test
+    failures on mipsel, and not on !mipsel.
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 06 Jul 2016 15:23:31 +0100
+
 ostree (2016.6-3) unstable; urgency=medium
 
   * Ignore build-time test failures on mipsel. "ostree pull"

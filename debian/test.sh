@@ -36,7 +36,7 @@ fi
 
 if [ "$failed" -gt 0 ]; then
     echo "Failed $failed out of $try_tests test runs"
-    if [ -n "$ignore" ]; then
+    if [ -z "$ignore" ]; then
         exit 1
     else
         echo "Ignoring test failure for this architecture"
