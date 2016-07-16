@@ -1,6 +1,6 @@
 /* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
  *
- * Copyright (C) 2014 Colin Walters <walters@verbum.org>
+ * Copyright (C) 2016 Colin Walters <walters@verbum.org>.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,19 +20,12 @@
 
 #pragma once
 
-#include "ostree-types.h"
+#include "ot-unix-utils.h"
 
 G_BEGIN_DECLS
 
-typedef struct {
-  gboolean (* ostree_generate_grub2_config) (OstreeSysroot *sysroot, int bootversion, int target_fd, GCancellable *cancellable, GError **error);
-  gboolean (* ostree_static_delta_dump) (OstreeRepo *repo, const char *delta_id, GCancellable *cancellable, GError **error);
-  gboolean (* ostree_static_delta_query_exists) (OstreeRepo *repo, const char *delta_id, gboolean *out_exists, GCancellable *cancellable, GError **error);
-  gboolean (* ostree_static_delta_delete) (OstreeRepo *repo, const char *delta_id, GCancellable *cancellable, GError **error);
-} OstreeCmdPrivateVTable;
-
-/* Note this not really "public", we just export the symbol, but not the header */
-_OSTREE_PUBLIC const OstreeCmdPrivateVTable *
-ostree_cmd__private__ (void);
+void ot_log_structured_print_id_v (const char *message_id,
+                                   const char *format,
+                                   ...);
 
 G_END_DECLS

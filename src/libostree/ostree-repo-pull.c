@@ -22,12 +22,12 @@
 
 #include "config.h"
 
+#include "libglnx.h"
 #include "ostree.h"
 #include "otutil.h"
 
 #ifdef HAVE_LIBSOUP
 
-#include "libglnx.h"
 #include "ostree-core-private.h"
 #include "ostree-repo-private.h"
 #include "ostree-repo-static-delta-private.h"
@@ -415,6 +415,26 @@ fetch_uri_contents_utf8_sync (OtPullData  *pull_data,
   return ret;
 }
 
+static gboolean
+write_commitpartial_for (OtPullData *pull_data,
+                         const char *checksum,
+                         GError **error)
+{
+  g_autofree char *commitpartial_path = _ostree_get_commitpartial_path (checksum);
+  glnx_fd_close int fd = -1;
+
+  fd = openat (pull_data->repo->repo_dir_fd, commitpartial_path, O_EXCL | O_CREAT | O_WRONLY | O_CLOEXEC | O_NOCTTY, 0600);
+  if (fd == -1)
+    {
+      if (errno != EEXIST)
+        {
+          glnx_set_error_from_errno (error);
+          return FALSE;
+        }
+    }
+  return TRUE;
+}
+
 static void
 enqueue_one_object_request (OtPullData        *pull_data,
                             const char        *checksum,
@@ -683,6 +703,7 @@ content_fetch_on_complete (GObject        *object,
   const char *checksum;
   g_autofree char *checksum_obj = NULL;
   OstreeObjectType objtype;
+  gboolean free_fetch_data = TRUE;
 
   temp_path = _ostree_fetcher_request_uri_with_partial_finish (fetcher, result, error);
   if (!temp_path)
@@ -741,11 +762,17 @@ content_fetch_on_complete (GObject        *object,
                                        object_input, length,
                                        cancellable,
                                        content_fetch_on_write_complete, fetch_data);
+      free_fetch_data = FALSE;
     }
 
  out:
   pull_data->n_outstanding_content_fetches--;
   check_outstanding_requests_handle_error (pull_data, local_error);
+  if (free_fetch_data)
+    {
+      g_variant_unref (fetch_data->object);
+      g_free (fetch_data);
+    }
 }
 
 static void
@@ -809,7 +836,7 @@ meta_fetch_on_complete (GObject           *object,
   GError *local_error = NULL;
   GError **error = &local_error;
   glnx_fd_close int fd = -1;
-  gboolean free_fetch_data = FALSE;
+  gboolean free_fetch_data = TRUE;
 
   ostree_object_name_deserialize (fetch_data->object, &checksum, &objtype);
   checksum_obj = ostree_object_to_string (checksum, objtype);
@@ -875,8 +902,6 @@ meta_fetch_on_complete (GObject           *object,
 
       if (!fetch_data->object_is_stored)
         enqueue_one_object_request (pull_data, checksum, objtype, FALSE, FALSE);
-
-      free_fetch_data = TRUE;
     }
   else
     {
@@ -889,24 +914,15 @@ meta_fetch_on_complete (GObject           *object,
       /* Write the commitpartial file now while we're still fetching data */
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
         {
-          g_autofree char *commitpartial_path = _ostree_get_commitpartial_path (checksum);
-          glnx_fd_close int fd = -1;
-
-          fd = openat (pull_data->repo->repo_dir_fd, commitpartial_path, O_EXCL | O_CREAT | O_WRONLY | O_CLOEXEC | O_NOCTTY, 0600);
-          if (fd == -1)
-            {
-              if (errno != EEXIST)
-                {
-                  glnx_set_error_from_errno (error);
-                  goto out;
-                }
-            }
+          if (!write_commitpartial_for (pull_data, checksum, error))
+            goto out;
         }
       
       ostree_repo_write_metadata_async (pull_data->repo, objtype, checksum, metadata,
                                         pull_data->cancellable,
                                         on_metadata_written, fetch_data);
       pull_data->n_outstanding_metadata_write_requests++;
+      free_fetch_data = FALSE;
     }
 
  out:
@@ -914,7 +930,7 @@ meta_fetch_on_complete (GObject           *object,
   pull_data->n_outstanding_metadata_fetches--;
   pull_data->n_fetched_metadata++;
   check_outstanding_requests_handle_error (pull_data, local_error);
-  if (local_error || free_fetch_data)
+  if (free_fetch_data)
     {
       g_variant_unref (fetch_data->object);
       g_free (fetch_data);
@@ -968,6 +984,7 @@ static_deltapart_fetch_on_complete (GObject           *object,
   GError *local_error = NULL;
   GError **error = &local_error;
   glnx_fd_close int fd = -1;
+  gboolean free_fetch_data = TRUE;
 
   g_debug ("fetch static delta part %s complete", fetch_data->expected_checksum);
 
@@ -1005,13 +1022,14 @@ static_deltapart_fetch_on_complete (GObject           *object,
                                            on_static_delta_written,
                                            fetch_data);
   pull_data->n_outstanding_deltapart_write_requests++;
+  free_fetch_data = FALSE;
 
  out:
   g_assert (pull_data->n_outstanding_deltapart_fetches > 0);
   pull_data->n_outstanding_deltapart_fetches--;
   pull_data->n_fetched_deltaparts++;
   check_outstanding_requests_handle_error (pull_data, local_error);
-  if (local_error)
+  if (free_fetch_data)
     fetch_static_delta_data_free (fetch_data);
 }
 
@@ -1096,7 +1114,7 @@ scan_commit_object (OtPullData         *pull_data,
     }
   else if (parent_csum_bytes != NULL && depth > 0)
     {
-      char parent_checksum[65];
+      char parent_checksum[OSTREE_SHA256_STRING_LEN+1];
       gpointer parent_depthp;
       int parent_depth;
 
@@ -1205,11 +1223,18 @@ scan_one_metadata_object_c (OtPullData         *pull_data,
 
   if (pull_data->remote_repo_local)
     {
-      if (!is_stored &&
-          !ostree_repo_import_object_from_with_trust (pull_data->repo, pull_data->remote_repo_local,
-                                                      objtype, tmp_checksum, !pull_data->is_untrusted,
-                                                      cancellable, error))
-        goto out;
+      if (!is_stored)
+        {
+          if (!ostree_repo_import_object_from_with_trust (pull_data->repo, pull_data->remote_repo_local,
+                                                          objtype, tmp_checksum, !pull_data->is_untrusted,
+                                                          cancellable, error))
+            goto out;
+          if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
+            {
+              if (!write_commitpartial_for (pull_data, tmp_checksum, error))
+                goto out;
+            }
+        }
       is_stored = TRUE;
       is_requested = TRUE;
     }
@@ -1316,8 +1341,7 @@ enqueue_one_object_request (OtPullData        *pull_data,
   if (is_detached_meta)
     {
       char buf[_OSTREE_LOOSE_PATH_MAX];
-      _ostree_loose_path_with_suffix (buf, checksum, OSTREE_OBJECT_TYPE_COMMIT,
-                                      pull_data->remote_mode, "meta");
+      _ostree_loose_path (buf, checksum, OSTREE_OBJECT_TYPE_COMMIT_META, pull_data->remote_mode);
       obj_uri = suburi_new (pull_data->base_uri, "objects", buf, NULL);
     }
   else

@@ -51,7 +51,19 @@ G_BEGIN_DECLS
  */
 #define OSTREE_MAX_RECURSION (256)
 
+/**
+ * OSTREE_SHA256_DIGEST_LEN:
+ *
+ * Length of a sha256 digest when expressed as raw bytes
+ */
 #define OSTREE_SHA256_DIGEST_LEN (32)
+
+/**
+ * OSTREE_SHA256_STRING_LEN:
+ *
+ * Length of a sha256 digest when expressed as a hexadecimal string
+ */
+#define OSTREE_SHA256_STRING_LEN (64)
 
 /**
  * OstreeObjectType:
@@ -60,6 +72,7 @@ G_BEGIN_DECLS
  * @OSTREE_OBJECT_TYPE_DIR_META: Directory metadata
  * @OSTREE_OBJECT_TYPE_COMMIT: Toplevel object, refers to tree and dirmeta for root
  * @OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT: Toplevel object, refers to a deleted commit
+ * @OSTREE_OBJECT_TYPE_COMMIT_META: Detached metadata for a commit
  *
  * Enumeration for core object types; %OSTREE_OBJECT_TYPE_FILE is for
  * content, the other types are metadata.
@@ -70,6 +83,7 @@ typedef enum {
   OSTREE_OBJECT_TYPE_DIR_META = 3,            /* .dirmeta */
   OSTREE_OBJECT_TYPE_COMMIT = 4,              /* .commit */
   OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT = 5,    /* .commit-tombstone */
+  OSTREE_OBJECT_TYPE_COMMIT_META = 6,         /* .commitmeta */
 } OstreeObjectType;
 
 /**
@@ -78,14 +92,14 @@ typedef enum {
  *
  * Returns: %TRUE if object type is metadata
  */
-#define OSTREE_OBJECT_TYPE_IS_META(t) (t >= 2 && t <= 5)
+#define OSTREE_OBJECT_TYPE_IS_META(t) (t >= 2 && t <= 6)
 
 /**
  * OSTREE_OBJECT_TYPE_LAST:
  *
  * Last valid object type; use this to validate ranges.
  */
-#define OSTREE_OBJECT_TYPE_LAST OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT
+#define OSTREE_OBJECT_TYPE_LAST OSTREE_OBJECT_TYPE_COMMIT_META
 
 /**
  * OSTREE_DIRMETA_GVARIANT_FORMAT:

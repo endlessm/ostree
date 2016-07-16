@@ -72,9 +72,19 @@ static gboolean do_ref (OstreeRepo *repo, const char *refspec_prefix, GCancellab
     {
       g_autofree char *checksum = NULL;
       g_autofree char *checksum_existing = NULL;
+      g_autofree char *remote = NULL;
+      g_autofree char *ref = NULL;
 
-      if (!ostree_repo_resolve_rev (repo, opt_create, TRUE, &checksum_existing, error))
-        goto out;
+      if (!ostree_repo_resolve_rev_ext (repo, opt_create, TRUE, OSTREE_REPO_RESOLVE_REV_EXT_NONE, &checksum_existing, error))
+        {
+          if (g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY))
+            {
+              /* A folder exists with the specified ref name,
+               * which is handled by _ostree_repo_write_ref */
+              g_clear_error (error);
+            }
+          else goto out;
+        }
 
       if (checksum_existing != NULL)
         {
@@ -86,7 +96,10 @@ static gboolean do_ref (OstreeRepo *repo, const char *refspec_prefix, GCancellab
       if (!ostree_repo_resolve_rev (repo, refspec_prefix, FALSE, &checksum, error))
         goto out;
 
-      if (!ostree_repo_set_ref_immediate (repo, NULL, opt_create, checksum,
+      if (!ostree_parse_refspec (opt_create, &remote, &ref, error))
+        goto out;
+
+      if (!ostree_repo_set_ref_immediate (repo, remote, ref, checksum,
                                           cancellable, error))
         goto out;
     }

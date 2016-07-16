@@ -100,14 +100,51 @@ write_checksum_file_at (OstreeRepo   *self,
   {
     size_t l = strlen (sha256);
     char *bufnl = alloca (l + 2);
+    g_autoptr(GError) temp_error = NULL;
 
     memcpy (bufnl, sha256, l);
     bufnl[l] = '\n';
     bufnl[l+1] = '\0';
 
     if (!_ostree_repo_file_replace_contents (self, dfd, name, (guint8*)bufnl, l + 1,
-                                             cancellable, error))
-      goto out;
+                                             cancellable, &temp_error))
+      {
+        if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY))
+          {
+            g_autoptr(GHashTable) refs = NULL;
+            GHashTableIter hashiter;
+            gpointer hashkey, hashvalue;
+
+            g_clear_error (&temp_error);
+
+            if (!ostree_repo_list_refs (self, name, &refs, cancellable, error))
+              goto out;
+
+            g_hash_table_iter_init (&hashiter, refs);
+
+            while ((g_hash_table_iter_next (&hashiter, &hashkey, &hashvalue)))
+              {
+                if (strcmp (name, (char *)hashkey) != 0)
+                  {
+                    g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                                 "Conflict: %s exists under %s when attempting write", (char*)hashkey, name);
+                    goto out;
+                  }
+              }
+
+            if (!glnx_shutil_rm_rf_at (dfd, name, cancellable, error))
+              goto out;
+
+            if (!_ostree_repo_file_replace_contents (self, dfd, name, (guint8*)bufnl, l + 1,
+                                                     cancellable, error))
+              goto out;
+          }
+        else
+          {
+            g_propagate_error (error, g_steal_pointer (&temp_error));
+            goto out;
+          }
+      }
   }
 
   ret = TRUE;
@@ -162,6 +199,7 @@ resolve_refspec (OstreeRepo     *self,
                  const char     *remote,
                  const char     *ref,
                  gboolean        allow_noent,
+                 gboolean        fallback_remote,
                  char          **out_rev,
                  GError        **error);
 
@@ -170,6 +208,7 @@ resolve_refspec_fallback (OstreeRepo     *self,
                           const char     *remote,
                           const char     *ref,
                           gboolean        allow_noent,
+                          gboolean        fallback_remote,
                           char          **out_rev,
                           GCancellable   *cancellable,
                           GError        **error)
@@ -179,8 +218,8 @@ resolve_refspec_fallback (OstreeRepo     *self,
 
   if (self->parent_repo)
     {
-      if (!resolve_refspec (self->parent_repo, remote, ref,
-                            allow_noent, &ret_rev, error))
+      if (!resolve_refspec (self->parent_repo, remote, ref, allow_noent,
+                            fallback_remote, &ret_rev, error))
         goto out;
     }
   else if (!allow_noent)
@@ -204,6 +243,7 @@ resolve_refspec (OstreeRepo     *self,
                  const char     *remote,
                  const char     *ref,
                  gboolean        allow_noent,
+                 gboolean        fallback_remote,
                  char          **out_rev,
                  GError        **error)
 {
@@ -233,7 +273,7 @@ resolve_refspec (OstreeRepo     *self,
       if (!ot_openat_ignore_enoent (self->repo_dir_fd, local_ref, &target_fd, error))
         goto out;
 
-      if (target_fd == -1)
+      if (target_fd == -1 && fallback_remote)
         {
           local_ref = glnx_strjoina ("refs/remotes/", ref);
 
@@ -263,7 +303,7 @@ resolve_refspec (OstreeRepo     *self,
     }
   else
     {
-      if (!resolve_refspec_fallback (self, remote, ref, allow_noent,
+      if (!resolve_refspec_fallback (self, remote, ref, allow_noent, fallback_remote,
                                      &ret_rev, cancellable, error))
         goto out;
     }
@@ -304,10 +344,10 @@ ostree_repo_resolve_partial_checksum (OstreeRepo   *self,
 
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
-  /* If the input is longer than 64 chars or contains non-hex chars,
+  /* If the input is longer than OSTREE_SHA256_STRING_LEN chars or contains non-hex chars,
      don't bother looking for it as an object */
   off = strspn (refspec, hexchars);
-  if (off > 64 || refspec[off] != '\0')
+  if (off > OSTREE_SHA256_STRING_LEN || refspec[off] != '\0')
     return TRUE;
 
   /* this looks through all objects and adds them to the ref_list if:
@@ -351,23 +391,13 @@ ostree_repo_resolve_partial_checksum (OstreeRepo   *self,
   return ret;
 }
 
-/**
- * ostree_repo_resolve_rev:
- * @self: Repo
- * @refspec: A refspec
- * @allow_noent: Do not throw an error if refspec does not exist
- * @out_rev: (out) (transfer full): A checksum,or %NULL if @allow_noent is true and it does not exist
- * @error: Error
- *
- * Look up the given refspec, returning the checksum it references in
- * the parameter @out_rev.
- */
-gboolean
-ostree_repo_resolve_rev (OstreeRepo     *self,
-                         const char     *refspec,
-                         gboolean        allow_noent,
-                         char          **out_rev,
-                         GError        **error)
+static gboolean
+_ostree_repo_resolve_rev_internal (OstreeRepo     *self,
+                                   const char     *refspec,
+                                   gboolean        allow_noent,
+                                   gboolean        fallback_remote,
+                                   char          **out_rev,
+                                   GError        **error)
 {
   gboolean ret = FALSE;
   g_autofree char *ret_rev = NULL;
@@ -419,7 +449,7 @@ ostree_repo_resolve_rev (OstreeRepo     *self,
             goto out;
           
           if (!resolve_refspec (self, remote, ref, allow_noent,
-                                &ret_rev, error))
+                                fallback_remote, &ret_rev, error))
             goto out;
         }
     }
@@ -428,6 +458,53 @@ ostree_repo_resolve_rev (OstreeRepo     *self,
   ot_transfer_out_value (out_rev, &ret_rev);
  out:
   return ret;
+}
+
+/**
+ * ostree_repo_resolve_rev:
+ * @self: Repo
+ * @refspec: A refspec
+ * @allow_noent: Do not throw an error if refspec does not exist
+ * @out_rev: (out) (transfer full): A checksum,or %NULL if @allow_noent is true and it does not exist
+ * @error: Error
+ *
+ * Look up the given refspec, returning the checksum it references in
+ * the parameter @out_rev. Will fall back on remote directory if cannot
+ * find the given refspec in local.
+ */
+gboolean
+ostree_repo_resolve_rev (OstreeRepo     *self,
+                         const char     *refspec,
+                         gboolean        allow_noent,
+                         char          **out_rev,
+                         GError        **error)
+{
+  return _ostree_repo_resolve_rev_internal (self, refspec, allow_noent, TRUE, out_rev, error);
+}
+
+/**
+ * ostree_repo_resolve_rev_ext:
+ * @self: Repo
+ * @refspec: A refspec
+ * @allow_noent: Do not throw an error if refspec does not exist
+ * @flags: Options controlling behavior
+ * @out_rev: (out) (transfer full): A checksum,or %NULL if @allow_noent is true and it does not exist
+ * @error: Error
+ *
+ * Look up the given refspec, returning the checksum it references in
+ * the parameter @out_rev. Differently from ostree_repo_resolve_rev(),
+ * this will not fall back to searching through remote repos if a
+ * local ref is specified but not found.
+ */
+gboolean
+ostree_repo_resolve_rev_ext (OstreeRepo                    *self,
+                             const char                    *refspec,
+                             gboolean                       allow_noent,
+                             OstreeRepoResolveRevExtFlags   flags,
+                             char                         **out_rev,
+                             GError                       **error)
+{
+  return _ostree_repo_resolve_rev_internal (self, refspec, allow_noent, FALSE, out_rev, error);
 }
 
 static gboolean
@@ -703,7 +780,7 @@ ostree_repo_remote_list_refs (OstreeRepo       *self,
         {
           const char *ref_name = NULL;
           g_autoptr(GVariant) csum_v = NULL;
-          char tmp_checksum[65];
+          char tmp_checksum[OSTREE_SHA256_STRING_LEN+1];
 
           g_variant_get_child (child, 0, "&s", &ref_name);
 
@@ -772,8 +849,10 @@ _ostree_repo_write_ref (OstreeRepo    *self,
             goto out;
         }
 
-      if (!glnx_opendirat (refs_remotes_dfd, remote, TRUE, &dfd, error))
+      dfd = glnx_opendirat_with_errno (refs_remotes_dfd, remote, TRUE);
+      if (dfd < 0 && (errno != ENOENT || rev != NULL))
         {
+          glnx_set_error_from_errno (error);
           g_prefix_error (error, "Opening remotes/ dir %s: ", remote);
           goto out;
         }
@@ -781,13 +860,16 @@ _ostree_repo_write_ref (OstreeRepo    *self,
 
   if (rev == NULL)
     {
-      if (unlinkat (dfd, ref, 0) != 0)
+      if (dfd >= 0)
         {
-          if (errno != ENOENT)
-            {
-              glnx_set_error_from_errno (error);
-              goto out;
-            }
+          if (unlinkat (dfd, ref, 0) != 0)
+          {
+            if (errno != ENOENT)
+              {
+                glnx_set_error_from_errno (error);
+                goto out;
+              }
+          }
         }
     }
   else

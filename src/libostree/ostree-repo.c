@@ -2070,8 +2070,8 @@ append_remotes_d (OstreeRepo          *self,
           const char *name;
           guint32 type;
 
-          if (!gs_file_enumerator_iterate (direnum, &file_info, &path,
-                                           NULL, error))
+          if (!g_file_enumerator_iterate (direnum, &file_info, &path,
+                                          NULL, error))
             goto out;
           if (file_info == NULL)
             break;
@@ -2445,7 +2445,7 @@ list_loose_objects_at (OstreeRepo             *self,
       const char *name = dent->d_name;
       const char *dot;
       OstreeObjectType objtype;
-      char buf[65];
+      char buf[OSTREE_SHA256_STRING_LEN+1];
 
       if (strcmp (name, ".") == 0 ||
           strcmp (name, "..") == 0)
@@ -2715,18 +2715,29 @@ _ostree_repo_read_bare_fd (OstreeRepo           *self,
                            GError             **error)
 {
   char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
-  
+
   g_assert (self->mode == OSTREE_REPO_MODE_BARE ||
             self->mode == OSTREE_REPO_MODE_BARE_USER);
 
   _ostree_loose_path (loose_path_buf, checksum, OSTREE_OBJECT_TYPE_FILE, self->mode);
-  
-  *out_fd = openat (self->objects_dir_fd, loose_path_buf, O_RDONLY | O_CLOEXEC);
-  if (*out_fd < 0)
+
+  if (!ot_openat_ignore_enoent (self->objects_dir_fd, loose_path_buf, out_fd, error))
+    return FALSE;
+
+  if (*out_fd == -1)
     {
-      glnx_set_error_from_errno (error);
+      if (self->parent_repo)
+        return _ostree_repo_read_bare_fd (self->parent_repo,
+                                          checksum,
+                                          out_fd,
+                                          cancellable,
+                                          error);
+
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                   "No such file object %s", checksum);
       return FALSE;
     }
+
   return TRUE;
 }
 
@@ -2837,9 +2848,12 @@ ostree_repo_load_file (OstreeRepo         *self,
                */
               if (S_ISLNK (mode) || out_input)
                 { 
-                  if (!gs_file_openat_noatime (self->objects_dir_fd, loose_path_buf, &fd,
-                                               cancellable, error))
-                    goto out;
+                  fd = openat (self->objects_dir_fd, loose_path_buf, O_RDONLY | O_CLOEXEC);
+                  if (fd < 0)
+                    {
+                      glnx_set_error_from_errno (error);
+                      goto out;
+                    }
                 }
 
               if (S_ISREG (mode) && out_input)
@@ -2876,9 +2890,12 @@ ostree_repo_load_file (OstreeRepo         *self,
                 {
                   glnx_fd_close int fd = -1;
 
-                  if (!gs_file_openat_noatime (self->objects_dir_fd, loose_path_buf, &fd,
-                                               cancellable, error))
-                    goto out;
+                  fd = openat (self->objects_dir_fd, loose_path_buf, O_RDONLY | O_CLOEXEC);
+                  if (fd < 0)
+                    {
+                      glnx_set_error_from_errno (error);
+                      goto out;
+                    }
 
                   if (out_xattrs)
                     {
@@ -3114,8 +3131,7 @@ ostree_repo_delete_object (OstreeRepo           *self,
     {
       char meta_loose[_OSTREE_LOOSE_PATH_MAX];
 
-      _ostree_loose_path_with_suffix (meta_loose, sha256,
-                                      OSTREE_OBJECT_TYPE_COMMIT, self->mode, "meta");
+      _ostree_loose_path (meta_loose, sha256, OSTREE_OBJECT_TYPE_COMMIT_META, self->mode);
 
       do
         res = unlinkat (self->objects_dir_fd, meta_loose, 0);
@@ -4825,7 +4841,6 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
 
   while (tmpdir_name == NULL)
     {
-      gs_dirfd_iterator_cleanup GSDirFdIterator child_dfd_iter = { 0, };
       struct dirent *dent;
       glnx_fd_close int existing_tmpdir_fd = -1;
       g_autoptr(GError) local_error = NULL;
