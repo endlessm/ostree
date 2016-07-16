@@ -1047,6 +1047,8 @@ ostree_object_type_to_string (OstreeObjectType objtype)
       return "commit";
     case OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT:
       return "tombstone-commit";
+    case OSTREE_OBJECT_TYPE_COMMIT_META:
+      return "commitmeta";
     default:
       g_assert_not_reached ();
       return NULL;
@@ -1070,6 +1072,10 @@ ostree_object_type_from_string (const char *str)
     return OSTREE_OBJECT_TYPE_DIR_META;
   else if (!strcmp (str, "commit"))
     return OSTREE_OBJECT_TYPE_COMMIT;
+  else if (!strcmp (str, "tombstone-commit"))
+    return OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT;
+  else if (!strcmp (str, "commitmeta"))
+    return OSTREE_OBJECT_TYPE_COMMIT_META;
   g_assert_not_reached ();
   return 0;
 }
@@ -1269,7 +1275,7 @@ ostree_checksum_to_bytes_v (const char *checksum)
 /**
  * ostree_checksum_inplace_from_bytes: (skip)
  * @csum: (array fixed-size=32): An binary checksum of length 32
- * @buf: Output location, must be at least 65 bytes in length
+ * @buf: Output location, must be at least OSTREE_SHA256_STRING_LEN+1 bytes in length
  *
  * Overwrite the contents of @buf with stringified version of @csum.
  */
@@ -1340,7 +1346,7 @@ ostree_checksum_b64_inplace_from_bytes (const guchar *csum,
 char *
 ostree_checksum_from_bytes (const guchar *csum)
 {
-  char *ret = g_malloc (65);
+  char *ret = g_malloc (OSTREE_SHA256_STRING_LEN+1);
   ostree_checksum_inplace_from_bytes (csum, ret);
   return ret;
 }
@@ -1414,7 +1420,13 @@ _ostree_loose_path (char              *buf,
                     OstreeObjectType   objtype,
                     OstreeRepoMode     mode)
 {
-  _ostree_loose_path_with_suffix (buf, checksum, objtype, mode, "");
+  *buf = checksum[0];
+  buf++;
+  *buf = checksum[1];
+  buf++;
+  snprintf (buf, _OSTREE_LOOSE_PATH_MAX - 2, "/%s.%s%s",
+            checksum + 2, ostree_object_type_to_string (objtype),
+            (!OSTREE_OBJECT_TYPE_IS_META (objtype) && mode == OSTREE_REPO_MODE_ARCHIVE_Z2) ? "z" : "");
 }
 
 /**
@@ -1443,33 +1455,6 @@ _ostree_header_gfile_info_new (mode_t mode, uid_t uid, gid_t gid)
 }
 
 /*
- * _ostree_loose_path_with_suffix:
- * @buf: Output buffer, must be _OSTREE_LOOSE_PATH_MAX in size
- * @checksum: ASCII checksum
- * @objtype: Object type
- * @mode: Repository mode
- *
- * Like _ostree_loose_path, but also append a further arbitrary
- * suffix; useful for finding non-core objects.
- */
-void
-_ostree_loose_path_with_suffix (char              *buf,
-                                const char        *checksum,
-                                OstreeObjectType   objtype,
-                                OstreeRepoMode     mode,
-                                const char        *suffix)
-{
-  *buf = checksum[0];
-  buf++;
-  *buf = checksum[1];
-  buf++;
-  snprintf (buf, _OSTREE_LOOSE_PATH_MAX - 2, "/%s.%s%s%s",
-            checksum + 2, ostree_object_type_to_string (objtype),
-            (!OSTREE_OBJECT_TYPE_IS_META (objtype) && mode == OSTREE_REPO_MODE_ARCHIVE_Z2) ? "z" : "",
-            suffix);
-}
-
-/*
  * _ostree_get_relative_object_path:
  * @checksum: ASCII checksum string
  * @type: Object type
@@ -1484,7 +1469,7 @@ _ostree_get_relative_object_path (const char         *checksum,
 {
   GString *path;
 
-  g_assert (strlen (checksum) == 64);
+  g_assert (strlen (checksum) == OSTREE_SHA256_STRING_LEN);
 
   path = g_string_new ("objects/");
 
@@ -1759,7 +1744,7 @@ ostree_validate_structureof_checksum_string (const char *checksum,
   int i = 0;
   size_t len = strlen (checksum);
 
-  if (len != 64)
+  if (len != OSTREE_SHA256_STRING_LEN)
     {
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                    "Invalid rev '%s'", checksum);
@@ -1993,8 +1978,9 @@ ostree_validate_structureof_dirmeta (GVariant      *dirmeta,
 /**
  * ostree_commit_get_parent:
  * @commit_variant: Variant of type %OSTREE_OBJECT_TYPE_COMMIT
- * 
- * Returns: Binary checksum with parent of @commit_variant, or %NULL if none
+ *
+ * Returns: Checksum of the parent commit of @commit_variant, or %NULL
+ * if none
  */
 gchar *
 ostree_commit_get_parent (GVariant  *commit_variant)

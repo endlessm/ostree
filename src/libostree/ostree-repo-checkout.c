@@ -346,7 +346,7 @@ checkout_file_hardlink (OstreeRepo                          *self,
  again:
   if (linkat (srcfd, loose_path, destination_dfd, destination_name, 0) != -1)
     ret_was_supported = TRUE;
-  else if (errno == EMLINK || errno == EXDEV || errno == EPERM)
+  else if (!options->no_copy_fallback && (errno == EMLINK || errno == EXDEV || errno == EPERM))
     {
       /* EMLINK, EXDEV and EPERM shouldn't be fatal; we just can't do the
        * optimization of hardlinking instead of copying.
@@ -480,7 +480,7 @@ checkout_one_file_at (OstreeRepo                        *repo,
                   key = g_new (OstreeDevIno, 1);
                   key->dev = stbuf.st_dev;
                   key->ino = stbuf.st_ino;
-                  memcpy (key->checksum, checksum, 65);
+                  memcpy (key->checksum, checksum, OSTREE_SHA256_STRING_LEN+1);
                   
                   g_hash_table_add ((GHashTable*)options->devino_to_csum_cache, key);
                 }
@@ -696,8 +696,8 @@ checkout_tree_at (OstreeRepo                        *self,
       GFile *src_child;
       const char *name;
 
-      if (!gs_file_enumerator_iterate (dir_enum, &file_info, &src_child,
-                                       cancellable, error))
+      if (!g_file_enumerator_iterate (dir_enum, &file_info, &src_child,
+                                      cancellable, error))
         goto out;
       if (file_info == NULL)
         break;

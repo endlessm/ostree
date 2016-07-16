@@ -57,6 +57,7 @@ dist_test_scripts = \
 	tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh \
 	tests/test-pull-resume.sh \
+	tests/test-pull-repeated.sh \
 	tests/test-pull-untrusted.sh \
 	tests/test-pull-override-url.sh \
 	tests/test-local-pull.sh \
@@ -232,12 +233,7 @@ EXTRA_DIST += \
 	tests/libostreetest.h \
 	tests/libtest.sh \
 	tests/gpg-verify-data/README.md \
-	tests/gpg-verify-data/lgpl2 \
-	tests/gpg-verify-data/lgpl2.sig \
-	tests/gpg-verify-data/pubring.gpg \
-	tests/gpg-verify-data/secring.gpg \
-	tests/gpg-verify-data/trustdb.gpg \
-	tests/gpg-verify-data/gpg.conf
+	$(NULL)
 
 tests/libreaddir-rand.so: Makefile
 	$(AM_V_GEN) ln -fns ../.libs/libreaddir-rand.so tests
@@ -245,7 +241,8 @@ ALL_LOCAL_RULES += tests/libreaddir-rand.so
 CLEANFILES += tests/libreaddir-rand.so tests/ostree-symlink-stamp tests/ostree
 
 tests/ostree-symlink-stamp: Makefile
-	@real_bin=`cd $(top_builddir) && libtool --mode=execute echo ostree`; \
+	@set -e; \
+	real_bin=`cd $(top_builddir) && ./libtool --mode=execute echo ostree`; \
 	ln -sf "$${real_bin}" tests/ostree; \
 	touch $@
 

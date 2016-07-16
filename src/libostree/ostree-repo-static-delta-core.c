@@ -94,8 +94,8 @@ ostree_repo_list_static_delta_names (OstreeRepo                  *self,
           GFileInfo *file_info;
           GFile *child;
 
-          if (!gs_file_enumerator_iterate (dir_enum, &file_info, &child,
-                                           NULL, error))
+          if (!g_file_enumerator_iterate (dir_enum, &file_info, &child,
+                                          NULL, error))
             goto out;
           if (file_info == NULL)
             break;
@@ -117,8 +117,8 @@ ostree_repo_list_static_delta_names (OstreeRepo                  *self,
               const char *name1;
               const char *name2;
 
-              if (!gs_file_enumerator_iterate (dir_enum2, &file_info2, &child2,
-                                               NULL, error))
+              if (!g_file_enumerator_iterate (dir_enum2, &file_info2, &child2,
+                                              NULL, error))
                 goto out;
               if (file_info2 == NULL)
                 break;
@@ -136,7 +136,7 @@ ostree_repo_list_static_delta_names (OstreeRepo                  *self,
                   {
                     g_autofree char *buf = g_strconcat (name1, name2, NULL);
                     GString *out = g_string_new ("");
-                    char checksum[65];
+                    char checksum[OSTREE_SHA256_STRING_LEN+1];
                     guchar csum[OSTREE_SHA256_DIGEST_LEN];
                     const char *dash = strchr (buf, '-');
 
@@ -187,7 +187,7 @@ _ostree_repo_static_delta_part_have_all_objects (OstreeRepo             *repo,
     {
       guint8 objtype = *checksums_data;
       const guint8 *csum = checksums_data + 1;
-      char tmp_checksum[65];
+      char tmp_checksum[OSTREE_SHA256_STRING_LEN+1];
 
       if (G_UNLIKELY(!ostree_validate_structureof_objtype (objtype, error)))
         goto out;
@@ -354,7 +354,7 @@ ostree_repo_static_delta_execute_offline (OstreeRepo                    *self,
       guint64 size;
       guint64 usize;
       const guchar *csum;
-      char checksum[65];
+      char checksum[OSTREE_SHA256_STRING_LEN+1];
       gboolean have_all;
       g_autoptr(GInputStream) part_in = NULL;
       g_autoptr(GBytes) delta_data = NULL;
@@ -817,6 +817,38 @@ _ostree_repo_static_delta_delete (OstreeRepo                    *self,
   ret = TRUE;
  out:
   return ret;
+}
+
+gboolean
+_ostree_repo_static_delta_query_exists (OstreeRepo                    *self,
+                                        const char                    *delta_id,
+                                        gboolean                      *out_exists,
+                                        GCancellable                  *cancellable,
+                                        GError                      **error)
+{
+  g_autofree char *from = NULL; 
+  g_autofree char *to = NULL;
+  g_autofree char *superblock_path = NULL;
+  struct stat stbuf;
+
+  _ostree_parse_delta_name (delta_id, &from, &to);
+  superblock_path = _ostree_get_relative_static_delta_superblock_path (from, to);
+
+  if (fstatat (self->repo_dir_fd, superblock_path, &stbuf, 0) < 0)
+    {
+      if (errno == ENOENT)
+        {
+          *out_exists = FALSE;
+          return TRUE;
+        }
+      else
+        {
+          glnx_set_error_from_errno (error);
+          return FALSE;
+        }
+    }
+  *out_exists = TRUE;
+  return TRUE;
 }
 
 gboolean

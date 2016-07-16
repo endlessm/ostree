@@ -382,6 +382,22 @@ gboolean      ostree_repo_resolve_rev (OstreeRepo  *self,
                                        char       **out_rev,
                                        GError     **error);
 
+/**
+ * OstreeRepoResolveRevExtFlags:
+ * @OSTREE_REPO_RESOLVE_REV_EXT_NONE: No flags.
+ */
+typedef enum {
+  OSTREE_REPO_RESOLVE_REV_EXT_NONE = 0,
+} OstreeRepoResolveRevExtFlags;
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_resolve_rev_ext (OstreeRepo                    *self,
+                                           const char                    *refspec,
+                                           gboolean                       allow_noent,
+                                           OstreeRepoResolveRevExtFlags   flags,
+                                           char                         **out_rev,
+                                           GError                       **error);
+
 _OSTREE_PUBLIC
 gboolean      ostree_repo_list_refs (OstreeRepo       *self,
                                      const char       *refspec_prefix,
@@ -734,7 +750,8 @@ typedef struct {
   guint enable_uncompressed_cache : 1;
   guint disable_fsync : 1;
   guint process_whiteouts : 1;
-  guint reserved : 29;
+  guint no_copy_fallback : 1;
+  guint reserved : 28;
 
   const char *subpath;
 
@@ -866,7 +883,7 @@ gboolean ostree_repo_traverse_commit_union (OstreeRepo         *repo,
 struct _OstreeRepoCommitTraverseIter {
   gboolean initialized;
   gpointer dummy[10];
-  char dummy_checksum_data[65*2];
+  char dummy_checksum_data[(OSTREE_SHA256_STRING_LEN+1)*2];
 };
 
 typedef struct _OstreeRepoCommitTraverseIter OstreeRepoCommitTraverseIter;
