@@ -32,6 +32,7 @@ Build-Depends:
  libmount-dev (>= 2.23),
  libselinux1-dev,
  libsoup2.4-dev (>= 2.39.1),
+ libsystemd-dev,
  procps,
  zlib1g-dev,
 Standards-Version: 3.9.8
