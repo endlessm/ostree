@@ -69,7 +69,7 @@ Description: content-addressed filesystem for operating system binaries (library
  the files using hardlinks into an immutable directory tree. This
  can be used to provide atomic upgrades with rollback, history and
  parallel-installation, particularly useful on "fixed purpose" systems
- such as embedded devices. It is also used by the xdg-app application
+ such as embedded devices. It is also used by the Flatpak application
  runtime system.
  .
  This package contains the shared library.
@@ -92,7 +92,7 @@ Description: Development files for the ostree library
  the files using hardlinks into an immutable directory tree. This
  can be used to provide atomic upgrades with rollback, history and
  parallel-installation, particularly useful on "fixed purpose" systems
- such as embedded devices. It is also used by the xdg-app application
+ such as embedded devices. It is also used by the Flatpak application
  runtime system.
  .
  This package contains development headers and the pkg-config file for ostree.

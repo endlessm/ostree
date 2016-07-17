@@ -8,6 +8,7 @@ ostree (2016.7-1) UNRELEASED; urgency=medium
   * d/p/Makefile-tests.am-make-check-uses-the-built-binaries.patch:
     add patch from upstream to make sure we use the built binaries for
     build-time testing
+  * d/control: mention Flatpak, not its former name xdg-app
 
  -- Simon McVittie <smcv@debian.org>  Sat, 16 Jul 2016 21:07:05 +0100
 
