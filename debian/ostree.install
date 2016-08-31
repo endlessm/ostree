@@ -4,7 +4,7 @@ lib/systemd/system/ostree*.service
 usr/bin/ostree
 usr/bin/rofiles-fuse
 usr/lib/dracut/modules.d/98ostree
-usr/sbin/ostree-prepare-root
-usr/sbin/ostree-remount
+usr/lib/ostree/ostree-prepare-root
+usr/lib/ostree/ostree-remount
 usr/share/man
 usr/share/ostree/trusted.gpg.d
