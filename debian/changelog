@@ -1,6 +1,8 @@
 ostree (2016.9-0) UNRELEASED; urgency=medium
 
   * New upstream version (T13117)
+    - Remove the libgsystem-dev build dependency as it has been dropped
+      upstream.
   * Resync debian packaging changes
     - Add Build-Depends on libsystemd-dev
     - Add missing Depends on cpio for ostree-tests package
