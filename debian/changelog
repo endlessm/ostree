@@ -1,18 +1,125 @@
-ostree (2016.6-0) master; urgency=medium
+ostree (2016.9-0) UNRELEASED; urgency=medium
 
-  [ Dan Nicholson ]
-  * New upstream release, rebase debian packaging
-    - Debian's ostree-boot package split left out for now.
-  * Add missing test dependency on cpio
+  * New upstream version (T13117)
+  * Resync debian packaging changes
+    - Add Build-Depends on libsystemd-dev
+    - Add missing Depends on cpio for ostree-tests package
+    - Remove the ostree-grub2 package as was done upstream. However,
+      our ostree package still maintains the parts needed for boot
+      rather than being split out into an ostree-boot package. The
+      grub2 files are manually removed before dh_install since we
+      only want the Grub BLS support.
+    - Pull in libostree-1-1.symbols updates.
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Wed, 31 Aug 2016 12:05:55 -0700
+
+ostree (2016.7-1) unstable; urgency=medium
+
+  * New upstream version
+    - drop all patches, applied upstream
+    - build-depend on libsystemd (unconditionally, because this package is
+      Linux-specific already)
+    - update symbols file for new ABI
+  * d/p/Makefile-tests.am-make-check-uses-the-built-binaries.patch:
+    add patch from upstream to make sure we use the built binaries for
+    build-time testing
+  * d/control: mention Flatpak, not its former name xdg-app
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 28 Jul 2016 07:40:27 +0100
+
+ostree (2016.6-4) unstable; urgency=medium
+
+  * Switch sense of check in debian/test.sh so we really ignore test
+    failures on mipsel, and not on !mipsel.
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 06 Jul 2016 15:23:31 +0100
+
+ostree (2016.6-3) unstable; urgency=medium
+
+  * Ignore build-time test failures on mipsel. "ostree pull"
+    intermittently fails with a bus error on at least some mipsel CPUs,
+    and applying gdb to the resulting core dump does not produce any
+    useful information. Debugging help would be appreciated.
+    (Mitigates: #827473)
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 06 Jul 2016 10:17:43 +0100
+
+ostree (2016.6-2) unstable; urgency=medium
+
+  * d/p/tests-Improve-check-for-proc-cmdline-kargs.patch: add patch from
+    upstream fixing FTBFS on host machines without root= in /proc/cmdline,
+    such as the reproducible builds armhf workers
+  * d/control, d/copyright: use the GitHub repository as the Homepage
+    and Source: the GNOME wiki page is less frequently updated
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 28 Jun 2016 09:29:53 +0100
+
+ostree (2016.6-1) unstable; urgency=medium
+
+  [ Jeremy Bicha ]
+  * Fix debian/watch (Closes: #827440)
 
   [ Simon McVittie ]
+  * New upstream release
+    - drop all patches, included upstream
+    - update symbols file
+    - this version is more careful about thread-safety, which appears
+      to fix the test failures that caused FTBFS on mipsel
+      (Closes: #827473)
+  * d/watch: fetch releases from GitHub instead of GNOME
+  * d/gbp.conf: configure to use upstream/latest for upstream imports
+  * d/gbp.conf: configure to merge upstream tags into upstream/latest
+    (add https://github.com/ostreedev/ostree as a remote)
+  * d/p/libostree.sym-Fix-test-symbols.patch: apply patch from upstream
+    to fix a build-time test
+  * d/p/pull-Correctly-handle-repo-parent_repo-when-applying-stat.patch:
+    apply patch from upstream to fix a bug that flatpak currently works
+    around
+  * d/p/tests-fail-the-build-if-symlinking-tests-ostree-fails.patch,
+    d/p/tests-use-our-own-generated-libtool-not-the-one-in-PATH.patch:
+    add patches to ensure that the build-time tests act on the copy
+    of ostree that we just built
+  * d/p/entry_pathname_test_helper-these-tests-need-extended-attr.patch:
+    skip more tests if /var/tmp doesn't support extended attributes
+  * d/control: ostree no longer needs its Suggests on dracut. A stronger
+    dependency on dracut will be needed in the ostree-boot package when
+    the boot integration is reinstated (see #824650).
+
+ -- Simon McVittie <smcv@debian.org>  Sun, 26 Jun 2016 19:51:31 +0100
+
+ostree (2016.6-0) master; urgency=medium
+
+  * New upstream release, rebase debian packaging
+    - Debian's ostree-boot package split left out for now.
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Fri, 24 Jun 2016 10:04:51 -0700
+
+ostree (2016.5-4) unstable; urgency=medium
+
+  * d/p/test-sysroot.js-set-strict-mode-when-sourcing-libtest.sh.patch,
+    d/p/tests-Use-strict-mode-by-default-for-C-tests.patch: add patches
+    to make sure the tests fail as soon as something goes wrong
   * Build-depend on procps, used to check for leaked processes
   * debian/test.sh: factor out our dh_auto_test wrapper, and clean
     up any stray processes even if the test fails
   * If build-time tests fail, try 4 more times to get an idea of
     whether the failure is reproducible (hoping to diagnose #826858)
+  * Add a patch to link libreaddir-rand to libdl, which should fix
+    test failures on Ubuntu (Closes: #826857)
 
- -- Dan Nicholson <nicholson@endlessm.com>  Fri, 24 Jun 2016 10:04:51 -0700
+ -- Simon McVittie <smcv@debian.org>  Tue, 14 Jun 2016 15:35:18 -0400
+
+ostree (2016.5-3) unstable; urgency=medium
+
+  * Remove ostree-grub2 and the boot-related parts of ostree, leaving
+    the library and the command-line tool, which are also used by
+    Flatpak.
+    When we have documentation for how to use and test OSTree
+    deployments with a Debian derivative (see #824649), they should be
+    reinstated in an ostree-boot package (see #824650).
+  * Upload to unstable.
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 08 Jun 2016 11:58:01 +0100
 
 ostree (2016.5-2) experimental; urgency=medium
 

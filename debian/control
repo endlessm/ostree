@@ -32,10 +32,11 @@ Build-Depends:
  libmount-dev (>= 2.23),
  libselinux1-dev,
  libsoup2.4-dev (>= 2.39.1),
+ libsystemd-dev,
  procps,
  zlib1g-dev,
 Standards-Version: 3.9.8
-Homepage: https://wiki.gnome.org/Projects/OSTree
+Homepage: https://github.com/ostreedev/ostree/
 Vcs-Git: https://anonscm.debian.org/git/collab-maint/ostree.git
 Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ostree.git
 
@@ -74,7 +75,7 @@ Description: content-addressed filesystem for operating system binaries (library
  the files using hardlinks into an immutable directory tree. This
  can be used to provide atomic upgrades with rollback, history and
  parallel-installation, particularly useful on "fixed purpose" systems
- such as embedded devices. It is also used by the xdg-app application
+ such as embedded devices. It is also used by the Flatpak application
  runtime system.
  .
  This package contains the shared library.
@@ -97,7 +98,7 @@ Description: Development files for the ostree library
  the files using hardlinks into an immutable directory tree. This
  can be used to provide atomic upgrades with rollback, history and
  parallel-installation, particularly useful on "fixed purpose" systems
- such as embedded devices. It is also used by the xdg-app application
+ such as embedded devices. It is also used by the Flatpak application
  runtime system.
  .
  This package contains development headers and the pkg-config file for ostree.
@@ -134,35 +135,16 @@ Description: content-addressed filesystem for operating system binaries
  parallel-installation, particularly useful on "fixed purpose" systems
  such as embedded devices.
  .
- This package contains the executables.
-
-Package: ostree-grub2
-Architecture: all
-Depends:
- dracut,
- ${misc:Depends},
-Recommends:
- grub-efi-amd64 | grub-pc,
-Description: GRUB 2 configuration for ostree
- OSTree is a tool for managing bootable, immutable, versioned filesystem
- trees. See the ostree package's description for more details.
- .
- This package contains configuration snippets for using ostree with GRUB 2.
- This integration currently has some limitations:
- .
-  - the initramfs must have been made using dracut
-  - the root filesystem must be one that dracut can mount without a root=
-    command-line argument (an EFI partition with the GUID defined in
-    the Discoverable Partitions specification)
-  - /boot must be a separate partition
- .
- See README.Debian.gz for more details.
+ This package contains the executables used to manage and create
+ filesystem trees. It does not affect the boot process for the system
+ on which it is installed.
 
 Package: ostree-tests
 Architecture: linux-any
 Depends:
  attr,
  ca-certificates,
+ cpio,
  fuse,
  gir1.2-gsystem-1.0,
  gir1.2-ostree-1.0,
