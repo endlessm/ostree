@@ -64,7 +64,7 @@ libglnx_srcpath := $(srcdir)/libglnx
 libglnx_cflags := $(OT_DEP_GIO_UNIX_CFLAGS) "-I$(libglnx_srcpath)"
 libglnx_libs := $(OT_DEP_GIO_UNIX_LIBS)
 include libglnx/Makefile-libglnx.am.inc
-EXTRA_DIST += libglnx/Makefile-libglnx.am
+EXTRA_DIST += libglnx/Makefile-libglnx.am libglnx/libglnx.m4
 noinst_LTLIBRARIES += libglnx.la
 
 libbsdiff_srcpath := $(srcdir)/bsdiff
