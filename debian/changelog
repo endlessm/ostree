@@ -4,6 +4,9 @@ ostree (2016.9-0) UNRELEASED; urgency=medium
     - Remove the libgsystem-dev build dependency as it has been dropped
       upstream.
     - Update symbols file for new ABI.
+    - Add Endless specific ostree_repo_delete_compat_signature and
+      ostree_repo_get_commit_sizes ABIs to symbols file. These are
+      specified to the 2016.3 version like all older symbols.
   * Resync debian packaging changes
     - Add Build-Depends on libsystemd-dev
     - Add missing Depends on cpio for ostree-tests package
