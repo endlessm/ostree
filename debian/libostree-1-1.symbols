@@ -5,6 +5,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2016.5@LIBOSTREE_2016.5 2016.5
  LIBOSTREE_2016.6@LIBOSTREE_2016.6 2016.6
  LIBOSTREE_2016.7@LIBOSTREE_2016.7 2016.7
+ LIBOSTREE_2016.8@LIBOSTREE_2016.8 2016.8
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_type@LIBOSTREE_2016.3 2016.4
@@ -26,8 +27,10 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_bootconfig_parser_write_at@LIBOSTREE_2016.3 2016.4
  ostree_chain_input_stream_get_type@LIBOSTREE_2016.3 2016.4
  ostree_chain_input_stream_new@LIBOSTREE_2016.3 2016.4
+ ostree_checksum_b64_from_bytes@LIBOSTREE_2016.8 2016.8
  ostree_checksum_b64_inplace_from_bytes@LIBOSTREE_2016.3 2016.4
  ostree_checksum_b64_inplace_to_bytes@LIBOSTREE_2016.3 2016.4
+ ostree_checksum_b64_to_bytes@LIBOSTREE_2016.8 2016.8
  ostree_checksum_bytes_peek@LIBOSTREE_2016.3 2016.4
  ostree_checksum_bytes_peek_validate@LIBOSTREE_2016.3 2016.4
  ostree_checksum_file@LIBOSTREE_2016.3 2016.4
@@ -112,6 +115,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_abort_transaction@LIBOSTREE_2016.3 2016.4
  ostree_repo_add_gpg_signature_summary@LIBOSTREE_2016.3 2016.4
  ostree_repo_append_gpg_signature@LIBOSTREE_2016.3 2016.4
+ ostree_repo_checkout_at@LIBOSTREE_2016.8 2016.8
  ostree_repo_checkout_gc@LIBOSTREE_2016.3 2016.4
  ostree_repo_checkout_tree@LIBOSTREE_2016.3 2016.4
  ostree_repo_checkout_tree_at@LIBOSTREE_2016.3 2016.4
