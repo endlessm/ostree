@@ -9,6 +9,9 @@ ostree (2016.9-0) UNRELEASED; urgency=medium
       specified to the 2016.3 version like all older symbols.
     - Update ostree-prepare-root and ostree-remount install paths.
       These are now installed under /usr/lib/ostree.
+    - Add build dependency on latest libc6-dev for non-x86 to get a
+      corrected definition of O_TMPFILE in glibc.
+      See https://bugzilla.gnome.org/show_bug.cgi?id=769453 for details.
   * Resync debian packaging changes
     - Add Build-Depends on libsystemd-dev
     - Add missing Depends on cpio for ostree-tests package

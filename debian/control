@@ -22,6 +22,7 @@ Build-Depends:
  gtk-doc-tools (>= 1.15),
  libarchive-dev (>= 2.8.0),
  libattr1-dev,
+ libc6-dev (>= 2.19-18+deb8u4endless4) [!amd64 !i386],
  libcap-dev,
  libfuse-dev,
  libgirepository1.0-dev (>= 1.34.0),
