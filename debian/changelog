@@ -1,4 +1,4 @@
-ostree (2016.9-0) UNRELEASED; urgency=medium
+ostree (2016.9-0) master; urgency=medium
 
   * New upstream version (T13117)
     - Remove the libgsystem-dev build dependency as it has been dropped
@@ -22,7 +22,7 @@ ostree (2016.9-0) UNRELEASED; urgency=medium
       only want the Grub BLS support.
     - Pull in libostree-1-1.symbols updates.
 
- -- Dan Nicholson <nicholson@endlessm.com>  Wed, 31 Aug 2016 12:05:55 -0700
+ -- Dan Nicholson <nicholson@endlessm.com>  Thu, 01 Sep 2016 05:26:09 -0700
 
 ostree (2016.7-1) unstable; urgency=medium
 
