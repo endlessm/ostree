@@ -726,7 +726,7 @@ content_fetch_on_complete (GObject        *object,
       if (!have_object)
         {
           if (!_ostree_repo_commit_loose_final (pull_data->repo, checksum, OSTREE_OBJECT_TYPE_FILE,
-                                                _ostree_fetcher_get_dfd (fetcher), temp_path,
+                                                _ostree_fetcher_get_dfd (fetcher), -1, temp_path,
                                                 cancellable, error))
             goto out;
         }
@@ -2705,7 +2705,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
                                     &from_revision, error))
         goto out;
 
-      if (!disable_static_deltas && (from_revision == NULL || g_strcmp0 (from_revision, to_revision) != 0))
+      if (!disable_static_deltas && !pull_data->is_mirror &&
+          (from_revision == NULL || g_strcmp0 (from_revision, to_revision) != 0))
         {
           if (!request_static_delta_superblock_sync (pull_data, from_revision, to_revision,
                                                      &delta_superblock, cancellable, error))
@@ -2790,16 +2791,24 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
   if (pull_data->is_mirror && pull_data->summary_data)
     {
-      if (!ot_file_replace_contents_at (pull_data->repo->repo_dir_fd, "summary",
-                                        pull_data->summary_data, !pull_data->repo->disable_fsync,
-                                        cancellable, error))
+      GLnxFileReplaceFlags replaceflag =
+        pull_data->repo->disable_fsync ? GLNX_FILE_REPLACE_NODATASYNC : 0;
+      gsize len;
+      const guint8 *buf = g_bytes_get_data (pull_data->summary_data, &len);
+
+      if (!glnx_file_replace_contents_at (pull_data->repo->repo_dir_fd, "summary",
+                                          buf, len, replaceflag,
+                                          cancellable, error))
         goto out;
 
-      if (pull_data->summary_data_sig &&
-          !ot_file_replace_contents_at (pull_data->repo->repo_dir_fd, "summary.sig",
-                                        pull_data->summary_data_sig, !pull_data->repo->disable_fsync,
-                                        cancellable, error))
-        goto out;
+      if (pull_data->summary_data_sig)
+        {
+          buf = g_bytes_get_data (pull_data->summary_data_sig, &len);
+          if (!glnx_file_replace_contents_at (pull_data->repo->repo_dir_fd, "summary.sig",
+                                              buf, len, replaceflag,
+                                              cancellable, error))
+            goto out;
+        }
     }
 
   if (!ostree_repo_commit_transaction (pull_data->repo, NULL, cancellable, error))

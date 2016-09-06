@@ -1,5 +1,5 @@
 AC_PREREQ([2.63])
-AC_INIT([ostree], [2016.7], [walters@verbum.org])
+AC_INIT([ostree], [2016.8], [walters@verbum.org])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([buildutil])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -15,16 +15,22 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_YACC
 
-changequote(,)dnl
-if test "x$GCC" = "xyes"; then
-  WARN_CFLAGS="-Wall -Wempty-body -Wstrict-prototypes -Werror=missing-prototypes \
-		-Werror=implicit-function-declaration \
-		-Werror=pointer-arith -Werror=init-self -Werror=format=2 \
-		-Werror=format-security \
-		-Werror=missing-include-dirs -Werror=aggregate-return \
-		-Werror=declaration-after-statement"
-fi
-changequote([,])dnl
+CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
+        -pipe \
+        -Wall \
+	-Werror=empty-body \
+	-Werror=strict-prototypes \
+	-Werror=missing-prototypes \
+	-Werror=implicit-function-declaration \
+        "-Werror=format=2 -Werror=format-security -Werror=format-nonliteral" \
+	-Werror=pointer-arith -Werror=init-self \
+        -Werror=missing-declarations \
+        -Werror=return-type \
+        -Werror=overflow \
+        -Werror=int-conversion \
+	-Werror=missing-include-dirs -Werror=aggregate-return \
+	-Werror=declaration-after-statement \
+])
 AC_SUBST(WARN_CFLAGS)
 
 # Initialize libtool
@@ -35,6 +41,7 @@ OSTREE_FEATURES=""
 AC_SUBST([OSTREE_FEATURES])
 
 GLIB_TESTS
+LIBGLNX_CONFIGURE
 
 AC_CHECK_HEADER([sys/xattr.h],,[AC_MSG_ERROR([You must have sys/xattr.h from glibc])])
 
@@ -47,7 +54,7 @@ AM_PATH_GLIB_2_0
 dnl When bumping the gio-unix-2.0 dependency (or glib-2.0 in general),
 dnl remember to bump GLIB_VERSION_MIN_REQUIRED and
 dnl GLIB_VERSION_MAX_ALLOWED in Makefile.am
-GIO_DEPENDENCY="gio-unix-2.0 >= 2.40.0 libgsystem >= 2015.1"
+GIO_DEPENDENCY="gio-unix-2.0 >= 2.40.0"
 PKG_CHECK_MODULES(OT_DEP_GIO_UNIX, $GIO_DEPENDENCY)
 
 dnl 5.1.0 is an arbitrary version here
@@ -319,6 +326,7 @@ echo "
     libmount:                                     $with_libmount
     libarchive (parse tar files directly):        $with_libarchive
     static deltas:                                yes (always enabled now)
+    O_TMPFILE:                                    $enable_otmpfile
     man pages (xsltproc):                         $enable_man
     api docs (gtk-doc):                           $enable_gtk_doc
     gjs-based tests:                              $have_gjs

@@ -171,76 +171,60 @@ copy_dir_recurse (int              src_parent_dfd,
                   GCancellable    *cancellable,
                   GError         **error)
 {
-  gboolean ret = FALSE;
-  glnx_fd_close int src_dfd = -1;
+  g_auto(GLnxDirFdIterator) src_dfd_iter = { 0, };
   glnx_fd_close int dest_dfd = -1;
-  DIR *srcd = NULL;
   struct dirent *dent;
 
-  if (!ot_gopendirat (src_parent_dfd, name, TRUE, &src_dfd, error))
-    goto out;
+  if (!glnx_dirfd_iterator_init_at (src_parent_dfd, name, TRUE, &src_dfd_iter, error))
+    return FALSE;
 
   /* Create with mode 0700, we'll fchmod/fchown later */
   if (mkdirat (dest_parent_dfd, name, 0700) != 0)
     {
       glnx_set_error_from_errno (error);
-      goto out;
+      return FALSE;
     }
 
-  if (!ot_gopendirat (dest_parent_dfd, name, TRUE, &dest_dfd, error))
-    goto out;
+  if (!glnx_opendirat (dest_parent_dfd, name, TRUE, &dest_dfd, error))
+    return FALSE;
 
-  if (!dirfd_copy_attributes_and_xattrs (src_parent_dfd, name, src_dfd, dest_dfd,
+  if (!dirfd_copy_attributes_and_xattrs (src_parent_dfd, name, src_dfd_iter.fd, dest_dfd,
                                          cancellable, error))
-    goto out;
+    return FALSE;
  
-  srcd = fdopendir (src_dfd);
-  if (!srcd)
+  while (TRUE)
     {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
-
-  while ((dent = readdir (srcd)) != NULL)
-    {
-      const char *name = dent->d_name;
       struct stat child_stbuf;
 
-      if (strcmp (name, ".") == 0 ||
-          strcmp (name, "..") == 0)
-        continue;
+      if (!glnx_dirfd_iterator_next_dent (&src_dfd_iter, &dent, cancellable, error))
+        return FALSE;
+      if (dent == NULL)
+        break;
 
-      if (fstatat (src_dfd, name, &child_stbuf,
+      if (fstatat (src_dfd_iter.fd, dent->d_name, &child_stbuf,
                    AT_SYMLINK_NOFOLLOW) != 0)
         {
           glnx_set_error_from_errno (error);
-          goto out;
+          return FALSE;
         }
 
       if (S_ISDIR (child_stbuf.st_mode))
         {
-          if (!copy_dir_recurse (src_dfd, dest_dfd, name,
+          if (!copy_dir_recurse (src_dfd_iter.fd, dest_dfd, dent->d_name,
                                  cancellable, error))
-            goto out;
+            return FALSE;
         }
       else
         {
-          if (!glnx_file_copy_at (src_dfd, name, &child_stbuf, dest_dfd, name,
+          if (!glnx_file_copy_at (src_dfd_iter.fd, dent->d_name, &child_stbuf,
+                                  dest_dfd, dent->d_name,
                                   GLNX_FILE_COPY_OVERWRITE,
                                   cancellable, error))
-            goto out;
+            return FALSE;
         }
     }
 
-  ret = TRUE;
- out:
-  if (srcd)
-    {
-      (void) closedir (srcd);
-      /* Note the srcd owns src_dfd */
-      src_dfd = -1;
-    }
-  return ret;
+  return TRUE;
 }
 
 static gboolean
@@ -546,18 +530,13 @@ checkout_deployment_tree (OstreeSysroot     *sysroot,
                           GError           **error)
 {
   gboolean ret = FALSE;
-  OstreeRepoCheckoutOptions checkout_opts = { 0, };
+  OstreeRepoCheckoutAtOptions checkout_opts = { 0, };
   const char *csum = ostree_deployment_get_csum (deployment);
   g_autofree char *checkout_target_name = NULL;
   g_autofree char *osdeploy_path = NULL;
   g_autoptr(GFile) ret_deploy_target_path = NULL;
   glnx_fd_close int osdeploy_dfd = -1;
   int ret_fd;
-
-  /* We end up using syncfs for the entire filesystem, so turn off
-   * OstreeRepo level fsync.
-   */
-  checkout_opts.disable_fsync = TRUE;
 
   osdeploy_path = g_strconcat ("ostree/deploy/", ostree_deployment_get_osname (deployment), "/deploy", NULL);
   checkout_target_name = g_strdup_printf ("%s.%d", csum, ostree_deployment_get_deployserial (deployment));
@@ -571,9 +550,9 @@ checkout_deployment_tree (OstreeSysroot     *sysroot,
   if (!glnx_shutil_rm_rf_at (osdeploy_dfd, checkout_target_name, cancellable, error))
     goto out;
 
-  if (!ostree_repo_checkout_tree_at (repo, &checkout_opts, osdeploy_dfd,
-                                     checkout_target_name, csum,
-                                     cancellable, error))
+  if (!ostree_repo_checkout_at (repo, &checkout_opts, osdeploy_dfd,
+                                checkout_target_name, csum,
+                                cancellable, error))
     goto out;
 
   if (!glnx_opendirat (osdeploy_dfd, checkout_target_name, TRUE, &ret_fd, error))
@@ -662,8 +641,8 @@ relabel_recursively (OstreeSysroot  *sysroot,
       GFile *child;
       GFileType ftype;
 
-      if (!gs_file_enumerator_iterate (direnum, &file_info, &child,
-                                       cancellable, error))
+      if (!g_file_enumerator_iterate (direnum, &file_info, &child,
+                                      cancellable, error))
         goto out;
       if (file_info == NULL)
         break;
@@ -795,9 +774,12 @@ selinux_relabel_var_if_needed (OstreeSysroot                 *sysroot,
                                  cancellable, error))
         goto out;
 
-      if (!gs_file_rename (deployment_var_labeled_tmp, deployment_var_labeled,
-                           cancellable, error))
-        goto out;
+      if (rename (gs_file_get_path_cached (deployment_var_labeled_tmp),
+                  gs_file_get_path_cached (deployment_var_labeled)) < 0)
+        {
+          glnx_set_error_from_errno (error);
+          goto out;
+        }
     }
 
   ret = TRUE;
@@ -861,19 +843,26 @@ merge_configuration (OstreeSysroot         *sysroot,
   else if (etc_exists)
     {
       /* Compatibility hack */
-      if (!gs_file_rename (deployment_etc_path, deployment_usretc_path,
-                           cancellable, error))
-        goto out;
+      if (renameat (deployment_dfd, "etc", deployment_dfd, "usr/etc") < 0)
+        {
+          glnx_set_error_from_errno (error);
+          goto out;
+        }
       usretc_exists = TRUE;
       etc_exists = FALSE;
     }
   
   if (usretc_exists)
     {
+      glnx_fd_close int deployment_usr_dfd = -1;
+
+      if (!glnx_opendirat (deployment_dfd, "usr", TRUE, &deployment_usr_dfd, error))
+        goto out;
+
       /* TODO - set out labels as we copy files */
       g_assert (!etc_exists);
-      if (!gs_shutil_cp_a (deployment_usretc_path, deployment_etc_path,
-                           cancellable, error))
+      if (!copy_dir_recurse (deployment_usr_dfd, deployment_dfd, "etc",
+                             cancellable, error))
         goto out;
 
       /* Here, we initialize SELinux policy from the /usr/etc inside
@@ -1244,13 +1233,13 @@ static GHashTable *
 parse_os_release (const char *contents,
                   const char *split)
 {
-  char **lines = g_strsplit (contents, split, -1);
+  g_autofree char **lines = g_strsplit (contents, split, -1);
   char **iter;
   GHashTable *ret = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 
   for (iter = lines; *iter; iter++)
     {
-      char *line = *iter;
+      g_autofree char *line = *iter;
       char *eq;
       const char *quotedval;
       char *val;
@@ -1268,7 +1257,7 @@ parse_os_release (const char *contents,
       if (!val)
         continue;
       
-      g_hash_table_insert (ret, line, val);
+      g_hash_table_insert (ret, g_steal_pointer (&line), val);
     }
 
   return ret;

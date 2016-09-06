@@ -203,9 +203,9 @@ ostree_validate_rev (const char *rev,
   return ret;
 }
 
-static GVariant *
-file_header_new (GFileInfo         *file_info,
-                 GVariant          *xattrs)
+GVariant *
+_ostree_file_header_new (GFileInfo         *file_info,
+                         GVariant          *xattrs)
 {
   guint32 uid;
   guint32 gid;
@@ -518,7 +518,7 @@ ostree_raw_file_to_content_stream (GInputStream       *input,
   g_autoptr(GVariant) file_header = NULL;
   guint64 header_size;
 
-  file_header = file_header_new (file_info, xattrs);
+  file_header = _ostree_file_header_new (file_info, xattrs);
   if (!header_and_input_to_stream (file_header,
                                    input,
                                    out_input,
@@ -772,7 +772,7 @@ ostree_checksum_file_from_input (GFileInfo        *file_info,
     {
       g_autoptr(GVariant) file_header = NULL;
 
-      file_header = file_header_new (file_info, xattrs);
+      file_header = _ostree_file_header_new (file_info, xattrs);
 
       if (!write_file_header_update_checksum (NULL, file_header, checksum,
                                               cancellable, error))
@@ -1273,6 +1273,20 @@ ostree_checksum_to_bytes_v (const char *checksum)
 }
 
 /**
+ * ostree_checksum_b64_to_bytes:
+ * @checksum: An ASCII checksum
+ *
+ * Returns: (transfer full) (array fixed-size=32): Binary version of @checksum.
+ */
+guchar *
+ostree_checksum_b64_to_bytes (const char *checksum)
+{
+  guchar *ret = g_malloc (32);
+  ostree_checksum_b64_inplace_to_bytes (checksum, ret);
+  return ret;
+}
+
+/**
  * ostree_checksum_inplace_from_bytes: (skip)
  * @csum: (array fixed-size=32): An binary checksum of length 32
  * @buf: Output location, must be at least OSTREE_SHA256_STRING_LEN+1 bytes in length
@@ -1361,6 +1375,23 @@ char *
 ostree_checksum_from_bytes_v (GVariant *csum_v)
 {
   return ostree_checksum_from_bytes (ostree_checksum_bytes_peek (csum_v));
+}
+
+/**
+ * ostree_checksum_b64_from_bytes:
+ * @csum: (array fixed-size=32): An binary checksum of length 32
+ *
+ * Returns: (transfer full): Modified base64 encoding of @csum
+ *
+ * The "modified" term refers to the fact that instead of '/', the '_'
+ * character is used.
+ */
+char *
+ostree_checksum_b64_from_bytes (const guchar *csum)
+{
+  char *ret = g_malloc (44);
+  ostree_checksum_b64_inplace_from_bytes (csum, ret);
+  return ret;
 }
 
 /**
