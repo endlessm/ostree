@@ -6,6 +6,8 @@ ostree (2016.9-1) UNRELEASED; urgency=medium
     - update ostree-boot packaging: the utilities in /usr/sbin moved to
       /usr/lib/ostree
     - drop libgsystem build-dependency
+    - d/p/Makefile-tests.am-make-check-uses-the-built-binaries.patch:
+      drop, applied upstream
   * Explicitly build-depend on xsltproc, which is directly used
 
  -- Simon McVittie <smcv@debian.org>  Fri, 12 Aug 2016 10:30:01 +0100
