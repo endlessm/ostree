@@ -73,17 +73,12 @@ struct OstreeRepo {
   int    tmp_dir_fd;
   int    cache_dir_fd;
   char  *cache_dir;
-  GFile *objects_dir;
-  GFile *state_dir;
   int objects_dir_fd;
   GFile *deltas_dir;
-  GFile *uncompressed_objects_dir;
   int uncompressed_objects_dir_fd;
-  GFile *config_file;
   GFile *sysroot_dir;
   char *remotes_config_dir;
 
-  GFile *transaction_lock_path;
   GHashTable *txn_refs;
   GMutex txn_stats_lock;
   OstreeRepoTransactionStats txn_stats;
@@ -255,6 +250,7 @@ _ostree_repo_commit_loose_final (OstreeRepo        *self,
                                  const char        *checksum,
                                  OstreeObjectType   objtype,
                                  int                temp_dfd,
+                                 int                fd,
                                  const char        *temp_filename,
                                  GCancellable      *cancellable,
                                  GError           **error);
@@ -265,14 +261,14 @@ typedef struct {
 } OstreeRepoContentBareCommit;
 
 gboolean
-_ostree_repo_open_trusted_content_bare (OstreeRepo          *self,
-                                        const char          *checksum,
-                                        guint64              content_len,
-                                        OstreeRepoContentBareCommit *out_state,
-                                        GOutputStream      **out_stream,
-                                        gboolean            *out_have_object,
-                                        GCancellable        *cancellable,
-                                        GError             **error);
+_ostree_repo_open_content_bare (OstreeRepo          *self,
+                                const char          *checksum,
+                                guint64              content_len,
+                                OstreeRepoContentBareCommit *out_state,
+                                GOutputStream      **out_stream,
+                                gboolean            *out_have_object,
+                                GCancellable        *cancellable,
+                                GError             **error);
 
 gboolean
 _ostree_repo_commit_trusted_content_bare (OstreeRepo          *self,

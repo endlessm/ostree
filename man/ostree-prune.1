@@ -1,0 +1,84 @@
+'\" t
+.\"     Title: ostree prune
+.\"    Author: Colin Walters <walters@verbum.org>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 08/06/2016
+.\"    Manual: ostree prune
+.\"    Source: OSTree
+.\"  Language: English
+.\"
+.TH "OSTREE PRUNE" "1" "" "OSTree" "ostree prune"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ostree-prune \- Search for unreachable objects
+.SH "SYNOPSIS"
+.HP \w'\fBostree\ prune\fR\ 'u
+\fBostree prune\fR [OPTIONS...]
+.SH "DESCRIPTION"
+.PP
+This searches for unreachable objects in the current repository\&. If unreachable objects are found, the command delete them to free space\&. If the
+\fB\-\-no\-prune\fR
+option is invoked, the command will just print unreachable objects and recommend deleting them\&.
+.SH "OPTIONS"
+.PP
+\fB\-\-no\-prune\fR
+.RS 4
+Only display unreachable objects; don\*(Aqt delete\&.
+.RE
+.PP
+\fB\-\-refs\-only\fR
+.RS 4
+Only compute reachability via refs\&.
+.RE
+.PP
+\fB\-\-delete\-commit\fR=COMMIT
+.RS 4
+Specify a COMMIT to delete\&.
+.RE
+.PP
+\fB\-\-keep\-younger\-than\fR=DATE
+.RS 4
+All commits older than DATE will be pruned\&.
+.RE
+.PP
+\fB\-\-depth\fR=DEPTH
+.RS 4
+Only traverse DEPTH (integer) parents for each commit (default: \-1=infinite)\&.
+.RE
+.PP
+\fB\-\-static\-deltas\-only\fR=DEPTH
+.RS 4
+Change the behaviour of \-\-keep\-younger\-than and \-\-delete\-commit to prune only the static deltas files\&.
+.RE
+.SH "EXAMPLE"
+.PP
+\fB$ ostree prune\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+        Total objects: 25627
+        No unreachable objects
+.fi
+.if n \{\
+.RE
+.\}

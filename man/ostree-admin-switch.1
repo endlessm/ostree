@@ -1,0 +1,47 @@
+'\" t
+.\"     Title: ostree admin switch
+.\"    Author: Colin Walters <walters@verbum.org>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 08/06/2016
+.\"    Manual: ostree admin switch
+.\"    Source: OSTree
+.\"  Language: English
+.\"
+.TH "OSTREE ADMIN SWITCH" "1" "" "OSTree" "ostree admin switch"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ostree-admin-switch \- Construct new tree from current origin and deploy it, if it changed
+.SH "SYNOPSIS"
+.HP \w'\fBostree\ admin\ switch\fR\ 'u
+\fBostree admin switch\fR {REF}
+.SH "DESCRIPTION"
+.PP
+Choose a different REF forom the current remote to track\&. This is the ref that will be "tracked" and upgraded with
+\fBostree admin upgrade\fR\&. Like an upgrade, the operating system state will be preserved\&.
+.SH "OPTIONS"
+.PP
+\fB\-\-os\fR="OSNAME"
+.RS 4
+Use a different operating system root than the current one\&.
+.RE
+.SH "EXAMPLE"
+.PP
+\fB$ ostree admin switch fedostree/20/workstation/gnome/core\fR

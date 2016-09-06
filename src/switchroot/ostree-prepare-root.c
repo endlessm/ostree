@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
+#include <sys/syscall.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -45,21 +46,20 @@
 #include "ostree-mount-util.h"
 
 static char *
-parse_ostree_cmdline (void)
+read_proc_cmdline (void)
 {
   FILE *f = fopen("/proc/cmdline", "r");
   char *cmdline = NULL;
-  const char *iter;
-  char *ret = NULL;
   size_t len;
 
   if (!f)
-    return NULL;
+    goto out;
+
   /* Note that /proc/cmdline will not end in a newline, so getline
    * will fail unelss we provide a length.
    */
   if (getline (&cmdline, &len, f) < 0)
-    return NULL;
+    goto out;
   /* ... but the length will be the size of the malloc buffer, not
    * strlen().  Fix that.
    */
@@ -67,6 +67,47 @@ parse_ostree_cmdline (void)
 
   if (cmdline[len-1] == '\n')
     cmdline[len-1] = '\0';
+out:
+  if (f)
+    fclose (f);
+  return cmdline;
+}
+
+static char *
+parse_ostree_cmdline (void)
+{
+  char *cmdline = NULL;
+  const char *iter;
+  char *ret = NULL;
+  int tmp_errno;
+
+  cmdline = read_proc_cmdline ();
+  if (!cmdline)
+    {
+      // Mount proc
+      if (mount ("proc", "/proc", "proc", 0, NULL) < 0)
+        {
+          perrorv ("failed to mount proc on /proc: ");
+          exit (EXIT_FAILURE);
+        }
+
+      cmdline = read_proc_cmdline ();
+      tmp_errno = errno;
+
+      /* Leave the filesystem in the state that we found it: */
+      if (umount ("/proc"))
+        {
+          perrorv ("failed to umount proc from /proc: ");
+          exit (EXIT_FAILURE);
+        }
+
+      errno = tmp_errno;
+      if (!cmdline)
+        {
+          perrorv ("failed to read /proc/cmdline: ");
+          exit (EXIT_FAILURE);
+        }
+    }
 
   iter = cmdline;
   while (iter != NULL)
@@ -108,40 +149,17 @@ touch_run_ostree (void)
   (void) close (fd);
 }
 
-int
-main(int argc, char *argv[])
+static char*
+resolve_deploy_path (const char * root_mountpoint)
 {
-  const char *root_mountpoint = NULL;
-  char *ostree_target = NULL;
-  char *deploy_path = NULL;
-  char srcpath[PATH_MAX];
   char destpath[PATH_MAX];
-  char newroot[PATH_MAX];
   struct stat stbuf;
-  int orig_cwd_dfd;
-
-  if (argc < 2)
-    {
-      fprintf (stderr, "usage: ostree-prepare-root SYSROOT\n");
-      exit (EXIT_FAILURE);
-    }
-
-  root_mountpoint = argv[1];
+  char *ostree_target, *deploy_path;
 
   ostree_target = parse_ostree_cmdline ();
   if (!ostree_target)
     {
       fprintf (stderr, "No OSTree target; expected ostree=/ostree/boot.N/...\n");
-      exit (EXIT_FAILURE);
-    }
-
-  /* Create a temporary target for our mounts in the initramfs; this will
-   * be moved to the new system root below.
-   */
-  snprintf (newroot, sizeof(newroot), "%s.tmp", root_mountpoint);
-  if (mkdir (newroot, 0755) < 0)
-    {
-      perrorv ("Couldn't create temporary sysroot '%s': ", newroot);
       exit (EXIT_FAILURE);
     }
 
@@ -164,7 +182,31 @@ main(int argc, char *argv[])
       exit (EXIT_FAILURE);
     }
   printf ("Resolved OSTree target to: %s\n", deploy_path);
-  
+  return deploy_path;
+}
+
+static int
+pivot_root(const char * new_root, const char * put_old)
+{
+  return syscall(__NR_pivot_root, new_root, put_old);
+}
+
+int
+main(int argc, char *argv[])
+{
+  const char *root_mountpoint = NULL;
+  char *deploy_path = NULL;
+  char srcpath[PATH_MAX];
+  struct stat stbuf;
+
+  if (argc < 2)
+    root_mountpoint = "/";
+  else
+    root_mountpoint = argv[1];
+
+  root_mountpoint = realpath (root_mountpoint, NULL);
+  deploy_path = resolve_deploy_path (root_mountpoint);
+
   /* Work-around for a kernel bug: for some reason the kernel
    * refuses switching root if any file systems are mounted
    * MS_SHARED. Hence remount them MS_PRIVATE here as a
@@ -173,23 +215,30 @@ main(int argc, char *argv[])
    * https://bugzilla.redhat.com/show_bug.cgi?id=847418 */
   if (mount (NULL, "/", NULL, MS_REC|MS_PRIVATE, NULL) < 0)
     {
-      perrorv ("Failed to make \"/\" private mount: %m");
+      perrorv ("failed to make \"/\" private mount: %m");
       exit (EXIT_FAILURE);
     }
 
   /* Make deploy_path a bind mount, so we can move it later */
-  if (mount (deploy_path, newroot, NULL, MS_BIND, NULL) < 0)
+  if (mount (deploy_path, deploy_path, NULL, MS_BIND, NULL) < 0)
     {
-      perrorv ("failed to initial bind mount %s", deploy_path);
+      perrorv ("failed to make initial bind mount %s", deploy_path);
+      exit (EXIT_FAILURE);
+    }
+
+  /* chdir to our new root.  We need to do this after bind-mounting it over
+   * itself otherwise our cwd is still on the non-bind-mounted filesystem
+   * below. */
+  if (chdir (deploy_path) < 0)
+    {
+      perrorv ("failed to chdir to deploy_path");
       exit (EXIT_FAILURE);
     }
 
   /* Link to the deployment's /var */
-  snprintf (srcpath, sizeof(srcpath), "%s/../../var", deploy_path);
-  snprintf (destpath, sizeof(destpath), "%s/var", newroot);
-  if (mount (srcpath, destpath, NULL, MS_MGC_VAL|MS_BIND, NULL) < 0)
+  if (mount ("../../var", "var", NULL, MS_MGC_VAL|MS_BIND, NULL) < 0)
     {
-      perrorv ("failed to bind mount %s to %s", srcpath, destpath);
+      perrorv ("failed to bind mount ../../var to var");
       exit (EXIT_FAILURE);
     }
 
@@ -198,34 +247,15 @@ main(int argc, char *argv[])
   snprintf (srcpath, sizeof(srcpath), "%s/boot/loader", root_mountpoint);
   if (lstat (srcpath, &stbuf) == 0 && S_ISLNK (stbuf.st_mode))
     {
-      snprintf (destpath, sizeof(destpath), "%s/boot", newroot);
-      if (lstat (destpath, &stbuf) == 0 && S_ISDIR (stbuf.st_mode))
+      if (lstat ("boot", &stbuf) == 0 && S_ISDIR (stbuf.st_mode))
         {
           snprintf (srcpath, sizeof(srcpath), "%s/boot", root_mountpoint);
-          if (mount (srcpath, destpath, NULL, MS_BIND, NULL) < 0)
+          if (mount (srcpath, "boot", NULL, MS_BIND, NULL) < 0)
             {
-              perrorv ("failed to bind mount %s to %s", srcpath, destpath);
+              perrorv ("failed to bind mount %s to boot", srcpath);
               exit (EXIT_FAILURE);
             }
         }
-    }
-
-  /* Here we do a dance to chdir to the newroot so that we can have
-   * the potential overlayfs mount points not look ugly.  However...I
-   * think we could do this a lot earlier and make all of the mounts
-   * here just be relative.
-   */
-  orig_cwd_dfd = openat (AT_FDCWD, ".", O_RDONLY | O_NONBLOCK | O_DIRECTORY | O_CLOEXEC | O_NOCTTY);
-  if (orig_cwd_dfd < 0)
-    {
-      perrorv ("failed to open .");
-      exit (EXIT_FAILURE);
-    }
-
-  if (chdir (newroot) < 0)
-    {
-      perrorv ("failed to chdir to newroot");
-      exit (EXIT_FAILURE);
     }
 
   /* Do we have a persistent overlayfs for /usr?  If so, mount it now. */
@@ -242,7 +272,7 @@ main(int argc, char *argv[])
 	{
 	  if (mount (".", ".", NULL, MS_REMOUNT | MS_SILENT, NULL) < 0)
 	    {
-	      perrorv ("Failed to remount rootfs writable (for overlayfs)");
+	      perrorv ("failed to remount rootfs writable (for overlayfs)");
 	      exit (EXIT_FAILURE);
 	    }
 	}
@@ -268,32 +298,70 @@ main(int argc, char *argv[])
 	}
     }
 
-  if (fchdir (orig_cwd_dfd) < 0)
-    {
-      perrorv ("failed to chdir to orig root");
-      exit (EXIT_FAILURE);
-    }
-  (void) close (orig_cwd_dfd);
-
   touch_run_ostree ();
 
-  /* Move physical root to $deployment/sysroot */
-  snprintf (destpath, sizeof(destpath), "%s/sysroot", newroot);
-  if (mount (root_mountpoint, destpath, NULL, MS_MOVE, NULL) < 0)
+  if (strcmp(root_mountpoint, "/") == 0)
     {
-      perrorv ("Failed to MS_MOVE %s to '%s'", root_mountpoint, destpath);
-      exit (EXIT_FAILURE);
+      /* pivot_root rotates two mount points around.  In this instance . (the
+       * deploy location) becomes / and the existing / becomes /sysroot.  We
+       * have to use pivot_root rather than mount --move in this instance
+       * because our deploy location is mounted as a subdirectory of the real
+       * sysroot, so moving sysroot would also move the deploy location.   In
+       * reality attempting mount --move would fail with EBUSY. */
+      if (pivot_root (".", "sysroot") < 0)
+        {
+          perrorv ("failed to pivot_root to deployment");
+          exit (EXIT_FAILURE);
+        }
+    }
+  else
+    {
+      /* In this instance typically we have our ready made-up up root at
+       * /sysroot/ostree/deploy/.../ (deploy_path) and the real rootfs at
+       * /sysroot (root_mountpoint).  We want to end up with our made-up root at
+       * /sysroot/ and the real rootfs under /sysroot/sysroot as systemd will be
+       * responsible for moving /sysroot to /.
+       *
+       * We need to do this in 3 moves to avoid trying to move /sysroot under
+       * itself:
+       *
+       * 1. /sysroot/ostree/deploy/... -> /sysroot.tmp
+       * 2. /sysroot -> /sysroot.tmp/sysroot
+       * 3. /sysroot.tmp -> /sysroot
+       */
+      if (mkdir ("/sysroot.tmp", 0755) < 0)
+        {
+          perrorv ("couldn't create temporary sysroot /sysroot.tmp: ");
+          exit (EXIT_FAILURE);
+        }
+
+      if (mount (deploy_path, "/sysroot.tmp", NULL, MS_MOVE, NULL) < 0)
+        {
+          perrorv ("failed to MS_MOVE '%s' to '/sysroot.tmp'", deploy_path);
+          exit (EXIT_FAILURE);
+        }
+
+      if (mount (root_mountpoint, "sysroot", NULL, MS_MOVE, NULL) < 0)
+        {
+          perrorv ("failed to MS_MOVE '%s' to 'sysroot'", root_mountpoint);
+          exit (EXIT_FAILURE);
+        }
+
+      if (mount (".", root_mountpoint, NULL, MS_MOVE, NULL) < 0)
+        {
+          perrorv ("failed to MS_MOVE %s to %s", deploy_path, root_mountpoint);
+          exit (EXIT_FAILURE);
+        }
     }
 
-  /* Now that we've set up all the bind mounts in /sysroot.tmp which
-   * points to the deployment, move it /sysroot.  From there,
-   * systemd's initrd-switch-root.target will take over.
-   */
-  if (mount (newroot, root_mountpoint, NULL, MS_MOVE, NULL) < 0)
+  if (getpid() == 1)
     {
-      perrorv ("failed to MS_MOVE %s to %s", deploy_path, root_mountpoint);
+      execl ("/sbin/init", "/sbin/init", NULL);
+      perrorv ("failed to exec init inside ostree");
       exit (EXIT_FAILURE);
     }
-  
-  exit (EXIT_SUCCESS);
+  else
+    {
+      exit (EXIT_SUCCESS);
+    }
 }

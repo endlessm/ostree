@@ -1,0 +1,98 @@
+'\" t
+.\"     Title: ostree pull
+.\"    Author: Colin Walters <walters@verbum.org>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 08/06/2016
+.\"    Manual: ostree pull
+.\"    Source: OSTree
+.\"  Language: English
+.\"
+.TH "OSTREE PULL" "1" "" "OSTree" "ostree pull"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ostree-pull \- Download data from a remote repository
+.SH "SYNOPSIS"
+.HP \w'\fBostree\ pull\ \fR\fB{REMOTE}\fR\fB\ \fR\fB[BRANCH]\fR\ 'u
+\fBostree pull \fR\fB{REMOTE}\fR\fB \fR\fB[BRANCH]\fR
+.SH "OPTIONS"
+.PP
+\fB\-\-commit\-metadata\-only\fR
+.RS 4
+Fetch only the commit metadata\&.
+.RE
+.PP
+\fB\-\-disable\-fsync\fR
+.RS 4
+Do no invoke fsync()\&.
+.RE
+.PP
+\fB\-\-untrusted\fR
+.RS 4
+Do not trust local sources, verify checksums and don\*(Aqt hardlink into source\&.
+.RE
+.PP
+\fB\-\-disable\-static\-deltas\fR
+.RS 4
+Do not use static deltas\&.
+.RE
+.PP
+\fB\-\-mirror\fR
+.RS 4
+Write refs suitable for a mirror\&.
+.RE
+.PP
+\fB\-\-subpath\fR=SUBPATH
+.RS 4
+Only pull the provided subpath\&.
+.RE
+.PP
+\fB\-\-depth\fR=DEPTH
+.RS 4
+Traverse DEPTH parents (\-1=infinite) (default: 0)\&.
+.RE
+.SH "DESCRIPTION"
+.PP
+This command can retrieve just a specific commit, or go all the way to performing a full mirror of the remote repository\&. If no
+BRANCH
+is specified, all branches are retrieved\&.
+.PP
+A special syntax in the
+@
+character allows specifying a specific commit to retrieve from a branch\&. This
+.SH "EXAMPLE"
+.PP
+\fB$ ostree \-\-repo=repo pull \-\-depth=\-1 \-\-mirror remote_name\fR
+.PP
+Perform a complete mirror of the remote\&. (This is likely most useful if your repository is also
+archive\-z2
+mode)
+.PP
+\fB$ ostree \-\-repo=repo pull remote_name exampleos/x86_64/standard\fR
+.PP
+Fetch the most recent commit to
+exampleos/x86_64/standard\&.
+.PP
+\fB$ ostree \-\-repo=repo pull remote_name exampleos/x86_64/standard@98ea6e4f216f2fb4b69fff9b3a44842c38686ca685f3f55dc48c5d3fb1107be4\fR
+.PP
+Download the specific commit starting with
+98ea6e
+as if it was the latest commit for
+exampleos/x86_64/standard\&.
