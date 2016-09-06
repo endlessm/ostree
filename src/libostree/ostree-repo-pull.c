@@ -423,7 +423,7 @@ write_commitpartial_for (OtPullData *pull_data,
   g_autofree char *commitpartial_path = _ostree_get_commitpartial_path (checksum);
   glnx_fd_close int fd = -1;
 
-  fd = openat (pull_data->repo->repo_dir_fd, commitpartial_path, O_EXCL | O_CREAT | O_WRONLY | O_CLOEXEC | O_NOCTTY, 0600);
+  fd = openat (pull_data->repo->repo_dir_fd, commitpartial_path, O_EXCL | O_CREAT | O_WRONLY | O_CLOEXEC | O_NOCTTY, 0644);
   if (fd == -1)
     {
       if (errno != EEXIST)
@@ -2159,7 +2159,7 @@ repo_remote_fetch_summary (OstreeRepo    *self,
 /**
  * ostree_repo_pull_with_options:
  * @self: Repo
- * @remote_name: Name of remote
+ * @remote_name_or_baseurl: Name of remote or file:// url
  * @options: A GVariant a{sv} with an extensible set of flags.
  * @progress: (allow-none): Progress
  * @cancellable: Cancellable
@@ -2211,8 +2211,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   GSource *update_timeout = NULL;
   gboolean disable_static_deltas = FALSE;
   gboolean require_static_deltas = FALSE;
-  gboolean opt_gpg_verify = FALSE;
-  gboolean opt_gpg_verify_summary = FALSE;
+  gboolean opt_gpg_verify_set = FALSE;
+  gboolean opt_gpg_verify_summary_set = FALSE;
   const char *url_override = NULL;
 
   if (options)
@@ -2224,8 +2224,10 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       flags = flags_i;
       (void) g_variant_lookup (options, "subdir", "&s", &dir_to_pull);
       (void) g_variant_lookup (options, "override-remote-name", "s", &pull_data->remote_name);
-      (void) g_variant_lookup (options, "gpg-verify", "b", &opt_gpg_verify);
-      (void) g_variant_lookup (options, "gpg-verify-summary", "b", &opt_gpg_verify_summary);
+      opt_gpg_verify_set =
+        g_variant_lookup (options, "gpg-verify", "b", &pull_data->gpg_verify);
+      opt_gpg_verify_summary_set =
+        g_variant_lookup (options, "gpg-verify-summary", "b", &pull_data->gpg_verify_summary);
       (void) g_variant_lookup (options, "depth", "i", &pull_data->maxdepth);
       (void) g_variant_lookup (options, "disable-static-deltas", "b", &disable_static_deltas);
       (void) g_variant_lookup (options, "require-static-deltas", "b", &require_static_deltas);
@@ -2250,6 +2252,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   pull_data->is_mirror = (flags & OSTREE_REPO_PULL_FLAGS_MIRROR) > 0;
   pull_data->is_commit_only = (flags & OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY) > 0;
   pull_data->is_untrusted = (flags & OSTREE_REPO_PULL_FLAGS_UNTRUSTED) > 0;
+  pull_data->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
 
   if (error)
     pull_data->async_error = &pull_data->cached_async_error;
@@ -2286,9 +2289,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       /* For compatibility with pull-local, don't gpg verify local
        * pulls by default.
        */
-      pull_data->gpg_verify = opt_gpg_verify;
-      pull_data->gpg_verify_summary = opt_gpg_verify_summary;
-
       if ((pull_data->gpg_verify || pull_data->gpg_verify_summary) &&
           pull_data->remote_name == NULL)
         {
@@ -2300,12 +2300,18 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   else
     {
       pull_data->remote_name = g_strdup (remote_name_or_baseurl);
-      if (!ostree_repo_remote_get_gpg_verify (self, pull_data->remote_name,
-                                              &pull_data->gpg_verify, error))
-        goto out;
-      if (!ostree_repo_remote_get_gpg_verify_summary (self, pull_data->remote_name,
-                                                      &pull_data->gpg_verify_summary, error))
-        goto out;
+
+      /* Fetch GPG verification settings from remote if it wasn't already
+       * explicitly set in the options. */
+      if (!opt_gpg_verify_set)
+        if (!ostree_repo_remote_get_gpg_verify (self, pull_data->remote_name,
+                                                &pull_data->gpg_verify, error))
+          goto out;
+
+      if (!opt_gpg_verify_summary_set)
+        if (!ostree_repo_remote_get_gpg_verify_summary (self, pull_data->remote_name,
+                                                        &pull_data->gpg_verify_summary, error))
+          goto out;
     }
 
   pull_data->phase = OSTREE_PULL_PHASE_FETCHING_REFS;
@@ -2412,6 +2418,12 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
           goto out;
         }
     }
+
+  /* For local pulls, default to disabling static deltas so that the
+   * exact object files are copied.
+   */
+  if (pull_data->remote_repo_local && !require_static_deltas)
+    disable_static_deltas = TRUE;
 
   pull_data->static_delta_superblocks = g_ptr_array_new_with_free_func ((GDestroyNotify)g_variant_unref);
 
@@ -2665,7 +2677,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       if (G_UNLIKELY (errno != EEXIST))
         {
           glnx_set_error_from_errno (error);
-          return FALSE;
+          goto out;
         }
     }
 
@@ -2884,6 +2896,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     g_source_destroy (update_timeout);
   g_strfreev (configured_branches);
   g_clear_object (&pull_data->fetcher);
+  g_clear_object (&pull_data->cancellable);
   g_clear_object (&pull_data->remote_repo_local);
   g_free (pull_data->remote_name);
   if (pull_data->base_uri)
@@ -2994,7 +3007,7 @@ out:
 
 gboolean
 ostree_repo_pull_with_options (OstreeRepo             *self,
-                               const char             *remote_name,
+                               const char             *remote_name_or_baseurl,
                                GVariant               *options,
                                OstreeAsyncProgress    *progress,
                                GCancellable           *cancellable,

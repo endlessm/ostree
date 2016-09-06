@@ -1540,6 +1540,7 @@ ostree_sysroot_simple_write_deployment (OstreeSysroot      *sysroot,
   OstreeDeployment *booted_deployment = NULL;
   g_autoptr(GPtrArray) deployments = NULL;
   g_autoptr(GPtrArray) new_deployments = g_ptr_array_new_with_free_func (g_object_unref);
+  const gboolean postclean = (flags & OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NO_CLEAN) == 0;
   gboolean retain = (flags & OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN) > 0;
   const gboolean make_default = !((flags & OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NOT_DEFAULT) > 0);
   gboolean added_new = FALSE;
@@ -1593,8 +1594,11 @@ ostree_sysroot_simple_write_deployment (OstreeSysroot      *sysroot,
   if (!ostree_sysroot_write_deployments (sysroot, new_deployments, cancellable, error))
     goto out;
 
-  if (!ostree_sysroot_cleanup (sysroot, cancellable, error))
-    goto out;
+  if (postclean)
+    {
+      if (!ostree_sysroot_cleanup (sysroot, cancellable, error))
+        goto out;
+    }
 
   ret = TRUE;
  out:
@@ -1776,17 +1780,6 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
    * threads, etc.
    */
   {
-    /* Make a copy of the fd that's *not* FD_CLOEXEC so that we pass
-     * it to the child.
-     */
-    glnx_fd_close int child_deployment_dfd = dup (deployment_dfd);
-
-    if (child_deployment_dfd < 0)
-      {
-        glnx_set_error_from_errno (error);
-        goto out;
-      }
-
     mount_child = fork ();
     if (mount_child < 0)
       {
@@ -1796,9 +1789,8 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
     else if (mount_child == 0)
       {
         /* Child process.  Do NOT use any GLib API here. */
-        if (fchdir (child_deployment_dfd) < 0)
+        if (fchdir (deployment_dfd) < 0)
           exit (EXIT_FAILURE);
-        (void) close (child_deployment_dfd);
         if (mount ("overlay", "/usr", "overlay", 0, ovl_options) < 0)
           exit (EXIT_FAILURE);
         exit (EXIT_SUCCESS);

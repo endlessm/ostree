@@ -798,11 +798,13 @@ gboolean       ostree_repo_read_commit (OstreeRepo    *self,
  * @OSTREE_REPO_LIST_OBJECTS_LOOSE: List only loose (plain file) objects
  * @OSTREE_REPO_LIST_OBJECTS_PACKED: List only packed (compacted into blobs) objects
  * @OSTREE_REPO_LIST_OBJECTS_ALL: List all objects
+ * @OSTREE_REPO_LIST_OBJECTS_NO_PARENTS: Only list objects in this repo, not parents
  */
 typedef enum {
   OSTREE_REPO_LIST_OBJECTS_LOOSE = (1 << 0),
   OSTREE_REPO_LIST_OBJECTS_PACKED = (1 << 1),
-  OSTREE_REPO_LIST_OBJECTS_ALL = (1 << 2)
+  OSTREE_REPO_LIST_OBJECTS_ALL = (1 << 2),
+  OSTREE_REPO_LIST_OBJECTS_NO_PARENTS = (1 << 3),
 } OstreeRepoListObjectsFlags;
 
 /**
@@ -1004,7 +1006,7 @@ ostree_repo_pull_one_dir (OstreeRepo               *self,
 
 _OSTREE_PUBLIC
 gboolean ostree_repo_pull_with_options (OstreeRepo             *self,
-                                        const char             *remote_name,
+                                        const char             *remote_name_or_baseurl,
                                         GVariant               *options,
                                         OstreeAsyncProgress    *progress,
                                         GCancellable           *cancellable,
