@@ -1,4 +1,4 @@
-ostree (2016.9-1) UNRELEASED; urgency=medium
+ostree (2016.9-1) unstable; urgency=medium
 
   * New upstream version
     - update symbols file for new ABI
@@ -10,7 +10,7 @@ ostree (2016.9-1) UNRELEASED; urgency=medium
       drop, applied upstream
   * Explicitly build-depend on xsltproc, which is directly used
 
- -- Simon McVittie <smcv@debian.org>  Fri, 12 Aug 2016 10:30:01 +0100
+ -- Simon McVittie <smcv@debian.org>  Tue, 06 Sep 2016 09:59:00 +0100
 
 ostree (2016.7-1) unstable; urgency=medium
 
