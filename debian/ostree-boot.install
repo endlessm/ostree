@@ -4,5 +4,5 @@ lib/systemd/system/ostree-prepare-root.service
 lib/systemd/system/ostree-remount.service
 usr/lib/dracut/modules.d/98ostree
 usr/lib/ostree/grub2-15_ostree
-usr/sbin/ostree-prepare-root
-usr/sbin/ostree-remount
+usr/lib/ostree/ostree-prepare-root
+usr/lib/ostree/ostree-remount
