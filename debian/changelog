@@ -1,3 +1,9 @@
+ostree (2016.10-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 09 Sep 2016 16:57:17 +0100
+
 ostree (2016.9-2) unstable; urgency=medium
 
   * debian/patches/Terminate-individual-tests-after-half-an-hour.patch:
