@@ -1,0 +1,25 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Fri, 9 Sep 2016 08:23:36 +0100
+Subject: Terminate individual tests after half an hour
+
+While using the Automake parallel test harness, if a test hangs for
+long enough for an external watchdog to kill the entire build process
+(as happens in Debian sbuild after 150 minutes with no activity on
+stdout/stderr), the logs will not be shown. If we make an individual
+test time out sooner, logs are more likely to be shown.
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ buildutil/tap-test | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/buildutil/tap-test b/buildutil/tap-test
+index 6b2eb5c..4971f0b 100755
+--- a/buildutil/tap-test
++++ b/buildutil/tap-test
+@@ -20,4 +20,4 @@ function cleanup () {
+ }
+ trap cleanup EXIT
+ cd ${tempdir}
+-${srcd}/${bn} -k --tap
++timeout --kill-after=60 1800 ${srcd}/${bn} -k --tap

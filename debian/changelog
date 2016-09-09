@@ -1,3 +1,11 @@
+ostree (2016.9-2) unstable; urgency=medium
+
+  * debian/patches/Terminate-individual-tests-after-half-an-hour.patch:
+    terminate individual tests after 30 minutes, in an attempt to debug
+    what happened on the ppc64el buildd
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 09 Sep 2016 08:23:44 +0100
+
 ostree (2016.9-1) unstable; urgency=medium
 
   * New upstream version
