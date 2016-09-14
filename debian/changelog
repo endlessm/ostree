@@ -1,6 +1,7 @@
 ostree (2016.10-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Make libostree-dev Multi-Arch: same
 
  -- Simon McVittie <smcv@debian.org>  Fri, 09 Sep 2016 16:57:17 +0100
 

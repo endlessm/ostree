@@ -76,6 +76,7 @@ Description: content-addressed filesystem for operating system binaries (library
 
 Package: libostree-dev
 Architecture: linux-any
+Multi-Arch: same
 Section: libdevel
 Depends:
  gir1.2-ostree-1.0 (= ${binary:Version}),
