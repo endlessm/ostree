@@ -100,6 +100,7 @@ Description: Development files for the ostree library
 
 Package: libostree-doc
 Architecture: all
+Multi-Arch: foreign
 Section: doc
 Depends:
  ${misc:Depends},
