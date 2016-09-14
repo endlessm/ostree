@@ -34,6 +34,7 @@ Build-Depends:
  libsoup2.4-dev (>= 2.39.1),
  libsystemd-dev,
  procps,
+ xsltproc,
  zlib1g-dev,
 Standards-Version: 3.9.8
 Homepage: https://github.com/ostreedev/ostree/
@@ -124,8 +125,6 @@ Architecture: linux-any
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
-Suggests:
- dracut,
 Description: content-addressed filesystem for operating system binaries
  OSTree is a tool and library for managing bootable, immutable, versioned
  filesystem trees. It is like git in that it checksums individual files
@@ -146,7 +145,6 @@ Depends:
  ca-certificates,
  cpio,
  fuse,
- gir1.2-gsystem-1.0,
  gir1.2-ostree-1.0,
  gjs,
  ostree,

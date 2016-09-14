@@ -1,3 +1,37 @@
+ostree (2016.10-0) master; urgency=medium
+
+  * New upstream version (T13340)
+  * Resync debian packaging changes. Downstream changes still kept:
+    - Have our ostree package still maintaining the parts needed for
+      boot rather than being split out into an ostree-boot package.
+    - The grub2 files are manually removed before dh_install since we
+      only want the Grub BLS support.
+    - Add deprecation rules for old package names (T11513)
+
+ -- Mario Sanchez Prada <mario@endlessm.com>  Wed, 14 Sep 2016 01:07:56 +0000
+
+ostree (2016.9-2) unstable; urgency=medium
+
+  * debian/patches/Terminate-individual-tests-after-half-an-hour.patch:
+    terminate individual tests after 30 minutes, in an attempt to debug
+    what happened on the ppc64el buildd
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 09 Sep 2016 08:23:44 +0100
+
+ostree (2016.9-1) unstable; urgency=medium
+
+  * New upstream version
+    - update symbols file for new ABI
+    - update copyright file
+    - update ostree-boot packaging: the utilities in /usr/sbin moved to
+      /usr/lib/ostree
+    - drop libgsystem build-dependency
+    - d/p/Makefile-tests.am-make-check-uses-the-built-binaries.patch:
+      drop, applied upstream
+  * Explicitly build-depend on xsltproc, which is directly used
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 06 Sep 2016 09:59:00 +0100
+
 ostree (2016.9-0) master; urgency=medium
 
   * New upstream version (T13117)
