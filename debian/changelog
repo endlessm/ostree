@@ -1,10 +1,10 @@
-ostree (2016.10-1) UNRELEASED; urgency=medium
+ostree (2016.10-1) unstable; urgency=medium
 
   * New upstream release
   * Make libostree-dev Multi-Arch: same
   * Make libostree-doc Multi-Arch: foreign
 
- -- Simon McVittie <smcv@debian.org>  Fri, 09 Sep 2016 16:57:17 +0100
+ -- Simon McVittie <smcv@debian.org>  Thu, 15 Sep 2016 08:26:51 +0100
 
 ostree (2016.9-2) unstable; urgency=medium
 
