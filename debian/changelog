@@ -2,6 +2,8 @@ ostree (2016.10-2) UNRELEASED; urgency=medium
 
   * Relicense debian/ from GPL-2+ to LGPL-2+, with permission from
     David King
+  * Install GObject-Introspection typelibs to multiarch path,
+    and mark gir1.2-ostree-1.0 as Multi-Arch: same
 
  -- Simon McVittie <smcv@debian.org>  Wed, 21 Sep 2016 21:58:32 +0100
 
