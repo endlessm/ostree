@@ -4,6 +4,8 @@ ostree (2016.10-2) UNRELEASED; urgency=medium
     David King
   * Install GObject-Introspection typelibs to multiarch path,
     and mark gir1.2-ostree-1.0 as Multi-Arch: same
+  * libostree-dev: stop depending on ostree. It isn't necessary to
+    use the library, and would break multiarch installability
 
  -- Simon McVittie <smcv@debian.org>  Wed, 21 Sep 2016 21:58:32 +0100
 
