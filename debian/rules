@@ -17,6 +17,7 @@ override_dh_autoreconf:
 override_dh_auto_configure:
 	dh_auto_configure -- \
 		--disable-silent-rules \
+		--disable-otmpfile \
 		--enable-gtk-doc \
 		--enable-installed-tests \
 		--libexecdir='$${prefix}/lib' \

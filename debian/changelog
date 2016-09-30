@@ -93,6 +93,14 @@ ostree (2016.11-1) unstable; urgency=medium
 
  -- Simon McVittie <smcv@debian.org>  Fri, 07 Oct 2016 23:39:06 +0100
 
+ostree (2016.10-1~bpo8+2) jessie-backports; urgency=medium
+
+  * Disable use of O_TMPFILE in the jessie backport. O_TMPFILE was
+    still a new thing when jessie was released, and fails on
+    the arm64, armel, armhf, powerpc and ppc64el buildds.
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 30 Sep 2016 21:37:41 +0100
+
 ostree (2016.10-1) unstable; urgency=medium
 
   * New upstream release
