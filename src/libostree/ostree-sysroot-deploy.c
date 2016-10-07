@@ -894,6 +894,42 @@ merge_configuration (OstreeSysroot         *sysroot,
   return ret;
 }
 
+static gboolean
+write_origin_file_internal (OstreeSysroot         *sysroot,
+                            OstreeDeployment      *deployment,
+                            GKeyFile              *new_origin,
+                            GLnxFileReplaceFlags   flags,
+                            GCancellable          *cancellable,
+                            GError               **error)
+{
+  GKeyFile *origin =
+    new_origin ? new_origin : ostree_deployment_get_origin (deployment);
+
+  if (origin)
+    {
+      g_autofree char *origin_path = NULL;
+      g_autofree char *contents = NULL;
+      gsize len;
+
+      origin_path = g_strdup_printf ("ostree/deploy/%s/deploy/%s.%d.origin",
+                                     ostree_deployment_get_osname (deployment),
+                                     ostree_deployment_get_csum (deployment),
+                                     ostree_deployment_get_deployserial (deployment));
+
+      contents = g_key_file_to_data (origin, &len, error);
+      if (!contents)
+        return FALSE;
+
+      if (!glnx_file_replace_contents_at (sysroot->sysroot_fd,
+                                          origin_path, (guint8*)contents, len,
+                                          flags,
+                                          cancellable, error))
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
 /**
  * ostree_sysroot_write_origin_file:
  * @sysroot: System root
@@ -913,35 +949,9 @@ ostree_sysroot_write_origin_file (OstreeSysroot         *sysroot,
                                   GCancellable          *cancellable,
                                   GError               **error)
 {
-  gboolean ret = FALSE;
-  GKeyFile *origin =
-    new_origin ? new_origin : ostree_deployment_get_origin (deployment);
-
-  if (origin)
-    {
-      g_autoptr(GFile) deployment_path = ostree_sysroot_get_deployment_directory (sysroot, deployment);
-      g_autoptr(GFile) origin_path = ostree_sysroot_get_deployment_origin_path (deployment_path);
-      g_autoptr(GFile) origin_parent = g_file_get_parent (origin_path);
-      g_autofree char *contents = NULL;
-      gsize len;
-      g_autoptr(GBytes) contents_bytes = NULL;
-
-      contents = g_key_file_to_data (origin, &len, error);
-      if (!contents)
-        goto out;
-      contents_bytes = g_bytes_new_static (contents, len);
-
-      if (!ot_gfile_replace_contents_fsync (origin_path, contents_bytes,
-                                            cancellable, error))
-        goto out;
-
-      if (!ot_util_fsync_directory (origin_parent, cancellable, error))
-        goto out;
-    }
-
-  ret = TRUE;
- out:
-  return ret;
+  return write_origin_file_internal (sysroot, deployment, new_origin,
+                                     GLNX_FILE_REPLACE_DATASYNC_NEW,
+                                     cancellable, error);
 }
 
 static gboolean
@@ -1635,25 +1645,28 @@ cleanup_legacy_current_symlinks (OstreeSysroot         *self,
                                  GCancellable          *cancellable,
                                  GError               **error)
 {
-  gboolean ret = FALSE;
   guint i;
-  g_autoptr(GHashTable) created_current_for_osname =
-    g_hash_table_new (g_str_hash, g_str_equal);
+  g_autoptr(GString) buf = g_string_new ("");
 
   for (i = 0; i < self->deployments->len; i++)
     {
       OstreeDeployment *deployment = self->deployments->pdata[i];
       const char *osname = ostree_deployment_get_osname (deployment);
-      g_autoptr(GFile) osdir = ot_gfile_resolve_path_printf (self->path, "ostree/deploy/%s", osname);
-      g_autoptr(GFile) legacy_link = g_file_get_child (osdir, "current");
 
-      if (!ot_gfile_ensure_unlinked (legacy_link, cancellable, error))
-        goto out;
+      g_string_truncate (buf, 0);
+      g_string_append_printf (buf, "ostree/deploy/%s/current", osname);
+
+      if (unlinkat (self->sysroot_fd, buf->str, 0) < 0)
+        {
+          if (errno != ENOENT)
+            {
+              glnx_set_error_from_errno (error);
+              return FALSE;
+            }
+        }
     }
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 static gboolean
@@ -1814,7 +1827,7 @@ _ostree_sysroot_write_deployments_internal (OstreeSysroot     *self,
     {
       int new_bootversion = self->bootversion ? 0 : 1;
       glnx_unref_object OstreeBootloader *bootloader = NULL;
-      g_autoptr(GFile) new_loader_entries_dir = NULL;
+      g_autofree char* new_loader_entries_dir = NULL;
       glnx_unref_object OstreeRepo *repo = NULL;
       gboolean show_osname = FALSE;
 
@@ -1835,11 +1848,11 @@ _ostree_sysroot_write_deployments_internal (OstreeSysroot     *self,
       if (!_ostree_sysroot_query_bootloader (self, &bootloader, cancellable, error))
         goto out;
 
-      new_loader_entries_dir = ot_gfile_resolve_path_printf (self->path, "boot/loader.%d/entries",
-                                                             new_bootversion);
-      if (!glnx_shutil_rm_rf_at (AT_FDCWD, gs_file_get_path_cached (new_loader_entries_dir), cancellable, error))
+      new_loader_entries_dir = g_strdup_printf ("boot/loader.%d/entries", new_bootversion);
+      if (!glnx_shutil_rm_rf_at (self->sysroot_fd, new_loader_entries_dir, cancellable, error))
         goto out;
-      if (!ot_util_ensure_directory_and_fsync (new_loader_entries_dir, cancellable, error))
+      if (!glnx_shutil_mkdir_p_at (self->sysroot_fd, new_loader_entries_dir, 0755,
+                                   cancellable, error))
         goto out;
       
       /* Need the repo to try and extract the versions for deployments.
@@ -2152,8 +2165,12 @@ ostree_sysroot_deploy_tree (OstreeSysroot     *self,
           goto out;
       }
 
-    if (!ostree_sysroot_write_origin_file (self, new_deployment, NULL,
-                                           cancellable, error))
+    /* Don't fsync here, as we assume that's all done in
+     * ostree_sysroot_write_deployments().
+     */
+    if (!write_origin_file_internal (self, new_deployment, NULL,
+                                     GLNX_FILE_REPLACE_NODATASYNC,
+                                     cancellable, error))
       {
         g_prefix_error (error, "Writing out origin file: ");
         goto out;

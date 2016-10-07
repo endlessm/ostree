@@ -1,0 +1,68 @@
+'\" t
+.\"     Title: ostree pull-local
+.\"    Author: Colin Walters <walters@verbum.org>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 10/05/2016
+.\"    Manual: ostree pull-local
+.\"    Source: OSTree
+.\"  Language: English
+.\"
+.TH "OSTREE PULL\-LOCAL" "1" "" "OSTree" "ostree pull-local"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ostree-pull-local \- Copy data from a source repository
+.SH "SYNOPSIS"
+.HP \w'\fBostree\ pull\-local\fR\ 'u
+\fBostree pull\-local\fR [OPTIONS...] {SOURCE_REPO} [REFS...]
+.SH "DESCRIPTION"
+.PP
+Copies data from a given repository; optimized for copies only between repositories on the same system\&.
+.SH "OPTIONS"
+.PP
+\fB\-\-remote\fR="REMOTE"
+.RS 4
+Add REMOTE to refspec\&.
+.RE
+.PP
+\fB\-\-disable\-fsync\fR
+.RS 4
+Do no invoke fsync()\&.
+.RE
+.PP
+\fB\-\-untrusted\fR
+.RS 4
+Do not trust source, verify checksums and don\*(Aqt hardlink into source\&.
+.RE
+.SH "EXAMPLE"
+.PP
+\fB$ ostree pull\-local /ostree/repo\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+        Enumerating objects\&.\&.\&.
+        pull: 25709/25709 scanned, 0 objects copied
+        Writing 5 refs
+.fi
+.if n \{\
+.RE
+.\}

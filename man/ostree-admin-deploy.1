@@ -1,0 +1,113 @@
+'\" t
+.\"     Title: ostree admin deploy
+.\"    Author: Colin Walters <walters@verbum.org>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 10/05/2016
+.\"    Manual: ostree admin deploy
+.\"    Source: OSTree
+.\"  Language: English
+.\"
+.TH "OSTREE ADMIN DEPLOY" "1" "" "OSTree" "ostree admin deploy"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ostree-admin-deploy \- Checkout a revision as the new default deployment
+.SH "SYNOPSIS"
+.HP \w'\fBostree\ admin\ deploy\fR\ 'u
+\fBostree admin deploy\fR [OPTIONS...] {REFSPEC}
+.SH "DESCRIPTION"
+.PP
+Takes a commit or revision REFSPEC, and queues the new deployment as default upon reboot\&.
+.SH "OPTIONS"
+.PP
+\fB\-\-os\fR="OSNAME"
+.RS 4
+Use a different operating system root than the current one\&.
+.RE
+.PP
+\fB\-\-origin\-file\fR="FILENAME"
+.RS 4
+Use FILENAME as the origin, which is where OSTree will look for updated versions of the tree\&.
+.RE
+.PP
+\fB\-\-retain\fR
+.RS 4
+Do not delete previous deployment\&.
+.RE
+.PP
+\fB\-\-karg\-proc\-cmdline\fR
+.RS 4
+Import current /proc/cmdline\&.
+.RE
+.PP
+\fB\-\-karg\fR="NAME=VALUE"
+.RS 4
+Set kernel argument, like root=/dev/sda1; this overrides any earlier argument with the same name\&.
+.RE
+.PP
+\fB\-\-karg\-append\fR="NAME=VALUE"
+.RS 4
+Append kernel argument; useful with e\&.g\&. console= that can be used multiple times\&.
+.RE
+.SH "EXAMPLE"
+.PP
+\fB$ ostree admin status\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+        * gnome\-ostree 67e382b11d213a402a5313e61cbc69dfd5ab93cb07\&.0
+            origin refspec: gnome\-ostree/buildmaster/x86_64\-runtime
+          gnome\-ostree ce19c41036cc45e49b0cecf6b157523c2105c4de1ce3\&.0
+            origin refspec: gnome\-ostree/buildmaster/x86_64\-runtime
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+\fB$ ostree admin deploy gnome\-ostree/buildmaster/x86_64\-runtime\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+        ostadmin: Creating deployment /ostree/deploy/gnome\-ostree/deploy/7e382b11d213a402a5313e61cbc69dfd5ab93cb07\&.1
+        ostadmin: Processing /etc: 3 modified, 0 removed, 29 added
+        Transaction complete: bootconfig swap: no deployment count change: 0)
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+\fB$ ostree admin status\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+          gnome\-ostree 67e382b11d213a402a5313e61cbc69dfd5ab93cb07\&.1
+            origin refspec: gnome\-ostree/buildmaster/x86_64\-runtime
+        * gnome\-ostree 67e382b11d213a402a5313e61cbc69dfd5ab93cb07\&.0
+            origin refspec: gnome\-ostree/buildmaster/x86_64\-runtime
+.fi
+.if n \{\
+.RE
+.\}
