@@ -7,6 +7,10 @@ ostree (2016.11-1) UNRELEASED; urgency=medium
     and mark gir1.2-ostree-1.0 as Multi-Arch: same
   * libostree-dev: stop depending on ostree. It isn't necessary to
     use the library, and would break multiarch installability
+  * Move to debhelper compat level 10
+    - stop using dh --parallel, it's the default now
+    - don't use autoreconf and systemd addons explicitly, they are
+      the default now
 
  -- Simon McVittie <smcv@debian.org>  Wed, 21 Sep 2016 21:58:32 +0100
 
