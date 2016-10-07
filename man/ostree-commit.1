@@ -1,0 +1,161 @@
+'\" t
+.\"     Title: ostree commit
+.\"    Author: Colin Walters <walters@verbum.org>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 10/05/2016
+.\"    Manual: ostree commit
+.\"    Source: OSTree
+.\"  Language: English
+.\"
+.TH "OSTREE COMMIT" "1" "" "OSTree" "ostree commit"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ostree-commit \- Commit a new revision
+.SH "SYNOPSIS"
+.HP \w'\fBostree\ commit\fR\ 'u
+\fBostree commit\fR [OPTIONS...] \-\-branch= {BRANCH} [PATH]
+.SH "DESCRIPTION"
+.PP
+This allows you to commit changes to a branch\&. The specification of the branch is required\&. The command will print the checksum of a successful commit\&.
+.SH "OPTIONS"
+.PP
+\fB\-\-subject\fR, \fB\-s\fR="SUBJECT"
+.RS 4
+One line subject\&. (optional)
+.RE
+.PP
+\fB\-\-body\fR, \fB\-m\fR="BODY"
+.RS 4
+Full description\&. (optional)
+.RE
+.PP
+\fB\-\-editor\fR, \fB\-e\fR
+.RS 4
+Open a text editor for the commit description\&. It will use OSTREE_EDITOR, VISUAL, EDITOR, or vi, in descending order of preference\&. The commit will be aborted if the message is left empty\&.
+.RE
+.PP
+\fB\-\-branch\fR, \fB\-b\fR="BRANCH"
+.RS 4
+Branch\&. Required, unless \-\-orphan is given\&.
+.RE
+.PP
+\fB\-\-tree\fR="dir=PATH" or "tar=TARFILE" or "ref=COMMIT"
+.RS 4
+Overlay the given argument as a tree\&.
+.RE
+.PP
+\fB\-\-add\-metadata\-string\fR="KEY=VALUE"
+.RS 4
+Add a key/value pair to metadata\&.
+.RE
+.PP
+\fB\-\-add\-detached\-metadata\-string\fR="KEY=VALUE"
+.RS 4
+Add a key/value pair to detached metadata\&.
+.RE
+.PP
+\fB\-\-owner\-uid\fR="UID"
+.RS 4
+Set file ownership user id\&.
+.RE
+.PP
+\fB\-\-owner\-gid\fR="GID"
+.RS 4
+Set file ownership group id\&.
+.RE
+.PP
+\fB\-\-no\-xattrs\fR
+.RS 4
+Do not import extended attributes\&.
+.RE
+.PP
+\fB\-\-link\-checkout\-speedup\fR
+.RS 4
+Optimize for commits of trees composed of hardlinks into the repository\&.
+.RE
+.PP
+\fB\-\-tar\-autocreate\-parents\fR
+.RS 4
+When loading tar archives, automatically create parent directories as needed\&.
+.RE
+.PP
+\fB\-\-skip\-if\-unchanged\fR
+.RS 4
+If the contents are unchanged from previous commit, do nothing\&.
+.RE
+.PP
+\fB\-\-statoverride\fR="PATH"
+.RS 4
+File containing list of modifications to make permissions (file mode, followed by space, followed by file path)\&.
+.RE
+.PP
+\fB\-\-skip\-list\fR="PATH"
+.RS 4
+File containing list of file paths to skip (one path per line)\&.
+.RE
+.PP
+\fB\-\-table\-output\fR
+.RS 4
+Output more information in a KEY: VALUE format\&.
+.RE
+.PP
+\fB\-\-generate\-sizes\fR
+.RS 4
+Generate size information along with commit metadata\&.
+.RE
+.PP
+\fB\-\-gpg\-sign\fR="KEY\-ID"
+.RS 4
+GPG Key ID with which to sign the commit (if have GPGME \- GNU Privacy Guard Made Easy)\&.
+.RE
+.PP
+\fB\-\-gpg\-homedir\fR="HOMEDIR"
+.RS 4
+GPG home directory to use when looking for keyrings (if have GPGME \- GNU Privacy Guard Made Easy)\&.
+.RE
+.PP
+\fB\-\-timestamp\fR="TIMESTAMP"
+.RS 4
+Override the timestamp of the commit to TIMESTAMP\&.
+.RE
+.PP
+\fB\-\-orphan\fR
+.RS 4
+Create a commit without writing to a ref (branch)
+.RE
+.PP
+\fB\-\-fsync\fR="POLICY"
+.RS 4
+POLICY is a boolean which specifies whether fsync should be used or not\&. Default to true\&.
+.RE
+.SH "EXAMPLE"
+.PP
+\fB$ ostree commit \-\-branch=my\-branch \-\-subject="Initial commit"\fR
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+        67e382b11d213a402a5313e61cbc69dfd5ab93cb07fbb8b71c2e84f79fa5d7dc
+.fi
+.if n \{\
+.RE
+.\}

@@ -516,9 +516,9 @@ ostree_repo_finalize (GObject *object)
   g_free (self->commit_stagedir_name);
   glnx_release_lock_file (&self->commit_stagedir_lock);
   g_clear_object (&self->tmp_dir);
-  if (self->tmp_dir_fd)
+  if (self->tmp_dir_fd != -1)
     (void) close (self->tmp_dir_fd);
-  if (self->cache_dir_fd)
+  if (self->cache_dir_fd != -1)
     (void) close (self->cache_dir_fd);
   if (self->objects_dir_fd != -1)
     (void) close (self->objects_dir_fd);
@@ -702,6 +702,7 @@ ostree_repo_init (OstreeRepo *self)
 
   self->repo_dir_fd = -1;
   self->cache_dir_fd = -1;
+  self->tmp_dir_fd = -1;
   self->commit_stagedir_fd = -1;
   self->objects_dir_fd = -1;
   self->uncompressed_objects_dir_fd = -1;
@@ -4701,7 +4702,9 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
         glnx_fd_close int superblock_file_fd = -1;
         g_autoptr(GInputStream) in_stream = NULL;
 
-        _ostree_parse_delta_name (delta_names->pdata[i], &from, &to);
+        if (!_ostree_parse_delta_name (delta_names->pdata[i], &from, &to, error))
+          goto out;
+
         superblock = _ostree_get_relative_static_delta_superblock_path ((from && from[0]) ? from : NULL, to);
         superblock_file_fd = openat (self->repo_dir_fd, superblock, O_RDONLY | O_CLOEXEC);
         if (superblock_file_fd == -1)

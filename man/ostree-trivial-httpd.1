@@ -1,0 +1,66 @@
+'\" t
+.\"     Title: ostree trivial-httpd
+.\"    Author: Colin Walters <walters@verbum.org>
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 10/05/2016
+.\"    Manual: ostree trivial-httpd
+.\"    Source: OSTree
+.\"  Language: English
+.\"
+.TH "OSTREE TRIVIAL\-HTTP" "1" "" "OSTree" "ostree trivial-httpd"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ostree-trivial-httpd \- Simple webserver
+.SH "SYNOPSIS"
+.HP \w'\fBostree\ trivial\-httpd\fR\ 'u
+\fBostree trivial\-httpd\fR [OPTIONS...] [DIR]
+.SH "DESCRIPTION"
+.PP
+This runs a simple webserver and keeps it running until killed\&. If DIR is not specified, it defaults to the current directory\&.
+.SH "OPTIONS"
+.PP
+\fB\-\-daemonize\fR,\fB\-d\fR
+.RS 4
+Fork into background when ready\&.
+.RE
+.PP
+\fB\-\-autoexit\fR
+.RS 4
+Automatically exit when directory is deleted\&.
+.RE
+.PP
+\fB\-\-port\-file\fR,\fB\-p\fR="PATH"
+.RS 4
+Write port number to PATH (\- for standard output)\&.
+.RE
+.PP
+\fB\-\-port\fR,\fB\-P\fR
+.RS 4
+Use the specified TCP port to listen on\&.
+.RE
+.PP
+\fB\-\-force\-range\-requests\fR
+.RS 4
+Force range requests by only serving half of files\&.
+.RE
+.SH "EXAMPLE"
+.PP
+\fB$ ostree trivial\-httpd\fR

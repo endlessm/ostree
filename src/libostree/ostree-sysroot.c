@@ -21,6 +21,8 @@
 #include "config.h"
 
 #include "otutil.h"
+#include <sys/mount.h>
+#include <sys/wait.h>
 
 #include "ostree-core-private.h"
 #include "ostree-sysroot-private.h"
@@ -260,7 +262,10 @@ void
 ostree_sysroot_unload (OstreeSysroot  *self)
 {
   if (self->sysroot_fd != -1)
-    (void) close (self->sysroot_fd);
+    {
+      (void) close (self->sysroot_fd);
+      self->sysroot_fd = -1;
+    }
 }
 
 /**
@@ -1481,6 +1486,16 @@ ostree_sysroot_init_osname (OstreeSysroot       *self,
   if (mkdirat (dfd, "var/lib", 0777) < 0)
     {
       glnx_set_prefix_error_from_errno (error, "Creating %s", "var/tmp");
+      goto out;
+    }
+
+  /* This needs to be available and properly labeled early during the boot
+   * process (before tmpfiles.d kicks in), so that journald can flush logs from
+   * the first boot there. https://bugzilla.redhat.com/show_bug.cgi?id=1265295
+   * */
+  if (mkdirat (dfd, "var/log", 0755) < 0)
+    {
+      glnx_set_prefix_error_from_errno (error, "Creating %s", "var/log");
       goto out;
     }
 
