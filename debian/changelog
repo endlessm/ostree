@@ -11,6 +11,9 @@ ostree (2016.11-1) UNRELEASED; urgency=medium
     - stop using dh --parallel, it's the default now
     - don't use autoreconf and systemd addons explicitly, they are
       the default now
+  * d/p/dist/Retrieve-some-missing-test-files-from-upstream-git.patch:
+    fetch missing test files from upstream git
+    - debian/rules: make the missing scripts executable
 
  -- Simon McVittie <smcv@debian.org>  Wed, 21 Sep 2016 21:58:32 +0100
 
