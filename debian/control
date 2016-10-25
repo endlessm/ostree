@@ -8,6 +8,7 @@ Uploaders:
 Build-Depends:
  attr,
  bison,
+ ca-certificates,
  cpio,
  debhelper (>= 10~),
  docbook-xml,
