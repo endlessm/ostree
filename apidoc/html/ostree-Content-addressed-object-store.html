@@ -6122,6 +6122,7 @@ The following are currently defined:</p>
 <li class="listitem"><p>refs (as): Array of string refs</p></li>
 <li class="listitem"><p>flags (i): An instance of <a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoPullFlags" title="enum OstreeRepoPullFlags"><span class="type">OstreeRepoPullFlags</span></a></p></li>
 <li class="listitem"><p>subdir (s): Pull just this subdirectory</p></li>
+<li class="listitem"><p>subdirs (as): Pull just these subdirectories</p></li>
 <li class="listitem"><p>override-remote-name (s): If local, add this remote to refspec</p></li>
 <li class="listitem"><p>gpg-verify (b): GPG verify commits</p></li>
 <li class="listitem"><p>gpg-verify-summary (b): GPG verify summary</p></li>
@@ -6131,6 +6132,7 @@ The following are currently defined:</p>
 <li class="listitem"><p>override-commit-ids (as): Array of specific commit IDs to fetch for refs</p></li>
 <li class="listitem"><p>dry-run (b): Only print information on what will be downloaded (requires static deltas)</p></li>
 <li class="listitem"><p>override-url (s): Fetch objects from this URL if remote specifies no metalink in options</p></li>
+<li class="listitem"><p>inherit-transaction (b): Don't initiate, finish or abort a transaction, usefult to do mutliple pulls in one transaction.</p></li>
 </ul></div>
 <div class="refsect3">
 <a name="ostree-repo-pull-with-options.parameters"></a><h4>Parameters</h4>
