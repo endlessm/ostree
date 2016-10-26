@@ -1,4 +1,4 @@
-ostree (2016.12-1) UNRELEASED; urgency=medium
+ostree (2016.12-1) unstable; urgency=medium
 
   * Force LC_ALL=C.UTF-8 during build, so that builds in non-English
     locales can pass their build-time tests
@@ -6,7 +6,7 @@ ostree (2016.12-1) UNRELEASED; urgency=medium
   * Build-depend on ca-certificates. glib-networking now generates
     warnings if those are missing, causing the build-time tests to fail.
 
- -- Simon McVittie <smcv@debian.org>  Sat, 08 Oct 2016 15:37:36 +0100
+ -- Simon McVittie <smcv@debian.org>  Wed, 26 Oct 2016 19:11:14 +0100
 
 ostree (2016.11-1) unstable; urgency=medium
 
