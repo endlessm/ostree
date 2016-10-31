@@ -8,10 +8,9 @@ Uploaders:
 Build-Depends:
  attr,
  bison,
+ ca-certificates,
  cpio,
- debhelper (>= 9),
- dh-autoreconf,
- dh-systemd,
+ debhelper (>= 10~),
  docbook-xml,
  docbook-xsl,
  e2fslibs-dev,
@@ -43,6 +42,7 @@ Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ostree.git
 
 Package: gir1.2-ostree-1.0
 Architecture: linux-any
+Multi-Arch: same
 Section: introspection
 Depends:
  ${gir:Depends},
@@ -87,7 +87,6 @@ Section: libdevel
 Depends:
  gir1.2-ostree-1.0 (= ${binary:Version}),
  libglib2.0-dev,
- ostree (= ${binary:Version}),
  pkg-config,
  ${misc:Depends},
 Suggests:

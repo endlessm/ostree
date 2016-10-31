@@ -1,3 +1,40 @@
+ostree (2016.12-1) unstable; urgency=medium
+
+  * Force LC_ALL=C.UTF-8 during build, so that builds in non-English
+    locales can pass their build-time tests
+  * New upstream release
+  * Build-depend on ca-certificates. glib-networking now generates
+    warnings if those are missing, causing the build-time tests to fail.
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 26 Oct 2016 19:11:14 +0100
+
+ostree (2016.11-1) unstable; urgency=medium
+
+  * New upstream release
+  * Relicense debian/ from GPL-2+ to LGPL-2+, with permission from
+    David King
+  * Install GObject-Introspection typelibs to multiarch path,
+    and mark gir1.2-ostree-1.0 as Multi-Arch: same
+  * libostree-dev: stop depending on ostree. It isn't necessary to
+    use the library, and would break multiarch installability
+  * Move to debhelper compat level 10
+    - stop using dh --parallel, it's the default now
+    - don't use autoreconf and systemd addons explicitly, they are
+      the default now
+  * d/p/dist/Retrieve-some-missing-test-files-from-upstream-git.patch:
+    fetch missing test files from upstream git
+    - debian/rules: make the missing scripts executable
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 07 Oct 2016 23:39:06 +0100
+
+ostree (2016.10-1) unstable; urgency=medium
+
+  * New upstream release
+  * Make libostree-dev Multi-Arch: same
+  * Make libostree-doc Multi-Arch: foreign
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 15 Sep 2016 08:26:51 +0100
+
 ostree (2016.10-0) master; urgency=medium
 
   * New upstream version (T13340)
