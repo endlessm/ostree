@@ -1,3 +1,12 @@
+ostree (2016.12-2) unstable; urgency=medium
+
+  * d/p/Filter-bootloader-supplied-kernel-cmdline-options.patch:
+    - Filter out kernel command line parameters set by the bootloading when
+      deriving the configuration from /proc/cmdline.
+  * Add myself to uploaders
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 03 Nov 2016 15:48:01 -0600
+
 ostree (2016.12-1) unstable; urgency=medium
 
   * Force LC_ALL=C.UTF-8 during build, so that builds in non-English

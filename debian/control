@@ -5,6 +5,7 @@ Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.
 Uploaders:
  Matthias Klumpp <mak@debian.org>,
  Simon McVittie <smcv@debian.org>,
+ Sjoerd Simons <sjoerd@debian.org>
 Build-Depends:
  attr,
  bison,
