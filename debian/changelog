@@ -5,6 +5,8 @@ ostree (2016.13-1) UNRELEASED; urgency=medium
       remove, 2016.13 was released with a fixed "make dist"
     - d/p/Filter-bootloader-supplied-kernel-cmdline-options.patch:
       remove, merged upstream
+  * d/copyright: drop copyright and license stanzas for files that are
+    in upstream git but not in tarballs
 
  -- Simon McVittie <smcv@debian.org>  Sun, 20 Nov 2016 15:47:19 +0000
 
