@@ -1,4 +1,4 @@
-ostree (2016.13-1) UNRELEASED; urgency=medium
+ostree (2016.13-1) unstable; urgency=medium
 
   * New upstream release
     - d/p/dist/Retrieve-some-missing-test-files-from-upstream-git.patch:
@@ -8,7 +8,7 @@ ostree (2016.13-1) UNRELEASED; urgency=medium
   * d/copyright: drop copyright and license stanzas for files that are
     in upstream git but not in tarballs
 
- -- Simon McVittie <smcv@debian.org>  Sun, 20 Nov 2016 15:47:19 +0000
+ -- Simon McVittie <smcv@debian.org>  Sun, 20 Nov 2016 21:58:11 +0000
 
 ostree (2016.12-2) unstable; urgency=medium
 
