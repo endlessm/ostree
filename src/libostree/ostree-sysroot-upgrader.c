@@ -188,6 +188,7 @@ ostree_sysroot_upgrader_finalize (GObject *object)
   g_free (self->origin_remote);
   g_free (self->origin_ref);
   g_free (self->override_csum);
+  g_free (self->new_revision);
 
   G_OBJECT_CLASS (ostree_sysroot_upgrader_parent_class)->finalize (object);
 }
@@ -530,7 +531,6 @@ ostree_sysroot_upgrader_pull_one_dir (OstreeSysrootUpgrader  *self,
   glnx_unref_object OstreeRepo *repo = NULL;
   char *refs_to_fetch[] = { NULL, NULL };
   const char *from_revision = NULL;
-  g_autofree char *new_revision = NULL;
   g_autofree char *origin_refspec = NULL;
 
   if (self->override_csum != NULL)

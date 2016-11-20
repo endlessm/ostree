@@ -1,6 +1,7 @@
 /* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
  *
  * Copyright (C) 2015 Red Hat, Inc.
+ * Copyright (C) 2016 Sjoerd Simons <sjoerd@luon.net>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,67 +21,66 @@
 
 #include "config.h"
 
+#include <libsoup/soup.h>
+
 #include "otutil.h"
 
 #include "ot-main.h"
 #include "ot-remote-builtins.h"
+#include "ostree-repo-private.h"
 
-static char* opt_cache_dir;
 
 static GOptionEntry option_entries[] = {
-  { "cache-dir", 0, 0, G_OPTION_ARG_STRING, &opt_cache_dir, "Use custom cache dir", NULL },
   { NULL }
 };
 
 gboolean
-ot_remote_builtin_refs (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_remote_builtin_list_cookies (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   GOptionContext *context;
   glnx_unref_object OstreeRepo *repo = NULL;
   const char *remote_name;
-  gboolean ret = FALSE;
-  g_autoptr(GHashTable) refs = NULL;
+  g_autofree char *jar_path = NULL;
+  g_autofree char *cookie_file = NULL;
+  glnx_unref_object SoupCookieJar *jar = NULL;
+  GSList *cookies;
 
-  context = g_option_context_new ("NAME - List remote refs");
+  context = g_option_context_new ("NAME - Show remote repository cookies");
 
   if (!ostree_option_context_parse (context, option_entries, &argc, &argv,
                                     OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
-    goto out;
+    return FALSE;
 
   if (argc < 2)
     {
       ot_util_usage_error (context, "NAME must be specified", error);
-      goto out;
-    }
-
-  if (opt_cache_dir)
-    {
-      if (!ostree_repo_set_cache_dir (repo, AT_FDCWD, opt_cache_dir, cancellable, error))
-        goto out;
+      return FALSE;
     }
 
   remote_name = argv[1];
 
-  if (!ostree_repo_remote_list_refs (repo, remote_name, &refs, cancellable, error))
-    goto out;
-  else
+  cookie_file = g_strdup_printf ("%s.cookies.txt", remote_name);
+  jar_path = g_build_filename (g_file_get_path (repo->repodir), cookie_file, NULL);
+
+  jar = soup_cookie_jar_text_new (jar_path, TRUE);
+  cookies = soup_cookie_jar_all_cookies (jar);
+
+  while (cookies != NULL)
     {
-      g_autoptr(GList) ordered_keys = NULL;
-      GList *iter = NULL;
+      SoupCookie *cookie = cookies->data;
+      SoupDate *expiry = soup_cookie_get_expires (cookie);
 
-      ordered_keys = g_hash_table_get_keys (refs);
-      ordered_keys = g_list_sort (ordered_keys, (GCompareFunc) strcmp);
+      g_print ("--\n");
+      g_print ("Domain: %s\n", soup_cookie_get_domain (cookie));
+      g_print ("Path: %s\n", soup_cookie_get_path (cookie));
+      g_print ("Name: %s\n", soup_cookie_get_name (cookie));
+      g_print ("Secure: %s\n", soup_cookie_get_secure (cookie) ? "yes" : "no");
+      g_print ("Expires: %s\n", soup_date_to_string (expiry, SOUP_DATE_COOKIE));
+      g_print ("Value: %s\n", soup_cookie_get_value (cookie));
 
-      for (iter = ordered_keys; iter; iter = iter->next)
-        {
-          g_print ("%s:%s\n", remote_name, (const char *) iter->data);
-        }
+      soup_cookie_free (cookie);
+      cookies = g_slist_delete_link (cookies, cookies);
     }
 
-  ret = TRUE;
-
-out:
-  g_option_context_free (context);
-
-  return ret;
+  return TRUE;
 }

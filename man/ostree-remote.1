@@ -1,8 +1,8 @@
 '\" t
 .\"     Title: ostree remote
 .\"    Author: Colin Walters <walters@verbum.org>
-.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
-.\"      Date: 10/05/2016
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 11/10/2016
 .\"    Manual: ostree remote
 .\"    Source: OSTree
 .\"  Language: English
@@ -44,6 +44,12 @@ ostree-remote \- Control remote repository configuration
 \fBostree remote refs\fR {NAME}
 .HP \w'\fBostree\ remote\ summary\fR\ 'u
 \fBostree remote summary\fR [OPTIONS...] {NAME}
+.HP \w'\fBostree\ remote\ add\-cookie\fR\ 'u
+\fBostree remote add\-cookie\fR {NAME} {DOMAIN} {PATH} {COOKIE_NAME} {VALUE}
+.HP \w'\fBostree\ remote\ delete\-cookie\fR\ 'u
+\fBostree remote delete\-cookie\fR {NAME} {DOMAIN} {PATH} {COOKIE_NAME} {VALUE}
+.HP \w'\fBostree\ remote\ list\-cookies\fR\ 'u
+\fBostree remote list\-cookies\fR {NAME}
 .SH "DESCRIPTION"
 .PP
 Changes remote repository configurations\&. The NAME refers to the name of the remote\&.
@@ -59,7 +65,9 @@ list can restrict which keys are imported from a keyring file or input stream\&.
 nor
 \fB\-\-stdin\fR
 options are given, then keys are imported from the user\*(Aqs personal GPG keyring\&.
-.SH "'ADD' OPTIONS"
+.PP
+The various cookie related command allow management of a remote specific cookie jar\&.
+.SH "\*(AQADD\*(AQ OPTIONS"
 .PP
 \fB\-\-set\fR="KEY=VALUE"
 .RS 4
@@ -78,13 +86,13 @@ Import one or more GPG keys from a file\&.
 Equivalent to
 \fBostree remote gpg\-import \-\-keyring=FILE\fR\&.
 .RE
-.SH "'LIST' OPTIONS"
+.SH "\*(AQLIST\*(AQ OPTIONS"
 .PP
 \fB\-u, \-\-show\-urls\fR
 .RS 4
 Show remote URLs in list
 .RE
-.SH "'GPG-IMPORT' OPTIONS"
+.SH "\*(AQGPG\-IMPORT\*(AQ OPTIONS"
 .PP
 \fB\-k, \-\-keyring\fR=FILE
 .RS 4
@@ -101,7 +109,7 @@ Import one or more keys from standard input\&.
 This option may not be used in combination with
 \fB\-\-keyring\fR\&.
 .RE
-.SH "'SUMMARY' OPTIONS"
+.SH "\*(AQSUMMARY\*(AQ OPTIONS"
 .PP
 \fB\-\-raw\fR
 .RS 4

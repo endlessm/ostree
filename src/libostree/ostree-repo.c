@@ -936,7 +936,7 @@ keyfile_set_from_vardict (GKeyFile     *keyfile,
       else if (g_variant_is_of_type (child, G_VARIANT_TYPE_STRING_ARRAY))
         {
           gsize len;
-          const char *const*strv_child = g_variant_get_strv (child, &len);
+          g_autofree const gchar **strv_child = g_variant_get_strv (child, &len);
           g_key_file_set_string_list (keyfile, section, key, strv_child, len);
         }
       else
@@ -2593,7 +2593,7 @@ load_metadata_internal (OstreeRepo       *self,
             }
           else
             {
-              GBytes *data = glnx_fd_readall_bytes (fd, cancellable, error);
+              g_autoptr(GBytes) data = glnx_fd_readall_bytes (fd, cancellable, error);
               if (!data)
                 goto out;
               ret_variant = g_variant_new_from_bytes (ostree_metadata_variant_type (objtype),
@@ -3164,7 +3164,7 @@ ostree_repo_delete_object (OstreeRepo           *self,
 
       if (tombstone_commits)
         {
-          g_auto(GVariantBuilder) builder = {{0,}};
+          g_auto(GVariantBuilder) builder = OT_VARIANT_BUILDER_INITIALIZER;
           g_autoptr(GVariant) variant = NULL;
 
           g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{sv}"));
@@ -4653,7 +4653,7 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
   g_autoptr(GVariant) summary = NULL;
   GList *ordered_keys = NULL;
   GList *iter = NULL;
-  g_auto(GVariantDict) additional_metadata_builder = {{0,}};
+  g_auto(GVariantDict) additional_metadata_builder = OT_VARIANT_BUILDER_INITIALIZER;
 
   if (!ostree_repo_list_refs (self, NULL, &refs, cancellable, error))
     goto out;
@@ -4668,9 +4668,17 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
     {
       const char *ref = iter->data;
       const char *commit = g_hash_table_lookup (refs, ref);
+      g_autofree char *remotename = NULL;
       g_autoptr(GVariant) commit_obj = NULL;
 
       g_assert (commit);
+
+      if (!ostree_parse_refspec (ref, &remotename, NULL, NULL))
+        g_assert_not_reached ();
+
+      /* Don't put remote refs in the summary */
+      if (remotename != NULL)
+        continue;
 
       if (!ostree_repo_load_variant (self, OSTREE_OBJECT_TYPE_COMMIT, commit, &commit_obj, error))
         goto out;
@@ -4686,8 +4694,7 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
   {
     guint i;
     g_autoptr(GPtrArray) delta_names = NULL;
-    g_auto(GVariantDict) deltas_builder = {{0,}};
-    g_autoptr(GVariant) deltas = NULL;
+    g_auto(GVariantDict) deltas_builder = OT_VARIANT_BUILDER_INITIALIZER;
 
     if (!ostree_repo_list_static_delta_names (self, &delta_names, cancellable, error))
       goto out;
@@ -4890,7 +4897,6 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
     {
       g_autofree char *tmpdir_name_template = g_strconcat (tmpdir_prefix, "XXXXXX", NULL);
       glnx_fd_close int new_tmpdir_fd = -1;
-      g_autoptr(GError) local_error = NULL;
 
       /* No existing tmpdir found, create a new */
 

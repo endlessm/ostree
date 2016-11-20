@@ -608,10 +608,8 @@ lookup_commit_checksum_from_summary (OtPullData    *pull_data,
   g_autoptr(GVariant) refs = g_variant_get_child_value (pull_data->summary, 0);
   g_autoptr(GVariant) refdata = NULL;
   g_autoptr(GVariant) reftargetdata = NULL;
-  g_autoptr(GVariant) commit_data = NULL;
   guint64 commit_size;
   g_autoptr(GVariant) commit_csum_v = NULL;
-  g_autoptr(GBytes) commit_bytes = NULL;
   int i;
   
   if (!ot_variant_bsearch_str (refs, ref, &i))
@@ -973,7 +971,6 @@ static_deltapart_fetch_on_complete (GObject           *object,
   OstreeFetcher *fetcher = (OstreeFetcher *)object;
   FetchStaticDeltaData *fetch_data = user_data;
   OtPullData *pull_data = fetch_data->pull_data;
-  g_autoptr(GVariant) metadata = NULL;
   g_autofree char *temp_path = NULL;
   g_autoptr(GInputStream) in = NULL;
   g_autoptr(GVariant) part = NULL;
@@ -1430,8 +1427,6 @@ request_static_delta_superblock_sync (OtPullData  *pull_data,
   g_autofree char *delta_name =
     _ostree_get_relative_static_delta_superblock_path (from_revision, to_revision);
   g_autoptr(GBytes) delta_superblock_data = NULL;
-  g_autoptr(GBytes) delta_meta_data = NULL;
-  g_autoptr(GVariant) delta_superblock = NULL;
 
   if (!_ostree_fetcher_mirrored_request_to_membuf (pull_data->fetcher,
                                                    pull_data->content_mirrorlist,
@@ -1969,6 +1964,19 @@ _ostree_repo_remote_new_fetcher (OstreeRepo  *self,
       _ostree_fetcher_set_proxy (fetcher, http_proxy);
   }
 
+  {
+    g_autofree char *jar_path = NULL;
+    g_autofree char *cookie_file = g_strdup_printf ("%s.cookies.txt",
+                                                    remote_name);
+
+    jar_path = g_build_filename (g_file_get_path (self->repodir), cookie_file,
+                                 NULL);
+
+    if (g_file_test(jar_path, G_FILE_TEST_IS_REGULAR))
+      _ostree_fetcher_set_cookie_jar (fetcher, jar_path);
+
+  }
+
   success = TRUE;
 
 out:
@@ -2335,8 +2343,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   gboolean opt_gpg_verify_set = FALSE;
   gboolean opt_gpg_verify_summary_set = FALSE;
   const char *url_override = NULL;
-  g_autofree char *base_meta_url = NULL;
-  g_autofree char *base_content_url = NULL;
   gboolean mirroring_into_archive;
   gboolean inherit_transaction = FALSE;
   int i;
@@ -2641,7 +2647,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
   {
     g_autoptr(GBytes) bytes_sig = NULL;
-    g_autofree char *ret_contents = NULL;
     gsize i, n;
     g_autoptr(GVariant) refs = NULL;
     g_autoptr(GVariant) deltas = NULL;
@@ -2934,7 +2939,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
                                     &from_revision, error))
         goto out;
 
-      if (!disable_static_deltas && !mirroring_into_archive &&
+      if (!(disable_static_deltas || mirroring_into_archive || pull_data->is_commit_only) &&
           (from_revision == NULL || g_strcmp0 (from_revision, to_revision) != 0))
         {
           if (!request_static_delta_superblock_sync (pull_data, from_revision, to_revision,
@@ -3131,6 +3136,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   g_clear_pointer (&pull_data->requested_content, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_metadata, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->idle_src, (GDestroyNotify) g_source_destroy);
+  g_clear_pointer (&pull_data->dirs, (GDestroyNotify) g_ptr_array_unref);
   g_clear_pointer (&remote_config, (GDestroyNotify) g_key_file_unref);
   return ret;
 }
