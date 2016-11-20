@@ -534,7 +534,6 @@ checkout_deployment_tree (OstreeSysroot     *sysroot,
   const char *csum = ostree_deployment_get_csum (deployment);
   g_autofree char *checkout_target_name = NULL;
   g_autofree char *osdeploy_path = NULL;
-  g_autoptr(GFile) ret_deploy_target_path = NULL;
   glnx_fd_close int osdeploy_dfd = -1;
   int ret_fd;
 
@@ -1199,7 +1198,6 @@ swap_bootlinks (OstreeSysroot *self,
   gboolean ret = FALSE;
   int old_subbootversion, new_subbootversion;
   glnx_fd_close int ostree_dfd = -1;
-  glnx_fd_close int ostree_subbootdir_dfd = -1;
   g_autofree char *ostree_bootdir_name = NULL;
   g_autofree char *ostree_subbootdir_name = NULL;
 
@@ -1749,7 +1747,7 @@ _ostree_sysroot_write_deployments_internal (OstreeSysroot     *self,
 
   /* Assign a bootserial to each new deployment.
    */
-  assign_bootserials (new_deployments);
+  g_hash_table_unref (assign_bootserials (new_deployments));
 
   /* Determine whether or not we need to touch the bootloader
    * configuration.  If we have an equal number of deployments with
@@ -2148,7 +2146,10 @@ ostree_sysroot_deploy_tree (OstreeSysroot     *self,
         goto out;
     }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
   { ostree_cleanup_sepolicy_fscreatecon gpointer dummy = NULL;
+#pragma GCC diagnostic pop
 
     /* Explicitly override the label for the origin file to ensure
      * it's system_conf_t.

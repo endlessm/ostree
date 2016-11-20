@@ -198,7 +198,7 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
   else
     {
       char *ref_to_fetch;
-      refs_to_fetch = g_ptr_array_new ();
+      refs_to_fetch = g_ptr_array_new_with_free_func (g_free);
       if (!ostree_parse_refspec (argv[1], &remote, &ref_to_fetch, error))
         goto out;
       /* Transfer ownership */
@@ -208,6 +208,7 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
 
   {
     GVariantBuilder builder;
+    g_autoptr(GVariant) options = NULL;
     g_auto(GLnxConsoleRef) console = { 0, };
     g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{sv}"));
 
@@ -265,7 +266,9 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
                                               &console);
       }
 
-    if (!ostree_repo_pull_with_options (repo, remote, g_variant_builder_end (&builder),
+    options = g_variant_ref_sink (g_variant_builder_end (&builder));
+
+    if (!ostree_repo_pull_with_options (repo, remote, options,
                                         progress, cancellable, error))
       goto out;
 

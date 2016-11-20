@@ -417,22 +417,22 @@ check_PROGRAMS = $(am__EXEEXT_5)
 @ENABLE_INSTALLED_TESTS_TRUE@am__append_40 = $(test_ltlibraries) $(installed_test_ltlibraries)
 @ENABLE_INSTALLED_TESTS_TRUE@am__append_41 = $(installed_test_meta_DATA)
 @BUILDOPT_FUSE_TRUE@am__append_42 = tests/test-rofiles-fuse.sh
-
-# This one uses corrupt-repo-ref.js
-@BUILDOPT_GJS_TRUE@am__append_43 = tests/test-corruption.sh
-@ENABLE_INSTALLED_TESTS_FALSE@am__append_44 = -rpath $(abs_builddir)
-@USE_LIBARCHIVE_TRUE@am__append_45 = tests/test-libarchive-import
-@ENABLE_INSTALLED_TESTS_TRUE@am__append_46 = install-test-data-file-path-hack
+@BUILDOPT_FUSE_FALSE@am__append_43 = tests/test-rofiles-fuse.sh
+@BUILDOPT_GJS_TRUE@am__append_44 = tests/test-corruption.sh
+@BUILDOPT_GJS_FALSE@am__append_45 = $(js_tests) $(js_installed_tests)
+@ENABLE_INSTALLED_TESTS_FALSE@am__append_46 = -rpath $(abs_builddir)
+@USE_LIBARCHIVE_TRUE@am__append_47 = tests/test-libarchive-import
+@ENABLE_INSTALLED_TESTS_TRUE@am__append_48 = install-test-data-file-path-hack
 
 # Allow the distcheck install under $prefix test to pass
-@BUILDOPT_SYSTEMD_TRUE@am__append_47 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
+@BUILDOPT_SYSTEMD_TRUE@am__append_49 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
 
 # We're using the system grub2-mkconfig generator
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_48 = src/boot/grub2/grub2-15_ostree
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_49 = install-grub2-config-hook
-@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_50 = rofiles-fuse.1
-@ENABLE_MAN_TRUE@am__append_51 = $(man1_MANS) $(man5_MANS) $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
-@ENABLE_MAN_TRUE@am__append_52 = \
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_50 = src/boot/grub2/grub2-15_ostree
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_51 = install-grub2-config-hook
+@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_52 = rofiles-fuse.1
+@ENABLE_MAN_TRUE@am__append_53 = $(man1_MANS) $(man5_MANS) $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
+@ENABLE_MAN_TRUE@am__append_54 = \
 @ENABLE_MAN_TRUE@	$(man1_MANS) \
 @ENABLE_MAN_TRUE@	$(man5_MANS) \
 @ENABLE_MAN_TRUE@	$(NULL)
@@ -792,9 +792,12 @@ am__ostree_SOURCES_DIST = src/ostree/main.c \
 	src/ostree/ot-admin-functions.c \
 	src/ostree/ot-remote-builtins.h \
 	src/ostree/ot-remote-builtin-add.c \
+	src/ostree/ot-remote-builtin-add-cookie.c \
 	src/ostree/ot-remote-builtin-delete.c \
+	src/ostree/ot-remote-builtin-delete-cookie.c \
 	src/ostree/ot-remote-builtin-gpg-import.c \
 	src/ostree/ot-remote-builtin-list.c \
+	src/ostree/ot-remote-builtin-list-cookies.c \
 	src/ostree/ot-remote-builtin-show-url.c \
 	src/ostree/ot-remote-builtin-refs.c \
 	src/ostree/ot-remote-builtin-summary.c \
@@ -849,9 +852,12 @@ am_ostree_OBJECTS = src/ostree/ostree-main.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-functions.$(OBJEXT) \
 	$(am__objects_1) \
 	src/ostree/ostree-ot-remote-builtin-add.$(OBJEXT) \
+	src/ostree/ostree-ot-remote-builtin-add-cookie.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-delete.$(OBJEXT) \
+	src/ostree/ostree-ot-remote-builtin-delete-cookie.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-gpg-import.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-list.$(OBJEXT) \
+	src/ostree/ostree-ot-remote-builtin-list-cookies.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-show-url.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-refs.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-summary.$(OBJEXT) \
@@ -1321,12 +1327,12 @@ RECHECK_LOGS = $(TEST_LOGS)
 am__EXEEXT_10 =
 am__EXEEXT_11 = tests/test-basic.sh tests/test-pull-subpath.sh \
 	tests/test-archivez.sh tests/test-remote-add.sh \
-	tests/test-remote-gpg-import.sh tests/test-commit-sign.sh \
-	tests/test-export.sh tests/test-help.sh \
-	tests/test-libarchive.sh tests/test-parent.sh \
-	tests/test-pull-archive-z.sh tests/test-pull-commit-only.sh \
-	tests/test-pull-corruption.sh tests/test-pull-depth.sh \
-	tests/test-pull-mirror-summary.sh \
+	tests/test-remote-cookies.sh tests/test-remote-gpg-import.sh \
+	tests/test-commit-sign.sh tests/test-export.sh \
+	tests/test-help.sh tests/test-libarchive.sh \
+	tests/test-parent.sh tests/test-pull-archive-z.sh \
+	tests/test-pull-commit-only.sh tests/test-pull-corruption.sh \
+	tests/test-pull-depth.sh tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
@@ -1351,7 +1357,7 @@ am__EXEEXT_11 = tests/test-basic.sh tests/test-pull-subpath.sh \
 	tests/test-refs.sh tests/test-demo-buildsystem.sh \
 	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
 	tests/test-pull-mirrorlist.sh $(am__EXEEXT_10) \
-	$(am__append_42) $(am__append_43)
+	$(am__append_42) $(am__append_44)
 TEST_SUITE_LOG = test-suite.log
 TEST_EXTENSIONS = @EXEEXT@ .test
 LOG_COMPILE = $(LOG_COMPILER) $(AM_LOG_FLAGS) $(LOG_FLAGS)
@@ -1627,7 +1633,7 @@ AM_CPPFLAGS = -DDATADIR='"$(datadir)"' -DLIBEXECDIR='"$(libexecdir)"' \
 	-DSOUP_VERSION_MAX_ALLOWED=SOUP_VERSION_2_48
 AM_CFLAGS = -std=gnu99 $(WARN_CFLAGS)
 AM_DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-man \
-	--disable-maintainer-mode $(NULL) $(am__append_47)
+	--disable-maintainer-mode $(NULL) $(am__append_49)
 SUBDIRS = . $(am__append_1)
 NULL = 
 BUILT_SOURCES = $(am__append_3)
@@ -1639,7 +1645,7 @@ CLEANFILES = $(BUILT_SOURCES) $(am__append_20) \
 	tests/ostree-remount-symlink-stamp \
 	tests/rofiles-fuse-symlink-stamp tests/ostree \
 	tests/ostree-prepare-root tests/ostree-remount \
-	tests/rofiles-fuse $(am__append_52)
+	tests/rofiles-fuse $(am__append_54)
 EXTRA_DIST = autogen.sh COPYING README.md libglnx/README.md \
 	libglnx/COPYING libglnx/libglnx.m4 $(NULL) \
 	libglnx/Makefile-libglnx.am bsdiff/bsdiff.h bsdiff/bspatch.h \
@@ -1652,16 +1658,17 @@ EXTRA_DIST = autogen.sh COPYING README.md libglnx/README.md \
 	src/libostree/ostree-repo-deprecated.h \
 	src/ostree/parse-datetime.y $(all_dist_test_scripts) \
 	$(all_dist_test_data) buildutil/tap-driver.sh \
-	buildutil/tap-test $(NULL) tests/libostreetest.h \
+	buildutil/tap-test tests/glib.supp tests/ostree.supp $(NULL) \
+	$(am__append_43) $(am__append_45) tests/libostreetest.h \
 	tests/libtest.sh tests/gpg-verify-data/README.md $(NULL) \
 	src/boot/dracut/module-setup.sh src/boot/dracut/ostree.conf \
 	src/boot/mkinitcpio/ostree \
 	src/boot/ostree-prepare-root.service \
 	src/boot/ostree-remount.service src/boot/grub2/grub2-15_ostree \
-	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_51)
+	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_53)
 bin_SCRIPTS = 
 lib_LTLIBRARIES = libostree-1.la
-pkglibexec_SCRIPTS = $(am__append_48)
+pkglibexec_SCRIPTS = $(am__append_50)
 noinst_LTLIBRARIES = libglnx.la libbsdiff.la libotutil.la \
 	libostree-kernel-args.la libbupsplit.la $(am__append_29) \
 	libostreetest.la
@@ -1678,8 +1685,8 @@ gsettings_SCHEMAS =
 ostree_bootdir = $(prefix)/lib/ostree
 
 # This is a special facility to chain together hooks easily
-INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_46) \
-	$(am__append_49)
+INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_48) \
+	$(am__append_51)
 ALL_LOCAL_RULES = tests/libreaddir-rand.so
 shortened_sysconfdir = $$(echo "$(sysconfdir)" | sed -e 's|^$(prefix)||' -e 's|^/||')
 ACLOCAL_AMFLAGS = -I buildutil -I libglnx ${ACLOCAL_FLAGS}
@@ -1934,9 +1941,12 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-admin-functions.c $(NULL) \
 	src/ostree/ot-remote-builtins.h \
 	src/ostree/ot-remote-builtin-add.c \
+	src/ostree/ot-remote-builtin-add-cookie.c \
 	src/ostree/ot-remote-builtin-delete.c \
+	src/ostree/ot-remote-builtin-delete-cookie.c \
 	src/ostree/ot-remote-builtin-gpg-import.c \
 	src/ostree/ot-remote-builtin-list.c \
+	src/ostree/ot-remote-builtin-list-cookies.c \
 	src/ostree/ot-remote-builtin-show-url.c \
 	src/ostree/ot-remote-builtin-refs.c \
 	src/ostree/ot-remote-builtin-summary.c $(NULL) \
@@ -2031,12 +2041,12 @@ uninstalled_test_data = tests/ostree-symlink-stamp tests/ostree-prepare-root-sym
 dist_uninstalled_test_scripts = tests/test-symbols.sh
 dist_test_scripts = tests/test-basic.sh tests/test-pull-subpath.sh \
 	tests/test-archivez.sh tests/test-remote-add.sh \
-	tests/test-remote-gpg-import.sh tests/test-commit-sign.sh \
-	tests/test-export.sh tests/test-help.sh \
-	tests/test-libarchive.sh tests/test-parent.sh \
-	tests/test-pull-archive-z.sh tests/test-pull-commit-only.sh \
-	tests/test-pull-corruption.sh tests/test-pull-depth.sh \
-	tests/test-pull-mirror-summary.sh \
+	tests/test-remote-cookies.sh tests/test-remote-gpg-import.sh \
+	tests/test-commit-sign.sh tests/test-export.sh \
+	tests/test-help.sh tests/test-libarchive.sh \
+	tests/test-parent.sh tests/test-pull-archive-z.sh \
+	tests/test-pull-commit-only.sh tests/test-pull-corruption.sh \
+	tests/test-pull-depth.sh tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
@@ -2061,7 +2071,10 @@ dist_test_scripts = tests/test-basic.sh tests/test-pull-subpath.sh \
 	tests/test-refs.sh tests/test-demo-buildsystem.sh \
 	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
 	tests/test-pull-mirrorlist.sh $(NULL) $(am__append_42) \
-	$(am__append_43)
+	$(am__append_44)
+
+# This one uses corrupt-repo-ref.js
+js_tests = tests/test-corruption.sh
 dist_installed_test_data = tests/archive-test.sh \
 	tests/pull-test.sh \
 	tests/libtest.sh \
@@ -2093,11 +2106,13 @@ dist_test_extra_scripts = tests/bootloader-entries-crosscheck.py \
 @ENABLE_INSTALLED_TESTS_TRUE@dist_gpgvinsttest_DATA = $(addprefix tests/gpg-verify-data/, \
 @ENABLE_INSTALLED_TESTS_TRUE@	gpg.conf lgpl2 lgpl2.sig pubring.gpg secring.gpg trustdb.gpg)
 
-@BUILDOPT_GJS_TRUE@dist_installed_test_scripts = tests/test-core.js \
-@BUILDOPT_GJS_TRUE@	tests/test-sizes.js \
-@BUILDOPT_GJS_TRUE@	tests/test-sysroot.js \
-@BUILDOPT_GJS_TRUE@	$(NULL)
+js_installed_tests = \
+	tests/test-core.js \
+	tests/test-sizes.js \
+	tests/test-sysroot.js \
+	$(NULL)
 
+@BUILDOPT_GJS_TRUE@dist_installed_test_scripts = $(js_installed_tests)
 test_ltlibraries = libreaddir-rand.la
 libreaddir_rand_la_SOURCES = tests/readdir-rand.c
 libreaddir_rand_la_CFLAGS = $(AM_CFLAGS) $(OT_INTERNAL_GIO_UNIX_CFLAGS)
@@ -2107,14 +2122,14 @@ libreaddir_rand_la_LIBADD = \
 	$(NULL)
 
 libreaddir_rand_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version \
-	$(am__append_44)
+	$(am__append_46)
 test_programs = tests/test-varint tests/test-ot-unix-utils \
 	tests/test-bsdiff tests/test-mutable-tree \
 	tests/test-keyfile-utils tests/test-ot-opt-utils \
 	tests/test-ot-tool-util tests/test-gpg-verify-result \
 	tests/test-checksum tests/test-lzma tests/test-rollsum \
 	tests/test-basic-c tests/test-sysroot-c tests/test-pull-c \
-	$(am__append_45)
+	$(am__append_47)
 common_tests_cflags = $(ostree_bin_shared_cflags) $(OT_INTERNAL_GIO_UNIX_CFLAGS) -I$(srcdir)/libglnx
 common_tests_ldadd = $(ostree_bin_shared_ldadd) $(OT_INTERNAL_GIO_UNIX_LIBS)
 libostreetest_la_SOURCES = tests/libostreetest.c
@@ -2198,7 +2213,7 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 @ENABLE_MAN_TRUE@	ostree-reset.1 ostree-rev-parse.1 \
 @ENABLE_MAN_TRUE@	ostree-show.1 ostree-summary.1 \
 @ENABLE_MAN_TRUE@	ostree-static-delta.1 ostree-trivial-httpd.1 \
-@ENABLE_MAN_TRUE@	$(am__append_50)
+@ENABLE_MAN_TRUE@	$(am__append_52)
 @ENABLE_MAN_TRUE@man5_files = ostree.repo.5 ostree.repo-config.5
 @ENABLE_MAN_TRUE@man1_MANS = $(addprefix man/,$(man1_files))
 @ENABLE_MAN_TRUE@man5_MANS = $(addprefix man/,$(man5_files))
@@ -3051,13 +3066,22 @@ src/ostree/ostree-ot-admin-functions.$(OBJEXT):  \
 src/ostree/ostree-ot-remote-builtin-add.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
+src/ostree/ostree-ot-remote-builtin-add-cookie.$(OBJEXT):  \
+	src/ostree/$(am__dirstamp) \
+	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-remote-builtin-delete.$(OBJEXT):  \
+	src/ostree/$(am__dirstamp) \
+	src/ostree/$(DEPDIR)/$(am__dirstamp)
+src/ostree/ostree-ot-remote-builtin-delete-cookie.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-remote-builtin-gpg-import.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-remote-builtin-list.$(OBJEXT):  \
+	src/ostree/$(am__dirstamp) \
+	src/ostree/$(DEPDIR)/$(am__dirstamp)
+src/ostree/ostree-ot-remote-builtin-list-cookies.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-remote-builtin-show-url.$(OBJEXT):  \
@@ -3581,9 +3605,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-dump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-editor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-add-cookie.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-add.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete-cookie.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-gpg-import.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-list-cookies.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-refs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-show-url.Po@am__quote@
@@ -4755,6 +4782,20 @@ src/ostree/ostree-ot-remote-builtin-add.obj: src/ostree/ot-remote-builtin-add.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-remote-builtin-add.obj `if test -f 'src/ostree/ot-remote-builtin-add.c'; then $(CYGPATH_W) 'src/ostree/ot-remote-builtin-add.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-remote-builtin-add.c'; fi`
 
+src/ostree/ostree-ot-remote-builtin-add-cookie.o: src/ostree/ot-remote-builtin-add-cookie.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-remote-builtin-add-cookie.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-add-cookie.Tpo -c -o src/ostree/ostree-ot-remote-builtin-add-cookie.o `test -f 'src/ostree/ot-remote-builtin-add-cookie.c' || echo '$(srcdir)/'`src/ostree/ot-remote-builtin-add-cookie.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-add-cookie.Tpo src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-add-cookie.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-remote-builtin-add-cookie.c' object='src/ostree/ostree-ot-remote-builtin-add-cookie.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-remote-builtin-add-cookie.o `test -f 'src/ostree/ot-remote-builtin-add-cookie.c' || echo '$(srcdir)/'`src/ostree/ot-remote-builtin-add-cookie.c
+
+src/ostree/ostree-ot-remote-builtin-add-cookie.obj: src/ostree/ot-remote-builtin-add-cookie.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-remote-builtin-add-cookie.obj -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-add-cookie.Tpo -c -o src/ostree/ostree-ot-remote-builtin-add-cookie.obj `if test -f 'src/ostree/ot-remote-builtin-add-cookie.c'; then $(CYGPATH_W) 'src/ostree/ot-remote-builtin-add-cookie.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-remote-builtin-add-cookie.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-add-cookie.Tpo src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-add-cookie.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-remote-builtin-add-cookie.c' object='src/ostree/ostree-ot-remote-builtin-add-cookie.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-remote-builtin-add-cookie.obj `if test -f 'src/ostree/ot-remote-builtin-add-cookie.c'; then $(CYGPATH_W) 'src/ostree/ot-remote-builtin-add-cookie.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-remote-builtin-add-cookie.c'; fi`
+
 src/ostree/ostree-ot-remote-builtin-delete.o: src/ostree/ot-remote-builtin-delete.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-remote-builtin-delete.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete.Tpo -c -o src/ostree/ostree-ot-remote-builtin-delete.o `test -f 'src/ostree/ot-remote-builtin-delete.c' || echo '$(srcdir)/'`src/ostree/ot-remote-builtin-delete.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete.Tpo src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete.Po
@@ -4768,6 +4809,20 @@ src/ostree/ostree-ot-remote-builtin-delete.obj: src/ostree/ot-remote-builtin-del
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-remote-builtin-delete.c' object='src/ostree/ostree-ot-remote-builtin-delete.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-remote-builtin-delete.obj `if test -f 'src/ostree/ot-remote-builtin-delete.c'; then $(CYGPATH_W) 'src/ostree/ot-remote-builtin-delete.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-remote-builtin-delete.c'; fi`
+
+src/ostree/ostree-ot-remote-builtin-delete-cookie.o: src/ostree/ot-remote-builtin-delete-cookie.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-remote-builtin-delete-cookie.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete-cookie.Tpo -c -o src/ostree/ostree-ot-remote-builtin-delete-cookie.o `test -f 'src/ostree/ot-remote-builtin-delete-cookie.c' || echo '$(srcdir)/'`src/ostree/ot-remote-builtin-delete-cookie.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete-cookie.Tpo src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete-cookie.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-remote-builtin-delete-cookie.c' object='src/ostree/ostree-ot-remote-builtin-delete-cookie.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-remote-builtin-delete-cookie.o `test -f 'src/ostree/ot-remote-builtin-delete-cookie.c' || echo '$(srcdir)/'`src/ostree/ot-remote-builtin-delete-cookie.c
+
+src/ostree/ostree-ot-remote-builtin-delete-cookie.obj: src/ostree/ot-remote-builtin-delete-cookie.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-remote-builtin-delete-cookie.obj -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete-cookie.Tpo -c -o src/ostree/ostree-ot-remote-builtin-delete-cookie.obj `if test -f 'src/ostree/ot-remote-builtin-delete-cookie.c'; then $(CYGPATH_W) 'src/ostree/ot-remote-builtin-delete-cookie.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-remote-builtin-delete-cookie.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete-cookie.Tpo src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-delete-cookie.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-remote-builtin-delete-cookie.c' object='src/ostree/ostree-ot-remote-builtin-delete-cookie.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-remote-builtin-delete-cookie.obj `if test -f 'src/ostree/ot-remote-builtin-delete-cookie.c'; then $(CYGPATH_W) 'src/ostree/ot-remote-builtin-delete-cookie.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-remote-builtin-delete-cookie.c'; fi`
 
 src/ostree/ostree-ot-remote-builtin-gpg-import.o: src/ostree/ot-remote-builtin-gpg-import.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-remote-builtin-gpg-import.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-gpg-import.Tpo -c -o src/ostree/ostree-ot-remote-builtin-gpg-import.o `test -f 'src/ostree/ot-remote-builtin-gpg-import.c' || echo '$(srcdir)/'`src/ostree/ot-remote-builtin-gpg-import.c
@@ -4796,6 +4851,20 @@ src/ostree/ostree-ot-remote-builtin-list.obj: src/ostree/ot-remote-builtin-list.
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-remote-builtin-list.c' object='src/ostree/ostree-ot-remote-builtin-list.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-remote-builtin-list.obj `if test -f 'src/ostree/ot-remote-builtin-list.c'; then $(CYGPATH_W) 'src/ostree/ot-remote-builtin-list.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-remote-builtin-list.c'; fi`
+
+src/ostree/ostree-ot-remote-builtin-list-cookies.o: src/ostree/ot-remote-builtin-list-cookies.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-remote-builtin-list-cookies.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-list-cookies.Tpo -c -o src/ostree/ostree-ot-remote-builtin-list-cookies.o `test -f 'src/ostree/ot-remote-builtin-list-cookies.c' || echo '$(srcdir)/'`src/ostree/ot-remote-builtin-list-cookies.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-list-cookies.Tpo src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-list-cookies.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-remote-builtin-list-cookies.c' object='src/ostree/ostree-ot-remote-builtin-list-cookies.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-remote-builtin-list-cookies.o `test -f 'src/ostree/ot-remote-builtin-list-cookies.c' || echo '$(srcdir)/'`src/ostree/ot-remote-builtin-list-cookies.c
+
+src/ostree/ostree-ot-remote-builtin-list-cookies.obj: src/ostree/ot-remote-builtin-list-cookies.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-remote-builtin-list-cookies.obj -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-list-cookies.Tpo -c -o src/ostree/ostree-ot-remote-builtin-list-cookies.obj `if test -f 'src/ostree/ot-remote-builtin-list-cookies.c'; then $(CYGPATH_W) 'src/ostree/ot-remote-builtin-list-cookies.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-remote-builtin-list-cookies.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-list-cookies.Tpo src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-list-cookies.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-remote-builtin-list-cookies.c' object='src/ostree/ostree-ot-remote-builtin-list-cookies.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-remote-builtin-list-cookies.obj `if test -f 'src/ostree/ot-remote-builtin-list-cookies.c'; then $(CYGPATH_W) 'src/ostree/ot-remote-builtin-list-cookies.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-remote-builtin-list-cookies.c'; fi`
 
 src/ostree/ostree-ot-remote-builtin-show-url.o: src/ostree/ot-remote-builtin-show-url.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-remote-builtin-show-url.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-show-url.Tpo -c -o src/ostree/ostree-ot-remote-builtin-show-url.o `test -f 'src/ostree/ot-remote-builtin-show-url.c' || echo '$(srcdir)/'`src/ostree/ot-remote-builtin-show-url.c
@@ -6000,6 +6069,13 @@ tests/test-archivez.sh.log: tests/test-archivez.sh
 tests/test-remote-add.sh.log: tests/test-remote-add.sh
 	@p='tests/test-remote-add.sh'; \
 	b='tests/test-remote-add.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-remote-cookies.sh.log: tests/test-remote-cookies.sh
+	@p='tests/test-remote-cookies.sh'; \
+	b='tests/test-remote-cookies.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
