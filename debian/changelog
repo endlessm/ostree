@@ -1,3 +1,13 @@
+ostree (2016.13-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+    - d/p/dist/Retrieve-some-missing-test-files-from-upstream-git.patch:
+      remove, 2016.13 was released with a fixed "make dist"
+    - d/p/Filter-bootloader-supplied-kernel-cmdline-options.patch:
+      remove, merged upstream
+
+ -- Simon McVittie <smcv@debian.org>  Sun, 20 Nov 2016 15:47:19 +0000
+
 ostree (2016.12-2) unstable; urgency=medium
 
   * d/p/Filter-bootloader-supplied-kernel-cmdline-options.patch:
