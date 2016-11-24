@@ -26,7 +26,7 @@ Build-Depends:
  libfuse-dev,
  libgirepository1.0-dev (>= 1.34.0),
  libglib2.0-dev (>= 2.40.0),
- libgpgme11-dev (>= 1.1.8),
+ libgpgme-dev,
  liblzma-dev (>= 5.0.5),
  libmount-dev (>= 2.23),
  libselinux1-dev,
