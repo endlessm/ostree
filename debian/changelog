@@ -5,6 +5,7 @@ ostree (2016.14-1) UNRELEASED; urgency=medium
   * Drop the version from versioned build-dependencies where the required
     version was already present in oldstable
   * New upstream release
+    - update symbols file for new ABI
 
  -- Simon McVittie <smcv@debian.org>  Thu, 24 Nov 2016 10:47:35 +0000
 
