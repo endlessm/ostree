@@ -1,4 +1,4 @@
-ostree (2016.14-1) UNRELEASED; urgency=medium
+ostree (2016.14-1) unstable; urgency=medium
 
   * Switch the build-dependency on libgpgme11-dev (which no longer exists
     as a real package) to libgpgme-dev
@@ -8,7 +8,7 @@ ostree (2016.14-1) UNRELEASED; urgency=medium
     - update symbols file for new ABI
   * Import various post-release fixes from upstream
 
- -- Simon McVittie <smcv@debian.org>  Thu, 24 Nov 2016 10:47:35 +0000
+ -- Simon McVittie <smcv@debian.org>  Tue, 29 Nov 2016 11:05:44 +0000
 
 ostree (2016.13-1) unstable; urgency=medium
 
