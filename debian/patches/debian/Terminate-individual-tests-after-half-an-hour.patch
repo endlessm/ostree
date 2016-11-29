@@ -14,12 +14,15 @@ Signed-off-by: Simon McVittie <smcv@debian.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/buildutil/tap-test b/buildutil/tap-test
-index 6b2eb5c..4971f0b 100755
+index c8da31e..fd79122 100755
 --- a/buildutil/tap-test
 +++ b/buildutil/tap-test
-@@ -20,4 +20,4 @@ function cleanup () {
+@@ -19,7 +19,7 @@ function skip_cleanup() {
+     echo "Skipping cleanup of ${tempdir}"
  }
- trap cleanup EXIT
  cd ${tempdir}
 -${srcd}/${bn} -k --tap
 +timeout --kill-after=60 1800 ${srcd}/${bn} -k --tap
+ rc=$?
+ case "${TEST_SKIP_CLEANUP:-}" in
+     no|"") cleanup ;;

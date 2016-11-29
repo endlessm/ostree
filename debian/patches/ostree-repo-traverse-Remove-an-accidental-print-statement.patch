@@ -1,0 +1,24 @@
+From: "Jasper St. Pierre" <jstpierre@mecheye.net>
+Date: Wed, 23 Nov 2016 13:52:39 -0800
+Subject: ostree-repo-traverse: Remove an accidental print statement
+
+Closes: #594
+Approved by: jlebon
+Origin: upstream, 2016.15, commit:70d140d
+---
+ src/libostree/ostree-repo-traverse.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libostree/ostree-repo-traverse.c b/src/libostree/ostree-repo-traverse.c
+index 5d99476..e620a8a 100644
+--- a/src/libostree/ostree-repo-traverse.c
++++ b/src/libostree/ostree-repo-traverse.c
+@@ -407,7 +407,7 @@ traverse_dirtree (OstreeRepo           *repo,
+       if (ignore_missing_dirs &&
+           g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+         {
+-          g_print ("Ignoring not-found dirmeta %s", checksum);
++          g_debug ("Ignoring not-found dirmeta %s", checksum);
+           ret = TRUE;
+         }
+       else

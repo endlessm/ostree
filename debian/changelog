@@ -6,6 +6,7 @@ ostree (2016.14-1) UNRELEASED; urgency=medium
     version was already present in oldstable
   * New upstream release
     - update symbols file for new ABI
+  * Import various post-release fixes from upstream
 
  -- Simon McVittie <smcv@debian.org>  Thu, 24 Nov 2016 10:47:35 +0000
 

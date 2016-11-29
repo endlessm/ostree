@@ -1,1 +1,7 @@
-Terminate-individual-tests-after-half-an-hour.patch
+ostree-repo-traverse-Remove-an-accidental-print-statement.patch
+pull-scan_commit_object-don-t-load-variant-twice.patch
+ostree-repo-traverse-Don-t-leak-floating-GVariant.patch
+pull_with_options-Don-t-leak-csum_v.patch
+pull-Don-t-leak-delta-superblock-variants.patch
+delta-compilation-Fix-leak.patch
+debian/Terminate-individual-tests-after-half-an-hour.patch
