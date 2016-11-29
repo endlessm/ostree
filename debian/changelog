@@ -1,9 +1,10 @@
-ostree (2016.13-2) UNRELEASED; urgency=medium
+ostree (2016.14-1) UNRELEASED; urgency=medium
 
   * Switch the build-dependency on libgpgme11-dev (which no longer exists
     as a real package) to libgpgme-dev
   * Drop the version from versioned build-dependencies where the required
     version was already present in oldstable
+  * New upstream release
 
  -- Simon McVittie <smcv@debian.org>  Thu, 24 Nov 2016 10:47:35 +0000
 
