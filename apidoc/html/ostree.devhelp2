@@ -196,6 +196,7 @@
     <keyword type="function" name="ostree_repo_gpg_verify_data ()" link="ostree-Content-addressed-object-store.html#ostree-repo-gpg-verify-data"/>
     <keyword type="function" name="ostree_repo_verify_commit ()" link="ostree-Content-addressed-object-store.html#ostree-repo-verify-commit"/>
     <keyword type="function" name="ostree_repo_verify_commit_ext ()" link="ostree-Content-addressed-object-store.html#ostree-repo-verify-commit-ext"/>
+    <keyword type="function" name="ostree_repo_verify_commit_for_remote ()" link="ostree-Content-addressed-object-store.html#ostree-repo-verify-commit-for-remote"/>
     <keyword type="function" name="ostree_repo_verify_summary ()" link="ostree-Content-addressed-object-store.html#ostree-repo-verify-summary"/>
     <keyword type="function" name="ostree_repo_regenerate_summary ()" link="ostree-Content-addressed-object-store.html#ostree-repo-regenerate-summary"/>
     <keyword type="typedef" name="OstreeRepo" link="ostree-Content-addressed-object-store.html#OstreeRepo"/>

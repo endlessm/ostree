@@ -25,6 +25,7 @@
 
 #include "libglnx.h"
 #include "ostree-gpg-verifier.h"
+#include "ot-gpg-utils.h"
 #include "ostree-gpg-verify-result-private.h"
 #include "otutil.h"
 
@@ -39,6 +40,7 @@ struct OstreeGpgVerifier {
   GObject parent;
 
   GList *keyrings;
+  GPtrArray *key_ascii_files;
 };
 
 G_DEFINE_TYPE (OstreeGpgVerifier, _ostree_gpg_verifier, G_TYPE_OBJECT)
@@ -49,6 +51,8 @@ ostree_gpg_verifier_finalize (GObject *object)
   OstreeGpgVerifier *self = OSTREE_GPG_VERIFIER (object);
 
   g_list_free_full (self->keyrings, g_object_unref);
+  if (self->key_ascii_files)
+    g_ptr_array_unref (self->key_ascii_files);
 
   G_OBJECT_CLASS (_ostree_gpg_verifier_parent_class)->finalize (object);
 }
@@ -89,15 +93,15 @@ _ostree_gpg_verifier_check_signature (OstreeGpgVerifier  *self,
                                       GCancellable       *cancellable,
                                       GError            **error)
 {
-  gpgme_ctx_t gpg_ctx = NULL;
   gpgme_error_t gpg_error = 0;
-  gpgme_data_t data_buffer = NULL;
-  gpgme_data_t signature_buffer = NULL;
+  ot_auto_gpgme_data gpgme_data_t data_buffer = NULL;
+  ot_auto_gpgme_data gpgme_data_t signature_buffer = NULL;
   g_autofree char *tmp_dir = NULL;
   g_autoptr(GOutputStream) target_stream = NULL;
   OstreeGpgVerifyResult *result = NULL;
   gboolean success = FALSE;
   GList *link;
+  int armor;
 
   /* GPGME has no API for using multiple keyrings (aka, gpg --keyring),
    * so we concatenate all the keyring files into one pubring.gpg in a
@@ -149,6 +153,44 @@ _ostree_gpg_verifier_check_signature (OstreeGpgVerifier  *self,
   if (!g_output_stream_close (target_stream, cancellable, error))
     goto out;
 
+  /* Save the previous armor value - we need it on for importing ASCII keys */
+  armor = gpgme_get_armor (result->context);
+  gpgme_set_armor (result->context, 1);
+
+  /* Now, use the API to import ASCII-armored keys */
+  if (self->key_ascii_files)
+    {
+      for (guint i = 0; i < self->key_ascii_files->len; i++)
+        {
+          const char *path = self->key_ascii_files->pdata[i];
+          glnx_fd_close int fd = -1;
+          ot_auto_gpgme_data gpgme_data_t kdata = NULL;
+
+          fd = openat (AT_FDCWD, path, O_RDONLY | O_CLOEXEC) ;
+          if (fd < 0)
+            {
+              glnx_set_prefix_error_from_errno (error, "Opening %s", path);
+              goto out;
+            }
+
+          gpg_error = gpgme_data_new_from_fd (&kdata, fd);
+          if (gpg_error != GPG_ERR_NO_ERROR)
+            {
+              ot_gpgme_error_to_gio_error (gpg_error, error);
+              goto out;
+            }
+
+          gpg_error = gpgme_op_import (result->context, kdata);
+          if (gpg_error != GPG_ERR_NO_ERROR)
+            {
+              ot_gpgme_error_to_gio_error (gpg_error, error);
+              goto out;
+            }
+        }
+    }
+
+  gpgme_set_armor (result->context, armor);
+
   /* Both the signed data and signature GBytes instances will outlive the
    * gpgme_data_t structs, so we can safely reuse the GBytes memory buffer
    * directly and avoid a copy. */
@@ -191,14 +233,6 @@ _ostree_gpg_verifier_check_signature (OstreeGpgVerifier  *self,
   success = TRUE;
 
 out:
-
-  if (gpg_ctx != NULL)
-    gpgme_release (gpg_ctx);
-  if (data_buffer != NULL)
-    gpgme_data_release (data_buffer);
-  if (signature_buffer != NULL)
-    gpgme_data_release (signature_buffer);
-
   if (success)
     {
       /* Keep the temporary directory around for the life of the result
@@ -231,6 +265,15 @@ _ostree_gpg_verifier_add_keyring (OstreeGpgVerifier  *self,
   g_return_if_fail (G_IS_FILE (path));
 
   self->keyrings = g_list_append (self->keyrings, g_object_ref (path));
+}
+
+void
+_ostree_gpg_verifier_add_key_ascii_file (OstreeGpgVerifier *self,
+                                         const char        *path)
+{
+  if (!self->key_ascii_files)
+    self->key_ascii_files = g_ptr_array_new_with_free_func (g_free);
+  g_ptr_array_add (self->key_ascii_files, g_strdup (path));
 }
 
 gboolean

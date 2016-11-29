@@ -2281,7 +2281,15 @@ get_modified_xattrs (OstreeRepo                       *self,
     }
   else if (!(modifier && (modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS) > 0))
     {
-      if (path)
+      if (path && OSTREE_IS_REPO_FILE (path))
+        {
+          if (!ostree_repo_file_get_xattrs (OSTREE_REPO_FILE (path),
+                                            &ret_xattrs,
+                                            cancellable,
+                                            error))
+            goto out;
+        }
+      else if (path)
         {
           if (!glnx_dfd_name_get_all_xattrs (AT_FDCWD, gs_file_get_path_cached (path),
                                              &ret_xattrs, cancellable, error))
@@ -2541,16 +2549,6 @@ write_directory_to_mtree_internal (OstreeRepo                  *self,
         goto out;
 
       ostree_mutable_tree_set_metadata_checksum (mtree, ostree_repo_file_tree_get_metadata_checksum (repo_dir));
-
-      /* If the mtree was empty beforehand, the checksums on the mtree can simply
-       * become the checksums on the tree in the repo. Super simple. */
-      if (g_hash_table_size (ostree_mutable_tree_get_files (mtree)) == 0 &&
-          g_hash_table_size (ostree_mutable_tree_get_subdirs (mtree)) == 0)
-        {
-          ostree_mutable_tree_set_contents_checksum (mtree, ostree_repo_file_tree_get_contents_checksum (repo_dir));
-          ret = TRUE;
-          goto out;
-        }
 
       filter_result = OSTREE_REPO_COMMIT_FILTER_ALLOW;
     }
@@ -2961,7 +2959,8 @@ ostree_repo_commit_modifier_new (OstreeRepoCommitModifierFlags  flags,
 OstreeRepoCommitModifier *
 ostree_repo_commit_modifier_ref (OstreeRepoCommitModifier *modifier)
 {
-  g_atomic_int_inc (&modifier->refcount);
+  gint refcount = g_atomic_int_add (&modifier->refcount, 1);
+  g_assert (refcount > 0);
   return modifier;
 }
 
