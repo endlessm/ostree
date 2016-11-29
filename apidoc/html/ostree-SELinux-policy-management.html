@@ -49,7 +49,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<span class="returnvalue">GFile</span> *
+<a href="https://developer.gnome.org/gio/unstable/GFile.html#GFile-struct"><span class="returnvalue">GFile</span></a> *
 </td>
 <td class="function_name">
 <a class="link" href="ostree-SELinux-policy-management.html#ostree-sepolicy-get-path" title="ostree_sepolicy_get_path ()">ostree_sepolicy_get_path</a> <span class="c_punctuation">()</span>
@@ -64,7 +64,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<span class="returnvalue">gboolean</span>
+<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-SELinux-policy-management.html#ostree-sepolicy-get-label" title="ostree_sepolicy_get_label ()">ostree_sepolicy_get_label</a> <span class="c_punctuation">()</span>
@@ -79,7 +79,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<span class="returnvalue">gboolean</span>
+<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-SELinux-policy-management.html#ostree-sepolicy-restorecon" title="ostree_sepolicy_restorecon ()">ostree_sepolicy_restorecon</a> <span class="c_punctuation">()</span>
@@ -87,7 +87,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<span class="returnvalue">gboolean</span>
+<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-SELinux-policy-management.html#ostree-sepolicy-setfscreatecon" title="ostree_sepolicy_setfscreatecon ()">ostree_sepolicy_setfscreatecon</a> <span class="c_punctuation">()</span>
@@ -133,9 +133,9 @@ root and perform labeling.</p>
 <div class="refsect2">
 <a name="ostree-sepolicy-new"></a><h3>ostree_sepolicy_new ()</h3>
 <pre class="programlisting"><a class="link" href="ostree-SELinux-policy-management.html#OstreeSePolicy" title="OstreeSePolicy"><span class="returnvalue">OstreeSePolicy</span></a> *
-ostree_sepolicy_new (<em class="parameter"><code><span class="type">GFile</span> *path</code></em>,
-                     <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
-                     <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+ostree_sepolicy_new (<em class="parameter"><code><a href="https://developer.gnome.org/gio/unstable/GFile.html#GFile-struct"><span class="type">GFile</span></a> *path</code></em>,
+                     <em class="parameter"><code><a href="https://developer.gnome.org/gio/unstable/GCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
+                     <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-sepolicy-new.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -161,7 +161,7 @@ ostree_sepolicy_new (<em class="parameter"><code><span class="type">GFile</span>
 <hr>
 <div class="refsect2">
 <a name="ostree-sepolicy-get-path"></a><h3>ostree_sepolicy_get_path ()</h3>
-<pre class="programlisting"><span class="returnvalue">GFile</span> *
+<pre class="programlisting"><a href="https://developer.gnome.org/gio/unstable/GFile.html#GFile-struct"><span class="returnvalue">GFile</span></a> *
 ostree_sepolicy_get_path (<em class="parameter"><code><a class="link" href="ostree-SELinux-policy-management.html#OstreeSePolicy" title="OstreeSePolicy"><span class="type">OstreeSePolicy</span></a> *self</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-sepolicy-get-path.returns"></a><h4>Returns</h4>
@@ -183,18 +183,18 @@ ostree_sepolicy_get_name (<em class="parameter"><code><a class="link" href="ostr
 <hr>
 <div class="refsect2">
 <a name="ostree-sepolicy-get-label"></a><h3>ostree_sepolicy_get_label ()</h3>
-<pre class="programlisting"><span class="returnvalue">gboolean</span>
+<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 ostree_sepolicy_get_label (<em class="parameter"><code><a class="link" href="ostree-SELinux-policy-management.html#OstreeSePolicy" title="OstreeSePolicy"><span class="type">OstreeSePolicy</span></a> *self</code></em>,
                            <em class="parameter"><code>const <span class="type">char</span> *relpath</code></em>,
-                           <em class="parameter"><code><span class="type">guint32</span> unix_mode</code></em>,
+                           <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint32"><span class="type">guint32</span></a> unix_mode</code></em>,
                            <em class="parameter"><code><span class="type">char</span> **out_label</code></em>,
-                           <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
-                           <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+                           <em class="parameter"><code><a href="https://developer.gnome.org/gio/unstable/GCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
+                           <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
 <p>Store in <em class="parameter"><code>out_label</code></em>
  the security context for the given <em class="parameter"><code>relpath</code></em>
  and
 mode <em class="parameter"><code>unix_mode</code></em>
-.  If the policy does not specify a label, <code class="literal">NULL</code>
+.  If the policy does not specify a label, <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a>
 will be returned.</p>
 <div class="refsect3">
 <a name="ostree-sepolicy-get-label.parameters"></a><h4>Parameters</h4>
@@ -253,15 +253,15 @@ ostree_sepolicy_get_csum (<em class="parameter"><code><a class="link" href="ostr
 <hr>
 <div class="refsect2">
 <a name="ostree-sepolicy-restorecon"></a><h3>ostree_sepolicy_restorecon ()</h3>
-<pre class="programlisting"><span class="returnvalue">gboolean</span>
+<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 ostree_sepolicy_restorecon (<em class="parameter"><code><a class="link" href="ostree-SELinux-policy-management.html#OstreeSePolicy" title="OstreeSePolicy"><span class="type">OstreeSePolicy</span></a> *self</code></em>,
                             <em class="parameter"><code>const <span class="type">char</span> *path</code></em>,
-                            <em class="parameter"><code><span class="type">GFileInfo</span> *info</code></em>,
-                            <em class="parameter"><code><span class="type">GFile</span> *target</code></em>,
+                            <em class="parameter"><code><a href="https://developer.gnome.org/gio/unstable/GFileInfo.html#GFileInfo-struct"><span class="type">GFileInfo</span></a> *info</code></em>,
+                            <em class="parameter"><code><a href="https://developer.gnome.org/gio/unstable/GFile.html#GFile-struct"><span class="type">GFile</span></a> *target</code></em>,
                             <em class="parameter"><code><a class="link" href="ostree-SELinux-policy-management.html#OstreeSePolicyRestoreconFlags" title="enum OstreeSePolicyRestoreconFlags"><span class="type">OstreeSePolicyRestoreconFlags</span></a> flags</code></em>,
                             <em class="parameter"><code><span class="type">char</span> **out_new_label</code></em>,
-                            <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
-                            <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+                            <em class="parameter"><code><a href="https://developer.gnome.org/gio/unstable/GCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
+                            <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
 <p>Reset the security context of <em class="parameter"><code>target</code></em>
  based on the SELinux policy.</p>
 <div class="refsect3">
@@ -300,7 +300,7 @@ ostree_sepolicy_restorecon (<em class="parameter"><code><a class="link" href="os
 </tr>
 <tr>
 <td class="parameter_name"><p>out_new_label</p></td>
-<td class="parameter_description"><p> New label, or <code class="literal">NULL</code> if unchanged. </p></td>
+<td class="parameter_description"><p> New label, or <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> if unchanged. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -320,11 +320,11 @@ ostree_sepolicy_restorecon (<em class="parameter"><code><a class="link" href="os
 <hr>
 <div class="refsect2">
 <a name="ostree-sepolicy-setfscreatecon"></a><h3>ostree_sepolicy_setfscreatecon ()</h3>
-<pre class="programlisting"><span class="returnvalue">gboolean</span>
+<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 ostree_sepolicy_setfscreatecon (<em class="parameter"><code><a class="link" href="ostree-SELinux-policy-management.html#OstreeSePolicy" title="OstreeSePolicy"><span class="type">OstreeSePolicy</span></a> *self</code></em>,
                                 <em class="parameter"><code>const <span class="type">char</span> *path</code></em>,
-                                <em class="parameter"><code><span class="type">guint32</span> mode</code></em>,
-                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint32"><span class="type">guint32</span></a> mode</code></em>,
+                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-sepolicy-setfscreatecon.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">

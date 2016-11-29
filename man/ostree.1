@@ -2,7 +2,7 @@
 .\"     Title: ostree
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 11/03/2016
+.\"      Date: 11/23/2016
 .\"    Manual: ostree
 .\"    Source: OSTree
 .\"  Language: English
@@ -250,7 +250,11 @@ or
 OSTree supports signing commits with GPG\&. Operations on the system repository by default use keyring files in
 /usr/share/ostree/trusted\&.gpg\&.d\&. Any public key in a keyring file in that directory will be trusted by the client\&. No private keys should be present in this directory\&.
 .PP
-In addition to the system repository, OSTree supports a per\-remote
+In addition to the system repository, OSTree supports two other paths\&. First, there is a
+gpgkeypath
+option for remotes, which must point to the filename of an ASCII\-armored key\&.
+.PP
+Second, there is support for a per\-remote
 \fIremotename\fR\&.trustedkeys\&.gpg
 file stored in the toplevel of the repository (alongside
 objects/

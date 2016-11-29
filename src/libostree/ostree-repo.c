@@ -161,11 +161,10 @@ ost_remote_new_from_keyfile (GKeyFile    *keyfile,
 static OstreeRemote *
 ost_remote_ref (OstreeRemote *remote)
 {
+  gint refcount;
   g_return_val_if_fail (remote != NULL, NULL);
-  g_return_val_if_fail (remote->ref_count > 0, NULL);
-
-  g_atomic_int_inc (&remote->ref_count);
-
+  refcount = g_atomic_int_add (&remote->ref_count, 1);
+  g_assert (refcount > 0);
   return remote;
 }
 
@@ -1440,9 +1439,9 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
                                GError            **error)
 {
   OstreeRemote *remote;
-  gpgme_ctx_t source_context = NULL;
-  gpgme_ctx_t target_context = NULL;
-  gpgme_data_t data_buffer = NULL;
+  ot_auto_gpgme_ctx gpgme_ctx_t source_context = NULL;
+  ot_auto_gpgme_ctx gpgme_ctx_t target_context = NULL;
+  ot_auto_gpgme_data gpgme_data_t data_buffer = NULL;
   gpgme_import_result_t import_result;
   gpgme_import_status_t import_status;
   const char *tmp_dir = NULL;
@@ -1479,13 +1478,9 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
    * the keys to a new pubring.gpg file.  If the key data format is ASCII
    * armored, this step will convert them to binary. */
 
-  gpg_error = gpgme_new (&source_context);
-  if (gpg_error != GPG_ERR_NO_ERROR)
-    {
-      ot_gpgme_error_to_gio_error (gpg_error, error);
-      g_prefix_error (error, "Unable to create context: ");
-      goto out;
-    }
+  source_context = ot_gpgme_new_ctx (NULL, error);
+  if (!source_context)
+    goto out;
 
   if (source_stream != NULL)
     {
@@ -1569,13 +1564,9 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
    * of the remote's keyring file.  We'll let the import operation alter
    * the pubring.gpg file, then rename it back to its permanent home. */
 
-  gpg_error = gpgme_new (&target_context);
-  if (gpg_error != GPG_ERR_NO_ERROR)
-    {
-      ot_gpgme_error_to_gio_error (gpg_error, error);
-      g_prefix_error (error, "Unable to create context: ");
-      goto out;
-    }
+  target_context = ot_gpgme_new_ctx (NULL, error);
+  if (!target_context)
+    goto out;
 
   /* No need for an output stream since we copy in a pubring.gpg. */
   if (!ot_gpgme_ctx_tmp_home_dir (target_context, tmp_dir, &target_tmp_dir,
@@ -1699,15 +1690,6 @@ out:
 
   if (target_tmp_dir != NULL)
     (void) glnx_shutil_rm_rf_at (AT_FDCWD, target_tmp_dir, NULL, NULL);
-
-  if (source_context != NULL)
-    gpgme_release (source_context);
-
-  if (target_context != NULL)
-    gpgme_release (target_context);
-
-  if (data_buffer != NULL)
-    gpgme_data_release (data_buffer);
 
   g_prefix_error (error, "GPG: ");
 
@@ -3989,7 +3971,6 @@ sign_data (OstreeRepo     *self,
   g_autoptr(GOutputStream) tmp_signature_output = NULL;
   gpgme_ctx_t context = NULL;
   g_autoptr(GBytes) ret_signature = NULL;
-  gpgme_engine_info_t info;
   gpgme_error_t err;
   gpgme_key_t key = NULL;
   gpgme_data_t commit_buffer = NULL;
@@ -4001,34 +3982,9 @@ sign_data (OstreeRepo     *self,
     goto out;
   tmp_signature_output = g_unix_output_stream_new (tmp_fd, FALSE);
 
-  if ((err = gpgme_new (&context)) != GPG_ERR_NO_ERROR)
-    {
-      ot_gpgme_error_to_gio_error (err, error);
-      g_prefix_error (error, "Unable to create gpg context: ");
-      goto out;
-    }
-
-  info = gpgme_ctx_get_engine_info (context);
-
-  if ((err = gpgme_set_protocol (context, GPGME_PROTOCOL_OpenPGP)) !=
-      GPG_ERR_NO_ERROR)
-    {
-      ot_gpgme_error_to_gio_error (err, error);
-      g_prefix_error (error, "Unable to set gpg protocol: ");
-      goto out;
-    }
-  
-  if (homedir != NULL)
-    {
-      if ((err = gpgme_ctx_set_engine_info (context, info->protocol, NULL, homedir))
-          != GPG_ERR_NO_ERROR)
-        {
-          ot_gpgme_error_to_gio_error (err, error);
-          g_prefix_error (error, "Unable to set gpg homedir to '%s': ",
-                          homedir);
-          goto out;
-        }
-    }
+  context = ot_gpgme_new_ctx (homedir, error);
+  if (!context)
+    goto out;
 
   /* Get the secret keys with the given key id */
   err = gpgme_get_key (context, key_id, &key, 1);
@@ -4045,7 +4001,7 @@ sign_data (OstreeRepo     *self,
       g_prefix_error (error, "Unable to lookup key ID %s: ", key_id);
       goto out;
     }
-  
+
   /* Add the key to the context as a signer */
   if ((err = gpgme_signers_add (context, key)) != GPG_ERR_NO_ERROR)
     {
@@ -4325,6 +4281,7 @@ _ostree_repo_gpg_verify_data_internal (OstreeRepo    *self,
     }
   else if (remote_name != NULL)
     {
+      g_autofree char *gpgkeypath = NULL;
       /* Add the remote's keyring file if it exists. */
 
       OstreeRemote *remote;
@@ -4341,6 +4298,13 @@ _ostree_repo_gpg_verify_data_internal (OstreeRepo    *self,
           _ostree_gpg_verifier_add_keyring (verifier, file);
           add_global_keyring_dir = FALSE;
         }
+
+      if (!ot_keyfile_get_value_with_default (remote->options, remote->group, "gpgkeypath", NULL,
+                                              &gpgkeypath, error))
+        return NULL;
+
+      if (gpgkeypath)
+        _ostree_gpg_verifier_add_key_ascii_file (verifier, gpgkeypath);
 
       ost_remote_unref (remote);
     }
@@ -4540,6 +4504,36 @@ ostree_repo_verify_commit_ext (OstreeRepo    *self,
                                               NULL,
                                               keyringdir,
                                               extra_keyring,
+                                              cancellable,
+                                              error);
+}
+
+/**
+ * ostree_repo_verify_commit_for_remote:
+ * @self: Repository
+ * @commit_checksum: ASCII SHA256 checksum
+ * @remote_name: OSTree remote to use for configuration
+ * @cancellable: Cancellable
+ * @error: Error
+ *
+ * Read GPG signature(s) on the commit named by the ASCII checksum
+ * @commit_checksum and return detailed results, based on the keyring
+ * configured for @remote.
+ *
+ * Returns: (transfer full): an #OstreeGpgVerifyResult, or %NULL on error
+ */
+OstreeGpgVerifyResult *
+ostree_repo_verify_commit_for_remote (OstreeRepo    *self,
+                                      const gchar   *commit_checksum,
+                                      const gchar   *remote_name,
+                                      GCancellable  *cancellable,
+                                      GError       **error)
+{
+  return _ostree_repo_verify_commit_internal (self,
+                                              commit_checksum,
+                                              remote_name,
+                                              NULL,
+                                              NULL,
                                               cancellable,
                                               error);
 }
@@ -4875,7 +4869,7 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
 
       /* We put the lock outside the dir, so we can hold the lock
        * until the directory is fully removed */
-      if (!_ostree_repo_try_lock_tmpdir (dfd_iter.fd, dent->d_name,
+      if (!_ostree_repo_try_lock_tmpdir (tmpdir_dfd, dent->d_name,
                                          file_lock_out, &did_lock,
                                          error))
         goto out;

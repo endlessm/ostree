@@ -1327,12 +1327,13 @@ RECHECK_LOGS = $(TEST_LOGS)
 am__EXEEXT_10 =
 am__EXEEXT_11 = tests/test-basic.sh tests/test-pull-subpath.sh \
 	tests/test-archivez.sh tests/test-remote-add.sh \
-	tests/test-remote-cookies.sh tests/test-remote-gpg-import.sh \
-	tests/test-commit-sign.sh tests/test-export.sh \
-	tests/test-help.sh tests/test-libarchive.sh \
-	tests/test-parent.sh tests/test-pull-archive-z.sh \
-	tests/test-pull-commit-only.sh tests/test-pull-corruption.sh \
-	tests/test-pull-depth.sh tests/test-pull-mirror-summary.sh \
+	tests/test-remote-cookies.sh tests/test-remote-headers.sh \
+	tests/test-remote-gpg-import.sh tests/test-commit-sign.sh \
+	tests/test-export.sh tests/test-help.sh \
+	tests/test-libarchive.sh tests/test-parent.sh \
+	tests/test-pull-archive-z.sh tests/test-pull-commit-only.sh \
+	tests/test-pull-corruption.sh tests/test-pull-depth.sh \
+	tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
@@ -2041,12 +2042,13 @@ uninstalled_test_data = tests/ostree-symlink-stamp tests/ostree-prepare-root-sym
 dist_uninstalled_test_scripts = tests/test-symbols.sh
 dist_test_scripts = tests/test-basic.sh tests/test-pull-subpath.sh \
 	tests/test-archivez.sh tests/test-remote-add.sh \
-	tests/test-remote-cookies.sh tests/test-remote-gpg-import.sh \
-	tests/test-commit-sign.sh tests/test-export.sh \
-	tests/test-help.sh tests/test-libarchive.sh \
-	tests/test-parent.sh tests/test-pull-archive-z.sh \
-	tests/test-pull-commit-only.sh tests/test-pull-corruption.sh \
-	tests/test-pull-depth.sh tests/test-pull-mirror-summary.sh \
+	tests/test-remote-cookies.sh tests/test-remote-headers.sh \
+	tests/test-remote-gpg-import.sh tests/test-commit-sign.sh \
+	tests/test-export.sh tests/test-help.sh \
+	tests/test-libarchive.sh tests/test-parent.sh \
+	tests/test-pull-archive-z.sh tests/test-pull-commit-only.sh \
+	tests/test-pull-corruption.sh tests/test-pull-depth.sh \
+	tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
@@ -6076,6 +6078,13 @@ tests/test-remote-add.sh.log: tests/test-remote-add.sh
 tests/test-remote-cookies.sh.log: tests/test-remote-cookies.sh
 	@p='tests/test-remote-cookies.sh'; \
 	b='tests/test-remote-cookies.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-remote-headers.sh.log: tests/test-remote-headers.sh
+	@p='tests/test-remote-headers.sh'; \
+	b='tests/test-remote-headers.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
