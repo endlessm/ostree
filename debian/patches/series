@@ -4,4 +4,4 @@ ostree-repo-traverse-Don-t-leak-floating-GVariant.patch
 pull_with_options-Don-t-leak-csum_v.patch
 pull-Don-t-leak-delta-superblock-variants.patch
 delta-compilation-Fix-leak.patch
-debian/Terminate-individual-tests-after-half-an-hour.patch
+Terminate-individual-tests-after-10-minutes.patch

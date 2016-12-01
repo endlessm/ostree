@@ -1,6 +1,6 @@
 From: Simon McVittie <smcv@debian.org>
-Date: Fri, 9 Sep 2016 08:23:36 +0100
-Subject: Terminate individual tests after half an hour
+Date: Thu, 1 Dec 2016 11:25:33 +0000
+Subject: Terminate individual tests after 10 minutes
 
 While using the Automake parallel test harness, if a test hangs for
 long enough for an external watchdog to kill the entire build process
@@ -8,13 +8,18 @@ long enough for an external watchdog to kill the entire build process
 stdout/stderr), the logs will not be shown. If we make an individual
 test time out sooner, logs are more likely to be shown.
 
+We use SIGABRT so that the process(es) under test will dump core,
+allowing the point at which ostree is blocking to be analyzed.
+After 1 minute, if any have not died, we kill them again with SIGKILL.
+
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/607
 ---
  buildutil/tap-test | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/buildutil/tap-test b/buildutil/tap-test
-index c8da31e..fd79122 100755
+index c8da31e..4adee45 100755
 --- a/buildutil/tap-test
 +++ b/buildutil/tap-test
 @@ -19,7 +19,7 @@ function skip_cleanup() {
@@ -22,7 +27,7 @@ index c8da31e..fd79122 100755
  }
  cd ${tempdir}
 -${srcd}/${bn} -k --tap
-+timeout --kill-after=60 1800 ${srcd}/${bn} -k --tap
++timeout --kill-after=60 --signal=ABRT 600 ${srcd}/${bn} -k --tap
  rc=$?
  case "${TEST_SKIP_CLEANUP:-}" in
      no|"") cleanup ;;

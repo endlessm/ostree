@@ -8,6 +8,11 @@ ostree (2016.14-2) UNRELEASED; urgency=medium
     However, these are not regressions, so we should not FTBFS just
     because we happen to have been unlucky during build.
 
+  * d/p/Terminate-individual-tests-after-10-minutes.patch:
+    replace d/p/debian/Terminate-individual-tests-after-half-an-hour.patch
+    with the version that I sent upstream, which uses SIGABRT and
+    terminates the tests sooner
+
  -- Simon McVittie <smcv@debian.org>  Thu, 01 Dec 2016 12:29:00 +0000
 
 ostree (2016.14-1) unstable; urgency=medium
