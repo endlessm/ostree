@@ -12,6 +12,7 @@ ostree (2016.14-2) UNRELEASED; urgency=medium
     replace d/p/debian/Terminate-individual-tests-after-half-an-hour.patch
     with the version that I sent upstream, which uses SIGABRT and
     terminates the tests sooner
+  * d/p/*.patch: import more memory leak fixes from upstream
 
  -- Simon McVittie <smcv@debian.org>  Thu, 01 Dec 2016 12:29:00 +0000
 

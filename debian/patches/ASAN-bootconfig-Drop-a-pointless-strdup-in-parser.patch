@@ -1,0 +1,42 @@
+From: Colin Walters <walters@verbum.org>
+Date: Mon, 28 Nov 2016 22:02:42 -0500
+Subject: [ASAN] bootconfig: Drop a pointless strdup in parser
+
+Not entirely sure how this was leaking, but anyways it showed
+up in ASAN, and it's pointless to strdup here.
+
+Closes: #598
+Approved by: jlebon
+---
+ src/libostree/ostree-bootconfig-parser.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/src/libostree/ostree-bootconfig-parser.c b/src/libostree/ostree-bootconfig-parser.c
+index f7728e4..a2ac107 100644
+--- a/src/libostree/ostree-bootconfig-parser.c
++++ b/src/libostree/ostree-bootconfig-parser.c
+@@ -28,7 +28,7 @@ struct _OstreeBootconfigParser
+   GObject       parent_instance;
+ 
+   gboolean      parsed;
+-  char         *separators;
++  const char   *separators;
+ 
+   GHashTable   *options;
+   GPtrArray    *lines;
+@@ -235,7 +235,6 @@ ostree_bootconfig_parser_finalize (GObject *object)
+ 
+   g_hash_table_unref (self->options);
+   g_ptr_array_unref (self->lines);
+-  g_free (self->separators);
+ 
+   G_OBJECT_CLASS (ostree_bootconfig_parser_parent_class)->finalize (object);
+ }
+@@ -261,6 +260,6 @@ ostree_bootconfig_parser_new (void)
+   OstreeBootconfigParser *self = NULL;
+ 
+   self = g_object_new (OSTREE_TYPE_BOOTCONFIG_PARSER, NULL);
+-  self->separators = g_strdup (" \t");
++  self->separators = " \t";
+   return self;
+ }

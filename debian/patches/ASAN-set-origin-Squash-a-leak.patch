@@ -1,0 +1,34 @@
+From: Colin Walters <walters@verbum.org>
+Date: Mon, 28 Nov 2016 22:03:24 -0500
+Subject: [ASAN] set-origin: Squash a leak
+
+Just a minor leak in the commandline.
+
+Closes: #598
+Approved by: jlebon
+---
+ src/ostree/ot-admin-builtin-set-origin.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/ostree/ot-admin-builtin-set-origin.c b/src/ostree/ot-admin-builtin-set-origin.c
+index 0e79ab5..2b6866c 100644
+--- a/src/ostree/ot-admin-builtin-set-origin.c
++++ b/src/ostree/ot-admin-builtin-set-origin.c
+@@ -50,7 +50,7 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
+   const char *branch = NULL;
+   glnx_unref_object OstreeRepo *repo = NULL;
+   glnx_unref_object OstreeSysroot *sysroot = NULL;
+-  OstreeDeployment *target_deployment = NULL;
++  glnx_unref_object OstreeDeployment *target_deployment = NULL;
+ 
+   context = g_option_context_new ("REMOTENAME URL [BRANCH]");
+ 
+@@ -85,6 +85,8 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
+                                "Not currently booted into an OSTree system");
+           goto out;
+         }
++      /* To match the below */
++      target_deployment = g_object_ref (target_deployment);
+     }
+   else
+     {

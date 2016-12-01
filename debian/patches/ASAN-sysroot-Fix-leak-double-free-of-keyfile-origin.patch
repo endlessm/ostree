@@ -1,0 +1,65 @@
+From: Colin Walters <walters@verbum.org>
+Date: Mon, 28 Nov 2016 22:00:01 -0500
+Subject: [ASAN] sysroot: Fix leak/double free of keyfile origin
+
+Use autoptr rather than manual cleanup.  The double free isn't a
+security problem, since we trust origin files.
+
+Closes: #598
+Approved by: jlebon
+---
+ src/libostree/ostree-deployment.c | 2 +-
+ src/libostree/ostree-sysroot.c    | 6 +-----
+ 2 files changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/src/libostree/ostree-deployment.c b/src/libostree/ostree-deployment.c
+index 7b93e6c..67e896b 100644
+--- a/src/libostree/ostree-deployment.c
++++ b/src/libostree/ostree-deployment.c
+@@ -133,7 +133,6 @@ OstreeDeployment *
+ ostree_deployment_clone (OstreeDeployment *self)
+ {
+   glnx_unref_object OstreeBootconfigParser *new_bootconfig = NULL;
+-  GKeyFile *new_origin = NULL;
+   OstreeDeployment *ret = ostree_deployment_new (self->index, self->osname, self->csum,
+                                                  self->deployserial,
+                                                  self->bootcsum, self->bootserial);
+@@ -143,6 +142,7 @@ ostree_deployment_clone (OstreeDeployment *self)
+ 
+   if (self->origin)
+     {
++      g_autoptr(GKeyFile) new_origin = NULL;
+       g_autofree char *data = NULL;
+       gsize len;
+       gboolean success;
+diff --git a/src/libostree/ostree-sysroot.c b/src/libostree/ostree-sysroot.c
+index 608d4cf..70ce156 100644
+--- a/src/libostree/ostree-sysroot.c
++++ b/src/libostree/ostree-sysroot.c
+@@ -613,8 +613,6 @@ parse_origin (OstreeSysroot   *self,
+  out:
+   if (error)
+     g_prefix_error (error, "Parsing %s: ", origin_path);
+-  if (ret_origin)
+-    g_key_file_unref (ret_origin);
+   return ret;
+ }
+ 
+@@ -689,7 +687,7 @@ parse_deployment (OstreeSysroot       *self,
+   glnx_fd_close int deployment_dfd = -1;
+   const char *deploy_basename;
+   g_autofree char *treebootserial_target = NULL;
+-  GKeyFile *origin = NULL;
++  g_autoptr(GKeyFile) origin = NULL;
+   g_autofree char *unlocked_development_path = NULL;
+   struct stat stbuf;
+ 
+@@ -751,8 +749,6 @@ parse_deployment (OstreeSysroot       *self,
+   if (out_deployment)
+     *out_deployment = g_steal_pointer (&ret_deployment);
+  out:
+-  if (origin)
+-    g_key_file_unref (origin);
+   return ret;
+ }
+ 

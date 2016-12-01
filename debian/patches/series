@@ -4,4 +4,13 @@ ostree-repo-traverse-Don-t-leak-floating-GVariant.patch
 pull_with_options-Don-t-leak-csum_v.patch
 pull-Don-t-leak-delta-superblock-variants.patch
 delta-compilation-Fix-leak.patch
+ASAN-delta-compilation-More-leak-fixes.patch
+ASAN-deltas-Fix-minor-memory-leak.patch
+ASAN-cmdline-Fix-minor-leak-in-delta-cmdline-entrypoint.patch
+traverse-Use-g_hash_table_add.patch
+ASAN-sysroot-Fix-leak-double-free-of-keyfile-origin.patch
+ASAN-metalink-Fix-leaks-of-buffer.patch
+ASAN-bootconfig-Drop-a-pointless-strdup-in-parser.patch
+ASAN-set-origin-Squash-a-leak.patch
+ASAN-tests-Fix-leaks.patch
 Terminate-individual-tests-after-10-minutes.patch
