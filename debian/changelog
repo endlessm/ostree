@@ -1,4 +1,4 @@
-ostree (2016.14-2) UNRELEASED; urgency=medium
+ostree (2016.14-2) unstable; urgency=medium
 
   * Make build-time test failures non-fatal, as long as at least
     3 out of 5 attempts succeed.
@@ -14,7 +14,7 @@ ostree (2016.14-2) UNRELEASED; urgency=medium
     terminates the tests sooner
   * d/p/*.patch: import more memory leak fixes from upstream
 
- -- Simon McVittie <smcv@debian.org>  Thu, 01 Dec 2016 12:29:00 +0000
+ -- Simon McVittie <smcv@debian.org>  Thu, 01 Dec 2016 12:38:54 +0000
 
 ostree (2016.14-1) unstable; urgency=medium
 
