@@ -522,7 +522,11 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
 
   sizes = g_variant_lookup_value (metadata, "ostree.sizes", G_VARIANT_TYPE("aay"));
   if (!sizes)
-    goto out; /* No size data is available */
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                   "No metadata key ostree.sizes in commit %s", rev);
+      goto out;
+    }
 
   g_variant_iter_init (&obj_iter, sizes);
   while ((object = g_variant_iter_next_value (&obj_iter)))
