@@ -486,6 +486,31 @@ out:
   return ret;
 }
 
+/**
+ * ostree_repo_get_commit_sizes
+ * @self: Self
+ * @rev: Commit checksum
+ * @new_archived: (out) (optional): number of archived bytes for the commit
+ *                missing from the repository, or %NULL
+ * @new_unpacked: (out) (optional): number of unpacked bytes for the commit
+ *                missing from the repository, or %NULL
+ * @new_files: (out) (optional): number of files for the commit missing from
+ *             the repository, or %NULL
+ * @archived: (out) (optional): number of archived bytes for the commit in the
+ *            repository, or %NULL
+ * @unpacked: (out) (optional): number of unpacked bytes for the commit in the
+ *            repository, or %NULL
+ * @files: (out) (optional): number of files for the commit in the repository,
+ *         or %NULL
+ * @cancellable: a #GCancellable
+ * @error: a #GError
+ *
+ * Reads the size data for the commit stored in the %ostree.sizes key in
+ * the commit metadata. If this data is not available, %FALSE is
+ * returned and @error is set to %G_IO_ERROR_NOT_FOUND.
+ *
+ * Returns: %TRUE on success, %FALSE on failure
+ */
 gboolean
 ostree_repo_get_commit_sizes (OstreeRepo *self,
                               const char *rev,
@@ -522,7 +547,11 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
 
   sizes = g_variant_lookup_value (metadata, "ostree.sizes", G_VARIANT_TYPE("aay"));
   if (!sizes)
-    goto out; /* No size data is available */
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                   "No metadata key ostree.sizes in commit %s", rev);
+      goto out;
+    }
 
   g_variant_iter_init (&obj_iter, sizes);
   while ((object = g_variant_iter_next_value (&obj_iter)))
