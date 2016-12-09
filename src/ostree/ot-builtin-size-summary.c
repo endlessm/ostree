@@ -30,6 +30,7 @@
 gboolean
 ostree_builtin_size_summary (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
+  gboolean ret = FALSE;
   GOptionContext *context;
   OstreeRepo *repo;
   gsize entries = 0;
@@ -98,26 +99,27 @@ ostree_builtin_size_summary (int argc, char **argv, GCancellable *cancellable, G
       goto out;
     }
 
-  if (ostree_repo_get_commit_sizes (repo, revision,
-                                    &new_archived,
-                                    &new_unpacked,
-                                    &fetch_needed,
-                                    &archived, &unpacked,
-                                    &entries,
-                                    cancellable, error))
-    {
-      g_print ("Summary for refspec %s:\n"
-               "  files: %" G_GSIZE_FORMAT "/%" G_GSIZE_FORMAT " entries\n"
-               "  archived: %" G_GINT64_FORMAT "/%" G_GINT64_FORMAT "\n"
-               "  unpacked: %" G_GINT64_FORMAT "/%" G_GINT64_FORMAT "\n",
-               refspec,
-               entries - fetch_needed, entries,
-               archived - new_archived, archived,
-               unpacked - new_unpacked, unpacked);
-    }
+  if (!ostree_repo_get_commit_sizes (repo, revision,
+                                     &new_archived,
+                                     &new_unpacked,
+                                     &fetch_needed,
+                                     &archived, &unpacked,
+                                     &entries,
+                                     cancellable, error))
+    goto out;
 
+  g_print ("Summary for refspec %s:\n"
+           "  files: %" G_GSIZE_FORMAT "/%" G_GSIZE_FORMAT " entries\n"
+           "  archived: %" G_GINT64_FORMAT "/%" G_GINT64_FORMAT "\n"
+           "  unpacked: %" G_GINT64_FORMAT "/%" G_GINT64_FORMAT "\n",
+           refspec,
+           entries - fetch_needed, entries,
+           archived - new_archived, archived,
+           unpacked - new_unpacked, unpacked);
+
+  ret = TRUE;
  out:
   g_option_context_free (context);
 
-  return entries != 0;
+  return ret;
 }
