@@ -13,6 +13,19 @@ ostree (2016.15-1) unstable; urgency=medium
 
  -- Simon McVittie <smcv@debian.org>  Tue, 13 Dec 2016 13:13:44 +0000
 
+ostree (2016.14-2~bpo8+1) jessie-backports; urgency=medium
+
+  * Backport to jessie
+    - debian/gbp.conf: adjust for this branch
+    - Disable use of O_TMPFILE in the jessie backport. O_TMPFILE was
+      still a new thing when jessie was released, and fails on
+      the arm64, armel, armhf, powerpc and ppc64el buildds.
+    - Switch libgpgme-dev build-dependency back to libgpgme11-dev
+    - Leave debhelper compat level and dependency set to 10 now that
+      debhelper 10 is in backports
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 12 Dec 2016 16:15:21 +0000
+
 ostree (2016.14-2) unstable; urgency=medium
 
   * Make build-time test failures non-fatal, as long as at least
