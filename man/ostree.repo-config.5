@@ -2,7 +2,7 @@
 .\"     Title: ostree.repo-config
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 11/23/2016
+.\"      Date: 12/12/2016
 .\"    Manual: ostree.repo-config
 .\"    Source: OSTree
 .\"  Language: English
@@ -47,7 +47,8 @@ Repository\-global options\&. The following entries are defined:
 \fImode\fR
 .RS 4
 One of
-bare
+bare,
+bare\-user
 or
 archive\-z2\&.
 .RE
@@ -124,6 +125,11 @@ Path to file containing client\-side certificate key, to present when making req
 \fItls\-ca\-path\fR
 .RS 4
 Path to file containing trusted anchors instead of the system CA database\&.
+.RE
+.PP
+\fIunconfigured\-state\fR
+.RS 4
+If set, pulls from this remote will fail with the configured text\&. This is intended for OS vendors which have a subscription process to access content\&.
 .RE
 .SH "/ETC/OSTREE/REMOTES\&.D"
 .PP

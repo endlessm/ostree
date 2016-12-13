@@ -20,7 +20,13 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <string.h>
+
 #include "ostree-enumtypes.h"
+
 /* enumerations from "./src/libostree/ostree-fetcher.h" */
 #include "./src/libostree/ostree-fetcher.h"
 

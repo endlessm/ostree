@@ -110,7 +110,7 @@ ot_static_delta_builtin_list (int argc, char **argv, GCancellable *cancellable, 
   gboolean ret = FALSE;
   g_autoptr(GPtrArray) delta_names = NULL;
   guint i;
-  GOptionContext *context;
+  g_autoptr(GOptionContext) context = NULL;
   glnx_unref_object OstreeRepo *repo = NULL;
 
   context = g_option_context_new ("LIST - list static delta files");
@@ -135,8 +135,6 @@ ot_static_delta_builtin_list (int argc, char **argv, GCancellable *cancellable, 
 
   ret = TRUE;
  out:
-  if (context)
-    g_option_context_free (context);
   return ret;
 }
 
@@ -144,7 +142,7 @@ static gboolean
 ot_static_delta_builtin_show (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   gboolean ret = FALSE;
-  GOptionContext *context;
+  g_autoptr(GOptionContext) context = NULL;
   glnx_unref_object OstreeRepo *repo = NULL;
   const char *delta_id = NULL;
 
@@ -167,8 +165,6 @@ ot_static_delta_builtin_show (int argc, char **argv, GCancellable *cancellable, 
       
   ret = TRUE;
  out:
-  if (context)
-    g_option_context_free (context);
   return ret;
 }
 
@@ -176,7 +172,7 @@ static gboolean
 ot_static_delta_builtin_delete (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   gboolean ret = FALSE;
-  GOptionContext *context;
+  g_autoptr(GOptionContext) context = NULL;
   glnx_unref_object OstreeRepo *repo = NULL;
   const char *delta_id = NULL;
 
@@ -199,8 +195,6 @@ ot_static_delta_builtin_delete (int argc, char **argv, GCancellable *cancellable
 
   ret = TRUE;
  out:
-  if (context)
-    g_option_context_free (context);
   return ret;
 }
 
@@ -209,7 +203,7 @@ static gboolean
 ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   gboolean ret = FALSE;
-  GOptionContext *context;
+  g_autoptr(GOptionContext) context = NULL;
   glnx_unref_object OstreeRepo *repo = NULL;
 
   context = g_option_context_new ("GENERATE [TO] - Generate static delta files");
@@ -336,18 +330,18 @@ ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellab
       g_print ("Generating static delta:\n");
       g_print ("  From: %s\n", from_resolved ? from_resolved : "empty");
       g_print ("  To:   %s\n", to_resolved);
-      if (!ostree_repo_static_delta_generate (repo, OSTREE_STATIC_DELTA_GENERATE_OPT_MAJOR,
-                                              from_resolved, to_resolved, NULL,
-                                              g_variant_builder_end (parambuilder),
-                                              cancellable, error))
-        goto out;
+      { g_autoptr(GVariant) params = g_variant_ref_sink (g_variant_builder_end (parambuilder));
+        if (!ostree_repo_static_delta_generate (repo, OSTREE_STATIC_DELTA_GENERATE_OPT_MAJOR,
+                                                from_resolved, to_resolved, NULL,
+                                                params,
+                                                cancellable, error))
+          goto out;
+      }
 
     }
 
   ret = TRUE;
  out:
-  if (context)
-    g_option_context_free (context);
   return ret;
 }
 
@@ -357,7 +351,7 @@ ot_static_delta_builtin_apply_offline (int argc, char **argv, GCancellable *canc
   gboolean ret = FALSE;
   const char *patharg;
   g_autoptr(GFile) path = NULL;
-  GOptionContext *context;
+  g_autoptr(GOptionContext) context = NULL;
   glnx_unref_object OstreeRepo *repo = NULL;
 
   context = g_option_context_new ("APPLY-OFFLINE - Apply static delta file");
@@ -388,8 +382,6 @@ ot_static_delta_builtin_apply_offline (int argc, char **argv, GCancellable *canc
 
   ret = TRUE;
  out:
-  if (context)
-    g_option_context_free (context);
   return ret;
 }
 

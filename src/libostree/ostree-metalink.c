@@ -43,7 +43,7 @@ struct OstreeMetalink
 {
   GObject parent_instance;
 
-  SoupURI *uri;
+  OstreeFetcherURI *uri;
 
   OstreeFetcher *fetcher;
   char *requested_file;
@@ -357,7 +357,7 @@ metalink_parser_text (GMarkupParseContext *context,
     case OSTREE_METALINK_STATE_URL:
       {
         g_autofree char *uri_text = g_strndup (text, text_len);
-        SoupURI *uri = soup_uri_new (uri_text);
+        OstreeFetcherURI *uri = _ostree_fetcher_uri_parse (uri_text, NULL);
         if (uri != NULL)
           g_ptr_array_add (self->urls, uri);
       }
@@ -377,7 +377,7 @@ _ostree_metalink_finalize (GObject *object)
 
   g_object_unref (self->fetcher);
   g_free (self->requested_file);
-  soup_uri_free (self->uri);
+  _ostree_fetcher_uri_free (self->uri);
 
   G_OBJECT_CLASS (_ostree_metalink_parent_class)->finalize (object);
 }
@@ -399,15 +399,15 @@ OstreeMetalink *
 _ostree_metalink_new (OstreeFetcher  *fetcher,
                       const char     *requested_file,
                       guint64         max_size,
-                      SoupURI        *uri)
+                      OstreeFetcherURI *uri)
 {
   OstreeMetalink *self = (OstreeMetalink*)g_object_new (OSTREE_TYPE_METALINK, NULL);
 
   self->fetcher = g_object_ref (fetcher);
   self->requested_file = g_strdup (requested_file);
   self->max_size = max_size;
-  self->uri = soup_uri_copy (uri);
- 
+  self->uri = _ostree_fetcher_uri_clone (uri);
+
   return self;
 }
 
@@ -421,7 +421,7 @@ valid_hex_checksum (const char *s, gsize expected_len)
 
 static gboolean
 try_one_url (OstreeMetalinkRequest *self,
-             SoupURI              *uri,
+             OstreeFetcherURI *uri,
              GBytes              **out_data,
              GError         **error)
 {
@@ -479,19 +479,20 @@ try_one_url (OstreeMetalinkRequest *self,
 
   ret = TRUE;
   if (out_data)
-    *out_data = g_bytes_ref (bytes);
+    *out_data = g_steal_pointer (&bytes);
  out:
   return ret;
 }
 
 static gboolean
 try_metalink_targets (OstreeMetalinkRequest      *self,
-                      SoupURI                   **out_target_uri,
+                      OstreeFetcherURI          **out_target_uri,
                       GBytes                    **out_data,
                       GError                    **error)
 {
   gboolean ret = FALSE;
-  SoupURI *target_uri = NULL;
+  OstreeFetcherURI *target_uri = NULL;
+  g_autoptr(GBytes) ret_data = NULL;
 
   if (!self->found_a_file_element)
     {
@@ -546,7 +547,7 @@ try_metalink_targets (OstreeMetalinkRequest      *self,
 
       target_uri = self->urls->pdata[self->current_url_index];
       
-      if (try_one_url (self, target_uri, out_data, &temp_error))
+      if (try_one_url (self, target_uri, &ret_data, &temp_error))
         break;
       else
         {
@@ -567,7 +568,9 @@ try_metalink_targets (OstreeMetalinkRequest      *self,
 
   ret = TRUE;
   if (out_target_uri)
-    *out_target_uri = soup_uri_copy (target_uri);
+    *out_target_uri = _ostree_fetcher_uri_clone (target_uri);
+  if (out_data)
+    *out_data = g_steal_pointer (&ret_data);
  out:
   return ret;
 }
@@ -582,7 +585,7 @@ static const GMarkupParser metalink_parser = {
 
 typedef struct
 {
-  SoupURI               **out_target_uri;
+  OstreeFetcherURI      **out_target_uri;
   GBytes                **out_data;
   gboolean              success;
   GError                **error;
@@ -591,7 +594,7 @@ typedef struct
 
 gboolean
 _ostree_metalink_request_sync (OstreeMetalink        *self,
-                               SoupURI               **out_target_uri,
+                               OstreeFetcherURI      **out_target_uri,
                                GBytes                **out_data,
                                GCancellable          *cancellable,
                                GError                **error)
@@ -599,7 +602,7 @@ _ostree_metalink_request_sync (OstreeMetalink        *self,
   gboolean ret = FALSE;
   OstreeMetalinkRequest request = { 0, };
   g_autoptr(GMainContext) mainctx = NULL;
-  GBytes *out_contents = NULL;
+  g_autoptr(GBytes) contents = NULL;
   gsize len;
   const guint8 *data;
 
@@ -607,20 +610,20 @@ _ostree_metalink_request_sync (OstreeMetalink        *self,
   g_main_context_push_thread_default (mainctx);
 
   request.metalink = g_object_ref (self);
-  request.urls = g_ptr_array_new_with_free_func ((GDestroyNotify) soup_uri_free);
+  request.urls = g_ptr_array_new_with_free_func ((GDestroyNotify) _ostree_fetcher_uri_free);
   request.parser = g_markup_parse_context_new (&metalink_parser, G_MARKUP_PREFIX_ERROR_POSITION, &request, NULL);
 
   if (!_ostree_fetcher_request_uri_to_membuf (self->fetcher,
                                               self->uri,
                                               FALSE,
                                               FALSE,
-                                              &out_contents,
+                                              &contents,
                                               self->max_size,
                                               cancellable,
                                               error))
     goto out;
 
-  data = g_bytes_get_data (out_contents, &len);
+  data = g_bytes_get_data (contents, &len);
   if (!g_markup_parse_context_parse (request.parser, (const char*)data, len, error))
     goto out;
 
@@ -638,10 +641,4 @@ _ostree_metalink_request_sync (OstreeMetalink        *self,
   g_clear_pointer (&request.urls, g_ptr_array_unref);
   g_clear_pointer (&request.parser, g_markup_parse_context_free);
   return ret;
-}
-
-SoupURI *
-_ostree_metalink_get_uri (OstreeMetalink        *self)
-{
-  return self->uri;
 }

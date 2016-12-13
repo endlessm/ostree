@@ -613,8 +613,6 @@ parse_origin (OstreeSysroot   *self,
  out:
   if (error)
     g_prefix_error (error, "Parsing %s: ", origin_path);
-  if (ret_origin)
-    g_key_file_unref (ret_origin);
   return ret;
 }
 
@@ -689,7 +687,7 @@ parse_deployment (OstreeSysroot       *self,
   glnx_fd_close int deployment_dfd = -1;
   const char *deploy_basename;
   g_autofree char *treebootserial_target = NULL;
-  GKeyFile *origin = NULL;
+  g_autoptr(GKeyFile) origin = NULL;
   g_autofree char *unlocked_development_path = NULL;
   struct stat stbuf;
 
@@ -751,8 +749,6 @@ parse_deployment (OstreeSysroot       *self,
   if (out_deployment)
     *out_deployment = g_steal_pointer (&ret_deployment);
  out:
-  if (origin)
-    g_key_file_unref (origin);
   return ret;
 }
 
@@ -1327,7 +1323,7 @@ ostree_sysroot_try_lock (OstreeSysroot         *self,
                          GError               **error)
 {
   gboolean ret = FALSE;
-  GError *local_error = NULL;
+  g_autoptr(GError) local_error = NULL;
 
   if (!ensure_sysroot_fd (self, error))
     goto out;
@@ -1342,7 +1338,7 @@ ostree_sysroot_try_lock (OstreeSysroot         *self,
         }
       else
         {
-          g_propagate_error (error, local_error);
+          g_propagate_error (error, g_steal_pointer (&local_error));
           goto out;
         }
     }

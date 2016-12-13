@@ -1,6 +1,6 @@
 AC_PREREQ([2.63])
 dnl If incrementing the version here, remember to update libostree.sym too
-AC_INIT([ostree], [2016.14], [walters@verbum.org])
+AC_INIT([ostree], [2016.15], [walters@verbum.org])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([buildutil])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -29,10 +29,22 @@ CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
         -Werror=return-type \
         -Werror=overflow \
         -Werror=int-conversion \
+        -Werror=parenthesis \
+        -Werror=incompatible-pointer-types \
+        -Werror=misleading-indentation \
 	-Werror=missing-include-dirs -Werror=aggregate-return \
 	-Werror=declaration-after-statement \
 ])
 AC_SUBST(WARN_CFLAGS)
+
+AC_MSG_CHECKING([for -fsanitize=address in CFLAGS])
+if echo $CFLAGS | grep -q -e -fsanitize=address; then
+  AC_MSG_RESULT([yes])
+  using_asan=yes
+else
+  AC_MSG_RESULT([no])
+fi
+AM_CONDITIONAL(BUILDOPT_ASAN, [test x$using_asan = xyes])
 
 # Initialize libtool
 LT_PREREQ([2.2.4])
@@ -50,7 +62,7 @@ AS_IF([test "$YACC" != "bison -y"], [AC_MSG_ERROR([bison not found but required]
 
 PKG_PROG_PKG_CONFIG
 
-AM_PATH_GLIB_2_0
+AM_PATH_GLIB_2_0(,,AC_MSG_ERROR([GLib not found]))
 
 dnl When bumping the gio-unix-2.0 dependency (or glib-2.0 in general),
 dnl remember to bump GLIB_VERSION_MIN_REQUIRED and
@@ -302,8 +314,9 @@ AC_ARG_WITH(static-compiler,
 AM_CONDITIONAL(BUILDOPT_USE_STATIC_COMPILER, test x$with_static_compiler != xno)
 AC_SUBST(STATIC_COMPILER, $with_static_compiler)
 
-dnl for tests
-AS_IF([test "x$found_introspection" = xyes], [
+dnl for tests (but we can't use asan with gjs or any introspection,
+dnl see https://github.com/google/sanitizers/wiki/AddressSanitizerAsDso for more info)
+AS_IF([test "x$found_introspection" = xyes && test x$using_asan != xyes], [
   AC_PATH_PROG(GJS, [gjs])
   if test -n "$GJS"; then
     have_gjs=yes
