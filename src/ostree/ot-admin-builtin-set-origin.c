@@ -44,13 +44,13 @@ gboolean
 ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   gboolean ret = FALSE;
-  GOptionContext *context;
+  g_autoptr(GOptionContext) context = NULL;
   const char *remotename = NULL;
   const char *url = NULL;
   const char *branch = NULL;
   glnx_unref_object OstreeRepo *repo = NULL;
   glnx_unref_object OstreeSysroot *sysroot = NULL;
-  OstreeDeployment *target_deployment = NULL;
+  glnx_unref_object OstreeDeployment *target_deployment = NULL;
 
   context = g_option_context_new ("REMOTENAME URL [BRANCH]");
 
@@ -85,6 +85,8 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
                                "Not currently booted into an OSTree system");
           goto out;
         }
+      /* To match the below */
+      target_deployment = g_object_ref (target_deployment);
     }
   else
     {
@@ -142,7 +144,5 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
 
   ret = TRUE;
  out:
-  if (context)
-    g_option_context_free (context);
   return ret;
 }

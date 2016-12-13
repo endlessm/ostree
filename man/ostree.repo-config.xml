@@ -76,7 +76,7 @@ Boston, MA 02111-1307, USA.
     <variablelist>
       <varlistentry>
         <term><varname>mode</varname></term>
-        <listitem><para>One of <literal>bare</literal> or <literal>archive-z2</literal>.  </para></listitem>
+        <listitem><para>One of <literal>bare</literal>, <literal>bare-user</literal> or <literal>archive-z2</literal>.  </para></listitem>
       </varlistentry>
 
       <varlistentry>
@@ -178,6 +178,11 @@ Boston, MA 02111-1307, USA.
       <varlistentry>
         <term><varname>tls-ca-path</varname></term>
         <listitem><para>Path to file containing trusted anchors instead of the system CA database.</para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>unconfigured-state</varname></term>
+        <listitem><para>If set, pulls from this remote will fail with the configured text.  This is intended for OS vendors which have a subscription process to access content.</para></listitem>
       </varlistentry>
     </variablelist>
 

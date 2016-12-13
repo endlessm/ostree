@@ -240,7 +240,7 @@ gboolean
 ostree_builtin_fsck (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   gboolean ret = FALSE;
-  GOptionContext *context;
+  g_autoptr(GOptionContext) context = NULL;
   glnx_unref_object OstreeRepo *repo = NULL;
   GHashTableIter hash_iter;
   gpointer key, value;
@@ -311,7 +311,7 @@ ostree_builtin_fsck (int argc, char **argv, GCancellable *cancellable, GError **
           if (commitstate & OSTREE_REPO_COMMIT_STATE_PARTIAL)
             n_partial++;
           else
-            g_hash_table_insert (commits, g_variant_ref (serialized_key), serialized_key);
+            g_hash_table_add (commits, g_variant_ref (serialized_key));
         }
     }
 
@@ -355,7 +355,5 @@ ostree_builtin_fsck (int argc, char **argv, GCancellable *cancellable, GError **
 
   ret = TRUE;
  out:
-  if (context)
-    g_option_context_free (context);
   return ret;
 }

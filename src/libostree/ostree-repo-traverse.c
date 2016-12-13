@@ -348,9 +348,8 @@ traverse_iter (OstreeRepo                          *repo,
           ostree_repo_commit_traverse_iter_get_file (iter, &name, &checksum);
 
           g_debug ("Found file object %s", checksum);
-          key = ostree_object_name_serialize (checksum, OSTREE_OBJECT_TYPE_FILE);
-          g_hash_table_replace (inout_reachable, key, key);
-          key = NULL;
+          key = g_variant_ref_sink (ostree_object_name_serialize (checksum, OSTREE_OBJECT_TYPE_FILE));
+          g_hash_table_add (inout_reachable, g_steal_pointer (&key));
         }
       else if (iterres == OSTREE_REPO_COMMIT_ITER_RESULT_DIR)
         {
@@ -363,15 +362,13 @@ traverse_iter (OstreeRepo                          *repo,
 
           g_debug ("Found dirtree object %s", content_checksum);
           g_debug ("Found dirmeta object %s", meta_checksum);
-          key = ostree_object_name_serialize (meta_checksum, OSTREE_OBJECT_TYPE_DIR_META);
-          g_hash_table_replace (inout_reachable, key, key);
-          key = NULL;
+          key = g_variant_ref_sink (ostree_object_name_serialize (meta_checksum, OSTREE_OBJECT_TYPE_DIR_META));
+          g_hash_table_add (inout_reachable, g_steal_pointer (&key));
 
-          key = ostree_object_name_serialize (content_checksum, OSTREE_OBJECT_TYPE_DIR_TREE);
+          key = g_variant_ref_sink (ostree_object_name_serialize (content_checksum, OSTREE_OBJECT_TYPE_DIR_TREE));
           if (!g_hash_table_lookup (inout_reachable, key))
             {
-              g_hash_table_replace (inout_reachable, key, key);
-              key = NULL;
+              g_hash_table_add (inout_reachable, g_steal_pointer (&key));
 
               if (!traverse_dirtree (repo, content_checksum, inout_reachable,
                                      ignore_missing_dirs, cancellable, error))
@@ -407,7 +404,7 @@ traverse_dirtree (OstreeRepo           *repo,
       if (ignore_missing_dirs &&
           g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
         {
-          g_print ("Ignoring not-found dirmeta %s", checksum);
+          g_debug ("Ignoring not-found dirmeta %s", checksum);
           ret = TRUE;
         }
       else
@@ -463,7 +460,7 @@ ostree_repo_traverse_commit_union (OstreeRepo      *repo,
       OstreeRepoCommitState commitstate;
       gboolean ignore_missing_dirs = FALSE;
 
-      key = ostree_object_name_serialize (commit_checksum, OSTREE_OBJECT_TYPE_COMMIT);
+      key = g_variant_ref_sink (ostree_object_name_serialize (commit_checksum, OSTREE_OBJECT_TYPE_COMMIT));
 
       if (g_hash_table_contains (inout_reachable, key))
         break;

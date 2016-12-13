@@ -17,8 +17,6 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
-include $(top_srcdir)/buildutil/glib-tap.mk
-
 EXTRA_DIST += \
 	buildutil/tap-driver.sh \
 	buildutil/tap-test \
@@ -30,10 +28,14 @@ EXTRA_DIST += \
 # include the builddir in $PATH so we find our just-built ostree
 # binary.
 TESTS_ENVIRONMENT += OT_TESTS_DEBUG=1 \
-	GI_TYPELIB_PATH=$$(cd $(top_builddir) && pwd) \
-	LD_LIBRARY_PATH=$$(cd $(top_builddir)/.libs && pwd) \
+	G_DEBUG=fatal-warnings \
+	GI_TYPELIB_PATH=$$(cd $(top_builddir) && pwd)$${GI_TYPELIB_PATH:+:$$GI_TYPELIB_PATH} \
+	LD_LIBRARY_PATH=$$(cd $(top_builddir)/.libs && pwd)$${LD_LIBRARY_PATH:+:$${LD_LIBRARY_PATH}} \
 	PATH=$$(cd $(top_builddir)/tests && pwd):$${PATH} \
 	$(NULL)
+if BUILDOPT_ASAN
+TESTS_ENVIRONMENT += OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
+endif
 
 uninstalled_test_data = tests/ostree-symlink-stamp tests/ostree-prepare-root-symlink-stamp \
 			tests/ostree-remount-symlink-stamp tests/rofiles-fuse-symlink-stamp
@@ -45,7 +47,6 @@ dist_test_scripts = \
 	tests/test-pull-subpath.sh \
 	tests/test-archivez.sh \
 	tests/test-remote-add.sh \
-	tests/test-remote-cookies.sh \
 	tests/test-remote-headers.sh \
 	tests/test-remote-gpg-import.sh \
 	tests/test-commit-sign.sh \
@@ -55,7 +56,6 @@ dist_test_scripts = \
 	tests/test-parent.sh \
 	tests/test-pull-archive-z.sh \
 	tests/test-pull-commit-only.sh \
-	tests/test-pull-corruption.sh \
 	tests/test-pull-depth.sh \
 	tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh \
@@ -102,17 +102,20 @@ else
 EXTRA_DIST += tests/test-rofiles-fuse.sh
 endif
 
-# This one uses corrupt-repo-ref.js
-js_tests = tests/test-corruption.sh
+if USE_LIBSOUP
+dist_test_scripts += tests/test-remote-cookies.sh
+endif
+
+# These call into gjs scripts 
+js_tests = tests/test-corruption.sh tests/test-pull-corruption.sh
 if BUILDOPT_GJS
-dist_test_scripts += tests/test-corruption.sh
+dist_test_scripts += $(js_tests)
 else
 EXTRA_DIST += $(js_tests)
 endif
 
 dist_installed_test_data = tests/archive-test.sh \
 	tests/pull-test.sh \
-	tests/libtest.sh \
 	tests/admin-test.sh \
 	tests/basic-test.sh \
 	tests/test-basic-user.sh \
@@ -120,6 +123,8 @@ dist_installed_test_data = tests/archive-test.sh \
 	tests/pre-endian-deltas-repo-big.tar.xz \
 	tests/pre-endian-deltas-repo-little.tar.xz \
 	$(NULL)
+
+EXTRA_DIST += tests/libtest.sh 
 
 dist_test_extra_scripts = tests/bootloader-entries-crosscheck.py \
      tests/ostree-grub-generator
@@ -276,10 +281,15 @@ tests/%-symlink-stamp: % Makefile
 # non-recursive Automake, so we change our code to canonically look
 # for tests/ which is just a symlink when installed.
 if ENABLE_INSTALLED_TESTS
-install-test-data-file-path-hack:
+install-installed-tests-extra:
 	if test -L $(DESTDIR)$(installed_testdir)/tests; then \
 	  rm $(DESTDIR)$(installed_testdir)/tests; \
 	fi
 	ln -s . $(DESTDIR)$(installed_testdir)/tests
-INSTALL_DATA_HOOKS += install-test-data-file-path-hack
+if BUILDOPT_ASAN
+	sed -e 's,^BUILT_WITH_ASAN=.*,BUILT_WITH_ASAN=1,' < $(srcdir)/tests/libtest.sh > $(DESTDIR)$(installed_testdir)/tests/libtest.sh
+else
+	install -m 0644 $(srcdir)/tests/libtest.sh $(DESTDIR)$(installed_testdir)/tests/libtest.sh
+endif
+INSTALL_DATA_HOOKS += install-installed-tests-extra
 endif

@@ -33,13 +33,15 @@ typedef struct {
 
 static OstreeRemoteCommand remote_subcommands[] = {
   { "add", ot_remote_builtin_add },
-  { "add-cookie", ot_remote_builtin_add_cookie },
   { "delete", ot_remote_builtin_delete },
-  { "delete-cookie", ot_remote_builtin_delete_cookie },
   { "show-url", ot_remote_builtin_show_url },
   { "list", ot_remote_builtin_list },
-  { "list-cookies", ot_remote_builtin_list_cookies },
   { "gpg-import", ot_remote_builtin_gpg_import },
+#ifdef HAVE_LIBSOUP
+  { "add-cookie", ot_remote_builtin_add_cookie },
+  { "delete-cookie", ot_remote_builtin_delete_cookie },
+  { "list-cookies", ot_remote_builtin_list_cookies },
+#endif
   { "refs", ot_remote_builtin_refs },
   { "summary", ot_remote_builtin_summary },
   { NULL, NULL }
@@ -111,7 +113,7 @@ ostree_builtin_remote (int argc, char **argv, GCancellable *cancellable, GError 
 
   if (!subcommand->name)
     {
-      GOptionContext *context;
+      g_autoptr(GOptionContext) context = NULL;
       g_autofree char *help;
 
       context = remote_option_context_new_with_commands ();
@@ -134,8 +136,6 @@ ostree_builtin_remote (int argc, char **argv, GCancellable *cancellable, GError 
 
       help = g_option_context_get_help (context, FALSE, NULL);
       g_printerr ("%s", help);
-
-      g_option_context_free (context);
 
       goto out;
     }
