@@ -1,9 +1,9 @@
-ostree (2016.15-1) UNRELEASED; urgency=medium
+ostree (2016.15-1) unstable; urgency=medium
 
   * New upstream release
     - d/patches: drop all patches, applied upstream
 
- -- Simon McVittie <smcv@debian.org>  Tue, 13 Dec 2016 13:01:18 +0000
+ -- Simon McVittie <smcv@debian.org>  Tue, 13 Dec 2016 13:13:44 +0000
 
 ostree (2016.14-2) unstable; urgency=medium
 
