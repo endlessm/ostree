@@ -1,10 +1,10 @@
-ostree (2016.15-2) UNRELEASED; urgency=medium
+ostree (2016.15-2) unstable; urgency=medium
 
   * Make all test failures non-fatal at build time, so that intermittent
     test failures do not interfere with possible security updates during
     Debian stretch-as-stable.
 
- -- Simon McVittie <smcv@debian.org>  Tue, 20 Dec 2016 11:27:13 +0000
+ -- Simon McVittie <smcv@debian.org>  Tue, 20 Dec 2016 11:28:41 +0000
 
 ostree (2016.15-1) unstable; urgency=medium
 
