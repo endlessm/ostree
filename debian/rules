@@ -6,7 +6,7 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 export LC_ALL=C.UTF-8
 
 %:
-	dh $@ --with=gir
+	dh $@ --parallel --with=autoreconf,gir,systemd
 
 override_dh_auto_clean:
 	if [ -e Makefile ]; then dh_auto_clean; fi
