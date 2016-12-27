@@ -1,3 +1,69 @@
+ostree (2016.15-2) unstable; urgency=medium
+
+  * Make all test failures non-fatal at build time, so that intermittent
+    test failures do not interfere with possible security updates during
+    Debian stretch-as-stable.
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 20 Dec 2016 11:28:41 +0000
+
+ostree (2016.15-1) unstable; urgency=medium
+
+  * New upstream release
+    - d/patches: drop all patches, applied upstream
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 13 Dec 2016 13:13:44 +0000
+
+ostree (2016.14-2) unstable; urgency=medium
+
+  * Make build-time test failures non-fatal, as long as at least
+    3 out of 5 attempts succeed.
+
+    There are several upstream bugs that cause intermittent test
+    failures, and can intermittently be reproduced in real use.
+    However, these are not regressions, so we should not FTBFS just
+    because we happen to have been unlucky during build.
+
+  * d/p/Terminate-individual-tests-after-10-minutes.patch:
+    replace d/p/debian/Terminate-individual-tests-after-half-an-hour.patch
+    with the version that I sent upstream, which uses SIGABRT and
+    terminates the tests sooner
+  * d/p/*.patch: import more memory leak fixes from upstream
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 01 Dec 2016 12:38:54 +0000
+
+ostree (2016.14-1) unstable; urgency=medium
+
+  * Switch the build-dependency on libgpgme11-dev (which no longer exists
+    as a real package) to libgpgme-dev
+  * Drop the version from versioned build-dependencies where the required
+    version was already present in oldstable
+  * New upstream release
+    - update symbols file for new ABI
+  * Import various post-release fixes from upstream
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 29 Nov 2016 11:05:44 +0000
+
+ostree (2016.13-1) unstable; urgency=medium
+
+  * New upstream release
+    - d/p/dist/Retrieve-some-missing-test-files-from-upstream-git.patch:
+      remove, 2016.13 was released with a fixed "make dist"
+    - d/p/Filter-bootloader-supplied-kernel-cmdline-options.patch:
+      remove, merged upstream
+  * d/copyright: drop copyright and license stanzas for files that are
+    in upstream git but not in tarballs
+
+ -- Simon McVittie <smcv@debian.org>  Sun, 20 Nov 2016 21:58:11 +0000
+
+ostree (2016.12-2) unstable; urgency=medium
+
+  * d/p/Filter-bootloader-supplied-kernel-cmdline-options.patch:
+    - Filter out kernel command line parameters set by the bootloading when
+      deriving the configuration from /proc/cmdline.
+  * Add myself to uploaders
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 03 Nov 2016 15:48:01 -0600
+
 ostree (2016.12-1) unstable; urgency=medium
 
   * Force LC_ALL=C.UTF-8 during build, so that builds in non-English

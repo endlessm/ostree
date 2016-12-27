@@ -6,6 +6,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2016.6@LIBOSTREE_2016.6 2016.6
  LIBOSTREE_2016.7@LIBOSTREE_2016.7 2016.7
  LIBOSTREE_2016.8@LIBOSTREE_2016.8 2016.8
+ LIBOSTREE_2016.14@LIBOSTREE_2016.14 2016.14
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_type@LIBOSTREE_2016.3 2016.4
@@ -229,6 +230,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_traverse_new_reachable@LIBOSTREE_2016.3 2016.4
  ostree_repo_verify_commit@LIBOSTREE_2016.3 2016.4
  ostree_repo_verify_commit_ext@LIBOSTREE_2016.3 2016.4
+ ostree_repo_verify_commit_for_remote@LIBOSTREE_2016.14 2016.14
  ostree_repo_verify_summary@LIBOSTREE_2016.3 2016.4
  ostree_repo_write_archive_to_mtree@LIBOSTREE_2016.3 2016.4
  ostree_repo_write_commit@LIBOSTREE_2016.3 2016.4
