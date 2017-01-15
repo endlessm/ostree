@@ -1,3 +1,15 @@
+ostree (2016.15-3) UNRELEASED; urgency=medium
+
+  * debian/control: Don't run gjs tests on sparc64. gjs doesn't seem
+    to work there at all (#827815)
+    - d/ostree-tests.lintian-overrides: silence
+      missing-dep-for-interpreter error on sparc64, where we install
+      the script but do not attempt to run it
+  * debian/tests/gnome-desktop-testing: Skip test-local-pull.sh.test
+    which suffers from a known bug (#842606)
+
+ -- Simon McVittie <smcv@debian.org>  Sun, 15 Jan 2017 14:37:12 +0000
+
 ostree (2016.15-2) unstable; urgency=medium
 
   * Make all test failures non-fatal at build time, so that intermittent
