@@ -7,6 +7,9 @@ ostree (2016.15-3) UNRELEASED; urgency=medium
       the script but do not attempt to run it
   * debian/tests/gnome-desktop-testing: Skip test-local-pull.sh.test
     which suffers from a known bug (#842606)
+  * debian/tests/gnome-desktop-testing: Fail if no tests were found
+    - debian/tests/test-local-pull: Run the unreliable test separately,
+      repeated 3 times to assess how often it fails
 
  -- Simon McVittie <smcv@debian.org>  Sun, 15 Jan 2017 14:37:12 +0000
 
