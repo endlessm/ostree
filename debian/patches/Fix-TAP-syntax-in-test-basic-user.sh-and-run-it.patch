@@ -10,6 +10,8 @@ In its initial commit, Alexander Larsson wrote
 
 but we now (a) use /var/tmp, and (b) explicitly skip the test if
 xattr support is unavailable. So it should be OK to run now.
+
+Forwarded: https://github.com/ostreedev/ostree/pull/652
 ---
  Makefile-tests.am        | 2 +-
  tests/test-basic-user.sh | 3 ---

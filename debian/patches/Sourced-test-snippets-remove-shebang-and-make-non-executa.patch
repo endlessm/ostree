@@ -7,6 +7,8 @@ packaging consistency check complain that #! is only useful
 in executable scripts. But in fact they are not useful to execute
 directly (they rely on setup being done in the script that sources
 them), so just chmod them -x.
+
+Forwarded: https://github.com/ostreedev/ostree/pull/652
 ---
  tests/admin-test.sh   | 3 ++-
  tests/archive-test.sh | 4 ++--

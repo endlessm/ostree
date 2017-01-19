@@ -6,6 +6,8 @@ Debian's Lintian packaging consistency check complains that it isn't
 executable but has a #! line. In fact it's reasonable to run this
 script directly, so make it executable, and put it in a _scripts
 variable so it will be installed executable.
+
+Forwarded: https://github.com/ostreedev/ostree/pull/652
 ---
  Makefile-tests.am         | 8 +++++---
  tests/corrupt-repo-ref.js | 0
