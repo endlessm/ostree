@@ -1,0 +1,42 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Thu, 19 Jan 2017 11:34:57 +0000
+Subject: Make corrupt-repo-ref.js executable
+
+Debian's Lintian packaging consistency check complains that it isn't
+executable but has a #! line. In fact it's reasonable to run this
+script directly, so make it executable, and put it in a _scripts
+variable so it will be installed executable.
+---
+ Makefile-tests.am         | 8 +++++---
+ tests/corrupt-repo-ref.js | 0
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+ mode change 100644 => 100755 tests/corrupt-repo-ref.js
+
+diff --git a/Makefile-tests.am b/Makefile-tests.am
+index 02668ed3..202e108a 100644
+--- a/Makefile-tests.am
++++ b/Makefile-tests.am
+@@ -119,15 +119,17 @@ dist_installed_test_data = tests/archive-test.sh \
+ 	tests/pull-test.sh \
+ 	tests/admin-test.sh \
+ 	tests/basic-test.sh \
+-	tests/corrupt-repo-ref.js \
+ 	tests/pre-endian-deltas-repo-big.tar.xz \
+ 	tests/pre-endian-deltas-repo-little.tar.xz \
+ 	$(NULL)
+ 
+ EXTRA_DIST += tests/libtest.sh 
+ 
+-dist_test_extra_scripts = tests/bootloader-entries-crosscheck.py \
+-     tests/ostree-grub-generator
++dist_test_extra_scripts = \
++	tests/bootloader-entries-crosscheck.py \
++	tests/corrupt-repo-ref.js \
++	tests/ostree-grub-generator \
++	$(NULL)
+ 
+ # We can't use nobase_ as we need to strip off the tests/, can't
+ # use plain installed_ as we do need the gpghome/ prefix.
+diff --git a/tests/corrupt-repo-ref.js b/tests/corrupt-repo-ref.js
+old mode 100644
+new mode 100755

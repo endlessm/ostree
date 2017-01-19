@@ -10,6 +10,14 @@ ostree (2016.15-3) UNRELEASED; urgency=medium
   * debian/tests/gnome-desktop-testing: Fail if no tests were found
     - debian/tests/test-local-pull: Run the unreliable test separately,
       repeated 3 times to assess how often it fails
+  * d/p/Sourced-test-snippets-remove-shebang-and-make-non-executa.patch,
+    d/p/Make-corrupt-repo-ref.js-executable.patch:
+    Fix permissions and #! lines for some tests in the upstream build
+    system
+  * d/rules: remove workarounds for script permissions.
+    The upstream build system now uses the intended permissions throughout.
+    - Retain explicit chmod for *.js, which dh_fixperms assumes should
+      not be executable.
 
  -- Simon McVittie <smcv@debian.org>  Sun, 15 Jan 2017 14:37:12 +0000
 
