@@ -1,3 +1,9 @@
+ostree (2016.15-4) UNRELEASED; urgency=medium
+
+  * Remove an unintended line in the previous changelog
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 19 Jan 2017 16:45:47 +0000
+
 ostree (2016.15-3) unstable; urgency=medium
 
   * debian/control: Don't run gjs tests on sparc64. gjs doesn't seem
@@ -7,7 +13,6 @@ ostree (2016.15-3) unstable; urgency=medium
       the script but do not attempt to run it
   * debian/tests/gnome-desktop-testing: Skip test-local-pull.sh.test
     which suffers from a known bug (#842606)
-  * debian/tests/gnome-desktop-testing: Fail if no tests were found
     - debian/tests/test-local-pull: Run the unreliable test separately,
       repeated 3 times to assess how often it fails
   * d/p/Sourced-test-snippets-remove-shebang-and-make-non-executa.patch,
