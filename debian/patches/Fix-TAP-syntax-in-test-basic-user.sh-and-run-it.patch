@@ -1,0 +1,51 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Thu, 19 Jan 2017 11:21:58 +0000
+Subject: Fix TAP syntax in test-basic-user.sh, and run it
+
+In its initial commit, Alexander Larsson wrote
+
+    This works standalone, but unfortunately it breaks in
+    gnome-desktop-testing-runner as /tmp doesn't support
+    xattrs, so it is not installed atm.
+
+but we now (a) use /var/tmp, and (b) explicitly skip the test if
+xattr support is unavailable. So it should be OK to run now.
+---
+ Makefile-tests.am        | 2 +-
+ tests/test-basic-user.sh | 3 ---
+ 2 files changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/Makefile-tests.am b/Makefile-tests.am
+index 1f9cad48..02668ed3 100644
+--- a/Makefile-tests.am
++++ b/Makefile-tests.am
+@@ -44,6 +44,7 @@ dist_uninstalled_test_scripts = tests/test-symbols.sh
+ 
+ dist_test_scripts = \
+ 	tests/test-basic.sh \
++	tests/test-basic-user.sh \
+ 	tests/test-pull-subpath.sh \
+ 	tests/test-archivez.sh \
+ 	tests/test-remote-add.sh \
+@@ -118,7 +119,6 @@ dist_installed_test_data = tests/archive-test.sh \
+ 	tests/pull-test.sh \
+ 	tests/admin-test.sh \
+ 	tests/basic-test.sh \
+-	tests/test-basic-user.sh \
+ 	tests/corrupt-repo-ref.js \
+ 	tests/pre-endian-deltas-repo-big.tar.xz \
+ 	tests/pre-endian-deltas-repo-little.tar.xz \
+diff --git a/tests/test-basic-user.sh b/tests/test-basic-user.sh
+index 42e6a864..3e11545e 100755
+--- a/tests/test-basic-user.sh
++++ b/tests/test-basic-user.sh
+@@ -23,9 +23,6 @@ set -euo pipefail
+ 
+ skip_without_user_xattrs
+ 
+-echo "1..1"
+-
+ setup_test_repository "bare-user"
+-echo "ok setup"
+ 
+ . $(dirname $0)/basic-test.sh
