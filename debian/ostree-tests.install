@@ -1,2 +1,3 @@
 usr/lib/installed-tests/ostree
+usr/lib/ostree/ostree-trivial-httpd
 usr/share/installed-tests/ostree

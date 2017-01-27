@@ -1,6 +1,13 @@
-ostree (2016.15-4) UNRELEASED; urgency=medium
+ostree (2017.1-1) UNRELEASED; urgency=medium
 
+  * Branch to experimental to avoid interfering with the Debian 9 freeze
   * Remove an unintended line in the previous changelog
+  * New upstream release
+    - trivial-httpd is now a separate binary. Move it to ostree-tests,
+      so that it doesn't continue to pull in libsoup if the ostree
+      downloader is ported to libcurl.
+    - d/copyright: update
+    - d/patches: drop all patches, applied upstream
 
  -- Simon McVittie <smcv@debian.org>  Thu, 19 Jan 2017 16:45:47 +0000
 
