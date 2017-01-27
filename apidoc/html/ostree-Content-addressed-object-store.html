@@ -900,6 +900,14 @@
 <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
 </td>
 <td class="function_name">
+<a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-prune-from-reachable" title="ostree_repo_prune_from_reachable ()">ostree_repo_prune_from_reachable</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+</td>
+<td class="function_name">
 <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-pull" title="ostree_repo_pull ()">ostree_repo_pull</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
@@ -5215,8 +5223,8 @@ to <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVarian
 </tr>
 <tr>
 <td class="parameter_name"><p>out_objects</p></td>
-<td class="parameter_description"><p> Map of serialized object name to variant data. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
+<td class="parameter_description"><p>Map of serialized object name to variant data. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> GVariant GVariant]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>
@@ -5272,8 +5280,8 @@ with <em class="parameter"><code>start</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_commits</p></td>
-<td class="parameter_description"><p>Array of GVariants</p></td>
-<td class="parameter_annotations"> </td>
+<td class="parameter_description"><p>Map of serialized commit name to variant data. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> GVariant GVariant]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>
@@ -5956,6 +5964,74 @@ deleted.</p>
 <td class="parameter_description"><p> ASCII SHA256 checksum for commit, or <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> for each
 non existing commit. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-prune-from-reachable"></a><h3>ostree_repo_prune_from_reachable ()</h3>
+<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+ostree_repo_prune_from_reachable (<em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                  <em class="parameter"><code><span class="type">OstreeRepoPruneOptions</span> *options</code></em>,
+                                  <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> *out_objects_total</code></em>,
+                                  <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gint"><span class="type">gint</span></a> *out_objects_pruned</code></em>,
+                                  <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint64"><span class="type">guint64</span></a> *out_pruned_object_size_total</code></em>,
+                                  <em class="parameter"><code><a href="https://developer.gnome.org/gio/unstable/GCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
+                                  <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+<p>Delete content from the repository.  This function is the "backend"
+half of the higher level <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-prune" title="ostree_repo_prune ()"><code class="function">ostree_repo_prune()</code></a>.  To use this function,
+you determine the root set yourself, and this function finds all other
+unreferenced objects and deletes them.</p>
+<p>Use this API when you want to perform more selective pruning - for example,
+retain all commits from a production branch, but just GC some history from
+your dev branch.</p>
+<p>The <a class="link" href="ostree-Content-addressed-object-store.html#OSTREE-REPO-PRUNE-FLAGS-NO-PRUNE:CAPS"><code class="literal">OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE</code></a> flag may be specified to just determine
+statistics on objects that would be deleted, without actually deleting them.</p>
+<div class="refsect3">
+<a name="ostree-repo-prune-from-reachable.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>options</p></td>
+<td class="parameter_description"><p>Options controlling prune process</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>out_objects_total</p></td>
+<td class="parameter_description"><p> Number of objects found. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>out_objects_pruned</p></td>
+<td class="parameter_description"><p> Number of objects deleted. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>out_pruned_object_size_total</p></td>
+<td class="parameter_description"><p> Storage size in bytes of objects deleted. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>

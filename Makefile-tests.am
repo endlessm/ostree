@@ -28,6 +28,7 @@ EXTRA_DIST += \
 # include the builddir in $PATH so we find our just-built ostree
 # binary.
 TESTS_ENVIRONMENT += OT_TESTS_DEBUG=1 \
+	OSTREE_UNINSTALLED=$(abs_top_builddir) \
 	G_DEBUG=fatal-warnings \
 	GI_TYPELIB_PATH=$$(cd $(top_builddir) && pwd)$${GI_TYPELIB_PATH:+:$$GI_TYPELIB_PATH} \
 	LD_LIBRARY_PATH=$$(cd $(top_builddir)/.libs && pwd)$${LD_LIBRARY_PATH:+:$${LD_LIBRARY_PATH}} \
@@ -44,6 +45,7 @@ dist_uninstalled_test_scripts = tests/test-symbols.sh
 
 dist_test_scripts = \
 	tests/test-basic.sh \
+	tests/test-basic-user.sh \
 	tests/test-pull-subpath.sh \
 	tests/test-archivez.sh \
 	tests/test-remote-add.sh \
@@ -64,6 +66,7 @@ dist_test_scripts = \
 	tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh \
 	tests/test-pull-untrusted.sh \
+	tests/test-pull-many.sh \
 	tests/test-pull-override-url.sh \
 	tests/test-local-pull.sh \
 	tests/test-local-pull-depth.sh \
@@ -118,16 +121,17 @@ dist_installed_test_data = tests/archive-test.sh \
 	tests/pull-test.sh \
 	tests/admin-test.sh \
 	tests/basic-test.sh \
-	tests/test-basic-user.sh \
-	tests/corrupt-repo-ref.js \
 	tests/pre-endian-deltas-repo-big.tar.xz \
 	tests/pre-endian-deltas-repo-little.tar.xz \
 	$(NULL)
 
 EXTRA_DIST += tests/libtest.sh 
 
-dist_test_extra_scripts = tests/bootloader-entries-crosscheck.py \
-     tests/ostree-grub-generator
+dist_test_extra_scripts = \
+	tests/bootloader-entries-crosscheck.py \
+	tests/corrupt-repo-ref.js \
+	tests/ostree-grub-generator \
+	$(NULL)
 
 # We can't use nobase_ as we need to strip off the tests/, can't
 # use plain installed_ as we do need the gpghome/ prefix.

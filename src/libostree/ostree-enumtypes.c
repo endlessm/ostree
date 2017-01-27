@@ -57,6 +57,30 @@ _ostree_fetcher_config_flags_get_type (void)
   return the_type__volatile;
 }
 
+GType
+_ostree_fetcher_request_flags_get_type (void)
+{
+  static volatile gsize the_type__volatile = 0;
+
+  if (g_once_init_enter (&the_type__volatile))
+    {
+      static const GFlagsValue values[] = {
+        { OSTREE_FETCHER_REQUEST_NUL_TERMINATION,
+          "OSTREE_FETCHER_REQUEST_NUL_TERMINATION",
+          "termination" },
+        { 0, NULL, NULL }
+      };
+
+      GType the_type = g_flags_register_static (
+        g_intern_static_string ("OstreeFetcherRequestFlags"),
+        values);
+
+      g_once_init_leave (&the_type__volatile, the_type);
+    }
+
+  return the_type__volatile;
+}
+
 
 /* Generated data ends here */
 

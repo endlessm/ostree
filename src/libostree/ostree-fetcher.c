@@ -22,6 +22,7 @@
 
 #include "config.h"
 
+#include <gio/gio.h>
 #include <gio/gfiledescriptorbased.h>
 #include <gio/gunixoutputstream.h>
 #define LIBSOUP_USE_UNSTABLE_REQUEST_API
@@ -51,6 +52,7 @@ typedef struct {
   SoupSession *session;  /* not referenced */
   GMainContext *main_context;
   volatile gint running;
+  GError *initialization_error; /* Any failure to load the db */
 
   int tmpdir_dfd;
   char *tmpdir_name;
@@ -90,7 +92,8 @@ typedef struct {
 
   SoupRequest *request;
 
-  gboolean is_stream;
+  gboolean is_membuf;
+  OstreeFetcherRequestFlags flags;
   GInputStream *request_body;
   char *out_tmpfile;
   GOutputStream *out_stream;
@@ -355,12 +358,14 @@ static void
 session_thread_set_tls_interaction_cb (ThreadClosure *thread_closure,
                                        gpointer data)
 {
-  GTlsCertificate *cert = data;
+  const char *cert_and_key_path = data; /* str\0str\0 in one malloc buf */
+  const char *cert_path = cert_and_key_path;
+  const char *key_path = cert_and_key_path + strlen (cert_and_key_path) + 1;
   glnx_unref_object OstreeTlsCertInteraction *interaction = NULL;
 
   /* The GTlsInteraction instance must be created in the
    * session thread so it uses the correct GMainContext. */
-  interaction = _ostree_tls_cert_interaction_new (cert);
+  interaction = _ostree_tls_cert_interaction_new (cert_path, key_path);
 
   g_object_set (thread_closure->session,
                 SOUP_SESSION_TLS_INTERACTION,
@@ -372,13 +377,19 @@ static void
 session_thread_set_tls_database_cb (ThreadClosure *thread_closure,
                                     gpointer data)
 {
-  GTlsDatabase *database = data;
+  const char *db_path = data;
 
-  if (database != NULL)
+  if (db_path != NULL)
     {
-      g_object_set (thread_closure->session,
-                    SOUP_SESSION_TLS_DATABASE,
-                    database, NULL);
+      glnx_unref_object GTlsDatabase *tlsdb = NULL;
+
+      g_clear_error (&thread_closure->initialization_error);
+      tlsdb = g_tls_file_database_new (db_path, &thread_closure->initialization_error);
+
+      if (tlsdb)
+        g_object_set (thread_closure->session,
+                      SOUP_SESSION_TLS_DATABASE,
+                      tlsdb, NULL);
     }
   else
     {
@@ -450,6 +461,13 @@ session_thread_request_uri (ThreadClosure *thread_closure,
   pending = g_task_get_task_data (task);
   cancellable = g_task_get_cancellable (task);
 
+  /* If we caught an error in init, re-throw it for every request */
+  if (thread_closure->initialization_error)
+    {
+      g_task_return_error (task, g_error_copy (thread_closure->initialization_error));
+      return;
+    }
+
   create_pending_soup_request (pending, &local_error);
   if (local_error != NULL)
     {
@@ -468,7 +486,7 @@ session_thread_request_uri (ThreadClosure *thread_closure,
         soup_message_headers_append (msg->request_headers, key, value);
     }
 
-  if (pending->is_stream)
+  if (pending->is_membuf)
     {
       soup_request_send_async (pending->request,
                                cancellable,
@@ -795,16 +813,24 @@ _ostree_fetcher_set_cookie_jar (OstreeFetcher *self,
 
 void
 _ostree_fetcher_set_client_cert (OstreeFetcher   *self,
-                                 GTlsCertificate *cert)
+                                 const char      *cert_path,
+                                 const char      *key_path)
 {
+  g_autoptr(GString) buf = NULL;
   g_return_if_fail (OSTREE_IS_FETCHER (self));
-  g_return_if_fail (G_IS_TLS_CERTIFICATE (cert));
+
+  if (cert_path)
+    {
+      buf = g_string_new (cert_path);
+      g_string_append_c (buf, '\0');
+      g_string_append (buf, key_path);
+    }
 
 #ifdef HAVE_LIBSOUP_CLIENT_CERTS
   session_thread_idle_add (self->thread_closure,
                            session_thread_set_tls_interaction_cb,
-                           g_object_ref (cert),
-                           (GDestroyNotify) g_object_unref);
+                           g_string_free (g_steal_pointer (&buf), FALSE),
+                           (GDestroyNotify) g_free);
 #else
   g_warning ("This version of OSTree is compiled without client side certificate support");
 #endif
@@ -812,24 +838,14 @@ _ostree_fetcher_set_client_cert (OstreeFetcher   *self,
 
 void
 _ostree_fetcher_set_tls_database (OstreeFetcher *self,
-                                  GTlsDatabase  *db)
+                                  const char    *tlsdb_path)
 {
   g_return_if_fail (OSTREE_IS_FETCHER (self));
-  g_return_if_fail (db == NULL || G_IS_TLS_DATABASE (db));
 
-  if (db != NULL)
-    {
-      session_thread_idle_add (self->thread_closure,
-                               session_thread_set_tls_database_cb,
-                               g_object_ref (db),
-                               (GDestroyNotify) g_object_unref);
-    }
-  else
-    {
-      session_thread_idle_add (self->thread_closure,
-                               session_thread_set_tls_database_cb,
-                               NULL, (GDestroyNotify) NULL);
-    }
+  session_thread_idle_add (self->thread_closure,
+                           session_thread_set_tls_database_cb,
+                           g_strdup (tlsdb_path),
+                           (GDestroyNotify) g_free);
 }
 
 void
@@ -855,6 +871,16 @@ finish_stream (OstreeFetcherPendingURI *pending,
    */
   if (pending->out_stream)
     {
+      if ((pending->flags & OSTREE_FETCHER_REQUEST_NUL_TERMINATION) > 0)
+        {
+          const guint8 nulchar = 0;
+          gsize bytes_written;
+
+          if (!g_output_stream_write_all (pending->out_stream, &nulchar, 1, &bytes_written,
+                                          cancellable, error))
+            goto out;
+        }
+
       if (!g_output_stream_close (pending->out_stream, cancellable, error))
         goto out;
 
@@ -864,30 +890,37 @@ finish_stream (OstreeFetcherPendingURI *pending,
       g_mutex_unlock (&pending->thread_closure->output_stream_set_lock);
     }
 
-  pending->state = OSTREE_FETCHER_STATE_COMPLETE;
-  if (fstatat (pending->thread_closure->tmpdir_dfd,
-               pending->out_tmpfile,
-               &stbuf, AT_SYMLINK_NOFOLLOW) != 0)
+  if (!pending->is_membuf)
     {
-      glnx_set_error_from_errno (error);
-      goto out;
+      if (fstatat (pending->thread_closure->tmpdir_dfd,
+                   pending->out_tmpfile,
+                   &stbuf, AT_SYMLINK_NOFOLLOW) != 0)
+        {
+          glnx_set_error_from_errno (error);
+          goto out;
+        }
     }
+
+  pending->state = OSTREE_FETCHER_STATE_COMPLETE;
 
   /* Now that we've finished downloading, continue with other queued
    * requests.
    */
   session_thread_process_pending_queue (pending->thread_closure);
 
-  if (stbuf.st_size < pending->content_length)
+  if (!pending->is_membuf)
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED, "Download incomplete");
-      goto out;
-    }
-  else
-    {
-      g_mutex_lock (&pending->thread_closure->output_stream_set_lock);
-      pending->thread_closure->total_downloaded += stbuf.st_size;
-      g_mutex_unlock (&pending->thread_closure->output_stream_set_lock);
+      if (stbuf.st_size < pending->content_length)
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED, "Download incomplete");
+          goto out;
+        }
+      else
+        {
+          g_mutex_lock (&pending->thread_closure->output_stream_set_lock);
+          pending->thread_closure->total_downloaded += stbuf.st_size;
+          g_mutex_unlock (&pending->thread_closure->output_stream_set_lock);
+        }
     }
 
   ret = TRUE;
@@ -973,9 +1006,18 @@ on_stream_read (GObject        *object,
     {
       if (!finish_stream (pending, cancellable, &local_error))
         goto out;
-      g_task_return_pointer (task,
-                             g_strdup (pending->out_tmpfile),
-                             (GDestroyNotify) g_free);
+      if (pending->is_membuf)
+        {
+          g_task_return_pointer (task,
+                                 g_memory_output_stream_steal_as_bytes ((GMemoryOutputStream*)pending->out_stream),
+                                 (GDestroyNotify) g_bytes_unref);
+        }
+      else
+        {
+          g_task_return_pointer (task,
+                                 g_strdup (pending->out_tmpfile),
+                                 (GDestroyNotify) g_free);
+        }
       remove_pending_rerun_queue (pending);
     }
   else
@@ -1045,23 +1087,15 @@ on_request_sent (GObject        *object,
   if (SOUP_IS_REQUEST_HTTP (object))
     {
       msg = soup_request_http_get_message ((SoupRequestHTTP*) object);
-      if (msg->status_code == SOUP_STATUS_REQUESTED_RANGE_NOT_SATISFIABLE)
+      if (!pending->is_membuf &&
+          msg->status_code == SOUP_STATUS_REQUESTED_RANGE_NOT_SATISFIABLE)
         {
           // We already have the whole file, so just use it.
           pending->state = OSTREE_FETCHER_STATE_COMPLETE;
           (void) g_input_stream_close (pending->request_body, NULL, NULL);
-          if (pending->is_stream)
-            {
-              g_task_return_pointer (task,
-                                     g_object_ref (pending->request_body),
-                                     (GDestroyNotify) g_object_unref);
-            }
-          else
-            {
-              g_task_return_pointer (task,
-                                     g_strdup (pending->out_tmpfile),
-                                     (GDestroyNotify) g_free);
-            }
+          g_task_return_pointer (task,
+                                 g_strdup (pending->out_tmpfile),
+                                 (GDestroyNotify) g_free);
           remove_pending_rerun_queue (pending);
           goto out;
         }
@@ -1126,7 +1160,7 @@ on_request_sent (GObject        *object,
   
   pending->content_length = soup_request_get_content_length (pending->request);
 
-  if (!pending->is_stream)
+  if (!pending->is_membuf)
     {
       int oflags = O_CREAT | O_WRONLY | O_CLOEXEC;
       int fd;
@@ -1147,26 +1181,23 @@ on_request_sent (GObject        *object,
           goto out;
         }
       pending->out_stream = g_unix_output_stream_new (fd, TRUE);
-
-      g_mutex_lock (&pending->thread_closure->output_stream_set_lock);
-      g_hash_table_add (pending->thread_closure->output_stream_set,
-                        g_object_ref (pending->out_stream));
-      g_mutex_unlock (&pending->thread_closure->output_stream_set_lock);
-
-      g_input_stream_read_bytes_async (pending->request_body,
-                                       8192, G_PRIORITY_DEFAULT,
-                                       cancellable,
-                                       on_stream_read,
-                                       g_object_ref (task));
     }
   else
     {
-      g_task_return_pointer (task,
-                             g_object_ref (pending->request_body),
-                             (GDestroyNotify) g_object_unref);
-      remove_pending_rerun_queue (pending);
+      pending->out_stream = g_memory_output_stream_new_resizable ();
     }
-  
+
+  g_mutex_lock (&pending->thread_closure->output_stream_set_lock);
+  g_hash_table_add (pending->thread_closure->output_stream_set,
+                    g_object_ref (pending->out_stream));
+  g_mutex_unlock (&pending->thread_closure->output_stream_set_lock);
+
+  g_input_stream_read_bytes_async (pending->request_body,
+                                   8192, G_PRIORITY_DEFAULT,
+                                   cancellable,
+                                   on_stream_read,
+                                   g_object_ref (task));
+
  out:
   if (local_error)
     {
@@ -1180,16 +1211,16 @@ on_request_sent (GObject        *object,
 }
 
 static void
-ostree_fetcher_mirrored_request_internal (OstreeFetcher         *self,
-                                          GPtrArray             *mirrorlist,
-                                          const char            *filename,
-                                          gboolean               is_stream,
-                                          guint64                max_size,
-                                          int                    priority,
-                                          GCancellable          *cancellable,
-                                          GAsyncReadyCallback    callback,
-                                          gpointer               user_data,
-                                          gpointer               source_tag)
+_ostree_fetcher_request_async (OstreeFetcher         *self,
+                               GPtrArray             *mirrorlist,
+                               const char            *filename,
+                               OstreeFetcherRequestFlags flags,
+                               gboolean               is_membuf,
+                               guint64                max_size,
+                               int                    priority,
+                               GCancellable          *cancellable,
+                               GAsyncReadyCallback    callback,
+                               gpointer               user_data)
 {
   g_autoptr(GTask) task = NULL;
   OstreeFetcherPendingURI *pending;
@@ -1204,11 +1235,12 @@ ostree_fetcher_mirrored_request_internal (OstreeFetcher         *self,
   pending->thread_closure = thread_closure_ref (self->thread_closure);
   pending->mirrorlist = g_ptr_array_ref (mirrorlist);
   pending->filename = g_strdup (filename);
+  pending->flags = flags;
   pending->max_size = max_size;
-  pending->is_stream = is_stream;
+  pending->is_membuf = is_membuf;
 
   task = g_task_new (self, cancellable, callback, user_data);
-  g_task_set_source_tag (task, source_tag);
+  g_task_set_source_tag (task, _ostree_fetcher_request_async);
   g_task_set_task_data (task, pending, (GDestroyNotify) pending_uri_unref);
 
   /* We'll use the GTask priority for our own priority queue. */
@@ -1221,60 +1253,90 @@ ostree_fetcher_mirrored_request_internal (OstreeFetcher         *self,
 }
 
 void
-_ostree_fetcher_mirrored_request_with_partial_async (OstreeFetcher         *self,
-                                                     GPtrArray             *mirrorlist,
-                                                     const char            *filename,
-                                                     guint64                max_size,
-                                                     int                    priority,
-                                                     GCancellable          *cancellable,
-                                                     GAsyncReadyCallback    callback,
-                                                     gpointer               user_data)
+_ostree_fetcher_request_to_tmpfile (OstreeFetcher         *self,
+                                    GPtrArray             *mirrorlist,
+                                    const char            *filename,
+                                    guint64                max_size,
+                                    int                    priority,
+                                    GCancellable          *cancellable,
+                                    GAsyncReadyCallback    callback,
+                                    gpointer               user_data)
 {
-  ostree_fetcher_mirrored_request_internal (self, mirrorlist, filename, FALSE,
-                                            max_size, priority, cancellable,
-                                            callback, user_data,
-                                            _ostree_fetcher_mirrored_request_with_partial_async);
+  _ostree_fetcher_request_async (self, mirrorlist, filename, 0, FALSE,
+                                 max_size, priority, cancellable,
+                                 callback, user_data);
 }
 
-char *
-_ostree_fetcher_mirrored_request_with_partial_finish (OstreeFetcher         *self,
-                                                      GAsyncResult          *result,
-                                                      GError               **error)
+gboolean
+_ostree_fetcher_request_to_tmpfile_finish (OstreeFetcher *self,
+                                           GAsyncResult  *result,
+                                           char         **out_filename,
+                                           GError       **error)
 {
-  g_return_val_if_fail (g_task_is_valid (result, self), NULL);
-  g_return_val_if_fail (g_async_result_is_tagged (result,
-                        _ostree_fetcher_mirrored_request_with_partial_async), NULL);
+  GTask *task;
+  OstreeFetcherPendingURI *pending;
+  gpointer ret;
 
-  return g_task_propagate_pointer (G_TASK (result), error);
+  g_return_val_if_fail (g_task_is_valid (result, self), FALSE);
+  g_return_val_if_fail (g_async_result_is_tagged (result, _ostree_fetcher_request_async), FALSE);
+
+  task = (GTask*)result;
+  pending = g_task_get_task_data (task);
+
+  ret = g_task_propagate_pointer (task, error);
+  if (!ret)
+    return FALSE;
+
+  g_assert (!pending->is_membuf);
+  g_assert (out_filename);
+  *out_filename = ret;
+
+  return TRUE;
 }
 
-static void
-ostree_fetcher_stream_mirrored_uri_async (OstreeFetcher         *self,
-                                          GPtrArray             *mirrorlist,
-                                          const char            *filename,
-                                          guint64                max_size,
-                                          int                    priority,
-                                          GCancellable          *cancellable,
-                                          GAsyncReadyCallback    callback,
-                                          gpointer               user_data)
+void
+_ostree_fetcher_request_to_membuf (OstreeFetcher         *self,
+                                   GPtrArray             *mirrorlist,
+                                   const char            *filename,
+                                   OstreeFetcherRequestFlags flags,
+                                   guint64                max_size,
+                                   int                    priority,
+                                   GCancellable          *cancellable,
+                                   GAsyncReadyCallback    callback,
+                                   gpointer               user_data)
 {
-  ostree_fetcher_mirrored_request_internal (self, mirrorlist, filename, TRUE,
-                                            max_size, priority, cancellable,
-                                            callback, user_data,
-                                            ostree_fetcher_stream_mirrored_uri_async);
+  _ostree_fetcher_request_async (self, mirrorlist, filename, flags, TRUE,
+                                 max_size, priority, cancellable,
+                                 callback, user_data);
 }
 
-static GInputStream *
-ostree_fetcher_stream_mirrored_uri_finish (OstreeFetcher         *self,
-                                           GAsyncResult          *result,
-                                           GError               **error)
+gboolean
+_ostree_fetcher_request_to_membuf_finish (OstreeFetcher *self,
+                                          GAsyncResult  *result,
+                                          GBytes       **out_buf,
+                                          GError       **error)
 {
-  g_return_val_if_fail (g_task_is_valid (result, self), NULL);
-  g_return_val_if_fail (g_async_result_is_tagged (result,
-                        ostree_fetcher_stream_mirrored_uri_async), NULL);
+  GTask *task;
+  OstreeFetcherPendingURI *pending;
+  gpointer ret;
 
-  return g_task_propagate_pointer (G_TASK (result), error);
+  g_return_val_if_fail (g_task_is_valid (result, self), FALSE);
+  g_return_val_if_fail (g_async_result_is_tagged (result, _ostree_fetcher_request_async), FALSE);
+
+  task = (GTask*)result;
+  pending = g_task_get_task_data (task);
+
+  ret = g_task_propagate_pointer (task, error);
+  if (!ret)
+    return FALSE;
+
+  g_assert (pending->is_membuf);
+  g_assert (out_buf);
+  *out_buf = ret;
+
+  return TRUE;
 }
+
 
 guint64
 _ostree_fetcher_bytes_transferred (OstreeFetcher       *self)
@@ -1305,118 +1367,6 @@ _ostree_fetcher_bytes_transferred (OstreeFetcher       *self)
   g_mutex_unlock (&self->thread_closure->output_stream_set_lock);
 
   return ret;
-}
-
-typedef struct
-{
-  GInputStream   *result_stream;
-  gboolean         done;
-  GError         **error;
-}
-FetchUriSyncData;
-
-static void
-fetch_uri_sync_on_complete (GObject        *object,
-                            GAsyncResult   *result,
-                            gpointer        user_data)
-{
-  FetchUriSyncData *data = user_data;
-
-  data->result_stream = ostree_fetcher_stream_mirrored_uri_finish ((OstreeFetcher*)object,
-                                                                    result, data->error);
-  data->done = TRUE;
-}
-
-gboolean
-_ostree_fetcher_mirrored_request_to_membuf (OstreeFetcher  *fetcher,
-                                            GPtrArray     *mirrorlist,
-                                            const char     *filename,
-                                            gboolean        add_nul,
-                                            gboolean        allow_noent,
-                                            GBytes         **out_contents,
-                                            guint64        max_size,
-                                            GCancellable   *cancellable,
-                                            GError         **error)
-{
-  gboolean ret = FALSE;
-  const guint8 nulchar = 0;
-  g_autoptr(GMemoryOutputStream) buf = NULL;
-  g_autoptr(GMainContext) mainctx = NULL;
-  FetchUriSyncData data;
-  g_assert (error != NULL);
-
-  data.result_stream = NULL;
-
-  if (g_cancellable_set_error_if_cancelled (cancellable, error))
-    return FALSE;
-
-  mainctx = g_main_context_new ();
-  g_main_context_push_thread_default (mainctx);
-
-  data.done = FALSE;
-  data.error = error;
-
-  ostree_fetcher_stream_mirrored_uri_async (fetcher, mirrorlist, filename, max_size,
-                                   OSTREE_FETCHER_DEFAULT_PRIORITY, cancellable,
-                                   fetch_uri_sync_on_complete, &data);
-  while (!data.done)
-    g_main_context_iteration (mainctx, TRUE);
-
-  if (!data.result_stream)
-    {
-      if (allow_noent)
-        {
-          if (g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            {
-              g_clear_error (error);
-              ret = TRUE;
-              *out_contents = NULL;
-            }
-        }
-      goto out;
-    }
-
-  buf = (GMemoryOutputStream*)g_memory_output_stream_new (NULL, 0, g_realloc, g_free);
-  if (g_output_stream_splice ((GOutputStream*)buf, data.result_stream,
-                              G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE,
-                              cancellable, error) < 0)
-    goto out;
-
-  if (add_nul)
-    {
-      if (!g_output_stream_write ((GOutputStream*)buf, &nulchar, 1, cancellable, error))
-        goto out;
-    }
-
-  if (!g_output_stream_close ((GOutputStream*)buf, cancellable, error))
-    goto out;
-
-  ret = TRUE;
-  *out_contents = g_memory_output_stream_steal_as_bytes (buf);
- out:
-  if (mainctx)
-    g_main_context_pop_thread_default (mainctx);
-  g_clear_object (&(data.result_stream));
-  return ret;
-}
-
-/* Helper for callers who just want to fetch single one-off URIs */
-gboolean
-_ostree_fetcher_request_uri_to_membuf (OstreeFetcher  *fetcher,
-                                       OstreeFetcherURI *uri,
-                                       gboolean        add_nul,
-                                       gboolean        allow_noent,
-                                       GBytes         **out_contents,
-                                       guint64        max_size,
-                                       GCancellable   *cancellable,
-                                       GError         **error)
-{
-  g_autoptr(GPtrArray) mirrorlist = g_ptr_array_new ();
-  g_ptr_array_add (mirrorlist, uri); /* no transfer */
-  return _ostree_fetcher_mirrored_request_to_membuf (fetcher, mirrorlist, NULL,
-                                                     add_nul, allow_noent,
-                                                     out_contents, max_size,
-                                                     cancellable, error);
 }
 
 void
