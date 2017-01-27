@@ -8,6 +8,9 @@ ostree (2017.1-1) UNRELEASED; urgency=medium
       downloader is ported to libcurl.
     - d/copyright: update
     - d/patches: drop all patches, applied upstream
+  * Explicitly depend on autoconf, automake, libtool. This avoids
+    builds for experimental non-deterministically pulling in an older
+    version of automake, in my case automake1.11 which is far too old.
 
  -- Simon McVittie <smcv@debian.org>  Thu, 19 Jan 2017 16:45:47 +0000
 

@@ -8,6 +8,8 @@ Uploaders:
  Sjoerd Simons <sjoerd@debian.org>
 Build-Depends:
  attr,
+ autoconf,
+ automake,
  bison,
  ca-certificates,
  cpio,
@@ -32,6 +34,7 @@ Build-Depends:
  libselinux1-dev,
  libsoup2.4-dev (>= 2.39.1),
  libsystemd-dev,
+ libtool,
  procps,
  xsltproc,
  zlib1g-dev,
