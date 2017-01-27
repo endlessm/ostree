@@ -93,47 +93,51 @@ void _ostree_fetcher_set_proxy (OstreeFetcher *fetcher,
                                 const char    *proxy);
 
 void _ostree_fetcher_set_client_cert (OstreeFetcher *fetcher,
-                                     GTlsCertificate *cert);
+                                      const char     *cert_path,
+                                      const char     *key_path);
 
 void _ostree_fetcher_set_tls_database (OstreeFetcher *self,
-                                       GTlsDatabase *db);
+                                       const char    *tlsdb_path);
 
 void _ostree_fetcher_set_extra_headers (OstreeFetcher *self,
                                         GVariant      *extra_headers);
 
 guint64 _ostree_fetcher_bytes_transferred (OstreeFetcher       *self);
 
-void _ostree_fetcher_mirrored_request_with_partial_async (OstreeFetcher         *self,
-                                                          GPtrArray             *mirrorlist,
-                                                          const char            *filename,
-                                                          guint64                max_size,
-                                                          int                    priority,
-                                                          GCancellable          *cancellable,
-                                                          GAsyncReadyCallback    callback,
-                                                          gpointer               user_data);
+void _ostree_fetcher_request_to_tmpfile (OstreeFetcher         *self,
+                                         GPtrArray             *mirrorlist,
+                                         const char            *filename,
+                                         guint64                max_size,
+                                         int                    priority,
+                                         GCancellable          *cancellable,
+                                         GAsyncReadyCallback    callback,
+                                         gpointer               user_data);
 
-char *_ostree_fetcher_mirrored_request_with_partial_finish (OstreeFetcher *self,
-                                                            GAsyncResult  *result,
-                                                            GError       **error);
+gboolean _ostree_fetcher_request_to_tmpfile_finish (OstreeFetcher *self,
+                                                    GAsyncResult  *result,
+                                                    char         **out_filename,
+                                                    GError       **error);
 
-gboolean _ostree_fetcher_mirrored_request_to_membuf (OstreeFetcher *fetcher,
-                                                     GPtrArray     *mirrorlist,
-                                                     const char    *filename,
-                                                     gboolean       add_nul,
-                                                     gboolean       allow_noent,
-                                                     GBytes         **out_contents,
-                                                     guint64        max_size,
-                                                     GCancellable   *cancellable,
-                                                     GError         **error);
+typedef enum {
+  OSTREE_FETCHER_REQUEST_NUL_TERMINATION = (1 << 0)
+} OstreeFetcherRequestFlags;
 
-gboolean _ostree_fetcher_request_uri_to_membuf (OstreeFetcher *fetcher,
-                                                OstreeFetcherURI *uri,
-                                                gboolean       add_nul,
-                                                gboolean       allow_noent,
-                                                GBytes         **out_contents,
-                                                guint64        max_size,
-                                                GCancellable   *cancellable,
-                                                GError         **error);
+void _ostree_fetcher_request_to_membuf (OstreeFetcher         *self,
+                                        GPtrArray             *mirrorlist,
+                                        const char            *filename,
+                                        OstreeFetcherRequestFlags flags,
+                                        guint64                max_size,
+                                        int                    priority,
+                                        GCancellable          *cancellable,
+                                        GAsyncReadyCallback    callback,
+                                        gpointer               user_data);
+
+gboolean _ostree_fetcher_request_to_membuf_finish (OstreeFetcher *self,
+                                                   GAsyncResult  *result,
+                                                   GBytes       **out_buf,
+                                                   GError       **error);
+
+
 G_END_DECLS
 
 #endif

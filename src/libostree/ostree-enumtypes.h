@@ -31,6 +31,9 @@ G_BEGIN_DECLS
 #define OSTREE_TYPE_FETCHER_CONFIG_FLAGS (_ostree_fetcher_config_flags_get_type ())
 GType _ostree_fetcher_config_flags_get_type (void) G_GNUC_CONST;
 
+#define OSTREE_TYPE_FETCHER_REQUEST_FLAGS (_ostree_fetcher_request_flags_get_type ())
+GType _ostree_fetcher_request_flags_get_type (void) G_GNUC_CONST;
+
 G_END_DECLS
 
 

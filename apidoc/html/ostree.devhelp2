@@ -186,6 +186,7 @@
     <keyword type="function" name="ostree_repo_commit_traverse_iter_next ()" link="ostree-Content-addressed-object-store.html#ostree-repo-commit-traverse-iter-next"/>
     <keyword type="function" name="ostree_repo_prune ()" link="ostree-Content-addressed-object-store.html#ostree-repo-prune"/>
     <keyword type="function" name="ostree_repo_prune_static_deltas ()" link="ostree-Content-addressed-object-store.html#ostree-repo-prune-static-deltas"/>
+    <keyword type="function" name="ostree_repo_prune_from_reachable ()" link="ostree-Content-addressed-object-store.html#ostree-repo-prune-from-reachable"/>
     <keyword type="function" name="ostree_repo_pull ()" link="ostree-Content-addressed-object-store.html#ostree-repo-pull"/>
     <keyword type="function" name="ostree_repo_pull_one_dir ()" link="ostree-Content-addressed-object-store.html#ostree-repo-pull-one-dir"/>
     <keyword type="function" name="ostree_repo_pull_with_options ()" link="ostree-Content-addressed-object-store.html#ostree-repo-pull-with-options"/>
