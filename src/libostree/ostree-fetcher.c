@@ -1022,6 +1022,42 @@ on_stream_read (GObject        *object,
 }
 
 static void
+request_body_spliced (GObject      *object,
+                      GAsyncResult *result,
+                      gpointer      user_data)
+{
+  g_autoptr(GTask) task = G_TASK (user_data);
+  GError *local_error = NULL;
+  GMemoryOutputStream *membuf = G_MEMORY_OUTPUT_STREAM (object);
+
+  if (g_output_stream_splice_finish ((GOutputStream*) membuf,
+                                     result,
+                                     &local_error) < 0)
+    {
+      g_task_return_error (task, local_error);
+    }
+  else
+    {
+      g_task_return_pointer (task, g_object_ref (membuf), g_object_unref);
+    }
+}
+
+static void
+splice_request_body_to_membuf (GTask *task,
+                               GInputStream *request_body)
+{
+  g_autoptr(GOutputStream) membuf = g_memory_output_stream_new_resizable ();
+
+  g_output_stream_splice_async (membuf,
+                                request_body,
+                                G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE,
+                                G_PRIORITY_DEFAULT,
+                                g_task_get_cancellable (task),
+                                request_body_spliced,
+                                g_object_ref (task));
+}
+
+static void
 on_request_sent (GObject        *object,
                  GAsyncResult   *result,
                  gpointer        user_data) 
@@ -1049,15 +1085,13 @@ on_request_sent (GObject        *object,
         {
           // We already have the whole file, so just use it.
           pending->state = OSTREE_FETCHER_STATE_COMPLETE;
-          (void) g_input_stream_close (pending->request_body, NULL, NULL);
           if (pending->is_stream)
             {
-              g_task_return_pointer (task,
-                                     g_object_ref (pending->request_body),
-                                     (GDestroyNotify) g_object_unref);
+              splice_request_body_to_membuf (task, pending->request_body);
             }
           else
             {
+              (void) g_input_stream_close (pending->request_body, NULL, NULL);
               g_task_return_pointer (task,
                                      g_strdup (pending->out_tmpfile),
                                      (GDestroyNotify) g_free);
@@ -1161,9 +1195,7 @@ on_request_sent (GObject        *object,
     }
   else
     {
-      g_task_return_pointer (task,
-                             g_object_ref (pending->request_body),
-                             (GDestroyNotify) g_object_unref);
+      splice_request_body_to_membuf (task, pending->request_body);
       remove_pending_rerun_queue (pending);
     }
   
@@ -1264,7 +1296,7 @@ ostree_fetcher_stream_mirrored_uri_async (OstreeFetcher         *self,
                                             ostree_fetcher_stream_mirrored_uri_async);
 }
 
-static GInputStream *
+static GMemoryOutputStream *
 ostree_fetcher_stream_mirrored_uri_finish (OstreeFetcher         *self,
                                            GAsyncResult          *result,
                                            GError               **error)
@@ -1309,9 +1341,9 @@ _ostree_fetcher_bytes_transferred (OstreeFetcher       *self)
 
 typedef struct
 {
-  GInputStream   *result_stream;
-  gboolean         done;
-  GError         **error;
+  GMemoryOutputStream   *membuf;
+  gboolean               done;
+  GError               **error;
 }
 FetchUriSyncData;
 
@@ -1322,8 +1354,8 @@ fetch_uri_sync_on_complete (GObject        *object,
 {
   FetchUriSyncData *data = user_data;
 
-  data->result_stream = ostree_fetcher_stream_mirrored_uri_finish ((OstreeFetcher*)object,
-                                                                    result, data->error);
+  data->membuf = ostree_fetcher_stream_mirrored_uri_finish ((OstreeFetcher*)object,
+                                                            result, data->error);
   data->done = TRUE;
 }
 
@@ -1340,12 +1372,9 @@ _ostree_fetcher_mirrored_request_to_membuf (OstreeFetcher  *fetcher,
 {
   gboolean ret = FALSE;
   const guint8 nulchar = 0;
-  g_autoptr(GMemoryOutputStream) buf = NULL;
   g_autoptr(GMainContext) mainctx = NULL;
   FetchUriSyncData data;
   g_assert (error != NULL);
-
-  data.result_stream = NULL;
 
   if (g_cancellable_set_error_if_cancelled (cancellable, error))
     return FALSE;
@@ -1353,6 +1382,7 @@ _ostree_fetcher_mirrored_request_to_membuf (OstreeFetcher  *fetcher,
   mainctx = g_main_context_new ();
   g_main_context_push_thread_default (mainctx);
 
+  data.membuf = NULL;
   data.done = FALSE;
   data.error = error;
 
@@ -1362,7 +1392,7 @@ _ostree_fetcher_mirrored_request_to_membuf (OstreeFetcher  *fetcher,
   while (!data.done)
     g_main_context_iteration (mainctx, TRUE);
 
-  if (!data.result_stream)
+  if (!data.membuf)
     {
       if (allow_noent)
         {
@@ -1376,27 +1406,22 @@ _ostree_fetcher_mirrored_request_to_membuf (OstreeFetcher  *fetcher,
       goto out;
     }
 
-  buf = (GMemoryOutputStream*)g_memory_output_stream_new (NULL, 0, g_realloc, g_free);
-  if (g_output_stream_splice ((GOutputStream*)buf, data.result_stream,
-                              G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE,
-                              cancellable, error) < 0)
-    goto out;
 
   if (add_nul)
     {
-      if (!g_output_stream_write ((GOutputStream*)buf, &nulchar, 1, cancellable, error))
+      if (!g_output_stream_write ((GOutputStream*)data.membuf, &nulchar, 1, cancellable, error))
         goto out;
     }
 
-  if (!g_output_stream_close ((GOutputStream*)buf, cancellable, error))
+  if (!g_output_stream_close ((GOutputStream*)data.membuf, cancellable, error))
     goto out;
 
   ret = TRUE;
-  *out_contents = g_memory_output_stream_steal_as_bytes (buf);
+  *out_contents = g_memory_output_stream_steal_as_bytes (data.membuf);
  out:
   if (mainctx)
     g_main_context_pop_thread_default (mainctx);
-  g_clear_object (&(data.result_stream));
+  g_clear_object (&(data.membuf));
   return ret;
 }
 
