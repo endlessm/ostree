@@ -110,6 +110,30 @@ write_file_metadata_to_xattr (int fd,
   return TRUE;
 }
 
+/* See https://github.com/ostreedev/ostree/pull/698 */
+#ifdef WITH_SMACK
+#define XATTR_NAME_SMACK "security.SMACK64"
+#endif
+
+static void
+ot_security_smack_reset_dfd_name (int dfd, const char *name)
+{
+#ifdef WITH_SMACK
+  char buf[PATH_MAX];
+  /* See glnx-xattrs.c */
+  snprintf (buf, sizeof (buf), "/proc/self/fd/%d/%s", dfd, name);
+  (void) lremovexattr (buf, XATTR_NAME_SMACK);
+#endif
+}
+
+static void
+ot_security_smack_reset_fd (int fd)
+{
+#ifdef WITH_SMACK
+  (void) fremovexattr (fd, XATTR_NAME_SMACK);
+#endif
+}
+
 gboolean
 _ostree_repo_commit_loose_final (OstreeRepo        *self,
                                  const char        *checksum,
@@ -221,6 +245,7 @@ commit_loose_object_trusted (OstreeRepo        *self,
 
       if (xattrs != NULL)
         {
+          ot_security_smack_reset_dfd_name (self->tmp_dir_fd, temp_filename);
           if (!glnx_dfd_name_set_all_xattrs (self->tmp_dir_fd, temp_filename,
                                                xattrs, cancellable, error))
             goto out;
@@ -252,6 +277,7 @@ commit_loose_object_trusted (OstreeRepo        *self,
 
           if (xattrs)
             {
+              ot_security_smack_reset_fd (fd);
               if (!glnx_fd_set_all_xattrs (fd, xattrs, cancellable, error))
                 goto out;
             }
@@ -719,7 +745,7 @@ write_object (OstreeRepo         *self,
 
           if (g_file_info_get_file_type (file_info) == G_FILE_TYPE_REGULAR)
             {
-              zlib_compressor = (GConverter*)g_zlib_compressor_new (G_ZLIB_COMPRESSOR_FORMAT_RAW, 9);
+              zlib_compressor = (GConverter*)g_zlib_compressor_new (G_ZLIB_COMPRESSOR_FORMAT_RAW, self->zlib_compression_level);
               compressed_out_stream = g_converter_output_stream_new (temp_out, zlib_compressor);
               /* Don't close the base; we'll do that later */
               g_filter_output_stream_set_close_base_stream ((GFilterOutputStream*)compressed_out_stream, FALSE);

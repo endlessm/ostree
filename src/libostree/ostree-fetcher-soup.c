@@ -32,6 +32,7 @@
 
 #include "libglnx.h"
 #include "ostree-fetcher.h"
+#include "ostree-fetcher-util.h"
 #ifdef HAVE_LIBSOUP_CLIENT_CERTS
 #include "ostree-tls-cert-interaction.h"
 #endif
@@ -55,6 +56,7 @@ typedef struct {
   GError *initialization_error; /* Any failure to load the db */
 
   int tmpdir_dfd;
+  char *remote_name;
   char *tmpdir_name;
   GLnxLockFile tmpdir_lock;
   int base_tmpdir_dfd;
@@ -62,8 +64,7 @@ typedef struct {
   GVariant *extra_headers;
   int max_outstanding;
 
-  /* Queue for libsoup, see bgo#708591 */
-  GQueue pending_queue;
+  /* Our active HTTP requests */
   GHashTable *outstanding;
 
   /* Shared across threads; be sure to lock. */
@@ -76,9 +77,6 @@ typedef struct {
   GError *oob_error;
 
 } ThreadClosure;
-
-static void
-session_thread_process_pending_queue (ThreadClosure *thread_closure);
 
 typedef struct {
   volatile int ref_count;
@@ -172,6 +170,8 @@ thread_closure_unref (ThreadClosure *thread_closure)
 
       g_clear_pointer (&thread_closure->oob_error, g_error_free);
 
+      g_free (thread_closure->remote_name);
+
       g_slice_free (ThreadClosure, thread_closure);
     }
 }
@@ -185,18 +185,6 @@ idle_closure_free (IdleClosure *idle_closure)
     idle_closure->notify (idle_closure->data);
 
   g_slice_free (IdleClosure, idle_closure);
-}
-
-static int
-pending_task_compare (gconstpointer a,
-                      gconstpointer b,
-                      gpointer unused)
-{
-  gint priority_a = g_task_get_priority (G_TASK (a));
-  gint priority_b = g_task_get_priority (G_TASK (b));
-
-  return (priority_a == priority_b) ? 0 :
-         (priority_a < priority_b) ? -1 : 1;
 }
 
 static OstreeFetcherPendingURI *
@@ -403,30 +391,23 @@ static void
 on_request_sent (GObject        *object, GAsyncResult   *result, gpointer        user_data);
 
 static void
-session_thread_process_pending_queue (ThreadClosure *thread_closure)
+start_pending_request (ThreadClosure *thread_closure,
+                       GTask         *task)
 {
 
-  while (g_queue_peek_head (&thread_closure->pending_queue) != NULL &&
-         g_hash_table_size (thread_closure->outstanding) < thread_closure->max_outstanding)
-    {
-      GTask *task;
-      OstreeFetcherPendingURI *pending;
-      GCancellable *cancellable;
+  OstreeFetcherPendingURI *pending;
+  GCancellable *cancellable;
 
-      task = g_queue_pop_head (&thread_closure->pending_queue);
+  g_assert_cmpint (g_hash_table_size (thread_closure->outstanding), <, thread_closure->max_outstanding);
 
-      pending = g_task_get_task_data (task);
-      cancellable = g_task_get_cancellable (task);
+  pending = g_task_get_task_data (task);
+  cancellable = g_task_get_cancellable (task);
 
-      g_hash_table_add (thread_closure->outstanding, pending_uri_ref (pending));
-
-      soup_request_send_async (pending->request,
-                               cancellable,
-                               on_request_sent,
-                               g_object_ref (task));
-
-      g_object_unref (task);
-    }
+  g_hash_table_add (thread_closure->outstanding, pending_uri_ref (pending));
+  soup_request_send_async (pending->request,
+                           cancellable,
+                           on_request_sent,
+                           g_object_ref (task));
 }
 
 static void
@@ -547,10 +528,7 @@ session_thread_request_uri (ThreadClosure *thread_closure,
       pending->out_tmpfile = tmpfile;
       tmpfile = NULL; /* Transfer ownership */
 
-      g_queue_insert_sorted (&thread_closure->pending_queue,
-                             g_object_ref (task),
-                             pending_task_compare, NULL);
-      session_thread_process_pending_queue (thread_closure);
+      start_pending_request (thread_closure, task);
     }
 }
 
@@ -578,11 +556,11 @@ ostree_fetcher_session_thread (gpointer data)
   /* XXX: Now that we have mirrorlist support, we could make this even smarter
    * by spreading requests across mirrors. */
   g_object_get (closure->session, "max-conns-per-host", &max_conns, NULL);
-  if (max_conns < 8)
+  if (max_conns < _OSTREE_MAX_OUTSTANDING_FETCHER_REQUESTS)
     {
       /* We download a lot of small objects in ostree, so this
        * helps a lot.  Also matches what most modern browsers do. */
-      max_conns = 8;
+      max_conns = _OSTREE_MAX_OUTSTANDING_FETCHER_REQUESTS;
       g_object_set (closure->session,
                     "max-conns-per-host",
                     max_conns, NULL);
@@ -600,8 +578,6 @@ ostree_fetcher_session_thread (gpointer data)
    * unreference all data related to the SoupSession ourself to ensure
    * it's freed in the same thread where it was created. */
   g_clear_pointer (&closure->outstanding, g_hash_table_unref);
-  while (!g_queue_is_empty (&closure->pending_queue))
-    g_object_unref (g_queue_pop_head (&closure->pending_queue));
   g_clear_pointer (&closure->session, g_object_unref);
 
   thread_closure_unref (closure);
@@ -753,12 +729,13 @@ _ostree_fetcher_init (OstreeFetcher *self)
 
 OstreeFetcher *
 _ostree_fetcher_new (int                      tmpdir_dfd,
+                     const char              *remote_name,
                      OstreeFetcherConfigFlags flags)
 {
   OstreeFetcher *self;
 
   self = g_object_new (OSTREE_TYPE_FETCHER, "config-flags", flags, NULL);
-
+  self->thread_closure->remote_name = g_strdup (remote_name);
   self->thread_closure->base_tmpdir_dfd = tmpdir_dfd;
 
   return self;
@@ -903,11 +880,6 @@ finish_stream (OstreeFetcherPendingURI *pending,
 
   pending->state = OSTREE_FETCHER_STATE_COMPLETE;
 
-  /* Now that we've finished downloading, continue with other queued
-   * requests.
-   */
-  session_thread_process_pending_queue (pending->thread_closure);
-
   if (!pending->is_membuf)
     {
       if (stbuf.st_size < pending->content_length)
@@ -935,14 +907,13 @@ on_stream_read (GObject        *object,
                 gpointer        user_data);
 
 static void
-remove_pending_rerun_queue (OstreeFetcherPendingURI *pending)
+remove_pending (OstreeFetcherPendingURI *pending)
 {
   /* Hold a temporary ref to ensure the reference to
    * pending->thread_closure is valid.
    */
   pending_uri_ref (pending);
   g_hash_table_remove (pending->thread_closure->outstanding, pending);
-  session_thread_process_pending_queue (pending->thread_closure);
   pending_uri_unref (pending);
 }
 
@@ -976,7 +947,7 @@ on_out_splice_complete (GObject        *object,
   if (local_error)
     {
       g_task_return_error (task, local_error);
-      remove_pending_rerun_queue (pending);
+      remove_pending (pending);
     }
 
   g_object_unref (task);
@@ -1018,7 +989,7 @@ on_stream_read (GObject        *object,
                                  g_strdup (pending->out_tmpfile),
                                  (GDestroyNotify) g_free);
         }
-      remove_pending_rerun_queue (pending);
+      remove_pending (pending);
     }
   else
     {
@@ -1057,7 +1028,7 @@ on_stream_read (GObject        *object,
   if (local_error)
     {
       g_task_return_error (task, local_error);
-      remove_pending_rerun_queue (pending);
+      remove_pending (pending);
     }
 
   g_object_unref (task);
@@ -1096,7 +1067,7 @@ on_request_sent (GObject        *object,
           g_task_return_pointer (task,
                                  g_strdup (pending->out_tmpfile),
                                  (GDestroyNotify) g_free);
-          remove_pending_rerun_queue (pending);
+          remove_pending (pending);
           goto out;
         }
       else if (!SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
@@ -1110,13 +1081,14 @@ on_request_sent (GObject        *object,
                 goto out;
 
               (void) g_input_stream_close (pending->request_body, NULL, NULL);
-              g_queue_insert_sorted (&pending->thread_closure->pending_queue,
-                                     g_object_ref (task), pending_task_compare,
-                                     NULL);
-              remove_pending_rerun_queue (pending);
+
+              start_pending_request (pending->thread_closure, task);
             }
           else
             {
+              g_autofree char *uristring
+                = soup_uri_to_string (soup_request_get_uri (pending->request), FALSE);
+
               GIOErrorEnum code;
               switch (msg->status_code)
                 {
@@ -1151,6 +1123,10 @@ on_request_sent (GObject        *object,
                 g_prefix_error (&local_error,
                                 "All %u mirrors failed. Last error was: ",
                                 pending->mirrorlist->len);
+              if (pending->thread_closure->remote_name)
+                _ostree_fetcher_journal_failure (pending->thread_closure->remote_name,
+                                                 uristring, local_error->message);
+
             }
           goto out;
         }
@@ -1204,7 +1180,7 @@ on_request_sent (GObject        *object,
       if (pending->request_body)
         (void) g_input_stream_close (pending->request_body, NULL, NULL);
       g_task_return_error (task, local_error);
-      remove_pending_rerun_queue (pending);
+      remove_pending (pending);
     }
 
   g_object_unref (task);
@@ -1367,85 +1343,4 @@ _ostree_fetcher_bytes_transferred (OstreeFetcher       *self)
   g_mutex_unlock (&self->thread_closure->output_stream_set_lock);
 
   return ret;
-}
-
-void
-_ostree_fetcher_uri_free (OstreeFetcherURI *uri)
-{
-  if (uri)
-    soup_uri_free ((SoupURI*)uri);
-}
-
-OstreeFetcherURI *
-_ostree_fetcher_uri_parse (const char       *str,
-                           GError          **error)
-{
-  SoupURI *soupuri = soup_uri_new (str);
-  if (soupuri == NULL)
-    {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Failed to parse uri: %s", str);
-      return NULL;
-    }
-  return (OstreeFetcherURI*)soupuri;
-}
-
-static OstreeFetcherURI *
-_ostree_fetcher_uri_new_path_internal (OstreeFetcherURI *uri,
-                                       gboolean          extend,
-                                       const char       *path)
-{
-  SoupURI *newuri = soup_uri_copy ((SoupURI*)uri);
-  if (path)
-    {
-      if (extend)
-        {
-          const char *origpath = soup_uri_get_path ((SoupURI*)uri);
-          g_autofree char *newpath = g_build_filename (origpath, path, NULL);
-          soup_uri_set_path (newuri, newpath);
-        }
-      else
-        {
-          soup_uri_set_path (newuri, path);
-        }
-    }
-  return (OstreeFetcherURI*)newuri;
-}
-
-OstreeFetcherURI *
-_ostree_fetcher_uri_new_path (OstreeFetcherURI *uri,
-                              const char       *path)
-{
-  return _ostree_fetcher_uri_new_path_internal (uri, FALSE, path);
-}
-
-OstreeFetcherURI *
-_ostree_fetcher_uri_new_subpath (OstreeFetcherURI *uri,
-                                 const char       *subpath)
-{
-  return _ostree_fetcher_uri_new_path_internal (uri, TRUE, subpath);
-}
-
-OstreeFetcherURI *
-_ostree_fetcher_uri_clone (OstreeFetcherURI *uri)
-{
-  return _ostree_fetcher_uri_new_subpath (uri, NULL);
-}
-
-char *
-_ostree_fetcher_uri_get_scheme (OstreeFetcherURI *uri)
-{
-  return g_strdup (soup_uri_get_scheme ((SoupURI*)uri));
-}
-
-char *
-_ostree_fetcher_uri_get_path (OstreeFetcherURI *uri)
-{
-  return g_strdup (soup_uri_get_path ((SoupURI*)uri));
-}
-
-char *
-_ostree_fetcher_uri_to_string (OstreeFetcherURI *uri)
-{
-  return soup_uri_to_string ((SoupURI*)uri, FALSE);
 }

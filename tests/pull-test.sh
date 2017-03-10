@@ -35,7 +35,7 @@ function verify_initial_contents() {
     assert_file_has_content baz/cow '^moo$'
 }
 
-echo "1..14"
+echo "1..15"
 
 # Try both syntaxes
 repo_init
@@ -68,6 +68,16 @@ ${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo fsck
 ${CMD_PREFIX} ostree --repo=mirrorrepo pull --mirror origin main
 ${CMD_PREFIX} ostree --repo=mirrorrepo fsck
 echo "ok pull mirror (should not apply deltas)"
+
+cd ${test_tmpdir}
+if ${CMD_PREFIX} ostree --repo=mirrorrepo \
+     pull origin main --require-static-deltas 2>err.txt; then
+  assert_not_reached "--require-static-deltas unexpectedly succeeded"
+fi
+assert_file_has_content err.txt "Can't use static deltas in an archive repo"
+${CMD_PREFIX} ostree --repo=mirrorrepo pull origin main
+${CMD_PREFIX} ostree --repo=mirrorrepo fsck
+echo "ok pull (refuses deltas)"
 
 cd ${test_tmpdir}
 rm mirrorrepo/refs/remotes/* -rf
@@ -144,7 +154,8 @@ cd ${test_tmpdir}
 repo_init
 ${CMD_PREFIX} ostree --repo=repo pull origin main@${prev_rev}
 ${CMD_PREFIX} ostree --repo=repo pull --dry-run --require-static-deltas origin main >dry-run-pull.txt
-assert_file_has_content dry-run-pull.txt 'Delta update: 0/1 parts'
+# Compression can vary, so we support 400-699
+assert_file_has_content dry-run-pull.txt 'Delta update: 0/1 parts, 0 bytes/[456][0-9][0-9] bytes, 455 bytes total uncompressed'
 rev=$(${CMD_PREFIX} ostree --repo=repo rev-parse origin:main)
 assert_streq "${prev_rev}" "${rev}"
 ${CMD_PREFIX} ostree --repo=repo fsck

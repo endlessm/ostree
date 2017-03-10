@@ -19,6 +19,8 @@ include Makefile-decls.am
 
 shortened_sysconfdir = $$(echo "$(sysconfdir)" | sed -e 's|^$(prefix)||' -e 's|^/||')
 
+OSTREE_GITREV=$(shell if command -v git >/dev/null 2>&1 && test -d $(srcdir)/.git; then git describe --abbrev=42 --tags --always HEAD; fi)
+
 ACLOCAL_AMFLAGS = -I buildutil -I libglnx ${ACLOCAL_FLAGS}
 AM_CPPFLAGS += -DDATADIR='"$(datadir)"' -DLIBEXECDIR='"$(libexecdir)"' \
 	-DLOCALEDIR=\"$(datadir)/locale\" -DSYSCONFDIR=\"$(sysconfdir)\" \
@@ -26,6 +28,7 @@ AM_CPPFLAGS += -DDATADIR='"$(datadir)"' -DLIBEXECDIR='"$(libexecdir)"' \
 	-DOSTREE_FEATURES='"$(OSTREE_FEATURES)"' \
 	-DOSTREE_COMPILATION \
 	-DG_LOG_DOMAIN=\"OSTree\" \
+  -DOSTREE_GITREV='"$(OSTREE_GITREV)"' \
 	-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_40 -DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_40 \
 	-DSOUP_VERSION_MIN_REQUIRED=SOUP_VERSION_2_40 -DSOUP_VERSION_MAX_ALLOWED=SOUP_VERSION_2_48
 AM_CFLAGS += -std=gnu99 $(WARN_CFLAGS)
@@ -59,6 +62,30 @@ include $(INTROSPECTION_MAKEFILE)
 GIRS =
 TYPELIBS = $(GIRS:.gir=.typelib)
 endif
+
+# These bits based on gnome:librsvg/Makefile.am
+if ENABLE_RUST
+if RUST_DEBUG
+CARGO_RELEASE_ARGS=
+else
+CARGO_RELEASE_ARGS=--release
+endif
+
+check-local:
+	cd $(srcdir)/rust && CARGO_TARGET_DIR=$(abs_top_builddir)/target cargo test
+
+clean-local:
+	cd $(srcdir)/rust && CARGO_TARGET_DIR=$(abs_top_builddir)/target cargo clean
+
+dist-hook:
+	(cd $(distdir)/rust && \
+   cp $(abs_top_srcdir)/rust/Cargo.lock . && \
+   cargo vendor -q && \
+   mkdir .cargo && \
+	 cp cargo-vendor-config .cargo/config)
+
+EXTRA_DIST += $(srcdir)/rust/Cargo.toml $(srcdir)/rust/cargo-vendor-config
+endif # end ENABLE_RUST
 
 libglnx_srcpath := $(srcdir)/libglnx
 libglnx_cflags := $(OT_DEP_GIO_UNIX_CFLAGS) "-I$(libglnx_srcpath)"

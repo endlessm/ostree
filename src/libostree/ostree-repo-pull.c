@@ -26,7 +26,7 @@
 #include "ostree.h"
 #include "otutil.h"
 
-#ifdef HAVE_LIBSOUP
+#ifdef HAVE_LIBCURL_OR_LIBSOUP
 
 #include "ostree-core-private.h"
 #include "ostree-repo-private.h"
@@ -81,6 +81,10 @@ typedef struct {
   GHashTable       *scanned_metadata; /* Maps object name to itself */
   GHashTable       *requested_metadata; /* Maps object name to itself */
   GHashTable       *requested_content; /* Maps checksum to itself */
+  GHashTable       *requested_fallback_content; /* Maps checksum to itself */
+  GHashTable       *pending_fetch_metadata; /* Map<ObjectName,FetchObjectData> */
+  GHashTable       *pending_fetch_content; /* Map<checksum,FetchObjectData> */
+  GHashTable       *pending_fetch_deltaparts; /* Set<FetchStaticDeltaData> */
   guint             n_outstanding_metadata_fetches;
   guint             n_outstanding_metadata_write_requests;
   guint             n_outstanding_content_fetches;
@@ -88,11 +92,14 @@ typedef struct {
   guint             n_outstanding_deltapart_fetches;
   guint             n_outstanding_deltapart_write_requests;
   guint             n_total_deltaparts;
+  guint             n_total_delta_fallbacks;
+  guint64           fetched_deltapart_size; /* How much of the delta we have now */
   guint64           total_deltapart_size;
   guint64           total_deltapart_usize;
   gint              n_requested_metadata;
   gint              n_requested_content;
   guint             n_fetched_deltaparts;
+  guint             n_fetched_deltapart_fallbacks;
   guint             n_fetched_metadata;
   guint             n_fetched_content;
 
@@ -133,6 +140,10 @@ typedef struct {
   OtPullData  *pull_data;
   GVariant *objects;
   char *expected_checksum;
+  char *from_revision;
+  char *to_revision;
+  guint i;
+  guint64 size;
 } FetchStaticDeltaData;
 
 typedef struct {
@@ -142,6 +153,10 @@ typedef struct {
   guint recursion_depth;
 } ScanObjectQueueData;
 
+static void start_fetch (OtPullData *pull_data, FetchObjectData *fetch);
+static void start_fetch_deltapart (OtPullData *pull_data,
+                                   FetchStaticDeltaData *fetch);
+static gboolean fetcher_queue_is_full (OtPullData *pull_data);
 static void queue_scan_one_metadata_object (OtPullData         *pull_data,
                                             const char         *csum,
                                             OstreeObjectType    objtype,
@@ -199,6 +214,7 @@ update_progress (gpointer user_data)
   ostree_async_progress_set_uint (pull_data->progress, "outstanding-writes", outstanding_writes);
   ostree_async_progress_set_uint (pull_data->progress, "fetched", fetched);
   ostree_async_progress_set_uint (pull_data->progress, "requested", requested);
+  ostree_async_progress_set_uint (pull_data->progress, "scanning", g_queue_is_empty (&pull_data->scan_object_queue) ? 0 : 1);
   ostree_async_progress_set_uint (pull_data->progress, "scanned-metadata", n_scanned_metadata);
   ostree_async_progress_set_uint64 (pull_data->progress, "bytes-transferred", bytes_transferred);
   ostree_async_progress_set_uint64 (pull_data->progress, "start-time", start_time);
@@ -208,6 +224,12 @@ update_progress (gpointer user_data)
                                   pull_data->n_fetched_deltaparts);
   ostree_async_progress_set_uint (pull_data->progress, "total-delta-parts",
                                   pull_data->n_total_deltaparts);
+  ostree_async_progress_set_uint (pull_data->progress, "fetched-delta-fallbacks",
+                                  pull_data->n_fetched_deltapart_fallbacks);
+  ostree_async_progress_set_uint (pull_data->progress, "total-delta-fallbacks",
+                                  pull_data->n_total_delta_fallbacks);
+  ostree_async_progress_set_uint64 (pull_data->progress, "fetched-delta-part-size",
+                                    pull_data->fetched_deltapart_size);
   ostree_async_progress_set_uint64 (pull_data->progress, "total-delta-part-size",
                                     pull_data->total_deltapart_size);
   ostree_async_progress_set_uint64 (pull_data->progress, "total-delta-part-usize",
@@ -271,6 +293,88 @@ check_outstanding_requests_handle_error (OtPullData          *pull_data,
           g_error_free (error);
         }
     }
+  else
+    {
+      GHashTableIter hiter;
+      gpointer key, value;
+
+      /* We may have just completed an async fetch operation. Now we look at
+       * possibly enqueuing more requests. The goal of queuing is to both avoid
+       * overloading the fetcher backend with HTTP requests, but also to
+       * prioritize metadata fetches over content, so we have accurate
+       * reporting. Hence here, we process metadata fetches first.
+       */
+
+      /* Try filling the queue with metadata we need to fetch */
+      g_hash_table_iter_init (&hiter, pull_data->pending_fetch_metadata);
+      while (!fetcher_queue_is_full (pull_data) &&
+             g_hash_table_iter_next (&hiter, &key, &value))
+        {
+          GVariant *objname = key;
+          FetchObjectData *fetch = value;
+
+          /* Steal both key and value */
+          g_hash_table_iter_steal (&hiter);
+
+          /* This takes ownership of the value */
+          start_fetch (pull_data, fetch);
+          /* And unref the key */
+          g_variant_unref (objname);
+        }
+
+      /* Now, process deltapart requests */
+      g_hash_table_iter_init (&hiter, pull_data->pending_fetch_deltaparts);
+      while (!fetcher_queue_is_full (pull_data) &&
+             g_hash_table_iter_next (&hiter, &key, &value))
+        {
+          FetchStaticDeltaData *fetch = key;
+          g_hash_table_iter_steal (&hiter);
+          /* Takes ownership */
+          start_fetch_deltapart (pull_data, fetch);
+        }
+
+      /* Next, fill the queue with content */
+      g_hash_table_iter_init (&hiter, pull_data->pending_fetch_content);
+      while (!fetcher_queue_is_full (pull_data) &&
+             g_hash_table_iter_next (&hiter, &key, &value))
+        {
+          char *checksum = key;
+          FetchObjectData *fetch = value;
+
+          /* Steal both key and value */
+          g_hash_table_iter_steal (&hiter);
+
+          /* This takes ownership of the value */
+          start_fetch (pull_data, fetch);
+          /* And unref the key */
+          g_free (checksum);
+        }
+
+    }
+}
+
+/* We have a total-request limit, as well has a hardcoded max of 2 for delta
+ * parts. The logic for the delta one is that processing them is expensive, and
+ * doing multiple simultaneously could risk space/memory on smaller devices. We
+ * also throttle on outstanding writes in case fetches are faster.
+ */
+static gboolean
+fetcher_queue_is_full (OtPullData *pull_data)
+{
+  const gboolean fetch_full =
+      ((pull_data->n_outstanding_metadata_fetches +
+        pull_data->n_outstanding_content_fetches +
+        pull_data->n_outstanding_deltapart_fetches) ==
+         _OSTREE_MAX_OUTSTANDING_FETCHER_REQUESTS);
+  const gboolean deltas_full =
+      (pull_data->n_outstanding_deltapart_fetches ==
+        _OSTREE_MAX_OUTSTANDING_DELTAPART_REQUESTS);
+  const gboolean writes_full =
+      ((pull_data->n_outstanding_metadata_write_requests +
+        pull_data->n_outstanding_content_write_requests +
+        pull_data->n_outstanding_deltapart_write_requests) >=
+         _OSTREE_MAX_OUTSTANDING_WRITE_REQUESTS);
+  return fetch_full || deltas_full || writes_full;
 }
 
 static gboolean
@@ -685,6 +789,9 @@ content_fetch_on_write_complete (GObject        *object,
     }
 
   pull_data->n_fetched_content++;
+  /* Was this a delta fallback? */
+  if (g_hash_table_remove (pull_data->requested_fallback_content, expected_checksum))
+    pull_data->n_fetched_deltapart_fallbacks++;
  out:
   pull_data->n_outstanding_content_write_requests--;
   check_outstanding_requests_handle_error (pull_data, local_error);
@@ -942,6 +1049,8 @@ fetch_static_delta_data_free (gpointer  data)
   FetchStaticDeltaData *fetch_data = data;
   g_free (fetch_data->expected_checksum);
   g_variant_unref (fetch_data->objects);
+  g_free (fetch_data->from_revision);
+  g_free (fetch_data->to_revision);
   g_free (fetch_data);
 }
 
@@ -1035,14 +1144,22 @@ process_verify_result (OtPullData            *pull_data,
                        GError               **error)
 {
   if (result == NULL)
-    return FALSE;
+    {
+      g_prefix_error (error, "Commit %s: ", checksum);
+      return FALSE;
+    }
 
   /* Allow callers to output the results immediately. */
   g_signal_emit_by_name (pull_data->repo,
                          "gpg-verify-result",
                          checksum, result);
 
-  return ostree_gpg_verify_result_require_valid_signature (result, error);
+  if (!ostree_gpg_verify_result_require_valid_signature (result, error))
+    {
+      g_prefix_error (error, "Commit %s: ", checksum);
+      return FALSE;
+    }
+  return TRUE;
 }
 
 static gboolean
@@ -1060,8 +1177,9 @@ gpg_verify_unwritten_commit (OtPullData         *pull_data,
 
       if (!detached_metadata)
         {
-          g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                               "No detached metadata found for GPG verification");
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                       "Commit %s: no detached metadata found for GPG verification",
+                       checksum);
           return FALSE;
         }
 
@@ -1334,41 +1452,11 @@ enqueue_one_object_request (OtPullData        *pull_data,
                             gboolean           is_detached_meta,
                             gboolean           object_is_stored)
 {
-  g_autofree char *obj_subpath = NULL;
   gboolean is_meta;
   FetchObjectData *fetch_data;
-  guint64 *expected_max_size_p;
-  guint64 expected_max_size;
-  GPtrArray *mirrorlist = NULL;
-
-  g_debug ("queuing fetch of %s.%s%s", checksum,
-           ostree_object_type_to_string (objtype),
-           is_detached_meta ? " (detached)" : "");
-
-  if (is_detached_meta)
-    {
-      char buf[_OSTREE_LOOSE_PATH_MAX];
-      _ostree_loose_path (buf, checksum, OSTREE_OBJECT_TYPE_COMMIT_META, pull_data->remote_mode);
-      obj_subpath = g_build_filename ("objects", buf, NULL);
-      mirrorlist = pull_data->meta_mirrorlist;
-    }
-  else
-    {
-      obj_subpath = _ostree_get_relative_object_path (checksum, objtype, TRUE);
-      mirrorlist = pull_data->content_mirrorlist;
-    }
 
   is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
-  if (is_meta)
-    {
-      pull_data->n_outstanding_metadata_fetches++;
-      pull_data->n_requested_metadata++;
-    }
-  else
-    {
-      pull_data->n_outstanding_content_fetches++;
-      pull_data->n_requested_content++;
-    }
+
   fetch_data = g_new0 (FetchObjectData, 1);
   fetch_data->pull_data = pull_data;
   fetch_data->object = ostree_object_name_serialize (checksum, objtype);
@@ -1376,10 +1464,80 @@ enqueue_one_object_request (OtPullData        *pull_data,
   fetch_data->is_detached_meta = is_detached_meta;
   fetch_data->object_is_stored = object_is_stored;
 
-  expected_max_size_p = is_detached_meta ? NULL : g_hash_table_lookup (pull_data->expected_commit_sizes, checksum);
+  if (is_meta)
+    pull_data->n_requested_metadata++;
+  else
+    pull_data->n_requested_content++;
+
+  /* Are too many requests are in flight? */
+  if (fetcher_queue_is_full (pull_data))
+    {
+      g_debug ("queuing fetch of %s.%s%s", checksum,
+               ostree_object_type_to_string (objtype),
+               is_detached_meta ? " (detached)" : "");
+
+      if (is_meta)
+        {
+          GVariant *objname = ostree_object_name_serialize (checksum, objtype);
+          g_hash_table_insert (pull_data->pending_fetch_metadata, objname, fetch_data);
+        }
+      else
+        {
+          g_hash_table_insert (pull_data->pending_fetch_content, g_strdup (checksum), fetch_data);
+        }
+    }
+  else
+    {
+      start_fetch (pull_data, fetch_data);
+    }
+}
+
+static void
+start_fetch (OtPullData *pull_data,
+             FetchObjectData *fetch)
+{
+  gboolean is_meta;
+  g_autofree char *obj_subpath = NULL;
+  guint64 *expected_max_size_p;
+  guint64 expected_max_size;
+  const char *expected_checksum;
+  OstreeObjectType objtype;
+  GPtrArray *mirrorlist = NULL;
+
+  ostree_object_name_deserialize (fetch->object, &expected_checksum, &objtype);
+  is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
+
+  g_debug ("starting fetch of %s.%s%s", expected_checksum,
+           ostree_object_type_to_string (objtype),
+           fetch->is_detached_meta ? " (detached)" : "");
+
+  is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
+  if (is_meta)
+    pull_data->n_outstanding_metadata_fetches++;
+  else
+    pull_data->n_outstanding_content_fetches++;
+
+  /* Override the path if we're trying to fetch the .commitmeta file first */
+  if (fetch->is_detached_meta)
+    {
+      char buf[_OSTREE_LOOSE_PATH_MAX];
+      _ostree_loose_path (buf, expected_checksum, OSTREE_OBJECT_TYPE_COMMIT_META, pull_data->remote_mode);
+      obj_subpath = g_build_filename ("objects", buf, NULL);
+      mirrorlist = pull_data->meta_mirrorlist;
+    }
+  else
+    {
+      obj_subpath = _ostree_get_relative_object_path (expected_checksum, objtype, TRUE);
+      mirrorlist = pull_data->content_mirrorlist;
+    }
+
+  /* We may have determined maximum sizes from the summary file content; if so,
+   * honor it. Otherwise, metadata has a baseline max size.
+   */
+  expected_max_size_p = fetch->is_detached_meta ? NULL : g_hash_table_lookup (pull_data->expected_commit_sizes, expected_checksum);
   if (expected_max_size_p)
     expected_max_size = *expected_max_size_p;
-  else if (is_meta)
+  else if (OSTREE_OBJECT_TYPE_IS_META (objtype))
     expected_max_size = OSTREE_MAX_METADATA_SIZE;
   else
     expected_max_size = 0;
@@ -1389,7 +1547,7 @@ enqueue_one_object_request (OtPullData        *pull_data,
                                       is_meta ? OSTREE_REPO_PULL_METADATA_PRIORITY
                                       : OSTREE_REPO_PULL_CONTENT_PRIORITY,
                                       pull_data->cancellable,
-                                      is_meta ? meta_fetch_on_complete : content_fetch_on_complete, fetch_data);
+                                      is_meta ? meta_fetch_on_complete : content_fetch_on_complete, fetch);
 }
 
 static gboolean
@@ -1445,14 +1603,9 @@ process_one_static_delta_fallback (OtPullData   *pull_data,
   compressed_size = maybe_swap_endian_u64 (delta_byteswap, compressed_size);
   uncompressed_size = maybe_swap_endian_u64 (delta_byteswap, uncompressed_size);
 
+  pull_data->n_total_delta_fallbacks += 1;
   pull_data->total_deltapart_size += compressed_size;
   pull_data->total_deltapart_usize += uncompressed_size;
-
-  if (pull_data->dry_run)
-    {
-      ret = TRUE;
-      goto out;
-    }
 
   objtype = (OstreeObjectType)objtype_y;
   checksum = ostree_checksum_from_bytes_v (csum_v);
@@ -1462,28 +1615,37 @@ process_one_static_delta_fallback (OtPullData   *pull_data,
                                cancellable, error))
     goto out;
 
+  if (is_stored)
+    pull_data->fetched_deltapart_size += compressed_size;
+
+  if (pull_data->dry_run)
+    {
+      ret = TRUE;
+      goto out;
+    }
+
   if (!is_stored)
-    { 
+    {
+      /* The delta compiler never did this, there's no reason to support it */
       if (OSTREE_OBJECT_TYPE_IS_META (objtype))
         {
-          g_autoptr(GVariant) objname = ostree_object_name_serialize (checksum, objtype);
-          if (!g_hash_table_lookup (pull_data->requested_metadata, objname))
-            {
-              gboolean do_fetch_detached;
-              g_hash_table_add (pull_data->requested_metadata, g_variant_ref (objname));
-              
-              do_fetch_detached = (objtype == OSTREE_OBJECT_TYPE_COMMIT);
-              enqueue_one_object_request (pull_data, checksum, objtype, NULL, do_fetch_detached, FALSE);
-              checksum = NULL;  /* Transfer ownership */
-            }
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                       "Found metadata object as fallback: %s.%s", checksum,
+                       ostree_object_type_to_string (objtype));
+          goto out;
         }
       else
         {
           if (!g_hash_table_lookup (pull_data->requested_content, checksum))
             {
+              /* Mark this as requested, like we do in the non-delta path */
               g_hash_table_add (pull_data->requested_content, checksum);
+              /* But also record it's a delta fallback object, so we can account
+               * for it as logically part of the delta fetch.
+               */
+              g_hash_table_add (pull_data->requested_fallback_content, g_strdup (checksum));
               enqueue_one_object_request (pull_data, checksum, OSTREE_OBJECT_TYPE_FILE, NULL, FALSE, FALSE);
-              checksum = NULL;  /* Transfer ownership */
+              checksum = NULL;  /* We transferred ownership to the requested_content hash */
             }
         }
     }
@@ -1491,6 +1653,22 @@ process_one_static_delta_fallback (OtPullData   *pull_data,
   ret = TRUE;
  out:
   return ret;
+}
+
+static void
+start_fetch_deltapart (OtPullData *pull_data,
+                       FetchStaticDeltaData *fetch)
+{
+  g_autofree char *deltapart_path = _ostree_get_relative_static_delta_part_path (fetch->from_revision, fetch->to_revision, fetch->i);
+  pull_data->n_outstanding_deltapart_fetches++;
+  g_assert_cmpint (pull_data->n_outstanding_deltapart_fetches, <=, _OSTREE_MAX_OUTSTANDING_DELTAPART_REQUESTS);
+  _ostree_fetcher_request_to_tmpfile (pull_data->fetcher,
+                                      pull_data->content_mirrorlist,
+                                      deltapart_path, fetch->size,
+                                      OSTREE_FETCHER_DEFAULT_PRIORITY,
+                                      pull_data->cancellable,
+                                      static_deltapart_fetch_on_complete,
+                                      fetch);
 }
 
 static gboolean
@@ -1618,11 +1796,15 @@ process_one_static_delta (OtPullData   *pull_data,
                                                             cancellable, error))
         goto out;
 
+      pull_data->total_deltapart_size += size;
+      pull_data->total_deltapart_usize += usize;
+
       if (have_all)
         {
           g_debug ("Have all objects from static delta %s-%s part %u",
                    from_revision ? from_revision : "empty", to_revision,
                    i);
+          pull_data->fetched_deltapart_size += size;
           pull_data->n_fetched_deltaparts++;
           continue;
         }
@@ -1636,16 +1818,17 @@ process_one_static_delta (OtPullData   *pull_data,
           inline_part_bytes = g_variant_get_data_as_bytes (part_datav);
       }
 
-      pull_data->total_deltapart_size += size;
-      pull_data->total_deltapart_usize += usize;
-
       if (pull_data->dry_run)
         continue;
       
       fetch_data = g_new0 (FetchStaticDeltaData, 1);
+      fetch_data->from_revision = g_strdup (from_revision);
+      fetch_data->to_revision = g_strdup (to_revision);
       fetch_data->pull_data = pull_data;
       fetch_data->objects = g_variant_ref (objects);
       fetch_data->expected_checksum = ostree_checksum_from_bytes_v (csum_v);
+      fetch_data->size = size;
+      fetch_data->i = i;
 
       if (inline_part_bytes != NULL)
         {
@@ -1669,20 +1852,99 @@ process_one_static_delta (OtPullData   *pull_data,
         }
       else
         {
-          _ostree_fetcher_request_to_tmpfile (pull_data->fetcher,
-                                              pull_data->content_mirrorlist,
-                                              deltapart_path, size,
-                                              OSTREE_FETCHER_DEFAULT_PRIORITY,
-                                              pull_data->cancellable,
-                                              static_deltapart_fetch_on_complete,
-                                              fetch_data);
-          pull_data->n_outstanding_deltapart_fetches++;
+          if (!fetcher_queue_is_full (pull_data))
+            start_fetch_deltapart (pull_data, fetch_data);
+          else
+            {
+              g_hash_table_add (pull_data->pending_fetch_deltaparts, fetch_data);
+            }
         }
     }
 
   ret = TRUE;
  out:
   return ret;
+}
+
+/* Loop over the static delta data we got from the summary,
+ * and find the newest commit for @out_from_revision that
+ * goes to @to_revision.
+ */
+static gboolean
+get_best_static_delta_start_for (OtPullData *pull_data,
+                                 const char *to_revision,
+                                 char      **out_from_revision,
+                                 GCancellable *cancellable,
+                                 GError      **error)
+{
+  GHashTableIter hiter;
+  gpointer hkey, hvalue;
+  /* Array<char*> of possible from checksums */
+  g_autoptr(GPtrArray) candidates = g_ptr_array_new_with_free_func (g_free);
+  const char *newest_candidate = NULL;
+  guint64 newest_candidate_timestamp;
+
+  g_assert (pull_data->summary_deltas_checksums != NULL);
+  g_hash_table_iter_init (&hiter, pull_data->summary_deltas_checksums);
+
+  /* Loop over all deltas known from the summary file,
+   * finding ones which go to to_revision */
+  while (g_hash_table_iter_next (&hiter, &hkey, &hvalue))
+    {
+      const char *delta_name = hkey;
+      g_autofree char *cur_from_rev = NULL;
+      g_autofree char *cur_to_rev = NULL;
+
+      /* Gracefully handle corrupted (or malicious) summary files */
+      if (!_ostree_parse_delta_name (delta_name, &cur_from_rev, &cur_to_rev, error))
+        return FALSE;
+
+      /* Is this the checksum we want? */
+      if (strcmp (cur_to_rev, to_revision) != 0)
+        continue;
+
+      if (cur_from_rev)
+        g_ptr_array_add (candidates, g_steal_pointer (&cur_from_rev));
+    }
+
+  /* Loop over our candidates, find the newest one */
+  for (guint i = 0; i < candidates->len; i++)
+    {
+      const char *candidate = candidates->pdata[i];
+      guint64 candidate_ts;
+      g_autoptr(GVariant) commit = NULL;
+      OstreeRepoCommitState state;
+      gboolean have_candidate;
+
+      /* Do we have this commit at all?  If not, skip it */
+      if (!ostree_repo_has_object (pull_data->repo, OSTREE_OBJECT_TYPE_COMMIT,
+                                   candidate, &have_candidate,
+                                   NULL, error))
+        return FALSE;
+      if (!have_candidate)
+        continue;
+
+      /* Load it */
+      if (!ostree_repo_load_commit (pull_data->repo, candidate,
+                                    &commit, &state, error))
+        return FALSE;
+
+      /* Ignore partial commits, we can't use them */
+      if (state & OSTREE_REPO_COMMIT_STATE_PARTIAL)
+        continue;
+
+      /* Is it newer? */
+      candidate_ts = ostree_commit_get_timestamp (commit);
+      if (newest_candidate == NULL ||
+          candidate_ts > newest_candidate_timestamp)
+        {
+          newest_candidate = candidate;
+          newest_candidate_timestamp = candidate_ts;
+        }
+    }
+
+  *out_from_revision = g_strdup (newest_candidate);
+  return TRUE;
 }
 
 typedef struct {
@@ -1926,7 +2188,7 @@ _ostree_repo_remote_new_fetcher (OstreeRepo  *self,
   if (tls_permissive)
     fetcher_flags |= OSTREE_FETCHER_FLAGS_TLS_PERMISSIVE;
 
-  fetcher = _ostree_fetcher_new (self->tmp_dir_fd, fetcher_flags);
+  fetcher = _ostree_fetcher_new (self->tmp_dir_fd, remote_name, fetcher_flags);
 
   {
     g_autofree char *tls_client_cert_path = NULL;
@@ -2327,6 +2589,7 @@ reinitialize_fetcher (OtPullData *pull_data, const char *remote_name, GError **e
  *   * override-url (s): Fetch objects from this URL if remote specifies no metalink in options
  *   * inherit-transaction (b): Don't initiate, finish or abort a transaction, usefult to do mutliple pulls in one transaction.
  *   * http-headers (a(ss)): Additional headers to add to all HTTP requests
+ *   * update-frequency (u): Frequency to call the async progress callback in milliseconds, if any; only values higher than 0 are valid
  */
 gboolean
 ostree_repo_pull_with_options (OstreeRepo             *self,
@@ -2351,6 +2614,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   char **configured_branches = NULL;
   guint64 bytes_transferred;
   guint64 end_time;
+  guint update_frequency = 0;
   OstreeRepoPullFlags flags = 0;
   const char *dir_to_pull = NULL;
   g_autofree char **dirs_to_pull = NULL;
@@ -2361,7 +2625,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   gboolean opt_gpg_verify_set = FALSE;
   gboolean opt_gpg_verify_summary_set = FALSE;
   const char *url_override = NULL;
-  gboolean mirroring_into_archive;
   gboolean inherit_transaction = FALSE;
   int i;
 
@@ -2387,6 +2650,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       (void) g_variant_lookup (options, "override-url", "&s", &url_override);
       (void) g_variant_lookup (options, "inherit-transaction", "b", &inherit_transaction);
       (void) g_variant_lookup (options, "http-headers", "@a(ss)", &pull_data->extra_headers);
+      (void) g_variant_lookup (options, "update-frequency", "u", &update_frequency);
     }
 
   g_return_val_if_fail (pull_data->maxdepth >= -1, FALSE);
@@ -2400,6 +2664,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     g_return_val_if_fail (dirs_to_pull[i][0] == '/', FALSE);
 
   g_return_val_if_fail (!(disable_static_deltas && pull_data->require_static_deltas), FALSE);
+
   /* We only do dry runs with static deltas, because we don't really have any
    * in-advance information for bare fetches.
    */
@@ -2409,8 +2674,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   pull_data->is_commit_only = (flags & OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY) > 0;
   pull_data->is_untrusted = (flags & OSTREE_REPO_PULL_FLAGS_UNTRUSTED) > 0;
   pull_data->cancellable = cancellable ? g_object_ref (cancellable) : NULL;
-
-  mirroring_into_archive = pull_data->is_mirror && self->mode == OSTREE_REPO_MODE_ARCHIVE_Z2;
 
   if (error)
     pull_data->async_error = &pull_data->cached_async_error;
@@ -2435,8 +2698,18 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
                                                        (GDestroyNotify)g_variant_unref, NULL);
   pull_data->requested_content = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                         (GDestroyNotify)g_free, NULL);
+  pull_data->requested_fallback_content = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                                 (GDestroyNotify)g_free, NULL);
   pull_data->requested_metadata = g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
                                                          (GDestroyNotify)g_variant_unref, NULL);
+  pull_data->pending_fetch_content = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                            (GDestroyNotify)g_free,
+                                                            (GDestroyNotify)fetch_object_data_free);
+  pull_data->pending_fetch_metadata = g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
+                                                             (GDestroyNotify)g_variant_unref,
+                                                             (GDestroyNotify)fetch_object_data_free);
+  pull_data->pending_fetch_deltaparts = g_hash_table_new_full (NULL, NULL, (GDestroyNotify)fetch_static_delta_data_free, NULL);
+
   if (dir_to_pull != NULL || dirs_to_pull != NULL)
     {
       pull_data->dirs = g_ptr_array_new_with_free_func (g_free);
@@ -2669,6 +2942,23 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
    * exact object files are copied.
    */
   if (pull_data->remote_repo_local && !pull_data->require_static_deltas)
+    disable_static_deltas = TRUE;
+
+  /* We can't use static deltas if pulling into an archive-z2 repo. */
+  if (self->mode == OSTREE_REPO_MODE_ARCHIVE_Z2)
+    {
+      if (pull_data->require_static_deltas)
+        {
+          g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                               "Can't use static deltas in an archive repo");
+          goto out;
+        }
+      disable_static_deltas = TRUE;
+    }
+
+  /* It's not efficient to use static deltas if all we want is the commit
+   * metadata. */
+  if (pull_data->is_commit_only)
     disable_static_deltas = TRUE;
 
   pull_data->static_delta_superblocks = g_ptr_array_new_with_free_func ((GDestroyNotify)g_variant_unref);
@@ -2953,11 +3243,23 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       const char *ref = key;
       const char *to_revision = value;
 
-      if (!ostree_repo_resolve_rev (pull_data->repo, ref, TRUE,
-                                    &from_revision, error))
-        goto out;
+      /* If we have a summary, find the latest local commit we have
+       * to use as a from revision for static deltas.
+       */
+      if (pull_data->summary)
+        {
+          if (!get_best_static_delta_start_for (pull_data, to_revision, &from_revision,
+                                                cancellable, error))
+            goto out;
+        }
+      else
+        {
+          if (!ostree_repo_resolve_rev (pull_data->repo, ref, TRUE,
+                                        &from_revision, error))
+            goto out;
+        }
 
-      if (!(disable_static_deltas || mirroring_into_archive || pull_data->is_commit_only) &&
+      if (!disable_static_deltas &&
           (from_revision == NULL || g_strcmp0 (from_revision, to_revision) != 0))
         {
           g_autofree char *delta_name =
@@ -2984,7 +3286,12 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
   if (pull_data->progress)
     {
-      update_timeout = g_timeout_source_new_seconds (pull_data->dry_run ? 0 : 1);
+      /* Setup a custom frequency if set */
+      if (update_frequency > 0)
+        update_timeout = g_timeout_source_new (pull_data->dry_run ? 0 : update_frequency);
+      else
+        update_timeout = g_timeout_source_new_seconds (pull_data->dry_run ? 0 : 1);
+
       g_source_set_priority (update_timeout, G_PRIORITY_HIGH);
       g_source_set_callback (update_timeout, update_progress, pull_data, NULL);
       g_source_attach (update_timeout, pull_data->main_context);
@@ -3147,7 +3454,11 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   g_clear_pointer (&pull_data->scanned_metadata, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->summary_deltas_checksums, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_content, (GDestroyNotify) g_hash_table_unref);
+  g_clear_pointer (&pull_data->requested_fallback_content, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_metadata, (GDestroyNotify) g_hash_table_unref);
+  g_clear_pointer (&pull_data->pending_fetch_content, (GDestroyNotify) g_hash_table_unref);
+  g_clear_pointer (&pull_data->pending_fetch_metadata, (GDestroyNotify) g_hash_table_unref);
+  g_clear_pointer (&pull_data->pending_fetch_deltaparts, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->idle_src, (GDestroyNotify) g_source_destroy);
   g_clear_pointer (&pull_data->dirs, (GDestroyNotify) g_ptr_array_unref);
   g_clear_pointer (&remote_config, (GDestroyNotify) g_key_file_unref);
@@ -3242,7 +3553,7 @@ out:
   return ret;
 }
 
-#else /* HAVE_LIBSOUP */
+#else /* HAVE_LIBCURL_OR_LIBSOUP */
 
 gboolean
 ostree_repo_pull_with_options (OstreeRepo             *self,
@@ -3271,4 +3582,4 @@ ostree_repo_remote_fetch_summary_with_options (OstreeRepo    *self,
   return FALSE;
 }
 
-#endif /* HAVE_LIBSOUP */
+#endif /* HAVE_LIBCURL_OR_LIBSOUP */

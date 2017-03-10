@@ -49,6 +49,7 @@
     <keyword type="function" name="ostree_content_file_parse ()" link="ostree-Core-repository-independent-functions.html#ostree-content-file-parse"/>
     <keyword type="function" name="ostree_content_file_parse_at ()" link="ostree-Core-repository-independent-functions.html#ostree-content-file-parse-at"/>
     <keyword type="function" name="ostree_raw_file_to_archive_z2_stream ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-archive-z2-stream"/>
+    <keyword type="function" name="ostree_raw_file_to_archive_z2_stream_with_options ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-archive-z2-stream-with-options" since="2017.3"/>
     <keyword type="function" name="ostree_raw_file_to_content_stream ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-content-stream"/>
     <keyword type="function" name="ostree_checksum_file_from_input ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file-from-input"/>
     <keyword type="function" name="ostree_checksum_file ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file"/>
@@ -104,6 +105,7 @@
     <keyword type="function" name="ostree_repo_remote_gpg_import ()" link="ostree-Content-addressed-object-store.html#ostree-repo-remote-gpg-import"/>
     <keyword type="function" name="ostree_repo_remote_fetch_summary ()" link="ostree-Content-addressed-object-store.html#ostree-repo-remote-fetch-summary"/>
     <keyword type="function" name="ostree_repo_remote_fetch_summary_with_options ()" link="ostree-Content-addressed-object-store.html#ostree-repo-remote-fetch-summary-with-options"/>
+    <keyword type="function" name="ostree_repo_reload_config ()" link="ostree-Content-addressed-object-store.html#ostree-repo-reload-config"/>
     <keyword type="function" name="ostree_repo_get_remote_boolean_option ()" link="ostree-Content-addressed-object-store.html#ostree-repo-get-remote-boolean-option"/>
     <keyword type="function" name="ostree_repo_get_remote_list_option ()" link="ostree-Content-addressed-object-store.html#ostree-repo-get-remote-list-option"/>
     <keyword type="function" name="ostree_repo_get_remote_option ()" link="ostree-Content-addressed-object-store.html#ostree-repo-get-remote-option"/>
@@ -381,6 +383,7 @@
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_MODE_USER" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-CHECKOUT-MODE-USER:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_OVERWRITE_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-CHECKOUT-OVERWRITE-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-CHECKOUT-OVERWRITE-UNION-FILES:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_CHECKOUT_OVERWRITE_ADD_FILES" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-CHECKOUT-OVERWRITE-ADD-FILES:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_OBJECTS_LOOSE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-LIST-OBJECTS-LOOSE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_OBJECTS_PACKED" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-LIST-OBJECTS-PACKED:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_OBJECTS_ALL" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-LIST-OBJECTS-ALL:CAPS"/>
@@ -405,6 +408,7 @@
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_FLAGS_IGNORE_UNCONFIGURED" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-FLAGS-IGNORE-UNCONFIGURED:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_NONE" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-PULL-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_ALLOW_OLDER" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-PULL-FLAGS-ALLOW-OLDER:CAPS"/>
+    <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_SYNTHETIC" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-PULL-FLAGS-SYNTHETIC:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_VALID" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-VALID:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_SIG_EXPIRED" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-SIG-EXPIRED:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_KEY_EXPIRED" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-KEY-EXPIRED:CAPS"/>

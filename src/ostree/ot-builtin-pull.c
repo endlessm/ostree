@@ -38,6 +38,7 @@ static char** opt_subpaths;
 static char** opt_http_headers;
 static char* opt_cache_dir;
 static int opt_depth = 0;
+static int opt_frequency = 0;
 static char* opt_url;
 
 static GOptionEntry options[] = {
@@ -53,6 +54,7 @@ static GOptionEntry options[] = {
    { "depth", 0, 0, G_OPTION_ARG_INT, &opt_depth, "Traverse DEPTH parents (-1=infinite) (default: 0)", "DEPTH" },
    { "url", 0, 0, G_OPTION_ARG_STRING, &opt_url, "Pull objects from this URL instead of the one from the remote config", NULL },
    { "http-header", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_http_headers, "Add NAME=VALUE as HTTP header to all requests", "NAME=VALUE" },
+   { "update-frequency", 0, 0, G_OPTION_ARG_INT, &opt_frequency, "Sets the update frequency, in milliseconds (0=1000ms) (default: 0)", "FREQUENCY" },
    { NULL }
  };
 
@@ -80,27 +82,41 @@ dry_run_console_progress_changed (OstreeAsyncProgress *progress,
                                   gpointer             user_data)
 {
   guint fetched_delta_parts, total_delta_parts;
-  guint64 total_delta_part_size, total_delta_part_usize;
+  guint fetched_delta_part_fallbacks, total_delta_part_fallbacks;
+  guint64 fetched_delta_part_size, total_delta_part_size, total_delta_part_usize;
   GString *buf;
 
   g_assert (!printed_console_progress);
   printed_console_progress = TRUE;
 
+  /* Number of parts */
   fetched_delta_parts = ostree_async_progress_get_uint (progress, "fetched-delta-parts");
   total_delta_parts = ostree_async_progress_get_uint (progress, "total-delta-parts");
+  fetched_delta_part_fallbacks = ostree_async_progress_get_uint (progress, "fetched-delta-fallbacks");
+  total_delta_part_fallbacks = ostree_async_progress_get_uint (progress, "total-delta-fallbacks");
+  /* Fold the count of deltaparts + fallbacks for simplicity; if changing this,
+   * please change ostree_repo_pull_default_console_progress_changed() first.
+   */
+  fetched_delta_parts += fetched_delta_part_fallbacks;
+  total_delta_parts += total_delta_part_fallbacks;
+  /* Size variables */
+  fetched_delta_part_size = ostree_async_progress_get_uint64 (progress, "fetched-delta-part-size");
   total_delta_part_size = ostree_async_progress_get_uint64 (progress, "total-delta-part-size");
   total_delta_part_usize = ostree_async_progress_get_uint64 (progress, "total-delta-part-usize");
 
   buf = g_string_new ("");
 
-  { g_autofree char *formatted_size =
+  { g_autofree char *formatted_fetched =
+      g_format_size (fetched_delta_part_size);
+    g_autofree char *formatted_size =
       g_format_size (total_delta_part_size);
     g_autofree char *formatted_usize =
       g_format_size (total_delta_part_usize);
 
-    g_string_append_printf (buf, "Delta update: %u/%u parts, %s to transfer, %s uncompressed",
+    g_string_append_printf (buf, "Delta update: %u/%u parts, %s/%s, %s total uncompressed",
                             fetched_delta_parts, total_delta_parts,
-                            formatted_size, formatted_usize);
+                            formatted_fetched, formatted_size,
+                            formatted_usize);
   }
   g_print ("%s\n", buf->str);
   g_string_free (buf, TRUE);
@@ -238,6 +254,9 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
     g_variant_builder_add (&builder, "{s@v}", "depth",
                            g_variant_new_variant (g_variant_new_int32 (opt_depth)));
    
+    g_variant_builder_add (&builder, "{s@v}", "update-frequency",
+                           g_variant_new_variant (g_variant_new_uint32 (opt_frequency)));
+
     g_variant_builder_add (&builder, "{s@v}", "disable-static-deltas",
                            g_variant_new_variant (g_variant_new_boolean (opt_disable_static_deltas)));
 

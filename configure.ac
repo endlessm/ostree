@@ -1,6 +1,6 @@
 AC_PREREQ([2.63])
 dnl If incrementing the version here, remember to update libostree.sym too
-AC_INIT([ostree], [2017.1], [walters@verbum.org])
+AC_INIT([libostree], [2017.3], [walters@verbum.org])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([buildutil])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -33,7 +33,6 @@ CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
         -Werror=incompatible-pointer-types \
         -Werror=misleading-indentation \
 	-Werror=missing-include-dirs -Werror=aggregate-return \
-	-Werror=declaration-after-statement \
 ])
 AC_SUBST(WARN_CFLAGS)
 
@@ -79,14 +78,29 @@ PKG_CHECK_MODULES(OT_DEP_ZLIB, zlib)
 dnl We're not actually linking to this, just using the header
 PKG_CHECK_MODULES(OT_DEP_E2P, e2p)
 
+dnl Arbitrary version that's in CentOS7.2 now
+CURL_DEPENDENCY=7.29.0
+AC_ARG_WITH(curl,
+	    AS_HELP_STRING([--with-curl], [Use libcurl @<:@default=no@:>@]),
+	    [], [with_curl=no])
+AS_IF([test x$with_curl != xno ], [
+    PKG_CHECK_MODULES(OT_DEP_CURL, libcurl >= $CURL_DEPENDENCY)
+    with_curl=yes
+    AC_DEFINE([HAVE_LIBCURL], 1, [Define if we have libcurl.pc])
+    dnl Currently using libcurl requires soup for trivial-httpd for tests
+    with_soup_default=yes
+], [with_soup_default=check])
+AM_CONDITIONAL(USE_CURL, test x$with_curl != xno)
+if test x$with_curl = xyes; then OSTREE_FEATURES="$OSTREE_FEATURES libcurl"; fi
+
 dnl When bumping the libsoup-2.4 dependency, remember to bump
 dnl SOUP_VERSION_MIN_REQUIRED and SOUP_VERSION_MAX_ALLOWED in
 dnl Makefile.am
 SOUP_DEPENDENCY="libsoup-2.4 >= 2.39.1"
 AC_ARG_WITH(soup,
 	    AS_HELP_STRING([--with-soup], [Use libsoup @<:@default=yes@:>@]),
-	    [], [with_soup=check])
-AS_IF([test x$with_soup != xno ], [
+	    [], [with_soup=$with_soup_default])
+AS_IF([test x$with_soup != xno], [
   AC_ARG_ENABLE(libsoup_client_certs,
                 AS_HELP_STRING([--enable-libsoup-client-certs],
                                [Require availability of new enough libsoup TLS client cert API (default: auto)]),,
@@ -116,9 +130,17 @@ AS_IF([test x$with_soup != xno ], [
     with_soup=no
   ])
 ], [ with_soup=no ])
-if test x$with_soup != xno; then OSTREE_FEATURES="$OSTREE_FEATURES +libsoup"; fi
+if test x$with_soup != xno; then OSTREE_FEATURES="$OSTREE_FEATURES libsoup"; fi
 AM_CONDITIONAL(USE_LIBSOUP, test x$with_soup != xno)
 AM_CONDITIONAL(HAVE_LIBSOUP_CLIENT_CERTS, test x$have_libsoup_client_certs = xyes)
+
+AS_IF([test x$with_curl = xyes && test x$with_soup = xno], [
+  AC_MSG_ERROR([Curl enabled, but libsoup is not; libsoup is needed for tests])
+])
+AM_CONDITIONAL(USE_CURL_OR_SOUP, test x$with_curl != xno || test x$with_soup != xno)
+AS_IF([test x$with_curl != xno || test x$with_soup != xno],
+            [AC_DEFINE([HAVE_LIBCURL_OR_LIBSOUP], 1, [Define if we have soup or curl])])
+AS_IF([test x$with_curl = xyes], [fetcher_backend=curl], [test x$with_soup = xyes], [fetcher_backend=libsoup], [fetcher_backend=none])
 
 m4_ifdef([GOBJECT_INTROSPECTION_CHECK], [
   GOBJECT_INTROSPECTION_CHECK([1.34.0])
@@ -135,7 +157,7 @@ PKG_CHECK_MODULES(OT_DEP_GPGME, gpgme-pthread >= $LIBGPGME_DEPENDENCY, have_gpgm
 AS_IF([ test x$have_gpgme = xno ], [
    AC_MSG_ERROR([Need GPGME_PTHREAD version $LIBGPGME_DEPENDENCY or later])
 ])
-OSTREE_FEATURES="$OSTREE_FEATURES +gpgme"
+OSTREE_FEATURES="$OSTREE_FEATURES gpgme"
 
 LIBARCHIVE_DEPENDENCY="libarchive >= 2.8.0"
 # What's in RHEL7.2.
@@ -161,10 +183,44 @@ AS_IF([test "$enable_man" != no], [
       AC_MSG_ERROR([xsltproc is required for --enable-man])
     ])
     enable_man=no
+  ],[
+    enable_man=yes
   ])
-  enable_man=yes
 ])
 AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" != no)
+
+AC_ARG_ENABLE(rust,
+  [AS_HELP_STRING([--enable-rust],
+  [Compile Rust code instead of C [default=no]])],,
+   [enable_rust=no; rust_debug_release=no])
+
+AS_IF([test "$enable_rust" = yes], [
+   AC_PATH_PROG([cargo], [cargo])
+   AS_IF([test -z "$cargo"], [AC_MSG_ERROR([cargo is required for --enable-rust])])
+   AC_PATH_PROG([rustc], [rustc])
+   AS_IF([test -z "$rustc"], [AC_MSG_ERROR([rustc is required for --enable-rust])])
+
+   dnl These bits based on gnome:librsvg/configure.ac
+
+   dnl By default, we build in public release mode.
+   AC_ARG_ENABLE(rust-debug,
+      AC_HELP_STRING([--enable-rust-debug],
+       [Build Rust code with debugging information [default=no]]),
+       [rust_debug_release=$enableval],
+       [rust_debug_release=release])
+
+   AC_MSG_CHECKING(whether to build Rust code with debugging information)
+   if test "x$rust_debug_release" = "xyes" ; then
+      rust_debug_release=debug
+      AC_MSG_RESULT(yes)
+   else
+      AC_MSG_RESULT(no)
+   fi
+   RUST_TARGET_SUBDIR=${rust_debug_release}
+   AC_SUBST([RUST_TARGET_SUBDIR])
+])
+AM_CONDITIONAL(RUST_DEBUG, [test "x$rust_debug_release" = "xdebug"])
+AM_CONDITIONAL(ENABLE_RUST, [test "$enable_rust" != no])
 
 AC_ARG_WITH(libarchive,
 	    AS_HELP_STRING([--without-libarchive], [Do not use libarchive]),
@@ -189,7 +245,7 @@ AS_IF([ test x$with_libarchive != xno ], [
 	with_libarchive=no
     ])
 ], [ with_libarchive=no ])
-if test x$with_libarchive != xno; then OSTREE_FEATURES="$OSTREE_FEATURES +libarchive"; fi
+if test x$with_libarchive != xno; then OSTREE_FEATURES="$OSTREE_FEATURES libarchive"; fi
 AM_CONDITIONAL(USE_LIBARCHIVE, test $with_libarchive != no)
 
 dnl This is what is in RHEL7 anyways
@@ -214,8 +270,16 @@ AS_IF([ test x$with_selinux != xno ], [
 	with_selinux=no
     ])
 ], [ with_selinux=no ])
-if test x$with_selinux != xno; then OSTREE_FEATURES="$OSTREE_FEATURES +selinux"; fi
+if test x$with_selinux != xno; then OSTREE_FEATURES="$OSTREE_FEATURES selinux"; fi
 AM_CONDITIONAL(USE_SELINUX, test $with_selinux != no)
+
+AC_ARG_WITH(smack,
+AS_HELP_STRING([--with-smack], [Enable smack]),
+:, with_smack=no)
+AS_IF([ test x$with_smack = xyes], [
+  AC_DEFINE([WITH_SMACK], 1, [Define if we have smack.pc])
+])
+AM_CONDITIONAL(USE_SMACK, test $with_smack != no)
 
 dnl This is what is in RHEL7.2 right now, picking it arbitrarily
 LIBMOUNT_DEPENDENCY="mount >= 2.23.0"
@@ -235,11 +299,15 @@ AS_IF([ test x$with_libmount != xno ], [
         AC_DEFINE([HAVE_LIBMOUNT], 1, [Define if we have libmount.pc])
 	PKG_CHECK_MODULES(OT_DEP_LIBMOUNT, $LIBMOUNT_DEPENDENCY)
 	with_libmount=yes
+  save_LIBS=$LIBS
+  LIBS=$OT_DEP_LIBMOUNT_LIBS
+  AC_CHECK_FUNCS(mnt_unref_cache)
+  LIBS=$save_LIBS
     ], [
 	with_libmount=no
     ])
 ], [ with_libmount=no ])
-if test x$with_libmount != xno; then OSTREE_FEATURES="$OSTREE_FEATURES +libmount"; fi
+if test x$with_libmount != xno; then OSTREE_FEATURES="$OSTREE_FEATURES libmount"; fi
 AM_CONDITIONAL(USE_LIBMOUNT, test $with_libmount != no)
 
 # Enabled by default because I think people should use it.
@@ -334,14 +402,14 @@ src/libostree/ostree-1.pc
 AC_OUTPUT
 
 echo "
-    OSTree $VERSION
+    libOSTree $VERSION
     ===============
 
 
     introspection:                                $found_introspection
+    Rust (internal oxidation):                    $rust_debug_release
     rofiles-fuse:                                 $enable_rofiles_fuse
-    libsoup (retrieve remote HTTP repositories):  $with_soup
-    libsoup TLS client certs:                     $have_libsoup_client_certs
+    HTTP backend:                                 $fetcher_backend
     SELinux:                                      $with_selinux
     systemd:                                      $have_libsystemd
     libmount:                                     $with_libmount

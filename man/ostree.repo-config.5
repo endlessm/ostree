@@ -2,7 +2,7 @@
 .\"     Title: ostree.repo-config
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 01/19/2017
+.\"      Date: 03/10/2017
 .\"    Manual: ostree.repo-config
 .\"    Source: OSTree
 .\"  Language: English
@@ -82,10 +82,15 @@ Describes a remote repository location\&.
 .PP
 \fIurl\fR
 .RS 4
-Must be present; declares URL for accessing this remote\&. The only supported schemes are the moment are
-file,
-http, and
-https\&.
+Must be present; declares URL for accessing metadata and content for remote\&. See also
+contenturl\&. The supported schemes are documented below\&.
+.RE
+.PP
+\fIcontenturl\fR
+.RS 4
+Declares URL for accessing content (filez, static delta parts)\&. When specified,
+url
+is used just for metadata: summary, static delta "superblocks"\&.
 .RE
 .PP
 \fIproxy\fR
@@ -140,6 +145,32 @@ file, remotes may also be specified in
 \&.conf; files whose name does not end in
 \&.conf
 will be ignored\&.
+.SH "REPOSITORY URL/CONTENTURL"
+.PP
+Originally, OSTree had just a
+url
+option for remotes\&. Since then, the
+contenturl
+option was introduced\&. Both of these support
+file,
+http, and
+https
+schemes\&.
+.PP
+Additionally, both of these can be prefixed with the string
+mirrorlist=, which instructs the client that the target url is a "mirrorlist" format, which is a plain text file of newline\-separated URLs\&. Earlier URLs will be given precedence\&.
+.PP
+Note that currently, the
+tls\-ca\-path
+and
+tls\-client\-cert\-path
+options apply to every HTTP request, even when
+contenturl
+and/or
+mirrorlist
+are in use\&. This may change in the future to only apply to metadata (i\&.e\&.
+url, not
+contenturl) fetches\&.
 .SH "PER\-REMOTE GPG KEYRINGS AND VERIFICATION"
 .PP
 OSTree supports a per\-remote GPG keyring, as well as a
