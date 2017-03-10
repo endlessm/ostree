@@ -144,6 +144,7 @@ Depends:
  gjs [!sparc64],
  ostree,
  python,
+ python-yaml,
  ${misc:Depends},
  ${shlibs:Depends},
 Description: content-addressed filesystem for operating system binaries - tests

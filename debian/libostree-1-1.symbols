@@ -8,6 +8,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2016.8@LIBOSTREE_2016.8 2016.8
  LIBOSTREE_2016.14@LIBOSTREE_2016.14 2016.14
  LIBOSTREE_2017.1@LIBOSTREE_2017.1 2017.1
+ LIBOSTREE_2017.2@LIBOSTREE_2017.2 2017.2
+ LIBOSTREE_2017.3@LIBOSTREE_2017.3 2017.3
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_type@LIBOSTREE_2016.3 2016.4
@@ -113,6 +115,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_object_type_to_string@LIBOSTREE_2016.3 2016.4
  ostree_parse_refspec@LIBOSTREE_2016.3 2016.4
  ostree_raw_file_to_archive_z2_stream@LIBOSTREE_2016.6 2016.6
+ ostree_raw_file_to_archive_z2_stream_with_options@LIBOSTREE_2017.3 2017.3
  ostree_raw_file_to_content_stream@LIBOSTREE_2016.3 2016.4
  ostree_repo_abort_transaction@LIBOSTREE_2016.3 2016.4
  ostree_repo_add_gpg_signature_summary@LIBOSTREE_2016.3 2016.4
@@ -201,6 +204,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_read_commit@LIBOSTREE_2016.3 2016.4
  ostree_repo_read_commit_detached_metadata@LIBOSTREE_2016.3 2016.4
  ostree_repo_regenerate_summary@LIBOSTREE_2016.3 2016.4
+ ostree_repo_reload_config@LIBOSTREE_2017.2 2017.2
  ostree_repo_remote_add@LIBOSTREE_2016.3 2016.4
  ostree_repo_remote_change@LIBOSTREE_2016.3 2016.4
  ostree_repo_remote_delete@LIBOSTREE_2016.3 2016.4

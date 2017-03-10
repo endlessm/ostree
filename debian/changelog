@@ -1,6 +1,11 @@
-ostree (2017.1-2) UNRELEASED; urgency=medium
+ostree (2017.3-1) UNRELEASED; urgency=medium
 
   * d/watch, d/copyright: upstream project is now named libostree
+  * New upstream release
+    - d/copyright: update
+    - symbols file: update
+    - tests, ostree-tests.install: update for new location of tests
+    - d/control: ostree-tests now needs python-yaml
 
  -- Simon McVittie <smcv@debian.org>  Fri, 10 Mar 2017 23:09:00 +0000
 

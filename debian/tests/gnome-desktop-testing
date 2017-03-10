@@ -5,11 +5,11 @@ exec 2>&1
 
 e=0
 
-tests="$(gnome-desktop-testing-runner -l ostree | while read t; do
+tests="$(gnome-desktop-testing-runner -l libostree | while read t; do
 	t="${t%% *}"
 
 	case "$t" in
-		(ostree/test-local-pull.sh.test)
+		(libostree/test-local-pull.sh.test)
 			# frequently times out, https://bugs.debian.org/842606
 			# https://github.com/ostreedev/ostree/issues/605
 			continue

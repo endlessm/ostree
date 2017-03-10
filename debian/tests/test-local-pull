@@ -7,7 +7,7 @@ N=3
 passed=0
 
 for i in `seq 1 $N`; do
-	if gnome-desktop-testing-runner ostree/test-local-pull.sh.test; then
+	if gnome-desktop-testing-runner libostree/test-local-pull.sh.test; then
 		passed=$(( $passed + 1))
 	fi
 done
