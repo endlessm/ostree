@@ -2,7 +2,7 @@
 .\"     Title: ostree admin upgrade
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 01/19/2017
+.\"      Date: 03/10/2017
 .\"    Manual: ostree admin upgrade
 .\"    Source: OSTree
 .\"  Language: English
@@ -34,12 +34,26 @@ ostree-admin-upgrade \- Construct new tree from current origin and deploy it, if
 \fBostree admin upgrade\fR [OPTIONS...]
 .SH "DESCRIPTION"
 .PP
-Downloads the latest version of the current ref from the build server and deploys it, if it changed\&. Reboot the machine for the changes to take effect\&.
+Downloads the latest version of the current ref from the build server and deploys it, if it changed\&. Reboot the machine for the changes to take effect\&. These phases can be split via
+\fB\-\-pull\-only\fR
+and
+\fB\-\-deploy\-only\fR\&.
 .SH "OPTIONS"
 .PP
 \fB\-\-os\fR="OSNAME"
 .RS 4
 Use a different operating system root than the current one\&.
+.RE
+.PP
+\fB\-\-pull\-only\fR
+.RS 4
+Only perform a pull into the repository; do not create a deployment\&. This option can hence safely be used in a background scheduled job with the assurance of not changing system state\&.
+.RE
+.PP
+\fB\-\-deploy\-only\fR
+.RS 4
+Create a new deployment from the latest commit in the tracked origin refspec\&. This option is intended to be used by a scheduled system that detected changes via
+\fB\-\-pull\-only\fR, and is ready to deploy them\&.
 .RE
 .PP
 \fB\-\-reboot\fR,\fB\-r\fR

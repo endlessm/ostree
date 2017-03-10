@@ -453,6 +453,34 @@ header_and_input_to_stream (GVariant           *file_header,
   return TRUE;
 }
 
+gboolean
+_ostree_raw_file_to_archive_stream (GInputStream       *input,
+                                    GFileInfo          *file_info,
+                                    GVariant           *xattrs,
+                                    guint               compression_level,
+                                    GInputStream      **out_input,
+                                    GCancellable       *cancellable,
+                                    GError            **error)
+{
+  g_autoptr(GVariant) file_header = NULL;
+  g_autoptr(GInputStream) zlib_input = NULL;
+
+  file_header = _ostree_zlib_file_header_new (file_info, xattrs);
+  if (input != NULL)
+    {
+      g_autoptr(GConverter) zlib_compressor = NULL;
+
+      zlib_compressor = G_CONVERTER (g_zlib_compressor_new (G_ZLIB_COMPRESSOR_FORMAT_RAW, compression_level));
+      zlib_input = g_converter_input_stream_new (input, zlib_compressor);
+    }
+  return header_and_input_to_stream (file_header,
+                                     zlib_input,
+                                     out_input,
+                                     NULL,
+                                     cancellable,
+                                     error);
+}
+
 /**
  * ostree_raw_file_to_archive_z2_stream:
  * @input: File raw content stream
@@ -473,23 +501,49 @@ ostree_raw_file_to_archive_z2_stream (GInputStream       *input,
                                       GCancellable       *cancellable,
                                       GError            **error)
 {
-  g_autoptr(GVariant) file_header = NULL;
-  g_autoptr(GInputStream) zlib_input = NULL;
+  return _ostree_raw_file_to_archive_stream (input, file_info, xattrs,
+                                             OSTREE_ARCHIVE_DEFAULT_COMPRESSION_LEVEL,
+                                             out_input, cancellable, error);
+}
 
-  file_header = _ostree_zlib_file_header_new (file_info, xattrs);
-  if (input != NULL)
-    {
-      g_autoptr(GConverter) zlib_compressor = NULL;
+/**
+ * ostree_raw_file_to_archive_z2_stream_with_options:
+ * @input: File raw content stream
+ * @file_info: A file info
+ * @xattrs: (allow-none): Optional extended attributes
+ * @options: (nullable): A GVariant `a{sv}` with an extensible set of flags
+ * @out_input: (out): Serialized object stream
+ * @cancellable: Cancellable
+ * @error: Error
+ *
+ * Like ostree_raw_file_to_archive_z2_stream(), but supports an extensible set
+ * of flags. The following flags are currently defined:
+ *
+ * - `compression-level` (`i`): Level of compression to use, 0–9, with 0 being
+ *   the least compression, and <0 giving the default level (currently 6).
+ *
+ * Since: 2017.3
+ */
+gboolean
+ostree_raw_file_to_archive_z2_stream_with_options (GInputStream       *input,
+                                                   GFileInfo          *file_info,
+                                                   GVariant           *xattrs,
+                                                   GVariant           *options,
+                                                   GInputStream      **out_input,
+                                                   GCancellable       *cancellable,
+                                                   GError            **error)
+{
+  gint compression_level = -1;
 
-      zlib_compressor = G_CONVERTER (g_zlib_compressor_new (G_ZLIB_COMPRESSOR_FORMAT_RAW, 9));
-      zlib_input = g_converter_input_stream_new (input, zlib_compressor);
-    }
-  return header_and_input_to_stream (file_header,
-                                     zlib_input,
-                                     out_input,
-                                     NULL,
-                                     cancellable,
-                                     error);
+  if (options)
+    (void) g_variant_lookup (options, "compression-level", "i", &compression_level);
+
+  if (compression_level < 0)
+    compression_level = OSTREE_ARCHIVE_DEFAULT_COMPRESSION_LEVEL;
+
+  return _ostree_raw_file_to_archive_stream (input, file_info, xattrs,
+                                             compression_level,
+                                             out_input, cancellable, error);
 }
 
 /**

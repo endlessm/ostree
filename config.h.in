@@ -28,6 +28,12 @@
 /* Define if we have libarchive.pc */
 #undef HAVE_LIBARCHIVE
 
+/* Define if we have libcurl.pc */
+#undef HAVE_LIBCURL
+
+/* Define if we have soup or curl */
+#undef HAVE_LIBCURL_OR_LIBSOUP
+
 /* Define if we have libmount.pc */
 #undef HAVE_LIBMOUNT
 
@@ -42,6 +48,9 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the `mnt_unref_cache' function. */
+#undef HAVE_MNT_UNREF_CACHE
 
 /* Define if we have libselinux.pc */
 #undef HAVE_SELINUX
@@ -115,6 +124,9 @@
 # undef __EXTENSIONS__
 #endif
 
+
+/* Define if we have smack.pc */
+#undef WITH_SMACK
 
 /* Enable large inode numbers on Mac OS X 10.5.  */
 #ifndef _DARWIN_USE_64_BIT_INODE

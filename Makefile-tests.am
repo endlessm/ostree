@@ -83,6 +83,7 @@ dist_test_scripts = \
 	tests/test-admin-instutil-set-kargs.sh \
 	tests/test-admin-upgrade-not-backwards.sh \
 	tests/test-admin-pull-deploy-commit.sh \
+	tests/test-admin-pull-deploy-split.sh \
 	tests/test-admin-locking.sh \
 	tests/test-admin-deploy-clean.sh \
 	tests/test-repo-checkout-subpath.sh	\
@@ -200,11 +201,11 @@ TESTS_LDADD = $(common_tests_ldadd) libostreetest.la
 
 tests_test_rollsum_cli_SOURCES = src/libostree/ostree-rollsum.c tests/test-rollsum-cli.c
 tests_test_rollsum_cli_CFLAGS = $(TESTS_CFLAGS) $(OT_DEP_ZLIB_CFLAGS)
-tests_test_rollsum_cli_LDADD = libbupsplit.la $(TESTS_LDADD) $(OT_DEP_ZLIB_LIBS)
+tests_test_rollsum_cli_LDADD = $(bupsplitpath) $(TESTS_LDADD) $(OT_DEP_ZLIB_LIBS)
 
 tests_test_rollsum_SOURCES = src/libostree/ostree-rollsum.c tests/test-rollsum.c
 tests_test_rollsum_CFLAGS = $(TESTS_CFLAGS) $(OT_DEP_ZLIB_CFLAGS)
-tests_test_rollsum_LDADD = libbupsplit.la $(TESTS_LDADD) $(OT_DEP_ZLIB_LIBS)
+tests_test_rollsum_LDADD = $(bupsplitpath) $(TESTS_LDADD) $(OT_DEP_ZLIB_LIBS)
 
 tests_test_mutable_tree_CFLAGS = $(TESTS_CFLAGS)
 tests_test_mutable_tree_LDADD = $(TESTS_LDADD)

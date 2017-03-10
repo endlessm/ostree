@@ -32,6 +32,17 @@ G_BEGIN_DECLS
 #define _OSTREE_SUMMARY_CACHE_DIR "summaries"
 #define _OSTREE_CACHE_DIR "cache"
 
+#define _OSTREE_MAX_OUTSTANDING_FETCHER_REQUESTS 8
+#define _OSTREE_MAX_OUTSTANDING_DELTAPART_REQUESTS 2
+
+/* In most cases, writing to disk should be much faster than
+ * fetching from the network, so we shouldn't actually hit
+ * this. But if using pipelining and e.g. pulling over LAN
+ * (or writing to slow media), we can have a runaway
+ * situation towards EMFILE.
+ * */
+#define _OSTREE_MAX_OUTSTANDING_WRITE_REQUESTS 16
+
 typedef enum {
   OSTREE_REPO_TEST_ERROR_PRE_COMMIT = (1 << 0)
 } OstreeRepoTestErrorFlags;
@@ -89,6 +100,7 @@ struct OstreeRepo {
   GError *writable_error;
   gboolean in_transaction;
   gboolean disable_fsync;
+  guint zlib_compression_level;
   GHashTable *loose_object_devino_hash;
   GHashTable *updated_uncompressed_dirs;
   GHashTable *object_sizes;

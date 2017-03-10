@@ -19,7 +19,11 @@
 
 set -euo pipefail
 
-echo "1..60"
+echo "1..63"
+
+$CMD_PREFIX ostree --version > version.yaml
+python -c 'import yaml; yaml.safe_load(open("version.yaml"))'
+echo "ok yaml version"
 
 $OSTREE checkout test2 checkout-test2
 echo "ok checkout"
@@ -114,6 +118,22 @@ empty_rev=$($OSTREE commit -b test2-no-subject -s '' --timestamp="2005-10-29 12:
 omitted_rev=$($OSTREE commit -b test2-no-subject-2 --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
 assert_streq $empty_rev $omitted_rev
 echo "ok commit no subject"
+
+cd ${test_tmpdir}
+cat >commitmsg.txt <<EOF
+This is a long
+commit message.
+
+Build-Host: foo.example.com
+Crunchy-With-Extra-Ketchup: true
+EOF
+$OSTREE commit -b branch-with-commitmsg -F commitmsg.txt -s 'a message' $test_tmpdir/checkout-test2-4
+$OSTREE log branch-with-commitmsg > log.txt
+assert_file_has_content log.txt '^ *This is a long$'
+assert_file_has_content log.txt '^ *Build-Host:.*example.com$'
+assert_file_has_content log.txt '^ *Crunchy-With.*true$'
+$OSTREE refs --delete branch-with-commitmsg
+echo "ok commit body file"
 
 cd ${test_tmpdir}
 $OSTREE commit -b test2-custom-parent -s '' $test_tmpdir/checkout-test2-4
@@ -258,6 +278,24 @@ cmp union-files-count{,.new}
 cd checkout-test2-union
 assert_file_has_content ./yet/another/tree/green "leaf"
 echo "ok checkout union 1"
+
+cd ${test_tmpdir}
+$OSTREE commit -b test-union-add --tree=ref=test2
+$OSTREE checkout test-union-add checkout-test-union-add
+echo 'file for union add testing' > checkout-test-union-add/union-add-test
+echo 'another file for union add testing' > checkout-test-union-add/union-add-test2
+$OSTREE commit -b test-union-add --tree=dir=checkout-test-union-add
+rm checkout-test-union-add -rf
+# Check out previous
+$OSTREE checkout test-union-add^ checkout-test-union-add
+assert_not_has_file checkout-test-union-add/union-add-test
+assert_not_has_file checkout-test-union-add/union-add-test2
+# Now create a file we don't want overwritten
+echo 'existing file for union add' > checkout-test-union-add/union-add-test
+$OSTREE checkout --union-add test-union-add checkout-test-union-add
+assert_file_has_content checkout-test-union-add/union-add-test 'existing file for union add'
+assert_file_has_content checkout-test-union-add/union-add-test2 'another file for union add testing'
+echo "ok checkout union add"
 
 cd ${test_tmpdir}
 rm -rf shadow-repo
