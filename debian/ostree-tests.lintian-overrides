@@ -1,10 +1,10 @@
 # This is deliberate: it's just some random signed file to be verified, and
 # upstream happens to have used the text of the LGPL as the signed file
-ostree-tests: extra-license-file usr/lib/installed-tests/ostree/gpg-verify-data/lgpl2
-ostree-tests: extra-license-file usr/lib/installed-tests/ostree/gpg-verify-data/lgpl2.sig
+ostree-tests: extra-license-file usr/lib/installed-tests/libostree/gpg-verify-data/lgpl2
+ostree-tests: extra-license-file usr/lib/installed-tests/libostree/gpg-verify-data/lgpl2.sig
 
 # This is deliberate, working around the assumption of recursive make
-ostree-tests: symlink-is-self-recursive usr/lib/installed-tests/ostree/tests .
+ostree-tests: symlink-is-self-recursive usr/lib/installed-tests/libostree/tests .
 
 # We won't run this on sparc64 currently
-[sparc64]: missing-dep-for-interpreter gjs => gjs (usr/lib/installed-tests/ostree/corrupt-repo-ref.js)
+[sparc64]: missing-dep-for-interpreter gjs => gjs (usr/lib/installed-tests/libostree/corrupt-repo-ref.js)
