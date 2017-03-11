@@ -6,6 +6,7 @@ ostree (2017.3-1) UNRELEASED; urgency=medium
     - symbols file: update
     - tests, ostree-tests.install: update for new location of tests
     - d/control: ostree-tests now needs python-yaml
+    - build-depend on python, python-yaml for tests
 
  -- Simon McVittie <smcv@debian.org>  Fri, 10 Mar 2017 23:09:00 +0000
 

@@ -36,6 +36,8 @@ Build-Depends:
  libsystemd-dev,
  libtool,
  procps,
+ python <!nocheck>,
+ python-yaml <!nocheck>,
  xsltproc,
  zlib1g-dev,
 Standards-Version: 3.9.8
