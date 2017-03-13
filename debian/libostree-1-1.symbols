@@ -7,6 +7,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2016.7@LIBOSTREE_2016.7 2016.7
  LIBOSTREE_2016.8@LIBOSTREE_2016.8 2016.8
  LIBOSTREE_2016.14@LIBOSTREE_2016.14 2016.14
+ LIBOSTREE_2017.3@LIBOSTREE_2017.3 2016.15
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_type@LIBOSTREE_2016.3 2016.4
@@ -112,6 +113,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_object_type_to_string@LIBOSTREE_2016.3 2016.4
  ostree_parse_refspec@LIBOSTREE_2016.3 2016.4
  ostree_raw_file_to_archive_z2_stream@LIBOSTREE_2016.6 2016.6
+ ostree_raw_file_to_archive_z2_stream_with_options@LIBOSTREE_2017.3 2016.15
  ostree_raw_file_to_content_stream@LIBOSTREE_2016.3 2016.4
  ostree_repo_abort_transaction@LIBOSTREE_2016.3 2016.4
  ostree_repo_add_gpg_signature_summary@LIBOSTREE_2016.3 2016.4
