@@ -1,4 +1,4 @@
-ostree (2017.3-1) UNRELEASED; urgency=medium
+ostree (2017.3-1) experimental; urgency=medium
 
   * d/watch, d/copyright: upstream project is now named libostree
   * New upstream release
@@ -8,7 +8,7 @@ ostree (2017.3-1) UNRELEASED; urgency=medium
     - d/control: ostree-tests now needs python-yaml
     - build-depend on python, python-yaml for tests
 
- -- Simon McVittie <smcv@debian.org>  Fri, 10 Mar 2017 23:09:00 +0000
+ -- Simon McVittie <smcv@debian.org>  Thu, 16 Mar 2017 06:58:46 +0000
 
 ostree (2017.1-1) experimental; urgency=medium
 
