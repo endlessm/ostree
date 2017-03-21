@@ -518,6 +518,25 @@ ostree_sysroot_upgrader_pull (OstreeSysrootUpgrader  *self,
   return ostree_sysroot_upgrader_pull_one_dir (self, NULL, flags, upgrader_flags, progress, out_changed, cancellable, error);
 }
 
+/*
+ * Before updating from the specified ref, check the config file to see if it
+ * is EOL and replaced by another ref. If so, return the name of the new ref
+ * to use.
+ */
+static gchar *get_ref_to_use(OstreeRepo *repo, const char *ref)
+{
+  GKeyFile *config = ostree_repo_get_config (repo);
+  g_auto(GStrv) keys = g_key_file_get_keys (config, "endoflife", NULL, NULL);
+
+  for (char **iter = keys; iter && *iter; iter++) {
+    g_auto(GStrv) replaces = g_key_file_get_string_list (config, "endoflife", *iter, NULL, NULL);
+    if (replaces && g_strv_contains((const gchar **) replaces, ref))
+      return g_strdup(*iter);
+  }
+
+  return g_strdup(ref);
+}
+
 /**
  * ostree_sysroot_upgrader_pull_one_dir:
  * @self: Upgrader
@@ -549,19 +568,17 @@ ostree_sysroot_upgrader_pull_one_dir (OstreeSysrootUpgrader  *self,
   char *refs_to_fetch[] = { NULL, NULL };
   const char *from_revision = NULL;
   g_autofree char *origin_refspec = NULL;
-
-  if (self->override_csum != NULL)
-    refs_to_fetch[0] = self->override_csum;
-  else
-    refs_to_fetch[0] = self->origin_ref;
+  g_autofree char *pull_ref = NULL;
 
   if (!ostree_sysroot_get_repo (self->sysroot, &repo, cancellable, error))
     goto out;
 
-  if (self->origin_remote)
-    origin_refspec = g_strconcat (self->origin_remote, ":", self->origin_ref, NULL);
+  pull_ref = get_ref_to_use (repo, self->origin_ref);
+
+  if (self->override_csum != NULL)
+    refs_to_fetch[0] = self->override_csum;
   else
-    origin_refspec = g_strdup (self->origin_ref);
+    refs_to_fetch[0] = pull_ref;
 
   g_assert (self->merge_deployment);
   from_revision = ostree_deployment_get_csum (self->merge_deployment);
@@ -577,6 +594,17 @@ ostree_sysroot_upgrader_pull_one_dir (OstreeSysrootUpgrader  *self,
       if (progress)
         ostree_async_progress_finish (progress);
     }
+
+  /* Recalculate pull_ref, since the above pull may have identified that it
+   * is EOL and replaced by another ref.
+   */
+  g_free(pull_ref);
+  pull_ref = get_ref_to_use (repo, self->origin_ref);
+
+  if (self->origin_remote)
+    origin_refspec = g_strconcat (self->origin_remote, ":", pull_ref, NULL);
+  else
+    origin_refspec = g_strdup (pull_ref);
 
   if (self->override_csum != NULL)
     {
@@ -638,6 +666,23 @@ ostree_sysroot_upgrader_deploy (OstreeSysrootUpgrader  *self,
 {
   gboolean ret = FALSE;
   glnx_unref_object OstreeDeployment *new_deployment = NULL;
+  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autofree char *origin_refspec = NULL;
+  g_autofree char *deploy_ref = NULL;
+
+ if (!ostree_sysroot_get_repo (self->sysroot, &repo, cancellable, error))
+    goto out;
+
+  /* Check if the current ref has been replaced by another one, in which
+   * case we will deploy the new OS with an origin file pointing at the new
+   * ref. */
+  deploy_ref = get_ref_to_use (repo, self->origin_ref);
+  if (self->origin_remote)
+    origin_refspec = g_strconcat (self->origin_remote, ":", deploy_ref, NULL);
+  else
+    origin_refspec = g_strdup (deploy_ref);
+
+  g_key_file_set_string (self->origin, "origin", "refspec", origin_refspec);
 
   if (!ostree_sysroot_deploy_tree (self->sysroot, self->osname,
                                    self->new_revision,

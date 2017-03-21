@@ -3206,17 +3206,48 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
     if (pull_data->summary)
       {
+        GKeyFile *config = ostree_repo_get_config (pull_data->repo);
+
         refs = g_variant_get_child_value (pull_data->summary, 0);
         n = g_variant_n_children (refs);
         for (i = 0; i < n; i++)
           {
             const char *refname;
             g_autoptr(GVariant) ref = g_variant_get_child_value (refs, i);
+            g_autoptr(GVariant) ref_info = NULL;
+            g_autoptr(GVariant) extra_data = NULL;
+            g_autofree char **replaces_refs = NULL;
 
             g_variant_get_child (ref, 0, "&s", &refname);
 
             if (!ostree_validate_rev (refname, error))
               goto out;
+
+            /* Check to see if the ref being processed now replaces the one
+             * we were asked to fetch. */
+            ref_info = g_variant_get_child_value (ref, 1);
+            extra_data = g_variant_get_child_value (ref_info, 2);
+            (void) g_variant_lookup (extra_data, "replaces", "^a&s", &replaces_refs);
+
+            if (replaces_refs && refs_to_fetch) {
+              char *tmp;
+
+              for (int i = 0; (tmp = refs_to_fetch[i]) != NULL; i++) {
+
+                if (!g_strv_contains((const gchar **) replaces_refs, tmp))
+                  continue;
+
+                /* This ref replaces the one we were going to fetch.
+                 * Update refs_to_fetch and also note this in the local config.
+                 */
+                refs_to_fetch[i] = refname;
+                g_key_file_set_string_list (config, "endoflife", refname,
+                                            (const gchar **) replaces_refs,
+                                            g_strv_length (replaces_refs));
+                ostree_repo_write_config (pull_data->repo, config, NULL);
+              }
+
+            }
 
             if (pull_data->is_mirror && !refs_to_fetch)
               g_hash_table_insert (requested_refs_to_fetch, g_strdup (refname), NULL);

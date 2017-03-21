@@ -4598,6 +4598,9 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
       const char *commit = g_hash_table_lookup (refs, ref);
       g_autofree char *remotename = NULL;
       g_autoptr(GVariant) commit_obj = NULL;
+      g_auto(GVariantBuilder) extra_data_builder = OT_VARIANT_BUILDER_INITIALIZER;
+      g_auto(GStrv) replaces_refs = NULL;
+      gsize replaces_refs_length = 0;
 
       g_assert (commit);
 
@@ -4611,11 +4614,23 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
       if (!ostree_repo_load_variant (self, OSTREE_OBJECT_TYPE_COMMIT, commit, &commit_obj, error))
         goto out;
 
+      g_variant_builder_init (&extra_data_builder, G_VARIANT_TYPE ("a{sv}"));
+
+      /* If the config file states that this ref replaces other EOL'd branches, include
+       * that information in the ref. */
+      replaces_refs = g_key_file_get_string_list (self->config, "endoflife", ref,
+                                                  &replaces_refs_length, NULL);
+      if (replaces_refs && replaces_refs_length) {
+        g_variant_builder_add (&extra_data_builder, "{sv}", "replaces",
+                                     g_variant_new_strv ((const gchar **) replaces_refs,
+                                                         replaces_refs_length));
+      }
+
       g_variant_builder_add_value (refs_builder, 
                                    g_variant_new ("(s(t@ay@a{sv}))", ref,
                                                   (guint64) g_variant_get_size (commit_obj),
                                                   ostree_checksum_to_bytes_v (commit),
-                                                  ot_gvariant_new_empty_string_dict ()));
+                                                  g_variant_builder_end (&extra_data_builder)));
     }
 
 
