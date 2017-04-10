@@ -1,2 +1,2 @@
-rm_conffile /etc/dracut.conf.d/ostree.conf 2016.5-3~ ostree
-rm_conffile /etc/grub.d/15_ostree 2016.5-3~ ostree
+rm_conffile /etc/dracut.conf.d/ostree.conf 2017.3-2~ ostree
+rm_conffile /etc/grub.d/15_ostree 2017.3-2~ ostree
