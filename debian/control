@@ -87,6 +87,7 @@ Section: libdevel
 Depends:
  gir1.2-ostree-1.0 (= ${binary:Version}),
  libglib2.0-dev,
+ libostree-1-1 (= ${binary:Version}),
  pkg-config,
  ${misc:Depends},
 Suggests:
