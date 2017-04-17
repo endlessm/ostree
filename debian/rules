@@ -19,6 +19,7 @@ override_dh_auto_configure:
 		--disable-silent-rules \
 		--enable-gtk-doc \
 		--enable-installed-tests \
+		--enable-trivial-httpd-cmdline \
 		--libexecdir='$${prefix}/lib' \
 		--with-dracut \
 		--with-grub2 \
