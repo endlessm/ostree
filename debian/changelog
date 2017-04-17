@@ -1,10 +1,10 @@
-ostree (2017.4-1) UNRELEASED; urgency=medium
+ostree (2017.4-1) experimental; urgency=medium
 
   * New upstream release
     - d/rules: Explicitly enable trivial-httpd: the tests still need it
     - Update symbols file for new ABI
 
- -- Simon McVittie <smcv@debian.org>  Mon, 17 Apr 2017 15:25:58 +0100
+ -- Simon McVittie <smcv@debian.org>  Mon, 17 Apr 2017 17:19:58 +0100
 
 ostree (2017.3-2) experimental; urgency=medium
 
