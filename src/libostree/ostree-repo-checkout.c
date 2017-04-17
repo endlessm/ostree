@@ -363,7 +363,7 @@ checkout_file_hardlink (OstreeRepo                          *self,
                         GError                             **error)
 {
   HardlinkResult ret_result = HARDLINK_RESULT_NOT_SUPPORTED;
-  int srcfd = (self->mode == OSTREE_REPO_MODE_BARE || self->mode == OSTREE_REPO_MODE_BARE_USER) ?
+  int srcfd = _ostree_repo_mode_is_bare (self->mode) ?
     self->objects_dir_fd : self->uncompressed_objects_dir_fd;
 
  again:
@@ -423,6 +423,7 @@ checkout_one_file_at (OstreeRepo                        *repo,
   gboolean ret = FALSE;
   const char *checksum;
   gboolean is_symlink;
+  gboolean is_bare_user_symlink = FALSE;
   gboolean can_cache;
   gboolean need_copy = TRUE;
   char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
@@ -431,7 +432,6 @@ checkout_one_file_at (OstreeRepo                        *repo,
   gboolean is_whiteout;
 
   is_symlink = g_file_info_get_file_type (source_info) == G_FILE_TYPE_SYMBOLIC_LINK;
-
   checksum = ostree_repo_file_get_checksum ((OstreeRepoFile*)source);
 
   is_whiteout = !is_symlink && options->process_whiteouts &&
@@ -468,17 +468,41 @@ checkout_one_file_at (OstreeRepo                        *repo,
 
       while (current_repo)
         {
-          gboolean is_bare = ((current_repo->mode == OSTREE_REPO_MODE_BARE
-                               && options->mode == OSTREE_REPO_CHECKOUT_MODE_NONE) ||
-                              (current_repo->mode == OSTREE_REPO_MODE_BARE_USER
-                               && options->mode == OSTREE_REPO_CHECKOUT_MODE_USER
-                               /* NOTE: bare-user symlinks are not stored as symlinks */
-                               && !is_symlink));
+          /* TODO - Hoist this up to the toplevel at least for checking out from
+           * !parent; don't need to compute it for each file.
+           */
+          gboolean repo_is_usermode =
+            current_repo->mode == OSTREE_REPO_MODE_BARE_USER ||
+            current_repo->mode == OSTREE_REPO_MODE_BARE_USER_ONLY;
+          /* We're hardlinkable if the checkout mode matches the repo mode */
+          gboolean is_hardlinkable =
+            (current_repo->mode == OSTREE_REPO_MODE_BARE
+             && options->mode == OSTREE_REPO_CHECKOUT_MODE_NONE) ||
+            (repo_is_usermode && options->mode == OSTREE_REPO_CHECKOUT_MODE_USER);
+          gboolean is_bare = is_hardlinkable && !is_bare_user_symlink;
           gboolean current_can_cache = (options->enable_uncompressed_cache
                                         && current_repo->enable_uncompressed_cache);
           gboolean is_archive_z2_with_cache = (current_repo->mode == OSTREE_REPO_MODE_ARCHIVE_Z2
                                                && options->mode == OSTREE_REPO_CHECKOUT_MODE_USER
                                                && current_can_cache);
+
+          /* NOTE: bare-user symlinks are not stored as symlinks; see
+           * https://github.com/ostreedev/ostree/commit/47c612e5a0688c3452a125655a245e8f4f01b2b0
+           * as well as write_object().
+           */
+          is_bare_user_symlink = (repo_is_usermode && is_symlink);
+
+          /* Verify if no_copy_fallback is set that we can hardlink, with a
+           * special exception for bare-user symlinks.
+           */
+          if (options->no_copy_fallback && !is_hardlinkable && !is_bare_user_symlink)
+            {
+              glnx_throw (error,
+                          repo_is_usermode ?
+                          "User repository mode requires user checkout mode to hardlink" :
+                          "Bare repository mode cannot hardlink in user checkout mode");
+              goto out;
+            }
 
           /* But only under these conditions */
           if (is_bare || is_archive_z2_with_cache)
@@ -594,7 +618,13 @@ checkout_one_file_at (OstreeRepo                        *repo,
   /* Fall back to copy if we couldn't hardlink */
   if (need_copy)
     {
-      g_assert (!options->no_copy_fallback);
+      /* Bare user mode can't hardlink symlinks, so we need to do a copy for
+       * those. (Although in the future we could hardlink inside checkouts) This
+       * assertion is intended to ensure that for regular files at least, we
+       * succeeded at hardlinking above.
+       */
+      if (options->no_copy_fallback)
+        g_assert (is_bare_user_symlink);
       if (!ostree_repo_load_file (repo, checksum, &input, NULL, &xattrs,
                                   cancellable, error))
         goto out;
@@ -862,6 +892,9 @@ ostree_repo_checkout_tree (OstreeRepo               *self,
 {
   OstreeRepoCheckoutAtOptions options = { 0, };
 
+  if (ostree_repo_get_mode (self) == OSTREE_REPO_MODE_BARE_USER_ONLY)
+    mode = OSTREE_REPO_CHECKOUT_MODE_USER;
+
   options.mode = mode;
   options.overwrite_mode = overwrite_mode;
   /* Backwards compatibility */
@@ -948,12 +981,20 @@ ostree_repo_checkout_at (OstreeRepo                        *self,
                          GError                           **error)
 {
   OstreeRepoCheckoutAtOptions default_options = { 0, };
+  OstreeRepoCheckoutAtOptions real_options;
 
   if (!options)
     {
       default_options.subpath = NULL;
       options = &default_options;
     }
+
+  /* Make a copy so we can modify the options */
+  real_options = *options;
+  options = &real_options;
+
+  if (ostree_repo_get_mode (self) == OSTREE_REPO_MODE_BARE_USER_ONLY)
+    options->mode = OSTREE_REPO_CHECKOUT_MODE_USER;
 
   g_autoptr(GFile) commit_root = (GFile*) _ostree_repo_file_new_for_commit (self, commit, error);
   if (!commit_root)

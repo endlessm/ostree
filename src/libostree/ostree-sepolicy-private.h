@@ -1,6 +1,6 @@
 /* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
  *
- * Copyright (C) 2011 Colin Walters <walters@verbum.org>.
+ * Copyright (C) 2017 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,18 +16,26 @@
  * License along with this library; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
- *
- * Author: Colin Walters <walters@verbum.org>
  */
 
 #pragma once
 
-#include <gio/gio.h>
+#include "ostree-types.h"
 
 G_BEGIN_DECLS
 
-GThreadPool * ot_thread_pool_new_nproc (GFunc     func,
-                                        gpointer  user_data);
-                                        
+typedef struct {
+  gboolean initialized;
+} OstreeSepolicyFsCreatecon;
+
+void _ostree_sepolicy_fscreatecon_clear (OstreeSepolicyFsCreatecon *con);
+G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(OstreeSepolicyFsCreatecon, _ostree_sepolicy_fscreatecon_clear)
+
+gboolean _ostree_sepolicy_preparefscreatecon (OstreeSepolicyFsCreatecon *con,
+                                              OstreeSePolicy   *self,
+                                              const char       *path,
+                                              guint32           mode,
+                                              GError          **error);
+
 
 G_END_DECLS

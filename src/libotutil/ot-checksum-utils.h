@@ -26,6 +26,8 @@
 
 G_BEGIN_DECLS
 
+void ot_bin2hex (char *out_buf, const guint8 *inbuf, gsize len);
+
 guchar *ot_csum_from_gchecksum (GChecksum *checksum);
 
 gboolean ot_gio_write_update_checksum (GOutputStream  *out,
@@ -58,15 +60,5 @@ char * ot_checksum_file_at (int             dfd,
                             GChecksumType   checksum_type,
                             GCancellable   *cancellable,
                             GError        **error);
-
-void ot_gio_checksum_stream_async (GInputStream         *in,
-                                   int                   io_priority,
-                                   GCancellable         *cancellable,
-                                   GAsyncReadyCallback   callback,
-                                   gpointer              user_data);
-
-guchar * ot_gio_checksum_stream_finish (GInputStream   *in,
-                                        GAsyncResult   *result,
-                                        GError        **error);
 
 G_END_DECLS

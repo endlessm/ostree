@@ -267,6 +267,8 @@ OT_DEP_LIBMOUNT_CFLAGS = @OT_DEP_LIBMOUNT_CFLAGS@
 OT_DEP_LIBMOUNT_LIBS = @OT_DEP_LIBMOUNT_LIBS@
 OT_DEP_LZMA_CFLAGS = @OT_DEP_LZMA_CFLAGS@
 OT_DEP_LZMA_LIBS = @OT_DEP_LZMA_LIBS@
+OT_DEP_OPENSSL_CFLAGS = @OT_DEP_OPENSSL_CFLAGS@
+OT_DEP_OPENSSL_LIBS = @OT_DEP_OPENSSL_LIBS@
 OT_DEP_SELINUX_CFLAGS = @OT_DEP_SELINUX_CFLAGS@
 OT_DEP_SELINUX_LIBS = @OT_DEP_SELINUX_LIBS@
 OT_DEP_SOUP_CFLAGS = @OT_DEP_SOUP_CFLAGS@
@@ -285,6 +287,7 @@ PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
+RELEASE_VERSION = @RELEASE_VERSION@
 RUST_TARGET_SUBDIR = @RUST_TARGET_SUBDIR@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -295,6 +298,7 @@ VERSION = @VERSION@
 WARN_CFLAGS = @WARN_CFLAGS@
 XSLTPROC = @XSLTPROC@
 YACC = @YACC@
+YEAR_VERSION = @YEAR_VERSION@
 YFLAGS = @YFLAGS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -373,6 +377,10 @@ libostree_public_headers = \
 	src/libostree/ostree-repo-deprecated.h \
 	$(NULL)
 
+
+# This one is generated via configure.ac, and the gtk-doc
+# code hence needs to look in the builddir.
+libostree_public_built_headers = src/libostree/ostree-version.h
 NULL = 
 
 # We require automake 1.6 at least.
@@ -414,7 +422,7 @@ FIXXREF_OPTIONS =
 # Used for dependencies. The docs will be rebuilt if any of these change.
 # e.g. HFILE_GLOB=$(top_srcdir)/gtk/*.h
 # e.g. CFILE_GLOB=$(top_srcdir)/gtk/*.c
-HFILE_GLOB = $(addprefix $(top_srcdir)/,$(libostree_public_headers))
+HFILE_GLOB = $(addprefix $(top_srcdir)/,$(libostree_public_headers)) $(addprefix $(top_builddir)/,$(libostree_public_built_headers))
 CFILE_GLOB = $(top_srcdir)/src/libostree/*.c
 
 # Header files to ignore when scanning.

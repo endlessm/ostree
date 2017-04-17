@@ -381,16 +381,25 @@ global:
         ostree_raw_file_to_archive_z2_stream_with_options;
 } LIBOSTREE_2017.2;
 
+LIBOSTREE_2017.4 {
+global:
+  ostree_check_version;
+  ostree_diff_dirs_with_options;
+  ostree_sepolicy_new_at;
+  ostree_sysroot_write_deployments_with_options;
+} LIBOSTREE_2017.3;
+
 /*                         NOTE NOTE NOTE
  * Versions above here are released.  Only add symbols below this line.
  *                         NOTE NOTE NOTE
  */
 
-/* Stub section for new version, uncomment when the first symbol is added
+/* Uncomment when adding the first new symbol */
+/*
 LIBOSTREE_2017.$NEWVERSION {
 global:
 	someostree_symbol_deleteme;
-} LIBOSTREE_2017.2;
+} LIBOSTREE_2017.4;
 */
 
 /* Stub section for the stable release *after* this development one; don't

@@ -21,10 +21,12 @@
 #include "config.h"
 
 #include "otutil.h"
+#include <sys/file.h>
 #include <sys/mount.h>
 #include <sys/wait.h>
 
 #include "ostree-core-private.h"
+#include "ostree-sepolicy-private.h"
 #include "ostree-sysroot-private.h"
 #include "ostree-deployment-private.h"
 #include "ostree-bootloader-uboot.h"
@@ -70,7 +72,6 @@ ostree_sysroot_finalize (GObject *object)
   OstreeSysroot *self = OSTREE_SYSROOT (object);
 
   g_clear_object (&self->path);
-  g_clear_object (&self->sepolicy);
   g_clear_object (&self->repo);
   g_clear_pointer (&self->deployments, g_ptr_array_unref);
   g_clear_object (&self->booted_deployment);
@@ -160,9 +161,10 @@ ostree_sysroot_init (OstreeSysroot *self)
 {
   const GDebugKey keys[] = {
     { "mutable-deployments", OSTREE_SYSROOT_DEBUG_MUTABLE_DEPLOYMENTS },
+    { "no-xattrs", OSTREE_SYSROOT_DEBUG_NO_XATTRS },
   };
 
-  self->debug_flags = g_parse_debug_string (g_getenv("OSTREE_SYSROOT_DEBUG"),
+  self->debug_flags = g_parse_debug_string (g_getenv ("OSTREE_SYSROOT_DEBUG"),
                                             keys, G_N_ELEMENTS (keys));
 
   self->sysroot_fd = -1;
@@ -1268,12 +1270,13 @@ ostree_sysroot_get_merge_deployment (OstreeSysroot     *self,
 
 /**
  * ostree_sysroot_origin_new_from_refspec:
+ * @self: Sysroot
  * @refspec: A refspec
  *
  * Returns: (transfer full): A new config file which sets @refspec as an origin
  */
 GKeyFile *
-ostree_sysroot_origin_new_from_refspec (OstreeSysroot  *sysroot,
+ostree_sysroot_origin_new_from_refspec (OstreeSysroot  *self,
                                         const char     *refspec)
 {
   GKeyFile *ret = g_key_file_new ();
@@ -1551,6 +1554,7 @@ ostree_sysroot_simple_write_deployment (OstreeSysroot      *sysroot,
   g_autoptr(GPtrArray) deployments = NULL;
   g_autoptr(GPtrArray) new_deployments = g_ptr_array_new_with_free_func (g_object_unref);
   const gboolean postclean = (flags & OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NO_CLEAN) == 0;
+  OstreeSysrootWriteDeploymentsOpts write_opts = { .do_postclean = postclean };
   gboolean retain = (flags & OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN) > 0;
   const gboolean make_default = !((flags & OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NOT_DEFAULT) > 0);
   gboolean added_new = FALSE;
@@ -1601,9 +1605,8 @@ ostree_sysroot_simple_write_deployment (OstreeSysroot      *sysroot,
       added_new = TRUE;
     }
 
-  if (!_ostree_sysroot_write_deployments_internal (sysroot, new_deployments,
-                                                   postclean ? OSTREE_SYSROOT_CLEANUP_ALL : 0,
-                                                   cancellable, error))
+  if (!ostree_sysroot_write_deployments_with_options (sysroot, new_deployments, &write_opts,
+                                                      cancellable, error))
     goto out;
 
   ret = TRUE;
@@ -1688,6 +1691,7 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
                                   GError           **error)
 {
   gboolean ret = FALSE;
+  glnx_unref_object OstreeSePolicy *sepolicy = NULL;
   OstreeDeploymentUnlockedState current_unlocked =
     ostree_deployment_get_unlocked (deployment); 
   glnx_unref_object OstreeDeployment *deployment_clone =
@@ -1735,6 +1739,10 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
   if (!glnx_opendirat (self->sysroot_fd, deployment_path, TRUE, &deployment_dfd, error))
     goto out;
 
+  sepolicy = ostree_sepolicy_new_at (deployment_dfd, cancellable, error);
+  if (!sepolicy)
+    goto out;
+
   switch (unlocked_state)
     {
     case OSTREE_DEPLOYMENT_UNLOCKED_NONE:
@@ -1762,8 +1770,16 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
         const char *development_ovl_upper;
         const char *development_ovl_work;
 
-        if (!glnx_mkdtempat (AT_FDCWD, development_ovldir, 0700, error))
-          goto out;
+        /* Ensure that the directory is created with the same label as `/usr` */
+        { g_auto(OstreeSepolicyFsCreatecon) con = { 0, };
+
+          if (!_ostree_sepolicy_preparefscreatecon (&con, sepolicy,
+                                                    "/usr", 0755, error))
+            goto out;
+
+          if (!glnx_mkdtempat (AT_FDCWD, development_ovldir, 0755, error))
+            goto out;
+        }
 
         development_ovl_upper = glnx_strjoina (development_ovldir, "/upper");
         if (!glnx_shutil_mkdir_p_at (AT_FDCWD, development_ovl_upper, 0755, cancellable, error))

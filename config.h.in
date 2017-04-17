@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define if we are enabling ostree trivial-httpd entrypoint */
+#undef BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE
+
 /* Define if we should avoid using O_TMPFILE */
 #undef DISABLE_OTMPFILE
 
@@ -51,6 +54,9 @@
 
 /* Define to 1 if you have the `mnt_unref_cache' function. */
 #undef HAVE_MNT_UNREF_CACHE
+
+/* Define if we have openssl */
+#undef HAVE_OPENSSL
 
 /* Define if we have libselinux.pc */
 #undef HAVE_SELINUX

@@ -86,6 +86,18 @@ chmod -R u+w "${test_tmpdir}"
 export TEST_GPG_KEYHOME=${test_tmpdir}/gpghome
 export OSTREE_GPG_HOME=${test_tmpdir}/gpghome/trusted
 
+# See comment in ot-builtin-commit.c and https://github.com/ostreedev/ostree/issues/758
+# Also keep this in sync with the bits in libostreetest.c
+echo evaluating for overlayfs...
+case $(stat -f --printf '%T' /) in
+    overlayfs)
+        echo "overlayfs found; enabling OSTREE_NO_XATTRS"
+        export OSTREE_SYSROOT_DEBUG="${OSTREE_SYSROOT_DEBUG},no-xattrs"
+        export OSTREE_NO_XATTRS=1 ;;
+    *) ;;
+esac
+echo done
+
 if test -n "${OT_TESTS_DEBUG:-}"; then
     set -x
 fi
@@ -194,16 +206,19 @@ setup_test_repository () {
 
     oldpwd=`pwd`
 
-    cd ${test_tmpdir}
-    mkdir repo
-    cd repo
-    ot_repo="--repo=`pwd`"
-    export OSTREE="${CMD_PREFIX} ostree ${ot_repo}"
-    if test -n "$mode"; then
-	$OSTREE init --mode=${mode}
-    else
-	$OSTREE init
+    COMMIT_ARGS=""
+    if [ $mode == "bare-user-only" ] ; then
+       COMMIT_ARGS="--owner-uid=0 --owner-gid=0 --no-xattrs --canonical-permissions"
     fi
+
+    cd ${test_tmpdir}
+    if test -n "${mode}"; then
+        ostree_repo_init repo --mode=${mode}
+    else
+        ostree_repo_init repo
+    fi
+    ot_repo="--repo=$(pwd)/repo"
+    export OSTREE="${CMD_PREFIX} ostree ${ot_repo}"
 
     cd ${test_tmpdir}
     mkdir files
@@ -214,7 +229,7 @@ setup_test_repository () {
     echo first > firstfile
 
     cd ${test_tmpdir}/files
-    $OSTREE commit -b test2 -s "Test Commit 1" -m "Commit body first"
+    $OSTREE commit ${COMMIT_ARGS}  -b test2 -s "Test Commit 1" -m "Commit body first"
 
     mkdir baz
     echo moo > baz/cow
@@ -226,10 +241,20 @@ setup_test_repository () {
     echo x > baz/another/y
 
     cd ${test_tmpdir}/files
-    $OSTREE commit -b test2 -s "Test Commit 2" -m "Commit body second"
+    $OSTREE commit ${COMMIT_ARGS}  -b test2 -s "Test Commit 2" -m "Commit body second"
     $OSTREE fsck -q
 
     cd $oldpwd
+}
+
+# A wrapper which also possibly disables xattrs for CI testing
+ostree_repo_init() {
+    repo=$1
+    shift
+    ${CMD_PREFIX} ostree --repo=${repo} init "$@"
+    if test -n "${OSTREE_NO_XATTRS:-}"; then
+        echo -e 'disable-xattrs=true\n' >> ${repo}/config
+    fi
 }
 
 setup_fake_remote_repo1() {
@@ -241,7 +266,7 @@ setup_fake_remote_repo1() {
     mkdir ostree-srv
     cd ostree-srv
     mkdir gnomerepo
-    ${CMD_PREFIX} ostree --repo=gnomerepo init --mode=$mode
+    ostree_repo_init gnomerepo --mode=$mode
     mkdir gnomerepo-files
     cd gnomerepo-files 
     echo first > firstfile
@@ -284,8 +309,8 @@ setup_exampleos_repo() {
     mkdir -p ostree-srv/exampleos/{repo,build-repo}
     export ORIGIN_REPO=ostree-srv/exampleos/repo
     export ORIGIN_BUILD_REPO=ostree-srv/exampleos/build-repo
-    ${CMD_PREFIX} ostree --repo=${ORIGIN_REPO} init --mode=archive
-    ${CMD_PREFIX} ostree --repo=${ORIGIN_BUILD_REPO} init --mode=bare-user
+    ostree_repo_init ${ORIGIN_REPO} --mode=archive
+    ostree_repo_init ${ORIGIN_BUILD_REPO} --mode=bare-user
     cd ${test_tmpdir}
     rm main -rf
     mkdir main
@@ -365,7 +390,7 @@ setup_exampleos_repo() {
 
     cd ${test_tmpdir}
     rm repo -rf
-    ${CMD_PREFIX} ostree --repo=repo init --mode=bare-user
+    ostree_repo_init repo --mode=bare-user
     ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin $(cat ostree-srv/httpd/address)/exampleos/repo
     export OSTREE="${CMD_PREFIX} ostree --repo=repo"
 }
@@ -413,9 +438,9 @@ setup_os_repository () {
     cd ${test_tmpdir}
     mkdir testos-repo
     if test -n "$mode"; then
-	${CMD_PREFIX} ostree --repo=testos-repo init --mode=${mode}
+	      ostree_repo_init testos-repo --mode=${mode}
     else
-	${CMD_PREFIX} ostree --repo=testos-repo init
+	      ostree_repo_init testos-repo
     fi
 
     cd ${test_tmpdir}

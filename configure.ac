@@ -1,6 +1,10 @@
 AC_PREREQ([2.63])
 dnl If incrementing the version here, remember to update libostree.sym too
-AC_INIT([libostree], [2017.3], [walters@verbum.org])
+m4_define([year_version], [2017])
+m4_define([release_version], [4])
+m4_define([package_version], [year_version.release_version])
+
+AC_INIT([libostree], [package_version], [walters@verbum.org])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([buildutil])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -15,6 +19,11 @@ AC_SYS_LARGEFILE
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_YACC
+
+dnl Versioning information
+AC_SUBST([YEAR_VERSION], [year_version])
+AC_SUBST([RELEASE_VERSION], [release_version])
+AC_SUBST([PACKAGE_VERSION], [package_version])
 
 CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
         -pipe \
@@ -33,6 +42,7 @@ CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
         -Werror=incompatible-pointer-types \
         -Werror=misleading-indentation \
 	-Werror=missing-include-dirs -Werror=aggregate-return \
+  -Werror=unused-result \
 ])
 AC_SUBST(WARN_CFLAGS)
 
@@ -133,6 +143,14 @@ AS_IF([test x$with_soup != xno], [
 if test x$with_soup != xno; then OSTREE_FEATURES="$OSTREE_FEATURES libsoup"; fi
 AM_CONDITIONAL(USE_LIBSOUP, test x$with_soup != xno)
 AM_CONDITIONAL(HAVE_LIBSOUP_CLIENT_CERTS, test x$have_libsoup_client_certs = xyes)
+
+AC_ARG_ENABLE(trivial-httpd-cmdline,
+  [AS_HELP_STRING([--enable-trivial-httpd-cmdline],
+  [Continue to support "ostree trivial-httpd" [default=no]])],,
+  enable_trivial_httpd_cmdline=no)
+AS_IF([test x$enable_trivial_httpd_cmdline = xyes],
+  [AC_DEFINE([BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE], 1, [Define if we are enabling ostree trivial-httpd entrypoint])]
+)
 
 AS_IF([test x$with_curl = xyes && test x$with_soup = xno], [
   AC_MSG_ERROR([Curl enabled, but libsoup is not; libsoup is needed for tests])
@@ -281,6 +299,23 @@ AS_IF([ test x$with_smack = xyes], [
 ])
 AM_CONDITIONAL(USE_SMACK, test $with_smack != no)
 
+dnl begin openssl (really just libcrypto right now)
+OPENSSL_DEPENDENCY="libcrypto >= 1.0.1"
+AC_ARG_WITH(openssl,
+AS_HELP_STRING([--with-openssl], [Enable use of OpenSSL libcrypto (checksums)]),
+:, with_openssl=no)
+
+AS_IF([ test x$with_openssl != xno ], [
+      PKG_CHECK_MODULES(OT_DEP_OPENSSL, $OPENSSL_DEPENDENCY)
+      AC_DEFINE([HAVE_OPENSSL], 1, [Define if we have openssl])
+      with_openssl=yes
+], [
+      with_openssl=no
+])
+if test x$with_openssl != xno; then OSTREE_FEATURES="$OSTREE_FEATURES openssl"; fi
+AM_CONDITIONAL(USE_OPENSSL, test $with_openssl != no)
+dnl end openssl
+
 dnl This is what is in RHEL7.2 right now, picking it arbitrarily
 LIBMOUNT_DEPENDENCY="mount >= 2.23.0"
 
@@ -398,6 +433,7 @@ AC_CONFIG_FILES([
 Makefile
 apidoc/Makefile
 src/libostree/ostree-1.pc
+src/libostree/ostree-version.h
 ])
 AC_OUTPUT
 
@@ -410,7 +446,9 @@ echo "
     Rust (internal oxidation):                    $rust_debug_release
     rofiles-fuse:                                 $enable_rofiles_fuse
     HTTP backend:                                 $fetcher_backend
+    \"ostree trivial-httpd\":                       $enable_trivial_httpd_cmdline
     SELinux:                                      $with_selinux
+    OpenSSL libcrypto (checksums):                $with_openssl
     systemd:                                      $have_libsystemd
     libmount:                                     $with_libmount
     libarchive (parse tar files directly):        $with_libarchive

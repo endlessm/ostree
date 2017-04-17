@@ -174,11 +174,23 @@ ostree_sysroot_upgrader_new (<em class="parameter"><code><a class="link" href="o
 <col class="parameters_description">
 <col width="200px" class="parameters_annotations">
 </colgroup>
-<tbody><tr>
+<tbody>
+<tr>
 <td class="parameter_name"><p>sysroot</p></td>
 <td class="parameter_description"><p>An <a class="link" href="ostree-Root-partition-mount-point.html#OstreeSysroot" title="OstreeSysroot"><span class="type">OstreeSysroot</span></a></p></td>
 <td class="parameter_annotations"> </td>
-</tr></tbody>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
 </table></div>
 </div>
 <div class="refsect3">
@@ -213,6 +225,16 @@ ostree_sysroot_upgrader_new_for_os (<em class="parameter"><code><a class="link" 
 <td class="parameter_name"><p>osname</p></td>
 <td class="parameter_description"><p> Operating system name. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
 </tr>
 </tbody>
 </table></div>
@@ -255,6 +277,16 @@ ostree_sysroot_upgrader_new_for_os_with_flags
 <tr>
 <td class="parameter_name"><p>flags</p></td>
 <td class="parameter_description"><p>Flags</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 </tbody>
@@ -515,6 +547,58 @@ ostree_sysroot_upgrader_pull_one_dir (<em class="parameter"><code><a class="link
 <p>Like <a class="link" href="ostree-Simple-upgrade-class.html#ostree-sysroot-upgrader-pull" title="ostree_sysroot_upgrader_pull ()"><code class="function">ostree_sysroot_upgrader_pull()</code></a>, but allows retrieving just a
 subpath of the tree.  This can be used to download metadata files
 from inside the tree such as package databases.</p>
+<div class="refsect3">
+<a name="ostree-sysroot-upgrader-pull-one-dir.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Upgrader</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>dir_to_pull</p></td>
+<td class="parameter_description"><p>Subdirectory path (should include a leading /)</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>flags</p></td>
+<td class="parameter_description"><p>Flags controlling pull behavior</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>upgrader_flags</p></td>
+<td class="parameter_description"><p>Flags controlling upgrader behavior</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>progress</p></td>
+<td class="parameter_description"><p> Progress. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>out_changed</p></td>
+<td class="parameter_description"><p> Whether or not the origin changed. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
 </div>
 <hr>
 <div class="refsect2">

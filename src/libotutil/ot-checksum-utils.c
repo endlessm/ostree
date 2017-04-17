@@ -26,6 +26,22 @@
 
 #include <string.h>
 
+
+void
+ot_bin2hex (char *out_buf, const guint8 *inbuf, gsize len)
+{
+  static const gchar hexchars[] = "0123456789abcdef";
+  guint i, j;
+
+  for (i = 0, j = 0; i < len; i++, j += 2)
+    {
+      guchar byte = inbuf[i];
+      out_buf[j] = hexchars[byte >> 4];
+      out_buf[j+1] = hexchars[byte & 0xF];
+    }
+  out_buf[j] = '\0';
+}
+
 guchar *
 ot_csum_from_gchecksum (GChecksum  *checksum)
 {
@@ -163,47 +179,4 @@ ot_checksum_file_at (int             dfd,
   g_clear_pointer (&checksum, (GDestroyNotify) g_checksum_free);
   return ret;
 
-}
-
-static void
-checksum_stream_thread (GSimpleAsyncResult   *result,
-                        GObject              *object,
-                        GCancellable         *cancellable)
-{
-  GError *error = NULL;
-  guchar *csum;
-
-  if (!ot_gio_checksum_stream ((GInputStream*)object, &csum,
-                               cancellable, &error))
-    g_simple_async_result_take_error (result, error);
-  else
-    g_simple_async_result_set_op_res_gpointer (result, csum, g_free);
-}
-
-void
-ot_gio_checksum_stream_async (GInputStream         *in,
-                              int                   io_priority,
-                              GCancellable         *cancellable,
-                              GAsyncReadyCallback   callback,
-                              gpointer              user_data)
-{
-  GSimpleAsyncResult *result;
-
-  result = g_simple_async_result_new ((GObject*) in,
-                                      callback, user_data,
-                                      ot_gio_checksum_stream_async);
-
-  g_simple_async_result_run_in_thread (result, checksum_stream_thread, io_priority, cancellable);
-  g_object_unref (result);
-}
-
-guchar *
-ot_gio_checksum_stream_finish (GInputStream   *in,
-                               GAsyncResult   *result,
-                               GError        **error)
-{
-  GSimpleAsyncResult *simple = G_SIMPLE_ASYNC_RESULT (result);
-
-  g_warn_if_fail (g_simple_async_result_get_source_tag (simple) == ot_gio_checksum_stream_async);
-  return g_memdup (g_simple_async_result_get_op_res_gpointer (simple), 32);
 }

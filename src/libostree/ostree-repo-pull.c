@@ -279,18 +279,21 @@ pull_termination_condition (OtPullData          *pull_data)
 
 static void
 check_outstanding_requests_handle_error (OtPullData          *pull_data,
-                                         GError              *error)
+                                         GError             **errorp)
 {
+  g_assert (errorp);
+
+  GError *error = *errorp;
   if (error)
     {
       if (!pull_data->caught_error)
         {
           pull_data->caught_error = TRUE;
-          g_propagate_error (pull_data->async_error, error);
+          g_propagate_error (pull_data->async_error, g_steal_pointer (errorp));
         }
       else
         {
-          g_error_free (error);
+          g_clear_error (errorp);
         }
     }
   else
@@ -382,7 +385,7 @@ idle_worker (gpointer user_data)
 {
   OtPullData *pull_data = user_data;
   ScanObjectQueueData *scan_data;
-  GError *error = NULL;
+  g_autoptr(GError) error = NULL;
 
   scan_data = g_queue_pop_head (&pull_data->scan_object_queue);
   if (!scan_data)
@@ -398,7 +401,7 @@ idle_worker (gpointer user_data)
                               scan_data->recursion_depth,
                               pull_data->cancellable,
                               &error);
-  check_outstanding_requests_handle_error (pull_data, error);
+  check_outstanding_requests_handle_error (pull_data, &error);
 
   g_free (scan_data->path);
   g_free (scan_data);
@@ -760,7 +763,7 @@ content_fetch_on_write_complete (GObject        *object,
 {
   FetchObjectData *fetch_data = user_data;
   OtPullData *pull_data = fetch_data->pull_data;
-  GError *local_error = NULL;
+  g_autoptr(GError) local_error = NULL;
   GError **error = &local_error;
   OstreeObjectType objtype;
   const char *expected_checksum;
@@ -794,7 +797,7 @@ content_fetch_on_write_complete (GObject        *object,
     pull_data->n_fetched_deltapart_fallbacks++;
  out:
   pull_data->n_outstanding_content_write_requests--;
-  check_outstanding_requests_handle_error (pull_data, local_error);
+  check_outstanding_requests_handle_error (pull_data, &local_error);
   fetch_object_data_free (fetch_data);
 }
 
@@ -806,7 +809,7 @@ content_fetch_on_complete (GObject        *object,
   OstreeFetcher *fetcher = (OstreeFetcher *)object;
   FetchObjectData *fetch_data = user_data;
   OtPullData *pull_data = fetch_data->pull_data;
-  GError *local_error = NULL;
+  g_autoptr(GError) local_error = NULL;
   GError **error = &local_error;
   GCancellable *cancellable = NULL;
   guint64 length;
@@ -881,7 +884,7 @@ content_fetch_on_complete (GObject        *object,
 
  out:
   pull_data->n_outstanding_content_fetches--;
-  check_outstanding_requests_handle_error (pull_data, local_error);
+  check_outstanding_requests_handle_error (pull_data, &local_error);
   if (free_fetch_data)
     fetch_object_data_free (fetch_data);
 }
@@ -893,7 +896,7 @@ on_metadata_written (GObject           *object,
 {
   FetchObjectData *fetch_data = user_data;
   OtPullData *pull_data = fetch_data->pull_data;
-  GError *local_error = NULL;
+  g_autoptr(GError) local_error = NULL;
   GError **error = &local_error;
   const char *expected_checksum;
   OstreeObjectType objtype;
@@ -927,7 +930,7 @@ on_metadata_written (GObject           *object,
   pull_data->n_outstanding_metadata_write_requests--;
   fetch_object_data_free (fetch_data);
 
-  check_outstanding_requests_handle_error (pull_data, local_error);
+  check_outstanding_requests_handle_error (pull_data, &local_error);
 }
 
 static void
@@ -943,7 +946,7 @@ meta_fetch_on_complete (GObject           *object,
   const char *checksum;
   g_autofree char *checksum_obj = NULL;
   OstreeObjectType objtype;
-  GError *local_error = NULL;
+  g_autoptr(GError) local_error = NULL;
   GError **error = &local_error;
   glnx_fd_close int fd = -1;
   gboolean free_fetch_data = TRUE;
@@ -1038,7 +1041,7 @@ meta_fetch_on_complete (GObject           *object,
   g_assert (pull_data->n_outstanding_metadata_fetches > 0);
   pull_data->n_outstanding_metadata_fetches--;
   pull_data->n_fetched_metadata++;
-  check_outstanding_requests_handle_error (pull_data, local_error);
+  check_outstanding_requests_handle_error (pull_data, &local_error);
   if (free_fetch_data)
     fetch_object_data_free (fetch_data);
 }
@@ -1061,7 +1064,7 @@ on_static_delta_written (GObject           *object,
 {
   FetchStaticDeltaData *fetch_data = user_data;
   OtPullData *pull_data = fetch_data->pull_data;
-  GError *local_error = NULL;
+  g_autoptr(GError) local_error = NULL;
   GError **error = &local_error;
 
   g_debug ("execute static delta part %s complete", fetch_data->expected_checksum);
@@ -1072,7 +1075,7 @@ on_static_delta_written (GObject           *object,
  out:
   g_assert (pull_data->n_outstanding_deltapart_write_requests > 0);
   pull_data->n_outstanding_deltapart_write_requests--;
-  check_outstanding_requests_handle_error (pull_data, local_error);
+  check_outstanding_requests_handle_error (pull_data, &local_error);
   /* Always free state */
   fetch_static_delta_data_free (fetch_data);
 }
@@ -1088,7 +1091,7 @@ static_deltapart_fetch_on_complete (GObject           *object,
   g_autofree char *temp_path = NULL;
   g_autoptr(GInputStream) in = NULL;
   g_autoptr(GVariant) part = NULL;
-  GError *local_error = NULL;
+  g_autoptr(GError) local_error = NULL;
   GError **error = &local_error;
   glnx_fd_close int fd = -1;
   gboolean free_fetch_data = TRUE;
@@ -1132,7 +1135,7 @@ static_deltapart_fetch_on_complete (GObject           *object,
   g_assert (pull_data->n_outstanding_deltapart_fetches > 0);
   pull_data->n_outstanding_deltapart_fetches--;
   pull_data->n_fetched_deltaparts++;
-  check_outstanding_requests_handle_error (pull_data, local_error);
+  check_outstanding_requests_handle_error (pull_data, &local_error);
   if (free_fetch_data)
     fetch_static_delta_data_free (fetch_data);
 }
@@ -1198,6 +1201,14 @@ gpg_verify_unwritten_commit (OtPullData         *pull_data,
 }
 
 static gboolean
+commitstate_is_partial (OtPullData   *pull_data,
+                        OstreeRepoCommitState commitstate)
+{
+  return pull_data->legacy_transaction_resuming
+    || (commitstate & OSTREE_REPO_COMMIT_STATE_PARTIAL) > 0;
+}
+
+static gboolean
 scan_commit_object (OtPullData         *pull_data,
                     const char         *checksum,
                     guint               recursion_depth,
@@ -1253,8 +1264,7 @@ scan_commit_object (OtPullData         *pull_data,
     goto out;
 
   /* If we found a legacy transaction flag, assume all commits are partial */
-  is_partial = pull_data->legacy_transaction_resuming
-    || (commitstate & OSTREE_REPO_COMMIT_STATE_PARTIAL) > 0;
+  is_partial = commitstate_is_partial (pull_data, commitstate);
 
   /* PARSE OSTREE_SERIALIZED_COMMIT_VARIANT */
   g_variant_get_child (commit, 1, "@ay", &parent_csum);
@@ -1882,7 +1892,7 @@ get_best_static_delta_start_for (OtPullData *pull_data,
   /* Array<char*> of possible from checksums */
   g_autoptr(GPtrArray) candidates = g_ptr_array_new_with_free_func (g_free);
   const char *newest_candidate = NULL;
-  guint64 newest_candidate_timestamp;
+  guint64 newest_candidate_timestamp = 0;
 
   g_assert (pull_data->summary_deltas_checksums != NULL);
   g_hash_table_iter_init (&hiter, pull_data->summary_deltas_checksums);
@@ -1911,7 +1921,7 @@ get_best_static_delta_start_for (OtPullData *pull_data,
   for (guint i = 0; i < candidates->len; i++)
     {
       const char *candidate = candidates->pdata[i];
-      guint64 candidate_ts;
+      guint64 candidate_ts = 0;
       g_autoptr(GVariant) commit = NULL;
       OstreeRepoCommitState state;
       gboolean have_candidate;
@@ -1961,7 +1971,7 @@ on_superblock_fetched (GObject   *src,
 {
   FetchDeltaSuperData *fdata = data;
   OtPullData *pull_data = fdata->pull_data;
-  GError *local_error = NULL;
+  g_autoptr(GError) local_error = NULL;
   GError **error = &local_error;
   g_autoptr(GBytes) delta_superblock_data = NULL;
   const char *from_revision = fdata->from_revision;
@@ -2038,7 +2048,7 @@ on_superblock_fetched (GObject   *src,
   g_assert (pull_data->n_outstanding_metadata_fetches > 0);
   pull_data->n_outstanding_metadata_fetches--;
   pull_data->n_fetched_metadata++;
-  check_outstanding_requests_handle_error (pull_data, local_error);
+  check_outstanding_requests_handle_error (pull_data, &local_error);
 }
 
 static gboolean
@@ -3242,6 +3252,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       g_autofree char *from_revision = NULL;
       const char *ref = key;
       const char *to_revision = value;
+      gboolean have_valid_from_commit = TRUE;
 
       /* If we have a summary, find the latest local commit we have
        * to use as a from revision for static deltas.
@@ -3257,9 +3268,27 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
           if (!ostree_repo_resolve_rev (pull_data->repo, ref, TRUE,
                                         &from_revision, error))
             goto out;
+
+          /* Determine whether the from revision we have is partial; this
+           * can happen if e.g. one uses `ostree pull --commit-metadata-only`.
+           * This mirrors the logic in get_best_static_delta_start_for().
+           */
+          if (from_revision)
+            {
+              OstreeRepoCommitState from_commitstate;
+
+              if (!ostree_repo_load_commit (pull_data->repo, from_revision, NULL,
+                                            &from_commitstate, error))
+                goto out;
+
+              /* Was it partial?  OK, we can't use it. */
+              if (commitstate_is_partial (pull_data, from_commitstate))
+                have_valid_from_commit = FALSE;
+            }
         }
 
       if (!disable_static_deltas &&
+          have_valid_from_commit &&
           (from_revision == NULL || g_strcmp0 (from_revision, to_revision) != 0))
         {
           g_autofree char *delta_name =
