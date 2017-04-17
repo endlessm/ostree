@@ -10,6 +10,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2017.1@LIBOSTREE_2017.1 2017.1
  LIBOSTREE_2017.2@LIBOSTREE_2017.2 2017.2
  LIBOSTREE_2017.3@LIBOSTREE_2017.3 2017.3
+ LIBOSTREE_2017.4@LIBOSTREE_2017.4 2017.4
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_type@LIBOSTREE_2016.3 2016.4
@@ -31,6 +32,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_bootconfig_parser_write_at@LIBOSTREE_2016.3 2016.4
  ostree_chain_input_stream_get_type@LIBOSTREE_2016.3 2016.4
  ostree_chain_input_stream_new@LIBOSTREE_2016.3 2016.4
+ ostree_check_version@LIBOSTREE_2017.4 2017.4
  ostree_checksum_b64_from_bytes@LIBOSTREE_2016.8 2016.8
  ostree_checksum_b64_inplace_from_bytes@LIBOSTREE_2016.3 2016.4
  ostree_checksum_b64_inplace_to_bytes@LIBOSTREE_2016.3 2016.4
@@ -78,6 +80,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_deployment_set_origin@LIBOSTREE_2016.3 2016.4
  ostree_deployment_unlocked_state_to_string@LIBOSTREE_2016.4 2016.4
  ostree_diff_dirs@LIBOSTREE_2016.3 2016.4
+ ostree_diff_dirs_with_options@LIBOSTREE_2017.4 2017.4
  ostree_diff_item_get_type@LIBOSTREE_2016.3 2016.4
  ostree_diff_item_ref@LIBOSTREE_2016.3 2016.4
  ostree_diff_item_unref@LIBOSTREE_2016.3 2016.4
@@ -260,6 +263,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sepolicy_get_path@LIBOSTREE_2016.3 2016.4
  ostree_sepolicy_get_type@LIBOSTREE_2016.3 2016.4
  ostree_sepolicy_new@LIBOSTREE_2016.3 2016.4
+ ostree_sepolicy_new_at@LIBOSTREE_2017.4 2017.4
  ostree_sepolicy_restorecon@LIBOSTREE_2016.3 2016.4
  ostree_sepolicy_setfscreatecon@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_cleanup@LIBOSTREE_2016.3 2016.4
@@ -308,6 +312,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sysroot_upgrader_pull_one_dir@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_upgrader_set_origin@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_write_deployments@LIBOSTREE_2016.3 2016.4
+ ostree_sysroot_write_deployments_with_options@LIBOSTREE_2017.4 2017.4
  ostree_sysroot_write_origin_file@LIBOSTREE_2016.3 2016.4
  ostree_validate_checksum_string@LIBOSTREE_2016.3 2016.4
  ostree_validate_rev@LIBOSTREE_2016.3 2016.4

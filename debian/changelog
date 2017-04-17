@@ -2,6 +2,7 @@ ostree (2017.4-1) UNRELEASED; urgency=medium
 
   * New upstream release
     - d/rules: Explicitly enable trivial-httpd: the tests still need it
+    - Update symbols file for new ABI
 
  -- Simon McVittie <smcv@debian.org>  Mon, 17 Apr 2017 15:25:58 +0100
 
