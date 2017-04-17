@@ -123,6 +123,10 @@ gboolean      ostree_repo_remote_delete (OstreeRepo     *self,
 /**
  * OstreeRepoRemoteChange:
  * The remote change operation.
+ * @OSTREE_REPO_REMOTE_CHANGE_ADD: Add a remote
+ * @OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS: Like above, but do nothing if the remote exists
+ * @OSTREE_REPO_REMOTE_CHANGE_DELETE: Delete a remote
+ * @OSTREE_REPO_REMOTE_CHANGE_DELETE_IF_EXISTS: Delete a remote, do nothing if the remote does not exist
  */
 typedef enum {
   OSTREE_REPO_REMOTE_CHANGE_ADD,
@@ -536,11 +540,15 @@ typedef OstreeRepoCommitFilterResult (*OstreeRepoCommitFilter) (OstreeRepo    *r
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE: No special flags
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS: Do not process extended attributes
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES: Generate size information.
+ * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS: Canonicalize permissions for bare-user-only mode.
+ * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED: Emit an error if configured SELinux policy does not provide a label
  */
 typedef enum {
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE = 0,
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS = (1 << 0),
-  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES = (1 << 1)
+  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES = (1 << 1),
+  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS = (1 << 2),
+  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED = (1 << 3),
 } OstreeRepoCommitModifierFlags;
 
 /**

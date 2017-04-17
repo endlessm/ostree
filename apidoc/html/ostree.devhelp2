@@ -65,6 +65,7 @@
     <keyword type="function" name="ostree_validate_structureof_dirmeta ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-structureof-dirmeta"/>
     <keyword type="function" name="ostree_commit_get_parent ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-parent"/>
     <keyword type="function" name="ostree_commit_get_timestamp ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-timestamp"/>
+    <keyword type="function" name="ostree_check_version ()" link="ostree-Core-repository-independent-functions.html#ostree-check-version"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-SIZE:CAPS"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_WARN_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-WARN-SIZE:CAPS"/>
     <keyword type="macro" name="OSTREE_MAX_RECURSION" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-RECURSION:CAPS"/>
@@ -257,6 +258,7 @@
     <keyword type="function" name="ostree_sysroot_deployment_set_mutable ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-mutable"/>
     <keyword type="function" name="ostree_sysroot_deployment_unlock ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-unlock"/>
     <keyword type="function" name="ostree_sysroot_write_deployments ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments"/>
+    <keyword type="function" name="ostree_sysroot_write_deployments_with_options ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments-with-options"/>
     <keyword type="function" name="ostree_sysroot_write_origin_file ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-origin-file"/>
     <keyword type="function" name="ostree_sysroot_deploy_tree ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deploy-tree"/>
     <keyword type="function" name="ostree_sysroot_get_merge_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-merge-deployment"/>
@@ -275,6 +277,7 @@
     <keyword type="function" name="ostree_async_progress_finish ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-finish"/>
     <keyword type="typedef" name="OstreeAsyncProgress" link="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress"/>
     <keyword type="function" name="ostree_sepolicy_new ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-new"/>
+    <keyword type="function" name="ostree_sepolicy_new_at ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-new-at"/>
     <keyword type="function" name="ostree_sepolicy_get_path ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-path"/>
     <keyword type="function" name="ostree_sepolicy_get_name ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-name"/>
     <keyword type="function" name="ostree_sepolicy_get_label ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-label"/>
@@ -345,6 +348,7 @@
     <keyword type="function" name="ostree_diff_item_ref ()" link="ostree-ostree-diff.html#ostree-diff-item-ref"/>
     <keyword type="function" name="ostree_diff_item_unref ()" link="ostree-ostree-diff.html#ostree-diff-item-unref"/>
     <keyword type="function" name="ostree_diff_dirs ()" link="ostree-ostree-diff.html#ostree-diff-dirs"/>
+    <keyword type="function" name="ostree_diff_dirs_with_options ()" link="ostree-ostree-diff.html#ostree-diff-dirs-with-options"/>
     <keyword type="function" name="ostree_diff_print ()" link="ostree-ostree-diff.html#ostree-diff-print"/>
     <keyword type="enum" name="enum OstreeDiffFlags" link="ostree-ostree-diff.html#OstreeDiffFlags"/>
     <keyword type="struct" name="struct OstreeDiffItem" link="ostree-ostree-diff.html#OstreeDiffItem"/>
@@ -370,6 +374,7 @@
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-MODE-BARE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_ARCHIVE_Z2" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-MODE-ARCHIVE-Z2:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE_USER" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-MODE-BARE-USER:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_MODE_BARE_USER_ONLY" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-MODE-BARE-USER-ONLY:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_ADD" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-REMOTE-CHANGE-ADD:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-REMOTE-CHANGE-ADD-IF-NOT-EXISTS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_DELETE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-REMOTE-CHANGE-DELETE:CAPS"/>
@@ -379,6 +384,8 @@
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-SKIP-XATTRS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-GENERATE-SIZES:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-CANONICAL-PERMISSIONS:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-ERROR-ON-UNLABELED:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_MODE_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-CHECKOUT-MODE-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_MODE_USER" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-CHECKOUT-MODE-USER:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_OVERWRITE_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-CHECKOUT-OVERWRITE-NONE:CAPS"/>

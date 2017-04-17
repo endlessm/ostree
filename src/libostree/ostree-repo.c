@@ -42,6 +42,7 @@
 
 #include <locale.h>
 #include <glib/gstdio.h>
+#include <sys/file.h>
 
 /**
  * SECTION:ostree-repo
@@ -891,26 +892,21 @@ ostree_repo_write_config (OstreeRepo *self,
                           GKeyFile   *new_config,
                           GError    **error)
 {
-  gboolean ret = FALSE;
-  g_autofree char *data = NULL;
-  gsize len;
-
   g_return_val_if_fail (self->inited, FALSE);
 
-  data = g_key_file_to_data (new_config, &len, error);
+  gsize len;
+  g_autofree char *data = g_key_file_to_data (new_config, &len, error);
   if (!glnx_file_replace_contents_at (self->repo_dir_fd, "config",
                                       (guint8*)data, len, 0,
                                       NULL, error))
-    goto out;
+    return FALSE;
 
   g_key_file_free (self->config);
   self->config = g_key_file_new ();
   if (!g_key_file_load_from_data (self->config, data, len, 0, error))
-    goto out;
+    return FALSE;
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /* Bind a subset of an a{sv} to options in a given GKeyfile section */
@@ -953,34 +949,24 @@ impl_repo_remote_add (OstreeRepo     *self,
                       GCancellable   *cancellable,
                       GError        **error)
 {
-  g_autoptr(OstreeRemote) remote = NULL;
-  gboolean different_sysroot = FALSE;
-  gboolean ret = FALSE;
-
   g_return_val_if_fail (name != NULL, FALSE);
   g_return_val_if_fail (url != NULL, FALSE);
   g_return_val_if_fail (options == NULL || g_variant_is_of_type (options, G_VARIANT_TYPE ("a{sv}")), FALSE);
 
   if (strchr (name, '/') != NULL)
-    {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Invalid character '/' in remote name: %s",
-                   name);
-      goto out;
-    }
+    return glnx_throw (error, "Invalid character '/' in remote name: %s", name);
 
-  remote = ost_repo_get_remote (self, name, NULL);
+  g_autoptr(OstreeRemote) remote = ost_repo_get_remote (self, name, NULL);
   if (remote != NULL && if_not_exists)
     {
-      ret = TRUE;
-      goto out;
+      /* Note early return */
+      return TRUE;
     }
   else if (remote != NULL)
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Remote configuration for \"%s\" already exists: %s",
-                   name, remote->file ? gs_file_get_path_cached (remote->file) : "(in config)");
-      goto out;
+      return glnx_throw (error,
+                         "Remote configuration for \"%s\" already exists: %s",
+                         name, remote->file ? gs_file_get_path_cached (remote->file) : "(in config)");
     }
 
   remote = ost_remote_new ();
@@ -994,20 +980,18 @@ impl_repo_remote_add (OstreeRepo     *self,
    *
    * XXX Having API regret about the "sysroot" argument now.
    */
+  gboolean different_sysroot = FALSE;
   if (sysroot != NULL)
     different_sysroot = !g_file_equal (sysroot, self->sysroot_dir);
 
   if (different_sysroot || ostree_repo_is_system (self))
     {
-      g_autofree char *basename = g_strconcat (name, ".conf", NULL);
-      g_autoptr(GFile) etc_ostree_remotes_d = NULL;
-      GError *local_error = NULL;
+      g_autoptr(GError) local_error = NULL;
 
       if (sysroot == NULL)
         sysroot = self->sysroot_dir;
 
-      etc_ostree_remotes_d = g_file_resolve_relative_path (sysroot, SYSCONF_REMOTES);
-
+      g_autoptr(GFile) etc_ostree_remotes_d = g_file_resolve_relative_path (sysroot, SYSCONF_REMOTES);
       if (!g_file_make_directory_with_parents (etc_ostree_remotes_d,
                                                cancellable, &local_error))
         {
@@ -1017,11 +1001,12 @@ impl_repo_remote_add (OstreeRepo     *self,
             }
           else
             {
-              g_propagate_error (error, local_error);
-              goto out;
+              g_propagate_error (error, g_steal_pointer (&local_error));
+              return FALSE;
             }
         }
 
+      g_autofree char *basename = g_strconcat (name, ".conf", NULL);
       remote->file = g_file_get_child (etc_ostree_remotes_d, basename);
     }
 
@@ -1035,16 +1020,14 @@ impl_repo_remote_add (OstreeRepo     *self,
 
   if (remote->file != NULL)
     {
-      g_autofree char *data = NULL;
       gsize length;
-
-      data = g_key_file_to_data (remote->options, &length, NULL);
+      g_autofree char *data = g_key_file_to_data (remote->options, &length, NULL);
 
       if (!g_file_replace_contents (remote->file,
                                     data, length,
                                     NULL, FALSE, 0, NULL,
                                     cancellable, error))
-        goto out;
+        return FALSE;
     }
   else
     {
@@ -1054,15 +1037,12 @@ impl_repo_remote_add (OstreeRepo     *self,
       ot_keyfile_copy_group (remote->options, config, remote->group);
 
       if (!ostree_repo_write_config (self, config, error))
-        goto out;
+        return FALSE;
     }
 
   ost_repo_add_remote (self, remote);
 
-  ret = TRUE;
-
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -1103,67 +1083,52 @@ impl_repo_remote_delete (OstreeRepo     *self,
                          GCancellable   *cancellable,
                          GError        **error)
 {
-  g_autoptr(OstreeRemote) remote = NULL;
-  gboolean ret = FALSE;
-
   g_return_val_if_fail (name != NULL, FALSE);
 
   if (strchr (name, '/') != NULL)
-    {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Invalid character '/' in remote name: %s",
-                   name);
-      goto out;
-    }
+    return glnx_throw (error, "Invalid character '/' in remote name: %s", name);
 
+  g_autoptr(OstreeRemote) remote = NULL;
   if (if_exists)
     {
       remote = ost_repo_get_remote (self, name, NULL);
       if (!remote)
         {
-          ret = TRUE;
-          goto out;
+          /* Note early return */
+          return TRUE;
         }
     }
   else
     remote = ost_repo_get_remote (self, name, error);
 
   if (remote == NULL)
-    goto out;
+    return FALSE;
 
   if (remote->file != NULL)
     {
       if (unlink (gs_file_get_path_cached (remote->file)) != 0)
-        {
-          glnx_set_error_from_errno (error);
-          goto out;
-        }
+        return glnx_throw_errno (error);
     }
   else
     {
-      g_autoptr(GKeyFile) config = NULL;
-
-      config = ostree_repo_copy_config (self);
+      g_autoptr(GKeyFile) config = ostree_repo_copy_config (self);
 
       /* XXX Not sure it's worth failing if the group to remove
        *     isn't found.  It's the end result we want, after all. */
       if (g_key_file_remove_group (config, remote->group, NULL))
         {
           if (!ostree_repo_write_config (self, config, error))
-            goto out;
+            return FALSE;
         }
     }
 
   /* Delete the remote's keyring file, if it exists. */
   if (!ot_ensure_unlinked_at (self->repo_dir_fd, remote->keyring, error))
-    goto out;
+    return FALSE;
 
   ost_repo_remove_remote (self, remote);
 
-  ret = TRUE;
-
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -1319,11 +1284,9 @@ ostree_repo_remote_get_url (OstreeRepo  *self,
                             char       **out_url,
                             GError     **error)
 {
-  g_autofree char *url = NULL;
-  gboolean ret = FALSE;
-
   g_return_val_if_fail (name != NULL, FALSE);
 
+  g_autofree char *url = NULL;
   if (_ostree_repo_remote_name_is_file (name))
     {
       url = g_strdup (name);
@@ -1331,23 +1294,19 @@ ostree_repo_remote_get_url (OstreeRepo  *self,
   else
     {
       if (!ostree_repo_get_remote_option (self, name, "url", NULL, &url, error))
-        goto out;
+        return FALSE;
 
       if (url == NULL)
         {
           g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
                        "No \"url\" option in remote \"%s\"", name);
-          goto out;
+          return FALSE;
         }
     }
 
   if (out_url != NULL)
     *out_url = g_steal_pointer (&url);
-
-  ret = TRUE;
-
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -1583,8 +1542,9 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
 
   if (fstatat (self->repo_dir_fd, remote->keyring, &stbuf, AT_SYMLINK_NOFOLLOW) == 0)
     {
+      GLnxFileCopyFlags copyflags = self->disable_xattrs ? GLNX_FILE_COPY_NOXATTRS : 0;
       if (!glnx_file_copy_at (self->repo_dir_fd, remote->keyring,
-                              &stbuf, target_temp_fd, "pubring.gpg", 0,
+                              &stbuf, target_temp_fd, "pubring.gpg", copyflags,
                               cancellable, error))
         {
           g_prefix_error (error, "Unable to copy remote's keyring: ");
@@ -1741,7 +1701,6 @@ ostree_repo_mode_to_string (OstreeRepoMode   mode,
                             const char     **out_mode,
                             GError         **error)
 {
-  gboolean ret = FALSE;
   const char *ret_mode;
 
   switch (mode)
@@ -1752,19 +1711,18 @@ ostree_repo_mode_to_string (OstreeRepoMode   mode,
     case OSTREE_REPO_MODE_BARE_USER:
       ret_mode = "bare-user";
       break;
+    case OSTREE_REPO_MODE_BARE_USER_ONLY:
+      ret_mode = "bare-user-only";
+      break;
     case OSTREE_REPO_MODE_ARCHIVE_Z2:
       ret_mode ="archive-z2";
       break;
     default:
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Invalid mode '%d'", mode);
-      goto out;
+      return glnx_throw (error, "Invalid mode '%d'", mode);
     }
 
-  ret = TRUE;
   *out_mode = ret_mode;
- out:
-  return ret;
+  return TRUE;
 }
 
 gboolean
@@ -1772,27 +1730,22 @@ ostree_repo_mode_from_string (const char      *mode,
                               OstreeRepoMode  *out_mode,
                               GError         **error)
 {
-  gboolean ret = FALSE;
   OstreeRepoMode ret_mode;
 
   if (strcmp (mode, "bare") == 0)
     ret_mode = OSTREE_REPO_MODE_BARE;
   else if (strcmp (mode, "bare-user") == 0)
     ret_mode = OSTREE_REPO_MODE_BARE_USER;
+  else if (strcmp (mode, "bare-user-only") == 0)
+    ret_mode = OSTREE_REPO_MODE_BARE_USER_ONLY;
   else if (strcmp (mode, "archive-z2") == 0 ||
            strcmp (mode, "archive") == 0)
     ret_mode = OSTREE_REPO_MODE_ARCHIVE_Z2;
   else
-    {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Invalid mode '%s' in repository configuration", mode);
-      goto out;
-    }
+    return glnx_throw (error, "Invalid mode '%s' in repository configuration", mode);
 
-  ret = TRUE;
   *out_mode = ret_mode;
- out:
-  return ret;
+  return TRUE;
 }
 
 #define DEFAULT_CONFIG_CONTENTS ("[core]\n" \
@@ -1830,10 +1783,7 @@ ostree_repo_create (OstreeRepo     *self,
   if (mkdir (repopath, 0755) != 0)
     {
       if (G_UNLIKELY (errno != EEXIST))
-        {
-          glnx_set_error_from_errno (error);
-          return FALSE;
-        }
+        return glnx_throw_errno (error);
     }
 
   if (!glnx_opendirat (AT_FDCWD, repopath, TRUE, &dfd, error))
@@ -1843,11 +1793,12 @@ ostree_repo_create (OstreeRepo     *self,
     {
       if (errno == ENOENT)
         {
-          const char *mode_str;
+          const char *mode_str = NULL;
           g_autoptr(GString) config_data = g_string_new (DEFAULT_CONFIG_CONTENTS);
 
           if (!ostree_repo_mode_to_string (mode, &mode_str, error))
             return FALSE;
+          g_assert (mode_str);
 
           g_string_append_printf (config_data, "mode=%s\n", mode_str);
 
@@ -1857,10 +1808,7 @@ ostree_repo_create (OstreeRepo     *self,
             return FALSE;
         }
       else
-        {
-          glnx_set_error_from_errno (error);
-          return FALSE;
-        }
+        return glnx_throw_errno (error);
     }
 
   for (guint i = 0; i < G_N_ELEMENTS (state_dirs); i++)
@@ -1869,10 +1817,7 @@ ostree_repo_create (OstreeRepo     *self,
       if (mkdirat (dfd, elt, 0755) == -1)
         {
           if (G_UNLIKELY (errno != EEXIST))
-            {
-              glnx_set_error_from_errno (error);
-              return FALSE;
-            }
+            return glnx_throw_errno (error);
         }
     }
 
@@ -1890,8 +1835,7 @@ enumerate_directory_allow_noent (GFile               *dirpath,
                                  GCancellable        *cancellable,
                                  GError             **error)
 {
-  gboolean ret = FALSE;
-  GError *temp_error = NULL;
+  g_autoptr(GError) temp_error = NULL;
   g_autoptr(GFileEnumerator) ret_direnum = NULL;
 
   ret_direnum = g_file_enumerate_children (dirpath, queryargs, queryflags,
@@ -1899,21 +1843,17 @@ enumerate_directory_allow_noent (GFile               *dirpath,
   if (!ret_direnum)
     {
       if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-        {
-          g_clear_error (&temp_error);
-          ret = TRUE;
-        }
+        g_clear_error (&temp_error);
       else
-        g_propagate_error (error, temp_error);
-
-      goto out;
+        {
+          g_propagate_error (error, g_steal_pointer (&temp_error));
+          return FALSE;
+        }
     }
 
-  ret = TRUE;
   if (out_direnum)
     *out_direnum = g_steal_pointer (&ret_direnum);
- out:
-  return ret;
+  return TRUE;
 }
 
 static gboolean
@@ -1979,17 +1919,12 @@ append_one_remote_config (OstreeRepo      *self,
                           GCancellable    *cancellable,
                           GError         **error)
 {
-  gboolean ret = FALSE;
   g_autoptr(GKeyFile) remotedata = g_key_file_new ();
-
   if (!g_key_file_load_from_file (remotedata, gs_file_get_path_cached (path),
                                   0, error))
-    goto out;
+    return FALSE;
 
-  ret = add_remotes_from_keyfile (self, remotedata, path, error);
-
- out:
-  return ret;
+  return add_remotes_from_keyfile (self, remotedata, path, error);
 }
 
 static GFile *
@@ -2033,11 +1968,7 @@ reload_core_config (OstreeRepo          *self,
     return FALSE;
 
   if (strcmp (version, "1") != 0)
-    {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Invalid repository version '%s'", version);
-      return FALSE;
-    }
+    return glnx_throw (error, "Invalid repository version '%s'", version);
 
   if (!ot_keyfile_get_boolean_with_default (self->config, "core", "archive",
                                             FALSE, &is_archive, error))
@@ -2074,6 +2005,11 @@ reload_core_config (OstreeRepo          *self,
     if (!do_fsync)
       ostree_repo_set_disable_fsync (self, TRUE);
   }
+
+  /* See https://github.com/ostreedev/ostree/issues/758 */
+  if (!ot_keyfile_get_boolean_with_default (self->config, "core", "disable-xattrs",
+                                            FALSE, &self->disable_xattrs, error))
+    return FALSE;
 
   { g_autofree char *tmp_expiry_seconds = NULL;
 
@@ -2125,25 +2061,23 @@ reload_remote_config (OstreeRepo          *self,
                       GCancellable        *cancellable,
                       GError             **error)
 {
-  gboolean ret = FALSE;
-  g_autoptr(GFile) remotes_d = NULL;
-  g_autoptr(GFileEnumerator) direnum = NULL;
 
   g_mutex_lock (&self->remotes_lock);
   g_hash_table_remove_all (self->remotes);
   g_mutex_unlock (&self->remotes_lock);
 
   if (!add_remotes_from_keyfile (self, self->config, NULL, error))
-    goto out;
+    return FALSE;
 
-  remotes_d = get_remotes_d_dir (self);
+  g_autoptr(GFile) remotes_d = get_remotes_d_dir (self);
   if (remotes_d == NULL)
     return TRUE;
 
+  g_autoptr(GFileEnumerator) direnum = NULL;
   if (!enumerate_directory_allow_noent (remotes_d, OSTREE_GIO_FAST_QUERYINFO, 0,
                                         &direnum,
                                         cancellable, error))
-    goto out;
+    return FALSE;
   if (direnum)
     {
       while (TRUE)
@@ -2155,7 +2089,7 @@ reload_remote_config (OstreeRepo          *self,
 
           if (!g_file_enumerator_iterate (direnum, &file_info, &path,
                                           NULL, error))
-            goto out;
+            return FALSE;
           if (file_info == NULL)
             break;
 
@@ -2166,14 +2100,12 @@ reload_remote_config (OstreeRepo          *self,
               g_str_has_suffix (name, ".conf"))
             {
               if (!append_one_remote_config (self, path, cancellable, error))
-                goto out;
+                return FALSE;
             }
         }
     }
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -2202,7 +2134,6 @@ ostree_repo_open (OstreeRepo    *self,
                   GCancellable  *cancellable,
                   GError       **error)
 {
-  gboolean ret = FALSE;
   struct stat stbuf;
 
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
@@ -2225,7 +2156,7 @@ ostree_repo_open (OstreeRepo    *self,
                                   &boot_id,
                                   NULL,
                                   error))
-          goto out;
+          return FALSE;
         g_strdelimit (boot_id, "\n", '\0');
       }
 
@@ -2236,14 +2167,14 @@ ostree_repo_open (OstreeRepo    *self,
                        &self->repo_dir_fd, error))
     {
       g_prefix_error (error, "%s: ", gs_file_get_path_cached (self->repodir));
-      goto out;
+      return FALSE;
     }
 
   if (!glnx_opendirat (self->repo_dir_fd, "objects", TRUE,
                        &self->objects_dir_fd, error))
     {
       g_prefix_error (error, "Opening objects/ directory: ");
-      goto out;
+      return FALSE;
     }
 
   self->writable = faccessat (self->objects_dir_fd, ".", W_OK, 0) == 0;
@@ -2251,13 +2182,11 @@ ostree_repo_open (OstreeRepo    *self,
     {
       /* This is returned through ostree_repo_is_writable(). */
       glnx_set_error_from_errno (&self->writable_error);
+      /* Note - we don't return this error yet! */
     }
 
   if (fstat (self->objects_dir_fd, &stbuf) != 0)
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
+    return glnx_throw_errno (error);
 
   if (stbuf.st_uid != getuid () || stbuf.st_gid != getgid ())
     {
@@ -2270,37 +2199,34 @@ ostree_repo_open (OstreeRepo    *self,
     }
 
   if (!glnx_opendirat (self->repo_dir_fd, "tmp", TRUE, &self->tmp_dir_fd, error))
-    goto out;
+    return FALSE;
 
   if (self->writable)
     {
       if (!glnx_shutil_mkdir_p_at (self->tmp_dir_fd, _OSTREE_CACHE_DIR, 0775, cancellable, error))
-        goto out;
+        return FALSE;
 
       if (!glnx_opendirat (self->tmp_dir_fd, _OSTREE_CACHE_DIR, TRUE, &self->cache_dir_fd, error))
-        goto out;
+        return FALSE;
     }
 
   if (!ostree_repo_reload_config (self, cancellable, error))
-    goto out;
+    return FALSE;
 
   /* TODO - delete this */
   if (self->mode == OSTREE_REPO_MODE_ARCHIVE_Z2 && self->enable_uncompressed_cache)
     {
       if (!glnx_shutil_mkdir_p_at (self->repo_dir_fd, "uncompressed-objects-cache", 0755,
                                    cancellable, error))
-        goto out;
+        return FALSE;
       if (!glnx_opendirat (self->repo_dir_fd, "uncompressed-objects-cache", TRUE,
                            &self->uncompressed_objects_dir_fd,
                            error))
-        goto out;
+        return FALSE;
     }
 
   self->inited = TRUE;
-
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -2368,8 +2294,8 @@ ostree_repo_get_disable_fsync (OstreeRepo    *self)
 
 /* Replace the contents of a file, honoring the repository's fsync
  * policy.
- */ 
-gboolean      
+ */
+gboolean
 _ostree_repo_file_replace_contents (OstreeRepo    *self,
                                     int            dfd,
                                     const char    *path,
@@ -2474,7 +2400,7 @@ list_loose_objects_at (OstreeRepo             *self,
 
       if ((self->mode == OSTREE_REPO_MODE_ARCHIVE_Z2
            && strcmp (dot, ".filez") == 0) ||
-          ((self->mode == OSTREE_REPO_MODE_BARE || self->mode == OSTREE_REPO_MODE_BARE_USER)
+          ((_ostree_repo_mode_is_bare (self->mode))
            && strcmp (dot, ".file") == 0))
         objtype = OSTREE_OBJECT_TYPE_FILE;
       else if (strcmp (dot, ".dirtree") == 0)
@@ -2529,7 +2455,6 @@ list_loose_objects (OstreeRepo                     *self,
                     GCancellable                   *cancellable,
                     GError                        **error)
 {
-  gboolean ret = FALSE;
   guint c;
   int dfd = -1;
   static const gchar hexchars[] = "0123456789abcdef";
@@ -2546,21 +2471,16 @@ list_loose_objects (OstreeRepo                     *self,
           if (errno == ENOENT)
             continue;
           else
-            {
-              glnx_set_error_from_errno (error);
-              goto out;
-            }
+            return glnx_throw_errno (error);
         }
       /* Takes ownership of dfd */
       if (!list_loose_objects_at (self, inout_objects, buf, dfd,
                                        commit_starting_with,
                                        cancellable, error))
-        goto out;
+        return FALSE;
     }
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 static gboolean
@@ -2574,7 +2494,6 @@ load_metadata_internal (OstreeRepo       *self,
                         GCancellable     *cancellable,
                         GError          **error)
 {
-  gboolean ret = FALSE;
   char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
   struct stat stbuf;
   glnx_fd_close int fd = -1;
@@ -2587,22 +2506,19 @@ load_metadata_internal (OstreeRepo       *self,
 
  if (!ot_openat_ignore_enoent (self->objects_dir_fd, loose_path_buf, &fd,
                                error))
-    goto out;
+    return FALSE;
 
   if (fd < 0 && self->commit_stagedir_fd != -1)
     {
       if (!ot_openat_ignore_enoent (self->commit_stagedir_fd, loose_path_buf, &fd,
                                     error))
-        goto out;
+        return FALSE;
     }
 
   if (fd != -1)
     {
       if (fstat (fd, &stbuf) < 0)
-        {
-          glnx_set_error_from_errno (error);
-          goto out;
-        }
+        return glnx_throw_errno (error);
 
       if (out_variant)
         {
@@ -2613,7 +2529,7 @@ load_metadata_internal (OstreeRepo       *self,
 
               mfile = g_mapped_file_new_from_fd (fd, FALSE, error);
               if (!mfile)
-                goto out;
+                return FALSE;
               ret_variant = g_variant_new_from_data (ostree_metadata_variant_type (objtype),
                                                      g_mapped_file_get_contents (mfile),
                                                      g_mapped_file_get_length (mfile),
@@ -2626,7 +2542,7 @@ load_metadata_internal (OstreeRepo       *self,
             {
               g_autoptr(GBytes) data = glnx_fd_readall_bytes (fd, cancellable, error);
               if (!data)
-                goto out;
+                return FALSE;
               ret_variant = g_variant_new_from_bytes (ostree_metadata_variant_type (objtype),
                                                       data, TRUE);
               g_variant_ref_sink (ret_variant);
@@ -2636,7 +2552,7 @@ load_metadata_internal (OstreeRepo       *self,
         {
           ret_stream = g_unix_input_stream_new (fd, TRUE);
           if (!ret_stream)
-            goto out;
+            return FALSE;
           fd = -1; /* Transfer ownership */
         }
 
@@ -2646,21 +2562,19 @@ load_metadata_internal (OstreeRepo       *self,
   else if (self->parent_repo)
     {
       if (!ostree_repo_load_variant (self->parent_repo, objtype, sha256, &ret_variant, error))
-        goto out;
+        return FALSE;
     }
   else if (error_if_not_found)
     {
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
                    "No such metadata object %s.%s",
                    sha256, ostree_object_type_to_string (objtype));
-      goto out;
+      return FALSE;
     }
 
-  ret = TRUE;
   ot_transfer_out_value (out_variant, &ret_variant);
   ot_transfer_out_value (out_stream, &ret_stream);
- out:
-  return ret;
+  return TRUE;
 }
 
 static gboolean
@@ -2745,8 +2659,7 @@ _ostree_repo_read_bare_fd (OstreeRepo           *self,
 {
   char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
 
-  g_assert (self->mode == OSTREE_REPO_MODE_BARE ||
-            self->mode == OSTREE_REPO_MODE_BARE_USER);
+  g_assert (_ostree_repo_mode_is_bare (self->mode));
 
   _ostree_loose_path (loose_path_buf, checksum, OSTREE_OBJECT_TYPE_FILE, self->mode);
 
@@ -2910,6 +2823,37 @@ ostree_repo_load_file (OstreeRepo         *self,
                   g_file_info_set_symlink_target (ret_file_info, targetbuf);
                 }
             }
+          else if (repo_mode == OSTREE_REPO_MODE_BARE_USER_ONLY)
+            {
+              glnx_fd_close int fd = -1;
+
+              /* Canonical info is: uid/gid is 0 and no xattrs, which
+                 might be wrong and thus not validate correctly, but
+                 at least we report something consistent. */
+              g_file_info_set_attribute_uint32 (ret_file_info, "unix::uid", 0);
+              g_file_info_set_attribute_uint32 (ret_file_info, "unix::gid", 0);
+
+              if (g_file_info_get_file_type (ret_file_info) == G_FILE_TYPE_REGULAR &&
+                  out_input)
+                {
+                  fd = openat (self->objects_dir_fd, loose_path_buf, O_RDONLY | O_CLOEXEC);
+                  if (fd < 0)
+                    {
+                      glnx_set_error_from_errno (error);
+                      goto out;
+                    }
+
+                  ret_input = g_unix_input_stream_new (fd, TRUE);
+                  fd = -1; /* Transfer ownership */
+                }
+
+              if (out_xattrs)
+                {
+                  GVariantBuilder builder;
+                  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ayay)"));
+                  ret_xattrs = g_variant_ref_sink (g_variant_builder_end (&builder));
+                }
+            }
           else
             {
               g_assert (repo_mode == OSTREE_REPO_MODE_BARE);
@@ -2928,8 +2872,10 @@ ostree_repo_load_file (OstreeRepo         *self,
 
                   if (out_xattrs)
                     {
-                      if (!glnx_fd_get_all_xattrs (fd, &ret_xattrs,
-                                                 cancellable, error))
+                      if (self->disable_xattrs)
+                        ret_xattrs = g_variant_ref_sink (g_variant_new_array (G_VARIANT_TYPE ("(ayay)"), NULL, 0));
+                      else if (!glnx_fd_get_all_xattrs (fd, &ret_xattrs,
+                                                        cancellable, error))
                         goto out;
                     }
 
@@ -2942,15 +2888,17 @@ ostree_repo_load_file (OstreeRepo         *self,
               else if (g_file_info_get_file_type (ret_file_info) == G_FILE_TYPE_SYMBOLIC_LINK
                        && out_xattrs)
                 {
-                  if (!glnx_dfd_name_get_all_xattrs (self->objects_dir_fd, loose_path_buf,
-                                                       &ret_xattrs,
-                                                       cancellable, error))
+                  if (self->disable_xattrs)
+                    ret_xattrs = g_variant_ref_sink (g_variant_new_array (G_VARIANT_TYPE ("(ayay)"), NULL, 0));
+                  else if (!glnx_dfd_name_get_all_xattrs (self->objects_dir_fd, loose_path_buf,
+                                                          &ret_xattrs,
+                                                          cancellable, error))
                     goto out;
                 }
             }
         }
     }
-  
+
   if (!found)
     {
       if (self->parent_repo)
@@ -3476,26 +3424,20 @@ ostree_repo_query_object_storage_size (OstreeRepo           *self,
                                        GCancellable         *cancellable,
                                        GError              **error)
 {
-  gboolean ret = FALSE;
   char loose_path[_OSTREE_LOOSE_PATH_MAX];
   int res;
   struct stat stbuf;
 
   _ostree_loose_path (loose_path, sha256, objtype, self->mode);
 
-  do 
+  do
     res = fstatat (self->objects_dir_fd, loose_path, &stbuf, AT_SYMLINK_NOFOLLOW);
   while (G_UNLIKELY (res == -1 && errno == EINTR));
   if (G_UNLIKELY (res == -1))
-    {
-      glnx_set_prefix_error_from_errno (error, "Querying object %s.%s", sha256, ostree_object_type_to_string (objtype));
-      goto out;
-    }
+    return glnx_throw_errno_prefix (error, "Querying object %s.%s", sha256, ostree_object_type_to_string (objtype));
 
   *out_size = stbuf.st_size;
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -3563,13 +3505,11 @@ ostree_repo_load_commit (OstreeRepo            *self,
                          OstreeRepoCommitState *out_state,
                          GError               **error)
 {
-  gboolean ret = FALSE;
-
   if (out_variant)
     {
       if (!load_metadata_internal (self, OSTREE_OBJECT_TYPE_COMMIT, checksum, TRUE,
                                    out_variant, NULL, NULL, NULL, error))
-        goto out;
+        return FALSE;
     }
 
   if (out_state)
@@ -3585,14 +3525,11 @@ ostree_repo_load_commit (OstreeRepo            *self,
         }
       else if (errno != ENOENT)
         {
-          glnx_set_error_from_errno (error);
-          goto out;
+          return glnx_throw_errno (error);
         }
     }
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -3618,15 +3555,13 @@ ostree_repo_list_objects (OstreeRepo                  *self,
                           GCancellable                *cancellable,
                           GError                     **error)
 {
-  gboolean ret = FALSE;
-  g_autoptr(GHashTable) ret_objects = NULL;
-
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
   g_return_val_if_fail (self->inited, FALSE);
 
-  ret_objects = g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
-                                       (GDestroyNotify) g_variant_unref,
-                                       (GDestroyNotify) g_variant_unref);
+  g_autoptr(GHashTable) ret_objects =
+    g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
+                           (GDestroyNotify) g_variant_unref,
+                           (GDestroyNotify) g_variant_unref);
 
   if (flags & OSTREE_REPO_LIST_OBJECTS_ALL)
     flags |= (OSTREE_REPO_LIST_OBJECTS_LOOSE | OSTREE_REPO_LIST_OBJECTS_PACKED);
@@ -3634,11 +3569,11 @@ ostree_repo_list_objects (OstreeRepo                  *self,
   if (flags & OSTREE_REPO_LIST_OBJECTS_LOOSE)
     {
       if (!list_loose_objects (self, ret_objects, NULL, cancellable, error))
-        goto out;
+        return FALSE;
       if ((flags & OSTREE_REPO_LIST_OBJECTS_NO_PARENTS) == 0 && self->parent_repo)
         {
           if (!list_loose_objects (self->parent_repo, ret_objects, NULL, cancellable, error))
-            goto out;
+            return FALSE;
         }
     }
 
@@ -3647,10 +3582,8 @@ ostree_repo_list_objects (OstreeRepo                  *self,
       /* Nothing for now... */
     }
 
-  ret = TRUE;
   ot_transfer_out_value (out_objects, &ret_objects);
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -3720,25 +3653,20 @@ ostree_repo_read_commit (OstreeRepo   *self,
                          GCancellable *cancellable,
                          GError **error)
 {
-  gboolean ret = FALSE;
-  g_autoptr(GFile) ret_root = NULL;
   g_autofree char *resolved_commit = NULL;
-
   if (!ostree_repo_resolve_rev (self, ref, FALSE, &resolved_commit, error))
-    goto out;
+    return FALSE;
 
-  ret_root = (GFile*) _ostree_repo_file_new_for_commit (self, resolved_commit, error);
+  g_autoptr(GFile) ret_root = (GFile*) _ostree_repo_file_new_for_commit (self, resolved_commit, error);
   if (!ret_root)
-    goto out;
+    return FALSE;
 
   if (!ostree_repo_file_ensure_resolved ((OstreeRepoFile*)ret_root, error))
-    goto out;
+    return FALSE;
 
-  ret = TRUE;
   ot_transfer_out_value(out_root, &ret_root);
   ot_transfer_out_value(out_commit, &resolved_commit);
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -4225,6 +4153,13 @@ out:
 
 /**
  * ostree_repo_sign_delta:
+ * @self: Self
+ * @from_commit: From commit
+ * @to_commit: To commit
+ * @key_id: key id
+ * @homedir: homedir
+ * @cancellable: cancellable
+ * @error: error
  *
  * This function is deprecated, sign the summary file instead.
  * Add a GPG signature to a static delta.
@@ -4859,7 +4794,6 @@ _ostree_repo_try_lock_tmpdir (int            tmpdir_dfd,
                               gboolean      *out_did_lock,
                               GError       **error)
 {
-  gboolean ret = FALSE;
   g_autofree char *lock_name = g_strconcat (tmpdir_name, "-lock", NULL);
   gboolean did_lock = FALSE;
   g_autoptr(GError) local_error = NULL;
@@ -4876,7 +4810,7 @@ _ostree_repo_try_lock_tmpdir (int            tmpdir_dfd,
       else
         {
           g_propagate_error (error, g_steal_pointer (&local_error));
-          goto out;
+          return FALSE;
         }
     }
   else
@@ -4884,10 +4818,8 @@ _ostree_repo_try_lock_tmpdir (int            tmpdir_dfd,
       did_lock = TRUE;
     }
 
-  ret = TRUE;
   *out_did_lock = did_lock;
- out:
-  return ret;
+  return TRUE;
 }
 
 /* This allocates and locks a subdir of the repo tmp dir, using an existing

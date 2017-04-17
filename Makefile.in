@@ -340,14 +340,13 @@ host_triplet = @host@
 bin_PROGRAMS = ostree$(EXEEXT) $(am__EXEEXT_1)
 sbin_PROGRAMS =
 libexec_PROGRAMS =
-pkglibexec_PROGRAMS = $(am__EXEEXT_11)
-noinst_PROGRAMS = $(am__EXEEXT_8) tests/test-rollsum-cli$(EXEEXT)
-ostree_boot_PROGRAMS = $(am__EXEEXT_9) $(am__EXEEXT_10)
-TESTS = $(am__EXEEXT_3) $(am__EXEEXT_13) \
-	$(dist_uninstalled_test_scripts) test-libglnx-xattrs$(EXEEXT)
-installed_test_PROGRAMS = $(am__EXEEXT_7)
-check_PROGRAMS = $(am__EXEEXT_5) test-libglnx-xattrs$(EXEEXT) \
-	$(am__EXEEXT_6)
+pkglibexec_PROGRAMS = $(am__EXEEXT_12)
+noinst_PROGRAMS = $(am__EXEEXT_9) tests/test-rollsum-cli$(EXEEXT)
+ostree_boot_PROGRAMS = $(am__EXEEXT_10) $(am__EXEEXT_11)
+TESTS = $(am__EXEEXT_3) $(am__EXEEXT_14) \
+	$(dist_uninstalled_test_scripts) $(am__EXEEXT_6)
+installed_test_PROGRAMS = $(am__EXEEXT_8)
+check_PROGRAMS = $(am__EXEEXT_5) $(am__EXEEXT_6) $(am__EXEEXT_7)
 @ENABLE_ALWAYS_BUILD_TESTS_TRUE@am__append_1 = $(all_test_ltlibs)
 @ENABLE_ALWAYS_BUILD_TESTS_TRUE@am__append_2 = $(all_test_programs)
 @ENABLE_ALWAYS_BUILD_TESTS_TRUE@am__append_3 = $(all_test_scripts)
@@ -375,7 +374,7 @@ check_PROGRAMS = $(am__EXEEXT_5) test-libglnx-xattrs$(EXEEXT) \
 @ENABLE_INSTALLED_TESTS_TRUE@am__append_13 = $(installed_test_meta_DATA)
 @ENABLE_GTK_DOC_TRUE@am__append_14 = apidoc
 @ENABLE_RUST_TRUE@am__append_15 = $(srcdir)/rust/Cargo.toml $(srcdir)/rust/cargo-vendor-config
-@ENABLE_RUST_TRUE@am__append_16 = $(BUPSPLIT_RUST_SOURCES)
+@ENABLE_RUST_TRUE@am__append_16 = $(BUPSPLIT_RUST_SRCS)
 @ENABLE_RUST_FALSE@am__append_17 = libbupsplit.la
 @USE_LIBARCHIVE_TRUE@am__append_18 = src/libostree/ostree-libarchive-input-stream.h \
 @USE_LIBARCHIVE_TRUE@	src/libostree/ostree-libarchive-input-stream.c \
@@ -487,7 +486,8 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES = src/libostree/ostree-1.pc
+CONFIG_CLEAN_FILES = src/libostree/ostree-1.pc \
+	src/libostree/ostree-version.h
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -585,10 +585,10 @@ am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 libostree_1_la_DEPENDENCIES = libotutil.la libglnx.la libbsdiff.la \
 	libostree-kernel-args.la $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(bupsplitpath) $(am__DEPENDENCIES_4) \
-	$(am__DEPENDENCIES_5) $(am__DEPENDENCIES_6) \
-	$(am__DEPENDENCIES_7) $(am__DEPENDENCIES_8) \
-	$(am__DEPENDENCIES_9)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) $(bupsplitpath) \
+	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_5) \
+	$(am__DEPENDENCIES_6) $(am__DEPENDENCIES_7) \
+	$(am__DEPENDENCIES_8) $(am__DEPENDENCIES_9)
 am__libostree_1_la_SOURCES_DIST =  \
 	src/libostree/ostree-async-progress.c \
 	src/libostree/ostree-cmdprivate.h \
@@ -624,6 +624,7 @@ am__libostree_1_la_SOURCES_DIST =  \
 	src/libostree/ostree-repo-file-enumerator.c \
 	src/libostree/ostree-repo-file-enumerator.h \
 	src/libostree/ostree-sepolicy.c \
+	src/libostree/ostree-sepolicy-private.h \
 	src/libostree/ostree-sysroot-private.h \
 	src/libostree/ostree-sysroot.c \
 	src/libostree/ostree-sysroot-cleanup.c \
@@ -755,11 +756,11 @@ libotutil_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_1)
 am_libotutil_la_OBJECTS =  \
 	src/libotutil/libotutil_la-ot-checksum-utils.lo \
+	src/libotutil/libotutil_la-ot-checksum-instream.lo \
 	src/libotutil/libotutil_la-ot-fs-utils.lo \
 	src/libotutil/libotutil_la-ot-keyfile-utils.lo \
 	src/libotutil/libotutil_la-ot-opt-utils.lo \
 	src/libotutil/libotutil_la-ot-unix-utils.lo \
-	src/libotutil/libotutil_la-ot-spawn-utils.lo \
 	src/libotutil/libotutil_la-ot-variant-utils.lo \
 	src/libotutil/libotutil_la-ot-gio-utils.lo \
 	src/libotutil/libotutil_la-ot-log-utils.lo \
@@ -799,12 +800,14 @@ am__EXEEXT_3 = tests/test-varint$(EXEEXT) \
 	$(am__EXEEXT_2)
 am__EXEEXT_4 = $(am__EXEEXT_3)
 @ENABLE_ALWAYS_BUILD_TESTS_FALSE@am__EXEEXT_5 = $(am__EXEEXT_4)
-@BUILDOPT_SYSTEMD_FALSE@am__EXEEXT_6 = ostree-remount$(EXEEXT)
-@ENABLE_INSTALLED_TESTS_TRUE@am__EXEEXT_7 = $(am__EXEEXT_3)
-@ENABLE_ALWAYS_BUILD_TESTS_TRUE@am__EXEEXT_8 = $(am__EXEEXT_4)
-@BUILDOPT_SYSTEMD_TRUE@am__EXEEXT_9 = ostree-remount$(EXEEXT)
-@BUILDOPT_USE_STATIC_COMPILER_FALSE@am__EXEEXT_10 = ostree-prepare-root$(EXEEXT)
-@USE_LIBSOUP_TRUE@am__EXEEXT_11 = ostree-trivial-httpd$(EXEEXT)
+am__EXEEXT_6 = test-libglnx-xattrs$(EXEEXT) test-libglnx-fdio$(EXEEXT) \
+	test-libglnx-errors$(EXEEXT)
+@BUILDOPT_SYSTEMD_FALSE@am__EXEEXT_7 = ostree-remount$(EXEEXT)
+@ENABLE_INSTALLED_TESTS_TRUE@am__EXEEXT_8 = $(am__EXEEXT_3)
+@ENABLE_ALWAYS_BUILD_TESTS_TRUE@am__EXEEXT_9 = $(am__EXEEXT_4)
+@BUILDOPT_SYSTEMD_TRUE@am__EXEEXT_10 = ostree-remount$(EXEEXT)
+@BUILDOPT_USE_STATIC_COMPILER_FALSE@am__EXEEXT_11 = ostree-prepare-root$(EXEEXT)
+@USE_LIBSOUP_TRUE@am__EXEEXT_12 = ostree-trivial-httpd$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(installed_test_PROGRAMS) \
 	$(libexec_PROGRAMS) $(noinst_PROGRAMS) $(ostree_boot_PROGRAMS) \
 	$(pkglibexec_PROGRAMS) $(sbin_PROGRAMS)
@@ -962,6 +965,21 @@ rofiles_fuse_OBJECTS = $(am_rofiles_fuse_OBJECTS)
 rofiles_fuse_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(rofiles_fuse_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_test_libglnx_errors_OBJECTS = libglnx/tests/test_libglnx_errors-test-libglnx-errors.$(OBJEXT)
+test_libglnx_errors_OBJECTS = $(am_test_libglnx_errors_OBJECTS)
+test_libglnx_errors_DEPENDENCIES = $(am__DEPENDENCIES_2) libglnx.la
+test_libglnx_errors_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(test_libglnx_errors_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_test_libglnx_fdio_OBJECTS =  \
+	libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.$(OBJEXT)
+test_libglnx_fdio_OBJECTS = $(am_test_libglnx_fdio_OBJECTS)
+test_libglnx_fdio_DEPENDENCIES = $(am__DEPENDENCIES_2) libglnx.la
+test_libglnx_fdio_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(test_libglnx_fdio_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 am_test_libglnx_xattrs_OBJECTS = libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.$(OBJEXT)
 test_libglnx_xattrs_OBJECTS = $(am_test_libglnx_xattrs_OBJECTS)
 test_libglnx_xattrs_DEPENDENCIES = $(am__DEPENDENCIES_2) libglnx.la
@@ -1155,6 +1173,7 @@ SOURCES = $(libbsdiff_la_SOURCES) $(libbupsplit_la_SOURCES) \
 	$(libreaddir_rand_la_SOURCES) $(ostree_SOURCES) \
 	$(ostree_prepare_root_SOURCES) $(ostree_remount_SOURCES) \
 	$(ostree_trivial_httpd_SOURCES) $(rofiles_fuse_SOURCES) \
+	$(test_libglnx_errors_SOURCES) $(test_libglnx_fdio_SOURCES) \
 	$(test_libglnx_xattrs_SOURCES) tests/test-basic-c.c \
 	tests/test-bsdiff.c $(tests_test_checksum_SOURCES) \
 	$(tests_test_gpg_verify_result_SOURCES) \
@@ -1175,6 +1194,7 @@ DIST_SOURCES = $(libbsdiff_la_SOURCES) \
 	$(ostree_prepare_root_SOURCES) $(ostree_remount_SOURCES) \
 	$(am__ostree_trivial_httpd_SOURCES_DIST) \
 	$(am__rofiles_fuse_SOURCES_DIST) \
+	$(test_libglnx_errors_SOURCES) $(test_libglnx_fdio_SOURCES) \
 	$(test_libglnx_xattrs_SOURCES) tests/test-basic-c.c \
 	tests/test-bsdiff.c $(tests_test_checksum_SOURCES) \
 	$(tests_test_gpg_verify_result_SOURCES) \
@@ -1403,15 +1423,16 @@ am__set_TESTS_bases = \
   bases=`for i in $$bases; do echo $$i; done | sed 's/\.log$$//'`; \
   bases=`echo $$bases`
 RECHECK_LOGS = $(TEST_LOGS)
-am__EXEEXT_12 =
-am__EXEEXT_13 = tests/test-basic.sh tests/test-basic-user.sh \
-	tests/test-pull-subpath.sh tests/test-archivez.sh \
-	tests/test-remote-add.sh tests/test-remote-headers.sh \
-	tests/test-remote-gpg-import.sh tests/test-commit-sign.sh \
-	tests/test-export.sh tests/test-help.sh \
-	tests/test-libarchive.sh tests/test-parent.sh \
-	tests/test-pull-archive-z.sh tests/test-pull-commit-only.sh \
-	tests/test-pull-depth.sh tests/test-pull-mirror-summary.sh \
+am__EXEEXT_13 =
+am__EXEEXT_14 = tests/test-basic.sh tests/test-basic-user.sh \
+	tests/test-basic-user-only.sh tests/test-pull-subpath.sh \
+	tests/test-archivez.sh tests/test-remote-add.sh \
+	tests/test-remote-headers.sh tests/test-remote-gpg-import.sh \
+	tests/test-commit-sign.sh tests/test-export.sh \
+	tests/test-help.sh tests/test-libarchive.sh \
+	tests/test-parent.sh tests/test-pull-archive-z.sh \
+	tests/test-pull-commit-only.sh tests/test-pull-depth.sh \
+	tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
@@ -1437,8 +1458,9 @@ am__EXEEXT_13 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-auto-summary.sh tests/test-prune.sh \
 	tests/test-refs.sh tests/test-demo-buildsystem.sh \
 	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
-	tests/test-pull-mirrorlist.sh $(am__EXEEXT_12) \
-	$(am__append_51) $(am__append_53) $(am__append_54)
+	tests/test-pull-mirrorlist.sh tests/coccinelle.sh \
+	$(am__EXEEXT_13) $(am__append_51) $(am__append_53) \
+	$(am__append_54)
 TEST_SUITE_LOG = test-suite.log
 TEST_EXTENSIONS = @EXEEXT@ .test
 LOG_COMPILE = $(LOG_COMPILER) $(AM_LOG_FLAGS) $(LOG_FLAGS)
@@ -1478,7 +1500,8 @@ am__DIST_COMMON = $(srcdir)/Makefile-boot.am \
 	$(top_srcdir)/build-aux/missing \
 	$(top_srcdir)/build-aux/test-driver \
 	$(top_srcdir)/buildutil/glib-tap.mk \
-	$(top_srcdir)/src/libostree/ostree-1.pc.in COPYING TODO \
+	$(top_srcdir)/src/libostree/ostree-1.pc.in \
+	$(top_srcdir)/src/libostree/ostree-version.h.in COPYING TODO \
 	build-aux/compile build-aux/config.guess build-aux/config.sub \
 	build-aux/depcomp build-aux/install-sh build-aux/ltmain.sh \
 	build-aux/missing
@@ -1619,6 +1642,8 @@ OT_DEP_LIBMOUNT_CFLAGS = @OT_DEP_LIBMOUNT_CFLAGS@
 OT_DEP_LIBMOUNT_LIBS = @OT_DEP_LIBMOUNT_LIBS@
 OT_DEP_LZMA_CFLAGS = @OT_DEP_LZMA_CFLAGS@
 OT_DEP_LZMA_LIBS = @OT_DEP_LZMA_LIBS@
+OT_DEP_OPENSSL_CFLAGS = @OT_DEP_OPENSSL_CFLAGS@
+OT_DEP_OPENSSL_LIBS = @OT_DEP_OPENSSL_LIBS@
 OT_DEP_SELINUX_CFLAGS = @OT_DEP_SELINUX_CFLAGS@
 OT_DEP_SELINUX_LIBS = @OT_DEP_SELINUX_LIBS@
 OT_DEP_SOUP_CFLAGS = @OT_DEP_SOUP_CFLAGS@
@@ -1637,6 +1662,7 @@ PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
+RELEASE_VERSION = @RELEASE_VERSION@
 RUST_TARGET_SUBDIR = @RUST_TARGET_SUBDIR@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -1647,6 +1673,7 @@ VERSION = @VERSION@
 WARN_CFLAGS = @WARN_CFLAGS@
 XSLTPROC = @XSLTPROC@
 YACC = @YACC@
+YEAR_VERSION = @YEAR_VERSION@
 YFLAGS = @YFLAGS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -1709,7 +1736,7 @@ top_srcdir = @top_srcdir@
 # Common variables
 AM_CPPFLAGS = -DDATADIR='"$(datadir)"' -DLIBEXECDIR='"$(libexecdir)"' \
 	-DLOCALEDIR=\"$(datadir)/locale\" \
-	-DSYSCONFDIR=\"$(sysconfdir)\" \
+	-DSYSCONFDIR=\"$(sysconfdir)\" -DTARGET_PREFIX='"$(prefix)"' \
 	-DSHORTENED_SYSCONFDIR=\"$(shortened_sysconfdir)\" \
 	-DOSTREE_FEATURES='"$(OSTREE_FEATURES)"' -DOSTREE_COMPILATION \
 	-DG_LOG_DOMAIN=\"OSTree\" -DOSTREE_GITREV='"$(OSTREE_GITREV)"' \
@@ -1743,11 +1770,11 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/libostree/ostree-enumtypes.c.template \
 	src/libostree/ostree-deployment-private.h \
 	src/libostree/ostree-repo-deprecated.h \
-	src/ostree/parse-datetime.y buildutil/tap-driver.sh \
-	buildutil/tap-test tests/glib.supp tests/ostree.supp $(NULL) \
-	$(am__append_52) $(am__append_55) tests/libtest.sh \
-	$(am__append_56) tests/libostreetest.h tests/libtest.sh \
-	tests/gpg-verify-data/README.md $(NULL) \
+	src/libostree/ostree-version.h src/ostree/parse-datetime.y \
+	buildutil/tap-driver.sh buildutil/tap-test tests/glib.supp \
+	tests/ostree.supp $(NULL) $(am__append_52) $(am__append_55) \
+	tests/libtest.sh $(am__append_56) tests/libostreetest.h \
+	tests/libtest.sh tests/gpg-verify-data/README.md $(NULL) \
 	src/boot/dracut/module-setup.sh src/boot/dracut/ostree.conf \
 	src/boot/mkinitcpio/ostree \
 	src/boot/ostree-prepare-root.service \
@@ -1778,6 +1805,7 @@ TESTS_ENVIRONMENT = G_TEST_SRCDIR="$(abs_srcdir)" \
 	G_TEST_BUILDDIR="$(abs_builddir)" UNINSTALLEDTESTS=1 \
 	G_DEBUG=gc-friendly MALLOC_CHECK_=2 \
 	MALLOC_PERTURB_=$$(($${RANDOM:-256} % 256)) OT_TESTS_DEBUG=1 \
+	OSTREE_UNINSTALLED_SRCDIR=$(abs_top_srcdir) \
 	OSTREE_UNINSTALLED=$(abs_top_builddir) G_DEBUG=fatal-warnings \
 	GI_TYPELIB_PATH=$$(cd $(top_builddir) && \
 	pwd)$${GI_TYPELIB_PATH:+:$$GI_TYPELIB_PATH} \
@@ -1878,9 +1906,16 @@ libglnx_la_SOURCES = \
 libglnx_la_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 libglnx_la_LDFLAGS = -avoid-version -Bsymbolic-functions -export-symbols-regex "^glnx_" -no-undefined -export-dynamic 
 libglnx_la_LIBADD = $(libglnx_libs)
+libglnx_tests = test-libglnx-xattrs test-libglnx-fdio test-libglnx-errors
 test_libglnx_xattrs_SOURCES = libglnx/tests/test-libglnx-xattrs.c
 test_libglnx_xattrs_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 test_libglnx_xattrs_LDADD = $(libglnx_libs) libglnx.la
+test_libglnx_fdio_SOURCES = libglnx/tests/test-libglnx-fdio.c
+test_libglnx_fdio_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
+test_libglnx_fdio_LDADD = $(libglnx_libs) libglnx.la
+test_libglnx_errors_SOURCES = libglnx/tests/test-libglnx-errors.c
+test_libglnx_errors_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
+test_libglnx_errors_LDADD = $(libglnx_libs) libglnx.la
 libbsdiff_srcpath := $(srcdir)/bsdiff
 libbsdiff_cflags := $(OT_DEP_GIO_UNIX_CFLAGS) "-I$(bsdiff_srcpath)"
 libbsdiff_libs := $(OT_DEP_GIO_UNIX_LIBS)
@@ -1893,6 +1928,8 @@ libbsdiff_la_CFLAGS = $(AM_CFLAGS)
 libotutil_la_SOURCES = \
 	src/libotutil/ot-checksum-utils.c \
 	src/libotutil/ot-checksum-utils.h \
+	src/libotutil/ot-checksum-instream.c \
+	src/libotutil/ot-checksum-instream.h \
 	src/libotutil/ot-fs-utils.c \
 	src/libotutil/ot-fs-utils.h \
 	src/libotutil/ot-keyfile-utils.c \
@@ -1901,8 +1938,6 @@ libotutil_la_SOURCES = \
 	src/libotutil/ot-opt-utils.h \
 	src/libotutil/ot-unix-utils.c \
 	src/libotutil/ot-unix-utils.h \
-	src/libotutil/ot-spawn-utils.c \
-	src/libotutil/ot-spawn-utils.h \
 	src/libotutil/ot-variant-utils.c \
 	src/libotutil/ot-variant-utils.h \
 	src/libotutil/ot-gio-utils.c \
@@ -1939,9 +1974,13 @@ libostree_public_headers = \
 	src/libostree/ostree-repo-deprecated.h \
 	$(NULL)
 
+
+# This one is generated via configure.ac, and the gtk-doc
+# code hence needs to look in the builddir.
+libostree_public_built_headers = src/libostree/ostree-version.h
 @ENABLE_RUST_FALSE@bupsplitpath = libbupsplit.la
 @ENABLE_RUST_TRUE@bupsplitpath = @abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/libbupsplit_rs.a
-@ENABLE_RUST_TRUE@BUPSPLIT_RUST_SOURCES = rust/src/bupsplit.rs
+@ENABLE_RUST_TRUE@BUPSPLIT_RUST_SRCS = rust/src/bupsplit.rs
 @ENABLE_RUST_FALSE@libbupsplit_la_SOURCES = src/libostree/bupsplit.h src/libostree/bupsplit.c
 libostree_kernel_args_la_SOURCES = \
 	src/libostree/ostree-kernel-args.h \
@@ -1951,7 +1990,7 @@ libostree_kernel_args_la_SOURCES = \
 libostree_kernel_args_la_CFLAGS = -I$(srcdir)/libglnx $(OT_INTERNAL_GIO_UNIX_CFLAGS)
 libostree_kernel_args_la_LIBADD = $(OT_INTERNAL_GIO_UNIX_LIBS)
 libostreeincludedir = $(includedir)/ostree-1
-libostreeinclude_HEADERS = $(libostree_public_headers)
+libostreeinclude_HEADERS = $(libostree_public_headers) $(libostree_public_built_headers)
 ENUM_TYPES = $(NULL) $(srcdir)/src/libostree/ostree-fetcher.h
 nodist_libostree_1_la_SOURCES = \
 	src/libostree/ostree-enumtypes.h \
@@ -1992,6 +2031,7 @@ libostree_1_la_SOURCES = src/libostree/ostree-async-progress.c \
 	src/libostree/ostree-repo-file-enumerator.c \
 	src/libostree/ostree-repo-file-enumerator.h \
 	src/libostree/ostree-sepolicy.c \
+	src/libostree/ostree-sepolicy-private.h \
 	src/libostree/ostree-sysroot-private.h \
 	src/libostree/ostree-sysroot.c \
 	src/libostree/ostree-sysroot-cleanup.c \
@@ -2024,7 +2064,7 @@ libostree_1_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/bsdiff \
 	-I$(srcdir)/src/libostree -I$(builddir)/src/libostree \
 	$(OT_INTERNAL_GIO_UNIX_CFLAGS) $(OT_INTERNAL_GPGME_CFLAGS) \
 	$(OT_DEP_LZMA_CFLAGS) $(OT_DEP_ZLIB_CFLAGS) \
-	-fvisibility=hidden \
+	$(OT_DEP_OPENSSL_CFLAGS) -fvisibility=hidden \
 	'-D_OSTREE_PUBLIC=__attribute__((visibility("default"))) \
 	extern' $(am__append_20) $(am__append_22) $(am__append_26) \
 	$(am__append_29) $(am__append_31) $(am__append_33)
@@ -2032,16 +2072,16 @@ libostree_1_la_LDFLAGS = -version-number 1:0:0 -Bsymbolic-functions -Wl,--versio
 libostree_1_la_LIBADD = libotutil.la libglnx.la libbsdiff.la \
 	libostree-kernel-args.la $(OT_INTERNAL_GIO_UNIX_LIBS) \
 	$(OT_INTERNAL_GPGME_LIBS) $(OT_DEP_LZMA_LIBS) \
-	$(OT_DEP_ZLIB_LIBS) $(bupsplitpath) $(am__append_21) \
-	$(am__append_23) $(am__append_27) $(am__append_30) \
-	$(am__append_32) $(am__append_34)
+	$(OT_DEP_ZLIB_LIBS) $(OT_DEP_OPENSSL_LIBS) $(bupsplitpath) \
+	$(am__append_21) $(am__append_23) $(am__append_27) \
+	$(am__append_30) $(am__append_32) $(am__append_34)
 EXTRA_libostree_1_la_DEPENDENCIES = $(top_srcdir)/src/libostree/libostree.sym
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_EXPORT_PACKAGES = ostree-1
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_INCLUDES = Gio-2.0
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_CFLAGS = $(libostree_1_la_CFLAGS)
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_LIBS = libostree-1.la
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_SCANNERFLAGS = --warn-all --identifier-prefix=Ostree --symbol-prefix=ostree
-@BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_FILES = $(libostreeinclude_HEADERS) $(filter-out %-private.h,$(libostree_1_la_SOURCES))
+@BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_FILES = $(libostreeinclude_HEADERS) $(filter-out %-private.h %/ostree-soup-uri.h,$(libostree_1_la_SOURCES))
 gpgreadme_DATA = src/libostree/README-gpg
 gpgreadmedir = $(datadir)/ostree/trusted.gpg.d
 
@@ -2095,7 +2135,7 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-remote-builtin-summary.c $(NULL) \
 	$(am__append_39) $(am__append_40)
 ostree_bin_shared_cflags = $(AM_CFLAGS) -I$(srcdir)/src/libotutil -I$(srcdir)/src/libostree \
-	-I$(srcdir)/src/ostree -I$(srcdir)/libglnx $(OT_INTERNAL_GIO_UNIX_CFLAGS) \
+	-I$(builddir)/src/libostree -I$(srcdir)/src/ostree -I$(srcdir)/libglnx $(OT_INTERNAL_GIO_UNIX_CFLAGS) \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"
 
 ostree_bin_shared_ldadd = $(AM_LDFLAGS) libglnx.la libotutil.la libostree-1.la \
@@ -2143,13 +2183,14 @@ uninstalled_test_data = tests/ostree-symlink-stamp tests/ostree-prepare-root-sym
 
 dist_uninstalled_test_scripts = tests/test-symbols.sh
 dist_test_scripts = tests/test-basic.sh tests/test-basic-user.sh \
-	tests/test-pull-subpath.sh tests/test-archivez.sh \
-	tests/test-remote-add.sh tests/test-remote-headers.sh \
-	tests/test-remote-gpg-import.sh tests/test-commit-sign.sh \
-	tests/test-export.sh tests/test-help.sh \
-	tests/test-libarchive.sh tests/test-parent.sh \
-	tests/test-pull-archive-z.sh tests/test-pull-commit-only.sh \
-	tests/test-pull-depth.sh tests/test-pull-mirror-summary.sh \
+	tests/test-basic-user-only.sh tests/test-pull-subpath.sh \
+	tests/test-archivez.sh tests/test-remote-add.sh \
+	tests/test-remote-headers.sh tests/test-remote-gpg-import.sh \
+	tests/test-commit-sign.sh tests/test-export.sh \
+	tests/test-help.sh tests/test-libarchive.sh \
+	tests/test-parent.sh tests/test-pull-archive-z.sh \
+	tests/test-pull-commit-only.sh tests/test-pull-depth.sh \
+	tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
@@ -2175,8 +2216,8 @@ dist_test_scripts = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-auto-summary.sh tests/test-prune.sh \
 	tests/test-refs.sh tests/test-demo-buildsystem.sh \
 	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
-	tests/test-pull-mirrorlist.sh $(NULL) $(am__append_51) \
-	$(am__append_53) $(am__append_54)
+	tests/test-pull-mirrorlist.sh tests/coccinelle.sh $(NULL) \
+	$(am__append_51) $(am__append_53) $(am__append_54)
 
 # These call into gjs scripts 
 js_tests = tests/test-corruption.sh tests/test-pull-corruption.sh
@@ -2389,6 +2430,8 @@ $(srcdir)/config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 distclean-hdr:
 	-rm -f config.h stamp-h1
 src/libostree/ostree-1.pc: $(top_builddir)/config.status $(top_srcdir)/src/libostree/ostree-1.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+src/libostree/ostree-version.h: $(top_builddir)/config.status $(top_srcdir)/src/libostree/ostree-version.h.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 clean-checkLTLIBRARIES:
@@ -2750,6 +2793,9 @@ src/libotutil/$(DEPDIR)/$(am__dirstamp):
 src/libotutil/libotutil_la-ot-checksum-utils.lo:  \
 	src/libotutil/$(am__dirstamp) \
 	src/libotutil/$(DEPDIR)/$(am__dirstamp)
+src/libotutil/libotutil_la-ot-checksum-instream.lo:  \
+	src/libotutil/$(am__dirstamp) \
+	src/libotutil/$(DEPDIR)/$(am__dirstamp)
 src/libotutil/libotutil_la-ot-fs-utils.lo:  \
 	src/libotutil/$(am__dirstamp) \
 	src/libotutil/$(DEPDIR)/$(am__dirstamp)
@@ -2760,9 +2806,6 @@ src/libotutil/libotutil_la-ot-opt-utils.lo:  \
 	src/libotutil/$(am__dirstamp) \
 	src/libotutil/$(DEPDIR)/$(am__dirstamp)
 src/libotutil/libotutil_la-ot-unix-utils.lo:  \
-	src/libotutil/$(am__dirstamp) \
-	src/libotutil/$(DEPDIR)/$(am__dirstamp)
-src/libotutil/libotutil_la-ot-spawn-utils.lo:  \
 	src/libotutil/$(am__dirstamp) \
 	src/libotutil/$(DEPDIR)/$(am__dirstamp)
 src/libotutil/libotutil_la-ot-variant-utils.lo:  \
@@ -3321,6 +3364,20 @@ libglnx/tests/$(am__dirstamp):
 libglnx/tests/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) libglnx/tests/$(DEPDIR)
 	@: > libglnx/tests/$(DEPDIR)/$(am__dirstamp)
+libglnx/tests/test_libglnx_errors-test-libglnx-errors.$(OBJEXT):  \
+	libglnx/tests/$(am__dirstamp) \
+	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
+
+test-libglnx-errors$(EXEEXT): $(test_libglnx_errors_OBJECTS) $(test_libglnx_errors_DEPENDENCIES) $(EXTRA_test_libglnx_errors_DEPENDENCIES) 
+	@rm -f test-libglnx-errors$(EXEEXT)
+	$(AM_V_CCLD)$(test_libglnx_errors_LINK) $(test_libglnx_errors_OBJECTS) $(test_libglnx_errors_LDADD) $(LIBS)
+libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.$(OBJEXT):  \
+	libglnx/tests/$(am__dirstamp) \
+	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
+
+test-libglnx-fdio$(EXEEXT): $(test_libglnx_fdio_OBJECTS) $(test_libglnx_fdio_DEPENDENCIES) $(EXTRA_test_libglnx_fdio_DEPENDENCIES) 
+	@rm -f test-libglnx-fdio$(EXEEXT)
+	$(AM_V_CCLD)$(test_libglnx_fdio_LINK) $(test_libglnx_fdio_OBJECTS) $(test_libglnx_fdio_LDADD) $(LIBS)
 libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.$(OBJEXT):  \
 	libglnx/tests/$(am__dirstamp) \
 	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
@@ -3687,6 +3744,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/$(DEPDIR)/libglnx_la-glnx-lockfile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/$(DEPDIR)/libglnx_la-glnx-shutil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/$(DEPDIR)/libglnx_la-glnx-xattrs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/bupsplit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-async-progress.Plo@am__quote@
@@ -3748,6 +3807,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_rollsum-ostree-rollsum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_rollsum_cli-ostree-rollsum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_varint-ostree-varint.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-checksum-instream.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-checksum-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-fs-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-gio-utils.Plo@am__quote@
@@ -3755,7 +3815,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-keyfile-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-log-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-opt-utils.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-spawn-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-tool-util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-unix-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-variant-utils.Plo@am__quote@
@@ -4318,6 +4377,13 @@ src/libotutil/libotutil_la-ot-checksum-utils.lo: src/libotutil/ot-checksum-utils
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -c -o src/libotutil/libotutil_la-ot-checksum-utils.lo `test -f 'src/libotutil/ot-checksum-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-checksum-utils.c
 
+src/libotutil/libotutil_la-ot-checksum-instream.lo: src/libotutil/ot-checksum-instream.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -MT src/libotutil/libotutil_la-ot-checksum-instream.lo -MD -MP -MF src/libotutil/$(DEPDIR)/libotutil_la-ot-checksum-instream.Tpo -c -o src/libotutil/libotutil_la-ot-checksum-instream.lo `test -f 'src/libotutil/ot-checksum-instream.c' || echo '$(srcdir)/'`src/libotutil/ot-checksum-instream.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libotutil/$(DEPDIR)/libotutil_la-ot-checksum-instream.Tpo src/libotutil/$(DEPDIR)/libotutil_la-ot-checksum-instream.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libotutil/ot-checksum-instream.c' object='src/libotutil/libotutil_la-ot-checksum-instream.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -c -o src/libotutil/libotutil_la-ot-checksum-instream.lo `test -f 'src/libotutil/ot-checksum-instream.c' || echo '$(srcdir)/'`src/libotutil/ot-checksum-instream.c
+
 src/libotutil/libotutil_la-ot-fs-utils.lo: src/libotutil/ot-fs-utils.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -MT src/libotutil/libotutil_la-ot-fs-utils.lo -MD -MP -MF src/libotutil/$(DEPDIR)/libotutil_la-ot-fs-utils.Tpo -c -o src/libotutil/libotutil_la-ot-fs-utils.lo `test -f 'src/libotutil/ot-fs-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-fs-utils.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libotutil/$(DEPDIR)/libotutil_la-ot-fs-utils.Tpo src/libotutil/$(DEPDIR)/libotutil_la-ot-fs-utils.Plo
@@ -4345,13 +4411,6 @@ src/libotutil/libotutil_la-ot-unix-utils.lo: src/libotutil/ot-unix-utils.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libotutil/ot-unix-utils.c' object='src/libotutil/libotutil_la-ot-unix-utils.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -c -o src/libotutil/libotutil_la-ot-unix-utils.lo `test -f 'src/libotutil/ot-unix-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-unix-utils.c
-
-src/libotutil/libotutil_la-ot-spawn-utils.lo: src/libotutil/ot-spawn-utils.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -MT src/libotutil/libotutil_la-ot-spawn-utils.lo -MD -MP -MF src/libotutil/$(DEPDIR)/libotutil_la-ot-spawn-utils.Tpo -c -o src/libotutil/libotutil_la-ot-spawn-utils.lo `test -f 'src/libotutil/ot-spawn-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-spawn-utils.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libotutil/$(DEPDIR)/libotutil_la-ot-spawn-utils.Tpo src/libotutil/$(DEPDIR)/libotutil_la-ot-spawn-utils.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libotutil/ot-spawn-utils.c' object='src/libotutil/libotutil_la-ot-spawn-utils.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -c -o src/libotutil/libotutil_la-ot-spawn-utils.lo `test -f 'src/libotutil/ot-spawn-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-spawn-utils.c
 
 src/libotutil/libotutil_la-ot-variant-utils.lo: src/libotutil/ot-variant-utils.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -MT src/libotutil/libotutil_la-ot-variant-utils.lo -MD -MP -MF src/libotutil/$(DEPDIR)/libotutil_la-ot-variant-utils.Tpo -c -o src/libotutil/libotutil_la-ot-variant-utils.lo `test -f 'src/libotutil/ot-variant-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-variant-utils.c
@@ -5241,6 +5300,34 @@ src/rofiles-fuse/rofiles_fuse-main.obj: src/rofiles-fuse/main.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/rofiles-fuse/main.c' object='src/rofiles-fuse/rofiles_fuse-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rofiles_fuse_CFLAGS) $(CFLAGS) -c -o src/rofiles-fuse/rofiles_fuse-main.obj `if test -f 'src/rofiles-fuse/main.c'; then $(CYGPATH_W) 'src/rofiles-fuse/main.c'; else $(CYGPATH_W) '$(srcdir)/src/rofiles-fuse/main.c'; fi`
+
+libglnx/tests/test_libglnx_errors-test-libglnx-errors.o: libglnx/tests/test-libglnx-errors.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_errors_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_errors-test-libglnx-errors.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Tpo -c -o libglnx/tests/test_libglnx_errors-test-libglnx-errors.o `test -f 'libglnx/tests/test-libglnx-errors.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-errors.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/test-libglnx-errors.c' object='libglnx/tests/test_libglnx_errors-test-libglnx-errors.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_errors_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_errors-test-libglnx-errors.o `test -f 'libglnx/tests/test-libglnx-errors.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-errors.c
+
+libglnx/tests/test_libglnx_errors-test-libglnx-errors.obj: libglnx/tests/test-libglnx-errors.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_errors_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_errors-test-libglnx-errors.obj -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Tpo -c -o libglnx/tests/test_libglnx_errors-test-libglnx-errors.obj `if test -f 'libglnx/tests/test-libglnx-errors.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-errors.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-errors.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/test-libglnx-errors.c' object='libglnx/tests/test_libglnx_errors-test-libglnx-errors.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_errors_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_errors-test-libglnx-errors.obj `if test -f 'libglnx/tests/test-libglnx-errors.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-errors.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-errors.c'; fi`
+
+libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.o: libglnx/tests/test-libglnx-fdio.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Tpo -c -o libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.o `test -f 'libglnx/tests/test-libglnx-fdio.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-fdio.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/test-libglnx-fdio.c' object='libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.o `test -f 'libglnx/tests/test-libglnx-fdio.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-fdio.c
+
+libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.obj: libglnx/tests/test-libglnx-fdio.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.obj -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Tpo -c -o libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.obj `if test -f 'libglnx/tests/test-libglnx-fdio.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-fdio.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-fdio.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/test-libglnx-fdio.c' object='libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.obj `if test -f 'libglnx/tests/test-libglnx-fdio.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-fdio.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-fdio.c'; fi`
 
 libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.o: libglnx/tests/test-libglnx-xattrs.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_xattrs_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Tpo -c -o libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.o `test -f 'libglnx/tests/test-libglnx-xattrs.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-xattrs.c
@@ -6337,6 +6424,13 @@ tests/test-basic-user.sh.log: tests/test-basic-user.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-basic-user-only.sh.log: tests/test-basic-user-only.sh
+	@p='tests/test-basic-user-only.sh'; \
+	b='tests/test-basic-user-only.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/test-pull-subpath.sh.log: tests/test-pull-subpath.sh
 	@p='tests/test-pull-subpath.sh'; \
 	b='tests/test-pull-subpath.sh'; \
@@ -6701,6 +6795,13 @@ tests/test-pull-mirrorlist.sh.log: tests/test-pull-mirrorlist.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/coccinelle.sh.log: tests/coccinelle.sh
+	@p='tests/coccinelle.sh'; \
+	b='tests/coccinelle.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/test-rofiles-fuse.sh.log: tests/test-rofiles-fuse.sh
 	@p='tests/test-rofiles-fuse.sh'; \
 	b='tests/test-rofiles-fuse.sh'; \
@@ -6739,6 +6840,20 @@ tests/test-symbols.sh.log: tests/test-symbols.sh
 test-libglnx-xattrs.log: test-libglnx-xattrs$(EXEEXT)
 	@p='test-libglnx-xattrs$(EXEEXT)'; \
 	b='test-libglnx-xattrs'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-libglnx-fdio.log: test-libglnx-fdio$(EXEEXT)
+	@p='test-libglnx-fdio$(EXEEXT)'; \
+	b='test-libglnx-fdio'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-libglnx-errors.log: test-libglnx-errors$(EXEEXT)
+	@p='test-libglnx-errors$(EXEEXT)'; \
+	b='test-libglnx-errors'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -7223,7 +7338,7 @@ all-local: $(ALL_LOCAL_RULES)
 @ENABLE_RUST_TRUE@   cargo vendor -q && \
 @ENABLE_RUST_TRUE@   mkdir .cargo && \
 @ENABLE_RUST_TRUE@	 cp cargo-vendor-config .cargo/config)
-@ENABLE_RUST_TRUE@$(bupsplitpath): Makefile $(BUPSPLIT_RUST_SOURCES)
+@ENABLE_RUST_TRUE@$(bupsplitpath): Makefile $(BUPSPLIT_RUST_SRCS)
 @ENABLE_RUST_TRUE@	cd $(top_srcdir)/rust && CARGO_TARGET_DIR=@abs_top_builddir@/target cargo build --verbose $(CARGO_RELEASE_ARGS)
 
 src/libostree/ostree-enumtypes.h: src/libostree/ostree-enumtypes.h.template $(ENUM_TYPES)

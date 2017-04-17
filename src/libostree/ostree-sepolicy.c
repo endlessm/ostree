@@ -28,6 +28,7 @@
 #include "otutil.h"
 
 #include "ostree-sepolicy.h"
+#include "ostree-sepolicy-private.h"
 #include "ostree-bootloader-uboot.h"
 #include "ostree-bootloader-syslinux.h"
 
@@ -42,6 +43,8 @@
 struct OstreeSePolicy {
   GObject parent;
 
+  int rootfs_dfd;
+  int rootfs_dfd_owned;
   GFile *path;
 
   gboolean runtime_enabled;
@@ -63,7 +66,8 @@ static void initable_iface_init       (GInitableIface      *initable_iface);
 enum {
   PROP_0,
 
-  PROP_PATH
+  PROP_PATH,
+  PROP_ROOTFS_DFD
 };
 
 G_DEFINE_TYPE_WITH_CODE (OstreeSePolicy, ostree_sepolicy, G_TYPE_OBJECT,
@@ -75,6 +79,8 @@ ostree_sepolicy_finalize (GObject *object)
   OstreeSePolicy *self = OSTREE_SEPOLICY (object);
 
   g_clear_object (&self->path);
+  if (self->rootfs_dfd_owned != -1)
+    (void) close (self->rootfs_dfd_owned);
 #ifdef HAVE_SELINUX
   g_clear_object (&self->selinux_policy_root);
   g_clear_pointer (&self->selinux_policy_name, g_free);
@@ -100,8 +106,25 @@ ostree_sepolicy_set_property(GObject         *object,
   switch (prop_id)
     {
     case PROP_PATH:
-      /* Canonicalize */
-      self->path = g_file_new_for_path (gs_file_get_path_cached (g_value_get_object (value)));
+      {
+        GFile *path = g_value_get_object (value);
+        if (path)
+          {
+            /* Canonicalize */
+            self->path = g_file_new_for_path (gs_file_get_path_cached (path));
+            g_assert_cmpint (self->rootfs_dfd, ==, -1);
+          }
+      }
+      break;
+    case PROP_ROOTFS_DFD:
+      {
+        int fd = g_value_get_int (value);
+        if (fd != -1)
+          {
+            g_assert (self->path == NULL);
+            self->rootfs_dfd = fd;
+          }
+      }
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -122,6 +145,9 @@ ostree_sepolicy_get_property(GObject         *object,
     case PROP_PATH:
       g_value_set_object (value, self->path);
       break;
+    case PROP_ROOTFS_DFD:
+      g_value_set_int (value, self->rootfs_dfd);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -133,7 +159,7 @@ ostree_sepolicy_constructed (GObject *object)
 {
   OstreeSePolicy *self = OSTREE_SEPOLICY (object);
 
-  g_assert (self->path != NULL);
+  g_assert (self->path != NULL || self->rootfs_dfd != -1);
 
   G_OBJECT_CLASS (ostree_sepolicy_parent_class)->constructed (object);
 }
@@ -155,6 +181,13 @@ ostree_sepolicy_class_init (OstreeSePolicyClass *klass)
                                                         "",
                                                         G_TYPE_FILE,
                                                         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+  g_object_class_install_property (object_class,
+                                   PROP_ROOTFS_DFD,
+                                   g_param_spec_int ("rootfs-dfd",
+                                                     "", "",
+                                                     -1, G_MAXINT, -1,
+                                                     G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+
 }
 
 #ifdef HAVE_SELINUX
@@ -252,6 +285,7 @@ initable_init (GInitable     *initable,
 #ifdef HAVE_SELINUX
   gboolean ret = FALSE;
   OstreeSePolicy *self = OSTREE_SEPOLICY (initable);
+  g_autoptr(GFile) path = NULL;
   g_autoptr(GFile) etc_selinux_dir = NULL;
   g_autoptr(GFile) policy_config_path = NULL;
   g_autoptr(GFile) policy_root = NULL;
@@ -262,11 +296,28 @@ initable_init (GInitable     *initable,
   const char *selinux_prefix = "SELINUX=";
   const char *selinuxtype_prefix = "SELINUXTYPE=";
 
-  etc_selinux_dir = g_file_resolve_relative_path (self->path, "etc/selinux");
+  /* TODO - use this below */
+  if (self->rootfs_dfd != -1)
+    path = ot_fdrel_to_gfile (self->rootfs_dfd, ".");
+  else if (self->path)
+    {
+      path = g_object_ref (self->path);
+#if 0
+      /* TODO - use this below */
+      if (!glnx_opendirat (AT_FDCWD, gs_file_get_path_cached (self->path), TRUE,
+                           &self->rootfs_dfd_owned, error))
+        goto out;
+      self->rootfs_dfd = self->rootfs_dfd_owned;
+#endif
+    }
+  else
+    g_assert_not_reached ();
+
+  etc_selinux_dir = g_file_resolve_relative_path (path, "etc/selinux");
   if (!g_file_query_exists (etc_selinux_dir, NULL))
     {
       g_object_unref (etc_selinux_dir);
-      etc_selinux_dir = g_file_resolve_relative_path (self->path, "usr/etc/selinux");
+      etc_selinux_dir = g_file_resolve_relative_path (path, "usr/etc/selinux");
     }
   policy_config_path = g_file_get_child (etc_selinux_dir, "config");
 
@@ -367,6 +418,8 @@ initable_init (GInitable     *initable,
 static void
 ostree_sepolicy_init (OstreeSePolicy *self)
 {
+  self->rootfs_dfd = -1;
+  self->rootfs_dfd_owned = -1;
 }
 
 static void
@@ -378,6 +431,8 @@ initable_iface_init (GInitableIface *initable_iface)
 /**
  * ostree_sepolicy_new:
  * @path: Path to a root directory
+ * @cancellable: Cancellable
+ * @error: Error
  *
  * Returns: (transfer full): An accessor object for SELinux policy in root located at @path
  */
@@ -387,6 +442,22 @@ ostree_sepolicy_new (GFile         *path,
                      GError       **error)
 {
   return g_initable_new (OSTREE_TYPE_SEPOLICY, cancellable, error, "path", path, NULL);
+}
+
+/**
+ * ostree_sepolicy_new_at:
+ * @rootfs_dfd: Directory fd for rootfs (will not be cloned)
+ * @cancellable: Cancellable
+ * @error: Error
+ *
+ * Returns: (transfer full): An accessor object for SELinux policy in root located at @rootfs_dfd
+ */
+OstreeSePolicy*
+ostree_sepolicy_new_at (int         rootfs_dfd,
+                        GCancellable  *cancellable,
+                        GError       **error)
+{
+  return g_initable_new (OSTREE_TYPE_SEPOLICY, cancellable, error, "rootfs-dfd", rootfs_dfd, NULL);
 }
 
 /**
@@ -455,35 +526,34 @@ ostree_sepolicy_get_label (OstreeSePolicy    *self,
                            GError          **error)
 {
 #ifdef HAVE_SELINUX
-  gboolean ret = FALSE;
-  int res;
-  char *con = NULL;
+  /* Early return if no policy */
+  if (!self->selinux_hnd)
+    return TRUE;
 
-  if (self->selinux_hnd)
+  /* http://marc.info/?l=selinux&m=149082134430052&w=2
+   * https://github.com/ostreedev/ostree/pull/768
+   */
+  if (strcmp (relpath, "/proc") == 0)
+    relpath = "/mnt";
+
+  char *con = NULL;
+  int res = selabel_lookup_raw (self->selinux_hnd, &con, relpath, unix_mode);
+  if (res != 0)
     {
-      res = selabel_lookup_raw (self->selinux_hnd, &con, relpath, unix_mode);
-      if (res != 0)
-        {
-          if (errno != ENOENT)
-            {
-              glnx_set_error_from_errno (error);
-              goto out;
-            }
-        }
+      if (errno == ENOENT)
+        *out_label = NULL;
       else
-        {
-          /* Ensure we consistently allocate with g_malloc */
-          *out_label = g_strdup (con);
-          freecon (con);
-        }
+        return glnx_throw_errno (error);
+    }
+  else
+    {
+      /* Ensure we consistently allocate with g_malloc */
+      *out_label = g_strdup (con);
+      freecon (con);
     }
 
-  ret = TRUE;
- out:
-  return ret;
-#else
-  return TRUE;
 #endif
+  return TRUE;
 }
 
 /**
@@ -621,6 +691,7 @@ ostree_sepolicy_setfscreatecon (OstreeSePolicy   *self,
 
 /**
  * ostree_sepolicy_fscreatecon_cleanup:
+ * @unused: Not used, just in case you didn't infer that from the parameter name
  *
  * Cleanup function for ostree_sepolicy_setfscreatecon().
  */
@@ -630,4 +701,32 @@ ostree_sepolicy_fscreatecon_cleanup (void **unused)
 #ifdef HAVE_SELINUX
   setfscreatecon (NULL);
 #endif
+}
+
+/* Currently private copy of the older sepolicy/fscreatecon API with a nicer
+ * g_auto() cleanup. May be made public later.
+ */
+gboolean
+_ostree_sepolicy_preparefscreatecon (OstreeSepolicyFsCreatecon *con,
+                                     OstreeSePolicy   *self,
+                                     const char       *path,
+                                     guint32           mode,
+                                     GError          **error)
+{
+  if (!self || ostree_sepolicy_get_name (self) == NULL)
+    return TRUE;
+
+  if (!ostree_sepolicy_setfscreatecon (self, path, mode, error))
+    return FALSE;
+
+  con->initialized = TRUE;
+  return TRUE;
+}
+
+void
+_ostree_sepolicy_fscreatecon_clear (OstreeSepolicyFsCreatecon *con)
+{
+  if (!con->initialized)
+    return;
+  ostree_sepolicy_fscreatecon_cleanup (NULL);
 }

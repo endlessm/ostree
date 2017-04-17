@@ -2686,6 +2686,53 @@ ostree_repo_sign_delta (<em class="parameter"><code><a class="link" href="ostree
                         <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>This function is deprecated, sign the summary file instead.
 Add a GPG signature to a static delta.</p>
+<div class="refsect3">
+<a name="ostree-repo-sign-delta.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Self</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>from_commit</p></td>
+<td class="parameter_description"><p>From commit</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>to_commit</p></td>
+<td class="parameter_description"><p>To commit</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>key_id</p></td>
+<td class="parameter_description"><p>key id</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>homedir</p></td>
+<td class="parameter_description"><p>homedir</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
 </div>
 <hr>
 <div class="refsect2">
@@ -6914,6 +6961,13 @@ possible modes.</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-MODE-BARE-USER-ONLY:CAPS"></a>OSTREE_REPO_MODE_BARE_USER_ONLY</p></td>
+<td class="enum_member_description">
+<p>Same as BARE_USER, but all metadata is not stored, so it can only be used for user checkouts. Does not need xattrs.</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
 </tbody>
 </table></div>
 </div>
@@ -6932,23 +6986,31 @@ possible modes.</p>
 <tbody>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-REMOTE-CHANGE-ADD:CAPS"></a>OSTREE_REPO_REMOTE_CHANGE_ADD</p></td>
-<td> </td>
-<td> </td>
+<td class="enum_member_description">
+<p>Add a remote</p>
+</td>
+<td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-REMOTE-CHANGE-ADD-IF-NOT-EXISTS:CAPS"></a>OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS</p></td>
-<td> </td>
-<td> </td>
+<td class="enum_member_description">
+<p>Like above, but do nothing if the remote exists</p>
+</td>
+<td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-REMOTE-CHANGE-DELETE:CAPS"></a>OSTREE_REPO_REMOTE_CHANGE_DELETE</p></td>
-<td> </td>
-<td> </td>
+<td class="enum_member_description">
+<p>Delete a remote</p>
+</td>
+<td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-REMOTE-CHANGE-DELETE-IF-EXISTS:CAPS"></a>OSTREE_REPO_REMOTE_CHANGE_DELETE_IF_EXISTS</p></td>
-<td> </td>
-<td> </td>
+<td class="enum_member_description">
+<p>Delete a remote, do nothing if the remote does not exist</p>
+</td>
+<td class="enum_member_annotations"> </td>
 </tr>
 </tbody>
 </table></div>
@@ -7102,6 +7164,20 @@ in bytes, counting only content objects.</p></td>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-MODIFIER-FLAGS-GENERATE-SIZES:CAPS"></a>OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES</p></td>
 <td class="enum_member_description">
 <p>Generate size information.</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-MODIFIER-FLAGS-CANONICAL-PERMISSIONS:CAPS"></a>OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS</p></td>
+<td class="enum_member_description">
+<p>Canonicalize permissions for bare-user-only mode.</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-MODIFIER-FLAGS-ERROR-ON-UNLABELED:CAPS"></a>OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED</p></td>
+<td class="enum_member_description">
+<p>Emit an error if configured SELinux policy does not provide a label</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>

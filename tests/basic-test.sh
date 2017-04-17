@@ -19,14 +19,63 @@
 
 set -euo pipefail
 
-echo "1..63"
+echo "1..65"
 
 $CMD_PREFIX ostree --version > version.yaml
 python -c 'import yaml; yaml.safe_load(open("version.yaml"))'
 echo "ok yaml version"
 
+CHECKOUT_U_ARG=""
+COMMIT_ARGS=""
+DIFF_ARGS=""
+if grep bare-user-only repo/config; then
+    # In bare-user-only repos we can only represent files with uid/gid 0, no
+    # xattrs and canonical permissions, so we need to commit them as such, or
+    # we end up with repos that don't pass fsck
+    COMMIT_ARGS="--canonical-permissions"
+    DIFF_ARGS="--owner-uid=0 --owner-gid=0 --no-xattrs"
+    # Also, since we can't check out uid=0 files we need to check out in user mode
+    CHECKOUT_U_ARG="-U"
+fi
+
+validate_checkout_basic() {
+    (cd $1;
+     assert_has_file firstfile
+     assert_has_file baz/cow
+     assert_file_has_content baz/cow moo
+     assert_has_file baz/deeper/ohyeah
+     )
+}
+
 $OSTREE checkout test2 checkout-test2
+validate_checkout_basic checkout-test2
 echo "ok checkout"
+
+# Note this tests bare-user *and* bare-user-only
+rm checkout-test2 -rf
+if grep bare-user repo/config; then
+    $OSTREE checkout -U -H test2 checkout-test2
+else
+    $OSTREE checkout -H test2 checkout-test2
+fi
+validate_checkout_basic checkout-test2
+rm checkout-test2 -rf
+# Only do these tests on bare-user/bare, not bare-user-only
+# since the latter automatically synthesizes -U if it's not passed.
+if ! grep -q bare-user-only repo/config; then
+if grep -q bare-user repo/config; then
+    if $OSTREE checkout -H test2 checkout-test2 2>err.txt; then
+        assert_not_reached "checkout -H worked?"
+    fi
+    assert_file_has_content err.txt "User repository.*requires.*user"
+else
+    if $OSTREE checkout -U -H test2 checkout-test2 2>err.txt; then
+        assert_not_reached "checkout -H worked?"
+    fi
+    assert_file_has_content err.txt "Bare repository mode cannot hardlink in user"
+fi
+fi
+echo "ok checkout -H"
 
 $OSTREE rev-parse test2
 $OSTREE rev-parse 'test2^'
@@ -46,20 +95,16 @@ echo "ok shortened checksum"
 echo "ok repo-in-cwd"
 
 rm test-repo -rf
-$OSTREE --repo=test-repo init --mode=bare-user
-$OSTREE --repo=test-repo init --mode=bare-user
+ostree_repo_init test-repo --mode=bare-user
+ostree_repo_init test-repo --mode=bare-user
 rm test-repo -rf
 echo "ok repo-init on existing repo"
 
+rm checkout-test2 -rf
+$OSTREE checkout test2 checkout-test2
 cd checkout-test2
-assert_has_file firstfile
-assert_has_file baz/cow
-assert_file_has_content baz/cow moo
-assert_has_file baz/deeper/ohyeah
-echo "ok content"
-
 rm firstfile
-$OSTREE commit -b test2 -s delete
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s delete
 
 cd $test_tmpdir
 $OSTREE checkout test2 $test_tmpdir/checkout-test2-2
@@ -80,7 +125,7 @@ mkdir -p another/nested/tree
 echo anotherone > another/nested/tree/1
 echo whee2 > another/whee
 # FIXME - remove grep for .
-$OSTREE commit -b test2 -s "Another commit"
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Another commit"
 echo "ok commit"
 
 cd ${test_tmpdir}
@@ -96,7 +141,7 @@ mkdir -p yet/another/tree
 echo leaf > yet/another/tree/green
 echo helloworld > yet/message
 rm a/5
-$OSTREE commit -b test2 -s "Current directory"
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Current directory"
 echo "ok cwd commit"
 
 cd ${test_tmpdir}
@@ -107,15 +152,15 @@ assert_file_has_content four '4'
 echo "ok cwd contents"
 
 cd ${test_tmpdir}
-$OSTREE commit -b test2-no-parent -s '' $test_tmpdir/checkout-test2-4
+$OSTREE commit ${COMMIT_ARGS} -b test2-no-parent -s '' $test_tmpdir/checkout-test2-4
 assert_streq $($OSTREE log test2-no-parent |grep '^commit' | wc -l) "1"
-$OSTREE commit -b test2-no-parent -s '' --parent=none $test_tmpdir/checkout-test2-4
+$OSTREE commit ${COMMIT_ARGS} -b test2-no-parent -s '' --parent=none $test_tmpdir/checkout-test2-4
 assert_streq $($OSTREE log test2-no-parent |grep '^commit' | wc -l) "1"
 echo "ok commit no parent"
 
 cd ${test_tmpdir}
-empty_rev=$($OSTREE commit -b test2-no-subject -s '' --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
-omitted_rev=$($OSTREE commit -b test2-no-subject-2 --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
+empty_rev=$($OSTREE commit ${COMMIT_ARGS} -b test2-no-subject -s '' --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
+omitted_rev=$($OSTREE commit ${COMMIT_ARGS} -b test2-no-subject-2 --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
 assert_streq $empty_rev $omitted_rev
 echo "ok commit no subject"
 
@@ -127,7 +172,7 @@ commit message.
 Build-Host: foo.example.com
 Crunchy-With-Extra-Ketchup: true
 EOF
-$OSTREE commit -b branch-with-commitmsg -F commitmsg.txt -s 'a message' $test_tmpdir/checkout-test2-4
+$OSTREE commit ${COMMIT_ARGS} -b branch-with-commitmsg -F commitmsg.txt -s 'a message' $test_tmpdir/checkout-test2-4
 $OSTREE log branch-with-commitmsg > log.txt
 assert_file_has_content log.txt '^ *This is a long$'
 assert_file_has_content log.txt '^ *Build-Host:.*example.com$'
@@ -136,17 +181,17 @@ $OSTREE refs --delete branch-with-commitmsg
 echo "ok commit body file"
 
 cd ${test_tmpdir}
-$OSTREE commit -b test2-custom-parent -s '' $test_tmpdir/checkout-test2-4
-$OSTREE commit -b test2-custom-parent -s '' $test_tmpdir/checkout-test2-4
-$OSTREE commit -b test2-custom-parent -s '' $test_tmpdir/checkout-test2-4
+$OSTREE commit ${COMMIT_ARGS} -b test2-custom-parent -s '' $test_tmpdir/checkout-test2-4
+$OSTREE commit ${COMMIT_ARGS} -b test2-custom-parent -s '' $test_tmpdir/checkout-test2-4
+$OSTREE commit ${COMMIT_ARGS} -b test2-custom-parent -s '' $test_tmpdir/checkout-test2-4
 assert_streq $($OSTREE log test2-custom-parent |grep '^commit' | wc -l) "3"
 prevparent=$($OSTREE rev-parse test2-custom-parent^)
-$OSTREE commit -b test2-custom-parent -s '' --parent=${prevparent} $test_tmpdir/checkout-test2-4
+$OSTREE commit ${COMMIT_ARGS} -b test2-custom-parent -s '' --parent=${prevparent} $test_tmpdir/checkout-test2-4
 assert_streq $($OSTREE log test2-custom-parent |grep '^commit' | wc -l) "3"
 echo "ok commit custom parent"
 
 cd ${test_tmpdir}
-orphaned_rev=$($OSTREE commit --orphan -s "$(date)" $test_tmpdir/checkout-test2-4)
+orphaned_rev=$($OSTREE commit ${COMMIT_ARGS} --orphan -s "$(date)" $test_tmpdir/checkout-test2-4)
 $OSTREE ls ${orphaned_rev} >/dev/null
 $OSTREE prune --refs-only
 if $OSTREE ls ${orphaned_rev} 2>err.txt; then
@@ -172,6 +217,21 @@ assert_file_has_content diff-test2-2 'A *oh-look-a-file$'
 echo "ok diff cwd"
 
 cd ${test_tmpdir}/checkout-test2-4
+$OSTREE diff ${DIFF_ARGS} test2 ./ > ${test_tmpdir}/diff-test2
+assert_file_empty ${test_tmpdir}/diff-test2
+$OSTREE diff ${DIFF_ARGS} test2 --owner-uid=$((`id -u`+1)) ./ > ${test_tmpdir}/diff-test2
+assert_file_has_content ${test_tmpdir}/diff-test2 'M */yet$'
+assert_file_has_content ${test_tmpdir}/diff-test2 'M */yet/message$'
+assert_file_has_content ${test_tmpdir}/diff-test2 'M */yet/another/tree/green$'
+echo "ok diff file with different uid"
+
+$OSTREE diff ${DIFF_ARGS} test2 --owner-gid=$((`id -g`+1)) ./ > ${test_tmpdir}/diff-test2
+assert_file_has_content ${test_tmpdir}/diff-test2 'M */yet$'
+assert_file_has_content ${test_tmpdir}/diff-test2 'M */yet/message$'
+assert_file_has_content ${test_tmpdir}/diff-test2 'M */yet/another/tree/green$'
+echo "ok diff file with different gid"
+
+cd ${test_tmpdir}/checkout-test2-4
 rm four
 mkdir four
 touch four/other
@@ -182,12 +242,12 @@ echo "ok diff file changing type"
 
 cd ${test_tmpdir}
 mkdir repo2
-${CMD_PREFIX} ostree --repo=repo2 init
+ostree_repo_init repo2 --mode=bare-user
 ${CMD_PREFIX} ostree --repo=repo2 pull-local repo
 echo "ok pull-local"
 
 cd ${test_tmpdir}
-${CMD_PREFIX} ostree --repo=repo2 checkout test2 test2-checkout-from-local-clone
+${CMD_PREFIX} ostree --repo=repo2 checkout ${CHECKOUT_U_ARG} test2 test2-checkout-from-local-clone
 cd test2-checkout-from-local-clone
 assert_file_has_content yet/another/tree/green 'leaf'
 echo "ok local clone checkout"
@@ -195,31 +255,33 @@ echo "ok local clone checkout"
 $OSTREE checkout -U test2 checkout-user-test2
 echo "ok user checkout"
 
-$OSTREE commit -b test2 -s "Another commit" --tree=ref=test2
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Another commit" --tree=ref=test2
 echo "ok commit from ref"
 
-$OSTREE commit -b test2 -s "Another commit with modifier" --tree=ref=test2 --owner-uid=`id -u`
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Another commit with modifier" --tree=ref=test2 --owner-uid=`id -u`
 echo "ok commit from ref with modifier"
 
-$OSTREE commit -b trees/test2 -s 'ref with / in it' --tree=ref=test2
+$OSTREE commit ${COMMIT_ARGS} -b trees/test2 -s 'ref with / in it' --tree=ref=test2
 echo "ok commit ref with /"
 
 old_rev=$($OSTREE rev-parse test2)
-$OSTREE commit --skip-if-unchanged -b test2 -s 'should not be committed' --tree=ref=test2
+$OSTREE ls -R -C test2
+$OSTREE commit ${COMMIT_ARGS} --skip-if-unchanged -b trees/test2 -s 'should not be committed' --tree=ref=test2
+$OSTREE ls -R -C test2
 new_rev=$($OSTREE rev-parse test2)
 assert_streq "${old_rev}" "${new_rev}"
 echo "ok commit --skip-if-unchanged"
 
 cd ${test_tmpdir}/checkout-test2-4
-$OSTREE commit -b test2 -s "no xattrs" --no-xattrs
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s "no xattrs" --no-xattrs
 echo "ok commit with no xattrs"
 
 mkdir tree-A tree-B
 touch tree-A/file-a tree-B/file-b
 
-$OSTREE commit -b test3-1 -s "Initial tree" --tree=dir=tree-A
-$OSTREE commit -b test3-2 -s "Replacement tree" --tree=dir=tree-B
-$OSTREE commit -b test3-combined -s "combined tree" --tree=ref=test3-1 --tree=ref=test3-2
+$OSTREE commit ${COMMIT_ARGS} -b test3-1 -s "Initial tree" --tree=dir=tree-A
+$OSTREE commit ${COMMIT_ARGS} -b test3-2 -s "Replacement tree" --tree=dir=tree-B
+$OSTREE commit ${COMMIT_ARGS} -b test3-combined -s "combined tree" --tree=ref=test3-1 --tree=ref=test3-2
 
 $OSTREE checkout test3-combined checkout-test3-combined
 
@@ -235,7 +297,7 @@ cat > test-statoverride.txt <<EOF
 2048 /a/nested/3
 EOF
 cd ${test_tmpdir}/checkout-test2-4
-$OSTREE commit -b test2-override -s "with statoverride" --statoverride=../test-statoverride.txt
+$OSTREE commit ${COMMIT_ARGS} -b test2-override -s "with statoverride" --statoverride=../test-statoverride.txt
 cd ${test_tmpdir}
 $OSTREE checkout test2-override checkout-test2-override
 test -g checkout-test2-override/a/nested/2
@@ -248,7 +310,7 @@ cat > test-skiplist.txt <<EOF
 EOF
 cd ${test_tmpdir}/checkout-test2-4
 assert_has_file a/nested/3
-$OSTREE commit -b test2-skiplist -s "with skiplist" --skip-list=../test-skiplist.txt
+$OSTREE commit ${COMMIT_ARGS} -b test2-skiplist -s "with skiplist" --skip-list=../test-skiplist.txt
 cd ${test_tmpdir}
 $OSTREE checkout test2-skiplist checkout-test2-skiplist
 assert_not_has_file checkout-test2-skiplist/a/nested/3
@@ -270,9 +332,9 @@ assert_file_has_content tree/green "leaf"
 echo "ok checkout subpath"
 
 cd ${test_tmpdir}
-$OSTREE checkout --union test2 checkout-test2-union
+$OSTREE checkout  --union test2 checkout-test2-union
 find checkout-test2-union | wc -l > union-files-count
-$OSTREE checkout --union test2 checkout-test2-union
+$OSTREE checkout  --union test2 checkout-test2-union
 find checkout-test2-union | wc -l > union-files-count.new
 cmp union-files-count{,.new}
 cd checkout-test2-union
@@ -280,11 +342,11 @@ assert_file_has_content ./yet/another/tree/green "leaf"
 echo "ok checkout union 1"
 
 cd ${test_tmpdir}
-$OSTREE commit -b test-union-add --tree=ref=test2
+$OSTREE commit ${COMMIT_ARGS} -b test-union-add --tree=ref=test2
 $OSTREE checkout test-union-add checkout-test-union-add
 echo 'file for union add testing' > checkout-test-union-add/union-add-test
 echo 'another file for union add testing' > checkout-test-union-add/union-add-test2
-$OSTREE commit -b test-union-add --tree=dir=checkout-test-union-add
+$OSTREE commit ${COMMIT_ARGS} -b test-union-add --tree=dir=checkout-test-union-add
 rm checkout-test-union-add -rf
 # Check out previous
 $OSTREE checkout test-union-add^ checkout-test-union-add
@@ -300,11 +362,11 @@ echo "ok checkout union add"
 cd ${test_tmpdir}
 rm -rf shadow-repo
 mkdir shadow-repo
-${CMD_PREFIX} ostree --repo=shadow-repo init
+ostree_repo_init shadow-repo
 ${CMD_PREFIX} ostree --repo=shadow-repo config set core.parent $(pwd)/repo
 rm -rf test2-checkout
 parent_rev_test2=$(${CMD_PREFIX} ostree --repo=repo rev-parse test2)
-${CMD_PREFIX} ostree --repo=shadow-repo checkout "${parent_rev_test2}" test2-checkout
+${CMD_PREFIX} ostree --repo=shadow-repo checkout ${CHECKOUT_U_ARG} "${parent_rev_test2}" test2-checkout
 echo "ok checkout from shadow repo"
 
 cd ${test_tmpdir}
@@ -320,7 +382,7 @@ echo "ok subdir noent"
 
 cd ${test_tmpdir}
 mkdir repo3
-${CMD_PREFIX} ostree --repo=repo3 init
+ostree_repo_init repo3 --mode=bare-user
 ${CMD_PREFIX} ostree --repo=repo3 pull-local --remote=aremote repo test2
 ${CMD_PREFIX} ostree --repo=repo3 rev-parse aremote/test2
 echo "ok pull-local with --remote arg"
@@ -339,7 +401,7 @@ echo "ok prune"
 
 cd ${test_tmpdir}
 rm repo3 -rf
-${CMD_PREFIX} ostree --repo=repo3 init --mode=archive
+ostree_repo_init repo3 --mode=archive
 ${CMD_PREFIX} ostree --repo=repo3 pull-local --remote=aremote repo test2
 rm repo3/refs/remotes -rf
 mkdir repo3/refs/remotes
@@ -353,7 +415,7 @@ echo "ok prune in archive-z2 deleted everything"
 cd ${test_tmpdir}
 rm -rf test2-checkout
 $OSTREE checkout test2 test2-checkout
-(cd test2-checkout && $OSTREE commit --link-checkout-speedup -b test2 -s "tmp")
+(cd test2-checkout && $OSTREE commit ${COMMIT_ARGS} --link-checkout-speedup -b test2 -s "tmp")
 echo "ok commit with link speedup"
 
 cd ${test_tmpdir}
@@ -372,7 +434,7 @@ $OSTREE show test2
 echo "ok show with non-checksum"
 
 cd $test_tmpdir/checkout-test2
-checksum=$($OSTREE commit -b test4 -s "Third commit")
+checksum=$($OSTREE commit ${COMMIT_ARGS} -b test4 -s "Third commit")
 cd ${test_tmpdir}
 $OSTREE show test4 > show-output
 assert_file_has_content show-output "Third commit"
@@ -380,8 +442,8 @@ assert_file_has_content show-output "commit $checksum"
 echo "ok show full output"
 
 cd $test_tmpdir/checkout-test2
-checksum1=$($OSTREE commit -b test5 -s "First commit")
-checksum2=$($OSTREE commit -b test5 -s "Second commit")
+checksum1=$($OSTREE commit ${COMMIT_ARGS} -b test5 -s "First commit")
+checksum2=$($OSTREE commit ${COMMIT_ARGS} -b test5 -s "Second commit")
 cd ${test_tmpdir}
 $OSTREE log test5 > log-output
 assert_file_has_content log-output "First commit"
@@ -391,8 +453,8 @@ assert_file_has_content log-output "commit $checksum2"
 echo "ok log output"
 
 cd $test_tmpdir/checkout-test2
-checksum1=$($OSTREE commit -b test6 -s "First commit")
-checksum2=$($OSTREE commit -b test6 -s "Second commit")
+checksum1=$($OSTREE commit ${COMMIT_ARGS} -b test6 -s "First commit")
+checksum2=$($OSTREE commit ${COMMIT_ARGS} -b test6 -s "Second commit")
 cd ${test_tmpdir}
 $OSTREE show test6 > show-output
 assert_file_has_content show-output "commit $checksum2"
@@ -405,11 +467,11 @@ cd ${test_tmpdir}
 rm checkout-test2 -rf
 $OSTREE checkout test2 checkout-test2
 touch checkout-test2/sometestfile
-$OSTREE commit -s sometest -b test2 checkout-test2
+$OSTREE commit ${COMMIT_ARGS} -s sometest -b test2 checkout-test2
 echo "ok commit with directory filename"
 
 cd $test_tmpdir/checkout-test2
-$OSTREE commit -b test2 -s "Metadata string" --add-metadata-string=FOO=BAR --add-metadata-string=KITTENS=CUTE --add-detached-metadata-string=SIGNATURE=HANCOCK --tree=ref=test2
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Metadata string" --add-metadata-string=FOO=BAR --add-metadata-string=KITTENS=CUTE --add-detached-metadata-string=SIGNATURE=HANCOCK --tree=ref=test2
 cd ${test_tmpdir}
 $OSTREE show --print-metadata-key=FOO test2 > test2-meta
 assert_file_has_content test2-meta "BAR"
@@ -422,7 +484,7 @@ echo "ok metadata commit with strings"
 cd ${test_tmpdir}
 rm repo2 -rf
 mkdir repo2
-${CMD_PREFIX} ostree --repo=repo2 init
+ostree_repo_init repo2 --mode=bare-user
 ${CMD_PREFIX} ostree --repo=repo2 pull-local repo
 ${CMD_PREFIX} ostree --repo=repo2 show --print-detached-metadata-key=SIGNATURE test2 > test2-meta
 assert_file_has_content test2-meta "HANCOCK"
@@ -457,7 +519,7 @@ rm -rf test2-checkout
 mkdir -p test2-checkout
 cd test2-checkout
 mkfifo afifo
-if $OSTREE commit -b test2 -s "Attempt to commit a FIFO" 2>../errmsg; then
+if $OSTREE commit ${COMMIT_ARGS} -b test2 -s "Attempt to commit a FIFO" 2>../errmsg; then
     assert_not_reached "Committing a FIFO unexpetedly succeeded!"
     assert_file_has_content ../errmsg "Unsupported file type"
 fi
@@ -466,7 +528,7 @@ echo "ok commit of fifo was rejected"
 cd ${test_tmpdir}
 rm repo2 -rf
 mkdir repo2
-${CMD_PREFIX} ostree --repo=repo2 init --mode=archive
+ostree_repo_init repo2 --mode=archive
 ${CMD_PREFIX} ostree --repo=repo2 pull-local repo
 rm -rf test2-checkout
 ${CMD_PREFIX} ostree --repo=repo2 checkout -U --disable-cache test2 test2-checkout
@@ -489,7 +551,7 @@ date > checkout-test2/date.txt
 rm repo/tmp/* -rf
 export TEST_BOOTID=3072029c-8b10-60d1-d31b-8422eeff9b42
 if env OSTREE_REPO_TEST_ERROR=pre-commit OSTREE_BOOTID=${TEST_BOOTID} \
-       $OSTREE commit -b test2 -s '' $test_tmpdir/checkout-test2 2>err.txt; then
+       $OSTREE commit ${COMMIT_ARGS} -b test2 -s '' $test_tmpdir/checkout-test2 2>err.txt; then
     assert_not_reached "Should have hit OSTREE_REPO_TEST_ERROR_PRE_COMMIT"
 fi
 assert_file_has_content err.txt OSTREE_REPO_TEST_ERROR_PRE_COMMIT
@@ -511,7 +573,7 @@ if touch overlay/baz/.wh.cow && touch overlay/.wh.deeper; then
     touch overlay/anewfile
     mkdir overlay/anewdir/
     touch overlay/anewdir/blah
-    $OSTREE --repo=repo commit -b overlay -s 'overlay' --tree=dir=overlay
+    $OSTREE --repo=repo commit ${COMMIT_ARGS} -b overlay -s 'overlay' --tree=dir=overlay
     rm overlay -rf
 
     for branch in test2 overlay; do
@@ -548,7 +610,7 @@ rm -rf test2-checkout
 mkdir -p test2-checkout
 cd test2-checkout
 touch should-not-be-fsynced
-$OSTREE commit -b test2 -s "Unfsynced commit" --fsync=false
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Unfsynced commit" --fsync=false
 
 # Run this test only as non-root user.  When run as root, the chmod
 # won't have any effect.
@@ -572,7 +634,7 @@ mkdir -p test2-checkout
 cd test2-checkout
 touch blah
 stat --printf="%.Y\n" ${test_tmpdir}/repo > ${test_tmpdir}/timestamp-orig.txt
-$OSTREE commit -b test2 -s "Should bump the mtime"
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Should bump the mtime"
 stat --printf="%.Y\n" ${test_tmpdir}/repo > ${test_tmpdir}/timestamp-new.txt
 cd ..
 if cmp timestamp-{orig,new}.txt; then

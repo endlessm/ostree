@@ -72,6 +72,16 @@ ostree_checksum_input_stream_get_type
 </SECTION>
 
 <SECTION>
+<FILE>ostree-version</FILE>
+OSTREE_CHECK_VERSION
+OSTREE_YEAR_VERSION
+OSTREE_RELEASE_VERSION
+OSTREE_VERSION
+OSTREE_VERSION_S
+OSTREE_VERSION_HEX
+</SECTION>
+
+<SECTION>
 <FILE>ostree-core</FILE>
 OSTREE_MAX_METADATA_SIZE
 OSTREE_MAX_METADATA_WARN_SIZE
@@ -133,6 +143,7 @@ ostree_validate_structureof_dirtree
 ostree_validate_structureof_dirmeta
 ostree_commit_get_parent
 ostree_commit_get_timestamp
+ostree_check_version
 </SECTION>
 
 <SECTION>
@@ -171,6 +182,7 @@ OstreeDiffItem
 ostree_diff_item_ref
 ostree_diff_item_unref
 ostree_diff_dirs
+ostree_diff_dirs_with_options
 ostree_diff_print
 <SUBSECTION Standard>
 ostree_diff_item_get_type
@@ -424,6 +436,7 @@ ostree_repo_file_get_type
 <FILE>ostree-sepolicy</FILE>
 OstreeSePolicy
 ostree_sepolicy_new
+ostree_sepolicy_new_at
 ostree_sepolicy_get_path
 ostree_sepolicy_get_name
 ostree_sepolicy_get_label
@@ -470,6 +483,7 @@ ostree_sysroot_deployment_set_kargs
 ostree_sysroot_deployment_set_mutable
 ostree_sysroot_deployment_unlock
 ostree_sysroot_write_deployments
+ostree_sysroot_write_deployments_with_options
 ostree_sysroot_write_origin_file
 ostree_sysroot_deploy_tree
 ostree_sysroot_get_merge_deployment
