@@ -1,3 +1,13 @@
+ostree (2017.5-1) experimental; urgency=high
+
+  * New upstream release
+    - This release fixes a regression in 2017.4 that caused symlinks
+      in Flatpak apps and runtimes to be checked out as regular files.
+      Any apps or runtimes that were installed or updated with 2017.4
+      will need to be removed and reinstalled.
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 19 Apr 2017 14:18:16 +0100
+
 ostree (2017.4-1) experimental; urgency=medium
 
   * New upstream release
