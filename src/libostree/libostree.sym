@@ -376,6 +376,8 @@ global:
 LIBOSTREE_2017.3 {
 global:
         ostree_raw_file_to_archive_z2_stream_with_options;
+        ostree_async_progress_get_variant;
+        ostree_async_progress_set_variant;
 } LIBOSTREE_2016.14;
 
 /* Stub section for the stable release *after* this development one; don't
