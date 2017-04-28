@@ -1,3 +1,27 @@
+ostree (2016.15-2xenial1) xenial; urgency=medium
+
+  [ Dan Nicholson ]
+  * Backport to xenial (T14049)
+    - Drop debhelper compat back to 9 since 10 is not in xenial.
+      + debian/compat: Drop back to debhelper 9.
+      + debian/control: Add back dh-autoreconf and dh-systemd deps.
+      + debian/rules: Add back --with autoreconf and systemd.
+  * Add Endless specific ostree_repo_delete_compat_signature and
+    ostree_repo_get_commit_sizes ABIs to symbols file. These are
+    specified to the 2016.3 version like all older symbols.
+
+  [ Simon McVittie ]
+  * Backport to jessie
+    - Disable use of O_TMPFILE in the jessie backport. O_TMPFILE was
+      still a new thing when jessie was released, and fails on
+      the arm64, armel, armhf, powerpc and ppc64el buildds.
+    - Switch libgpgme-dev build-dependency back to libgpgme11-dev
+
+  [ Philip Withnall ]
+  * Add new compression symbol to Debian symbols file.
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Tue, 16 May 2017 14:49:49 -0500
+
 ostree (2016.15-2) unstable; urgency=medium
 
   * Make all test failures non-fatal at build time, so that intermittent
