@@ -3921,12 +3921,15 @@ ostree_repo_pull_default_console_progress_changed (OstreeAsyncProgress *progress
   buf = g_string_new ("");
 
   status = ostree_async_progress_get_status (progress);
-  outstanding_fetches = ostree_async_progress_get_uint (progress, "outstanding-fetches");
-  outstanding_metadata_fetches = ostree_async_progress_get_uint (progress, "outstanding-metadata-fetches");
-  outstanding_writes = ostree_async_progress_get_uint (progress, "outstanding-writes");
-  n_scanned_metadata = ostree_async_progress_get_uint (progress, "scanned-metadata");
-  fetched_delta_parts = ostree_async_progress_get_uint (progress, "fetched-delta-parts");
-  total_delta_parts = ostree_async_progress_get_uint (progress, "total-delta-parts");
+
+  ostree_async_progress_get (progress,
+                             "outstanding-fetches", "u", &outstanding_fetches,
+                             "outstanding-metadata-fetches", "u", &outstanding_metadata_fetches,
+                             "outstanding-writes", "u", &outstanding_writes,
+                             "scanned-metadata", "u", &n_scanned_metadata,
+                             "fetched-delta-parts", "u", &fetched_delta_parts,
+                             "total-delta-parts", "u", &total_delta_parts,
+                             NULL);
 
   if (status)
     {
@@ -3934,17 +3937,24 @@ ostree_repo_pull_default_console_progress_changed (OstreeAsyncProgress *progress
     }
   else if (outstanding_fetches)
     {
-      guint64 bytes_transferred = ostree_async_progress_get_uint64 (progress, "bytes-transferred");
-      guint fetched = ostree_async_progress_get_uint (progress, "fetched");
-      guint metadata_fetched = ostree_async_progress_get_uint (progress, "metadata-fetched");
-      guint requested = ostree_async_progress_get_uint (progress, "requested");
-      guint64 start_time = ostree_async_progress_get_uint64 (progress, "start-time");
-      guint64 total_delta_part_size = ostree_async_progress_get_uint64 (progress, "total-delta-part-size");
+      guint64 bytes_transferred, start_time, total_delta_part_size;
+      guint fetched, metadata_fetched, requested;
       guint64 current_time = g_get_monotonic_time ();
-      g_autofree char *formatted_bytes_transferred =
-        g_format_size_full (bytes_transferred, 0);
+      g_autofree char *formatted_bytes_transferred = NULL;
       g_autofree char *formatted_bytes_sec = NULL;
       g_autofree char *formatted_est_time_remaining = NULL;
+
+      /* Note: This is not atomic wrt the above getter call. */
+      ostree_async_progress_get (progress,
+                                 "bytes-transferred", "t", &bytes_transferred,
+                                 "fetched", "u", &fetched,
+                                 "metadata-fetched", "u", &metadata_fetched,
+                                 "requested", "u", &requested,
+                                 "start-time", "t", &start_time,
+                                 "total-delta-part-size", "t", &total_delta_part_size,
+                                 NULL);
+
+      formatted_bytes_transferred = g_format_size_full (bytes_transferred, 0);
 
       /* Ignore the first second, or when we haven't transferred any
        * data, since those could cause divide by zero below.
