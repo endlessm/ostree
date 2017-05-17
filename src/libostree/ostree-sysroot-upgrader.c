@@ -509,7 +509,7 @@ ostree_sysroot_upgrader_pull_one_dir (OstreeSysrootUpgrader  *self,
                                       GError                **error)
 {
   g_autoptr(OstreeRepo) repo = NULL;
-  char *refs_to_fetch[] = { NULL, NULL };
+  const char *refs_to_fetch[] = { NULL, NULL };
   const char *from_revision = NULL;
   g_autofree char *origin_refspec = NULL;
 

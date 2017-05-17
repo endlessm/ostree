@@ -1026,7 +1026,7 @@ typedef enum {
 _OSTREE_PUBLIC
 gboolean ostree_repo_pull (OstreeRepo             *self,
                            const char             *remote_name,
-                           char                  **refs_to_fetch,
+                           const char            **refs_to_fetch,
                            OstreeRepoPullFlags     flags,
                            OstreeAsyncProgress    *progress,
                            GCancellable           *cancellable,
@@ -1037,7 +1037,7 @@ gboolean
 ostree_repo_pull_one_dir (OstreeRepo               *self,
                           const char               *remote_name,
                           const char               *dir_to_pull,
-                          char                    **refs_to_fetch,
+                          const char              **refs_to_fetch,
                           OstreeRepoPullFlags       flags,
                           OstreeAsyncProgress      *progress,
                           GCancellable             *cancellable,
