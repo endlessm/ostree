@@ -88,10 +88,13 @@ dry_run_console_progress_changed (OstreeAsyncProgress *progress,
   g_assert (!printed_console_progress);
   printed_console_progress = TRUE;
 
-  fetched_delta_parts = ostree_async_progress_get_uint (progress, "fetched-delta-parts");
-  total_delta_parts = ostree_async_progress_get_uint (progress, "total-delta-parts");
-  total_delta_part_size = ostree_async_progress_get_uint64 (progress, "total-delta-part-size");
-  total_delta_part_usize = ostree_async_progress_get_uint64 (progress, "total-delta-part-usize");
+  ostree_async_progress_get (progress,
+                             /* Number of parts */
+                             "fetched-delta-parts", "u", &fetched_delta_parts,
+                             "total-delta-parts", "u", &total_delta_parts,
+                             "total-delta-part-size", "t", &total_delta_part_size,
+                             "total-delta-part-usize", "t", &total_delta_part_usize,
+                             NULL);
 
   buf = g_string_new ("");
 
