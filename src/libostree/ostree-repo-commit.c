@@ -433,7 +433,7 @@ add_size_index_to_metadata (OstreeRepo        *self,
         {
           guint8 csum[OSTREE_SHA256_DIGEST_LEN];
           const char *e_checksum = sorted_keys->pdata[i];
-          GString *buffer = g_string_new (NULL);
+          g_autoptr(GString) buffer = g_string_new (NULL);
 
           ostree_checksum_inplace_to_bytes (e_checksum, csum);
           g_string_append_len (buffer, (char*)csum, sizeof (csum));
@@ -444,7 +444,6 @@ add_size_index_to_metadata (OstreeRepo        *self,
 
           g_variant_builder_add (&index_builder, "@ay",
                                  ot_gvariant_new_bytearray ((guint8*)buffer->str, buffer->len));
-          g_string_free (buffer, TRUE);
         }
       
       g_variant_builder_add (builder, "{sv}", "ostree.sizes",
@@ -459,29 +458,19 @@ add_size_index_to_metadata (OstreeRepo        *self,
 }
 
 static gboolean
-fallocate_stream (GFileDescriptorBased      *stream,
-                  goffset                    size,
-                  GCancellable              *cancellable,
-                  GError                   **error)
+ot_fallocate (int fd, goffset size, GError **error)
 {
-  gboolean ret = FALSE;
-  int fd = g_file_descriptor_based_get_fd (stream);
+  if (size == 0)
+    return TRUE;
 
-  if (size > 0)
+  int r = posix_fallocate (fd, 0, size);
+  if (r != 0)
     {
-      int r = posix_fallocate (fd, 0, size);
-      if (r != 0)
-        {
-          /* posix_fallocate is a weird deviation from errno standards */
-          errno = r;
-          glnx_set_error_from_errno (error);
-          goto out;
-        }
+      /* posix_fallocate is a weird deviation from errno standards */
+      errno = r;
+      return glnx_throw_errno_prefix (error, "fallocate");
     }
-
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 gboolean
@@ -511,11 +500,10 @@ _ostree_repo_open_content_bare (OstreeRepo          *self,
                                           &fd, &temp_filename, error))
         goto out;
 
-      ret_stream = g_unix_output_stream_new (fd, TRUE);
-      
-      if (!fallocate_stream ((GFileDescriptorBased*)ret_stream, content_len,
-                             cancellable, error))
+      if (!ot_fallocate (fd, content_len, error))
         goto out;
+
+      ret_stream = g_unix_output_stream_new (fd, TRUE);
     }
 
   ret = TRUE;
@@ -570,7 +558,6 @@ create_regular_tmpfile_linkable_with_content (OstreeRepo *self,
                                               GCancellable *cancellable,
                                               GError **error)
 {
-  g_autoptr(GOutputStream) temp_out = NULL;
   glnx_fd_close int temp_fd = -1;
   g_autofree char *temp_filename = NULL;
 
@@ -578,20 +565,27 @@ create_regular_tmpfile_linkable_with_content (OstreeRepo *self,
                                       &temp_fd, &temp_filename,
                                       error))
     return FALSE;
-  temp_out = g_unix_output_stream_new (temp_fd, FALSE);
 
-  if (!fallocate_stream ((GFileDescriptorBased*)temp_out, length,
-                         cancellable, error))
+  if (!ot_fallocate (temp_fd, length, error))
     return FALSE;
 
-  if (g_output_stream_splice (temp_out, input, 0,
-                              cancellable, error) < 0)
-    return FALSE;
-  if (fchmod (temp_fd, 0644) < 0)
+  if (G_IS_FILE_DESCRIPTOR_BASED (input))
     {
-      glnx_set_error_from_errno (error);
-      return FALSE;
+      int infd = g_file_descriptor_based_get_fd ((GFileDescriptorBased*) input);
+      if (glnx_regfile_copy_bytes (infd, temp_fd, (off_t)length, TRUE) < 0)
+        return glnx_throw_errno_prefix (error, "regfile copy");
     }
+  else
+    {
+      g_autoptr(GOutputStream) temp_out = g_unix_output_stream_new (temp_fd, FALSE);
+      if (g_output_stream_splice (temp_out, input, 0,
+                                  cancellable, error) < 0)
+        return FALSE;
+    }
+
+  if (fchmod (temp_fd, 0644) < 0)
+    return glnx_throw_errno_prefix (error, "fchmod");
+
   *out_fd = temp_fd; temp_fd = -1;
   *out_path = g_steal_pointer (&temp_filename);
   return TRUE;
@@ -608,7 +602,8 @@ write_object (OstreeRepo         *self,
               GError            **error)
 {
   gboolean ret = FALSE;
-  const char *actual_checksum;
+  const char *actual_checksum = NULL;
+  g_autofree char *actual_checksum_owned = NULL;
   gboolean do_commit;
   OstreeRepoMode repo_mode;
   g_autofree char *temp_filename = NULL;
@@ -773,7 +768,7 @@ write_object (OstreeRepo         *self,
     actual_checksum = expected_checksum;
   else
     {
-      actual_checksum = ot_checksum_instream_get_string (checksum_input);
+      actual_checksum = actual_checksum_owned = ot_checksum_instream_get_string (checksum_input);
       if (expected_checksum && strcmp (actual_checksum, expected_checksum) != 0)
         {
           g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
@@ -1306,7 +1301,7 @@ ensure_txn_refs (OstreeRepo *self)
  * ostree_repo_transaction_set_refspec:
  * @self: An #OstreeRepo
  * @refspec: The refspec to write
- * @checksum: The checksum to point it to
+ * @checksum: (nullable): The checksum to point it to
  *
  * Like ostree_repo_transaction_set_ref(), but takes concatenated
  * @refspec format as input instead of separate remote and name
@@ -1329,7 +1324,7 @@ ostree_repo_transaction_set_refspec (OstreeRepo *self,
  * @self: An #OstreeRepo
  * @remote: (allow-none): A remote for the ref
  * @ref: The ref to write
- * @checksum: The checksum to point it to
+ * @checksum: (nullable): The checksum to point it to
  *
  * If @checksum is not %NULL, then record it as the target of ref named
  * @ref; if @remote is provided, the ref will appear to originate from that
@@ -2014,13 +2009,13 @@ ostree_repo_read_commit_detached_metadata (OstreeRepo      *self,
       !ot_util_variant_map_at (self->commit_stagedir_fd, buf,
                                G_VARIANT_TYPE ("a{sv}"),
                                OT_VARIANT_MAP_ALLOW_NOENT | OT_VARIANT_MAP_TRUSTED, &ret_metadata, error))
-    return g_prefix_error (error, "Unable to read existing detached metadata: "), FALSE;
+    return glnx_prefix_error (error, "Unable to read existing detached metadata");
 
   if (ret_metadata == NULL &&
       !ot_util_variant_map_at (self->objects_dir_fd, buf,
                                G_VARIANT_TYPE ("a{sv}"),
                                OT_VARIANT_MAP_ALLOW_NOENT | OT_VARIANT_MAP_TRUSTED, &ret_metadata, error))
-    return g_prefix_error (error, "Unable to read existing detached metadata: "), FALSE;
+    return glnx_prefix_error (error, "Unable to read existing detached metadata");
 
   if (ret_metadata == NULL && self->parent_repo)
     return ostree_repo_read_commit_detached_metadata (self->parent_repo,

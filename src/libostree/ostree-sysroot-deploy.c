@@ -255,7 +255,7 @@ ensure_directory_from_template (int                 orig_etc_fd,
   g_assert (path != NULL);
   g_assert (*path != '/' && *path != '\0');
 
-  if (!ot_gopendirat (modified_etc_fd, path, TRUE, &src_dfd, error))
+  if (!glnx_opendirat (modified_etc_fd, path, TRUE, &src_dfd, error))
     goto out;
 
   /* Create with mode 0700, we'll fchmod/fchown later */
@@ -293,7 +293,7 @@ ensure_directory_from_template (int                 orig_etc_fd,
         }
     }
 
-  if (!ot_gopendirat (new_etc_fd, path, TRUE, &target_dfd, error))
+  if (!glnx_opendirat (new_etc_fd, path, TRUE, &target_dfd, error))
     goto out;
 
   if (!dirfd_copy_attributes_and_xattrs (modified_etc_fd, path, src_dfd, target_dfd,
@@ -767,6 +767,7 @@ selinux_relabel_var_if_needed (OstreeSysroot                 *sysroot,
 
 static gboolean
 merge_configuration (OstreeSysroot         *sysroot,
+                     OstreeRepo            *repo,
                      OstreeDeployment      *previous_deployment,
                      OstreeDeployment      *deployment,
                      int                    deployment_dfd,
@@ -829,19 +830,15 @@ merge_configuration (OstreeSysroot         *sysroot,
       usretc_exists = TRUE;
       etc_exists = FALSE;
     }
-  
+
   if (usretc_exists)
     {
-      glnx_fd_close int deployment_usr_dfd = -1;
-
-      if (!glnx_opendirat (deployment_dfd, "usr", TRUE, &deployment_usr_dfd, error))
-        goto out;
-
-      /* TODO - set out labels as we copy files */
-      g_assert (!etc_exists);
-      if (!copy_dir_recurse (deployment_usr_dfd, deployment_dfd, "etc",
-                             sysroot->debug_flags, cancellable, error))
-        goto out;
+      /* We need copies of /etc from /usr/etc (so admins can use vi), and if
+       * SELinux is enabled, we need to relabel.
+       */
+      OstreeRepoCheckoutAtOptions etc_co_opts = { .force_copy = TRUE,
+                                                  .subpath = "/usr/etc",
+                                                  .sepolicy_prefix = "/etc"};
 
       /* Here, we initialize SELinux policy from the /usr/etc inside
        * the root - this is before we've finalized the configuration
@@ -849,13 +846,15 @@ merge_configuration (OstreeSysroot         *sysroot,
       sepolicy = ostree_sepolicy_new (deployment_path, cancellable, error);
       if (!sepolicy)
         goto out;
-
       if (ostree_sepolicy_get_name (sepolicy) != NULL)
-        {
-          if (!selinux_relabel_dir (sysroot, sepolicy, deployment_etc_path, "etc",
+        etc_co_opts.sepolicy = sepolicy;
+
+      /* Copy usr/etc → etc */
+      if (!ostree_repo_checkout_at (repo, &etc_co_opts,
+                                    deployment_dfd, "etc",
+                                    ostree_deployment_get_csum (deployment),
                                     cancellable, error))
-            goto out;
-        }
+        goto out;
     }
 
   if (source_etc_path)
@@ -1307,7 +1306,7 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
           contents = glnx_file_get_contents_utf8_at (deployment_dfd, "etc/os-release", NULL,
                                                      cancellable, error);
           if (!contents)
-            return g_prefix_error (error, "Reading /etc/os-release: "), FALSE;
+            return glnx_prefix_error (error, "Reading /etc/os-release");
         }
     }
   else
@@ -1315,7 +1314,7 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
       contents = glnx_file_get_contents_utf8_at (deployment_dfd, "usr/lib/os-release", NULL,
                                                  cancellable, error);
       if (!contents)
-        return g_prefix_error (error, "Reading /usr/lib/os-release: "), FALSE;
+        return glnx_prefix_error (error, "Reading /usr/lib/os-release");
     }
 
   g_autoptr(GHashTable) osrelease_values = parse_os_release (contents, "\n");
@@ -1380,6 +1379,7 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
 
   val = ostree_bootconfig_parser_get (bootconfig, "options");
 
+  /* Note this is parsed in ostree-impl-system-generator.c */
   g_autofree char *ostree_kernel_arg = g_strdup_printf ("ostree=/ostree/boot.%d/%s/%s/%d",
                                        new_bootversion, osname, bootcsum,
                                        ostree_deployment_get_bootserial (deployment));
@@ -1899,19 +1899,20 @@ allocate_deployserial (OstreeSysroot           *self,
                        GCancellable            *cancellable,
                        GError                 **error)
 {
-  guint i;
   int new_deployserial = 0;
   g_autoptr(GPtrArray) tmp_current_deployments =
     g_ptr_array_new_with_free_func (g_object_unref);
 
-  const char *osdir_name = glnx_strjoina ("ostree/deploy/", osname);
-  g_autoptr(GFile) osdir = g_file_resolve_relative_path (self->path, osdir_name);
+  glnx_fd_close int deploy_dfd = -1;
+  if (!glnx_opendirat (self->sysroot_fd, "ostree/deploy", TRUE, &deploy_dfd, error))
+    return FALSE;
 
-  if (!_ostree_sysroot_list_deployment_dirs_for_os (osdir, tmp_current_deployments,
+  if (!_ostree_sysroot_list_deployment_dirs_for_os (deploy_dfd, osname,
+                                                    tmp_current_deployments,
                                                     cancellable, error))
     return FALSE;
 
-  for (i = 0; i < tmp_current_deployments->len; i++)
+  for (guint i = 0; i < tmp_current_deployments->len; i++)
     {
       OstreeDeployment *deployment = tmp_current_deployments->pdata[i];
 
@@ -2017,7 +2018,7 @@ ostree_sysroot_deploy_tree (OstreeSysroot     *self,
   ostree_deployment_set_bootconfig (new_deployment, bootconfig);
 
   glnx_unref_object OstreeSePolicy *sepolicy = NULL;
-  if (!merge_configuration (self, merge_deployment, new_deployment,
+  if (!merge_configuration (self, repo, merge_deployment, new_deployment,
                             deployment_dfd,
                             &sepolicy,
                             cancellable, error))

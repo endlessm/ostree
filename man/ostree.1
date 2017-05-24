@@ -2,7 +2,7 @@
 .\"     Title: ostree
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 04/14/2017
+.\"      Date: 05/17/2017
 .\"    Manual: ostree
 .\"    Source: OSTree
 .\"  Language: English
@@ -37,8 +37,10 @@ ostree \- Manage multiple bootable versioned filesystem trees
 OSTree is a tool for managing multiple bootable versioned filesystem trees, or just "tree" for short\&. In the OSTree model, operating systems no longer live in the physical "/" root directory\&. Instead, they parallel install to the new toplevel
 /ostree
 directory\&. Each installed system gets its own
-/ostree/deploy/\fIosname\fR
-directory\&.
+/ostree/deploy/\fIstateroot\fR
+directory\&. (stateroot
+is the newer term for
+osname)\&.
 .PP
 Unlike
 rpm

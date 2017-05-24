@@ -6,6 +6,7 @@ ostree_deployment_get_type
 ostree_diff_item_get_type
 ostree_gpg_verify_result_get_type
 ostree_mutable_tree_get_type
+ostree_remote_get_type
 ostree_repo_commit_modifier_get_type
 ostree_repo_devino_cache_get_type
 ostree_repo_file_get_type

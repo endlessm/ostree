@@ -33,6 +33,19 @@ test_error_throw (void)
   g_assert (!glnx_throw (&error, "foo: %s %d", "hello", 42));
   g_assert_error (error, G_IO_ERROR, G_IO_ERROR_FAILED);
   g_assert_cmpstr (error->message, ==, "foo: hello 42");
+  g_clear_error (&error);
+
+  gpointer dummy = glnx_null_throw (&error, "literal foo");
+  g_assert (dummy == NULL);
+  g_assert_error (error, G_IO_ERROR, G_IO_ERROR_FAILED);
+  g_assert_cmpstr (error->message, ==, "literal foo");
+  g_clear_error (&error);
+
+  gpointer dummy2 = glnx_null_throw (&error, "foo: %s %d", "hola", 24);
+  g_assert (dummy2 == NULL);
+  g_assert_error (error, G_IO_ERROR, G_IO_ERROR_FAILED);
+  g_assert_cmpstr (error->message, ==, "foo: hola 24");
+  g_clear_error (&error);
 }
 
 static void
@@ -47,6 +60,9 @@ test_error_errno (void)
     {
       g_assert (!glnx_throw_errno (&error));
       g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND);
+      g_assert (!glnx_prefix_error (&error, "myprefix"));
+      g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND);
+      g_assert (g_str_has_prefix (error->message, "myprefix: "));
       g_clear_error (&error);
     }
   else
@@ -55,7 +71,52 @@ test_error_errno (void)
   fd = open (noent_path, O_RDONLY);
   if (fd < 0)
     {
+      gpointer dummy = glnx_null_throw_errno (&error);
+      g_assert (dummy == NULL);
+      g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND);
+      dummy = glnx_prefix_error_null (&error, "myprefix");
+      g_assert (dummy == NULL);
+      g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND);
+      g_assert (g_str_has_prefix (error->message, "myprefix: "));
+      g_clear_error (&error);
+    }
+  else
+    g_assert_cmpint (fd, ==, -1);
+
+  fd = open (noent_path, O_RDONLY);
+  if (fd < 0)
+    {
+      g_autofree char *expected_prefix = g_strdup_printf ("Failed to open %s", noent_path);
       g_assert (!glnx_throw_errno_prefix (&error, "Failed to open %s", noent_path));
+      g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND);
+      g_assert (g_str_has_prefix (error->message, expected_prefix));
+      g_clear_error (&error);
+      /* And test the legacy wrapper */
+      glnx_set_prefix_error_from_errno (&error, "Failed to open %s", noent_path);
+      g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND);
+      g_assert (g_str_has_prefix (error->message, expected_prefix));
+      g_clear_error (&error);
+    }
+  else
+    g_assert_cmpint (fd, ==, -1);
+
+  fd = open (noent_path, O_RDONLY);
+  if (fd < 0)
+    {
+      gpointer dummy = glnx_null_throw_errno_prefix (&error, "Failed to open file");
+      g_assert (dummy == NULL);
+      g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND);
+      g_assert (g_str_has_prefix (error->message, "Failed to open file"));
+      g_clear_error (&error);
+    }
+  else
+    g_assert_cmpint (fd, ==, -1);
+
+  fd = open (noent_path, O_RDONLY);
+  if (fd < 0)
+    {
+      gpointer dummy = glnx_null_throw_errno_prefix (&error, "Failed to open %s", noent_path);
+      g_assert (dummy == NULL);
       g_assert_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND);
       g_assert (g_str_has_prefix (error->message, glnx_strjoina ("Failed to open ", noent_path)));
       g_clear_error (&error);

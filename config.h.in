@@ -3,6 +3,9 @@
 /* Define if we are enabling ostree trivial-httpd entrypoint */
 #undef BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE
 
+/* Define if systemd and libmount */
+#undef BUILDOPT_LIBSYSTEMD_AND_LIBMOUNT
+
 /* Define if we should avoid using O_TMPFILE */
 #undef DISABLE_OTMPFILE
 
@@ -84,6 +87,9 @@
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
+
+/* Define if experimental API should be enabled */
+#undef OSTREE_ENABLE_EXPERIMENTAL_API
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT

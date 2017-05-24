@@ -94,6 +94,8 @@ libostree_1_la_SOURCES = \
 	src/libostree/ostree-linuxfsutil.c \
 	src/libostree/ostree-diff.c \
 	src/libostree/ostree-mutable-tree.c \
+	src/libostree/ostree-remote.c \
+	src/libostree/ostree-remote-private.h \
 	src/libostree/ostree-repo.c \
 	src/libostree/ostree-repo-checkout.c \
 	src/libostree/ostree-repo-commit.c \
@@ -113,6 +115,7 @@ libostree_1_la_SOURCES = \
 	src/libostree/ostree-sysroot-cleanup.c \
 	src/libostree/ostree-sysroot-deploy.c \
 	src/libostree/ostree-sysroot-upgrader.c \
+	src/libostree/ostree-impl-system-generator.c \
 	src/libostree/ostree-bootconfig-parser.c \
 	src/libostree/ostree-deployment.c \
 	src/libostree/ostree-bootloader.h \
@@ -146,6 +149,11 @@ libostree_1_la_SOURCES += \
 	src/libostree/ostree-tls-cert-interaction.h \
 	$(NULL)
 endif
+if !ENABLE_EXPERIMENTAL_API
+libostree_1_la_SOURCES += \
+	src/libostree/ostree-remote.h \
+	$(NULL)
+endif
 
 libostree_1_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/bsdiff -I$(srcdir)/libglnx -I$(srcdir)/src/libotutil -I$(srcdir)/src/libostree -I$(builddir)/src/libostree \
 	$(OT_INTERNAL_GIO_UNIX_CFLAGS) $(OT_INTERNAL_GPGME_CFLAGS) $(OT_DEP_LZMA_CFLAGS) $(OT_DEP_ZLIB_CFLAGS) $(OT_DEP_OPENSSL_CFLAGS) \
@@ -156,7 +164,15 @@ libostree_1_la_LIBADD = libotutil.la libglnx.la libbsdiff.la libostree-kernel-ar
 libostree_1_la_LIBADD += $(bupsplitpath)
 EXTRA_libostree_1_la_DEPENDENCIES = $(top_srcdir)/src/libostree/libostree.sym
 
-EXTRA_DIST += src/libostree/libostree.sym
+EXTRA_DIST += \
+	src/libostree/libostree.sym \
+	src/libostree/libostree-experimental.sym \
+	$(NULL)
+
+if ENABLE_EXPERIMENTAL_API
+libostree_1_la_LDFLAGS += -Wl,--version-script=$(top_srcdir)/src/libostree/libostree-experimental.sym
+EXTRA_libostree_1_la_DEPENDENCIES += $(top_srcdir)/src/libostree/libostree-experimental.sym
+endif
 
 if USE_LIBARCHIVE
 libostree_1_la_CFLAGS += $(OT_DEP_LIBARCHIVE_CFLAGS)

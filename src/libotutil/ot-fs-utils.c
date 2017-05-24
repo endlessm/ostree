@@ -35,98 +35,6 @@ ot_fdrel_to_gfile (int dfd, const char *path)
   return g_file_new_for_path (abspath);
 }
 
-int
-ot_opendirat (int dfd, const char *path, gboolean follow)
-{
-  int flags = O_RDONLY | O_NONBLOCK | O_DIRECTORY | O_CLOEXEC | O_NOCTTY;
-  if (!follow)
-    flags |= O_NOFOLLOW;
-  return openat (dfd, path, flags);
-}
-
-gboolean
-ot_gopendirat (int             dfd,
-               const char     *path,
-               gboolean        follow,
-               int            *out_fd,
-               GError        **error)
-{
-  int ret = ot_opendirat (dfd, path, follow);
-  if (ret == -1)
-    {
-      glnx_set_error_from_errno (error);
-      return FALSE;
-    }
-  *out_fd = ret;
-  return TRUE;
-}
-
-GBytes *
-ot_lgetxattrat (int            dfd,
-                const char    *path,
-                const char    *attribute,
-                GError       **error)
-{
-  /* A workaround for the lack of lgetxattrat(), thanks to Florian Weimer:
-   * https://mail.gnome.org/archives/ostree-list/2014-February/msg00017.html
-   */
-  g_autofree char *full_path = g_strdup_printf ("/proc/self/fd/%d/%s", dfd, path);
-  GBytes *bytes = NULL;
-  ssize_t bytes_read, real_size;
-  char *buf;
-
-  do
-    bytes_read = lgetxattr (full_path, attribute, NULL, 0);
-  while (G_UNLIKELY (bytes_read < 0 && errno == EINTR));
-  if (G_UNLIKELY (bytes_read < 0))
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
-
-  buf = g_malloc (bytes_read);
-  do
-    real_size = lgetxattr (full_path, attribute, buf, bytes_read);
-  while (G_UNLIKELY (real_size < 0 && errno == EINTR));
-  if (G_UNLIKELY (real_size < 0))
-    {
-      glnx_set_error_from_errno (error);
-      g_free (buf);
-      goto out;
-    }
-
-  bytes = g_bytes_new_take (buf, real_size);
- out:
-  return bytes;
-}
-
-gboolean
-ot_lsetxattrat (int            dfd,
-                const char    *path,
-                const char    *attribute,
-                const void    *value,
-                gsize          value_size,
-                int            flags,
-                GError       **error)
-{
-  /* A workaround for the lack of lsetxattrat(), thanks to Florian Weimer:
-   * https://mail.gnome.org/archives/ostree-list/2014-February/msg00017.html
-   */
-  g_autofree char *full_path = g_strdup_printf ("/proc/self/fd/%d/%s", dfd, path);
-  int res;
-
-  do
-    res = lsetxattr (full_path, "user.ostreemeta", value, value_size, flags);
-  while (G_UNLIKELY (res == -1 && errno == EINTR));
-  if (G_UNLIKELY (res == -1))
-    {
-      glnx_set_error_from_errno (error);
-      return FALSE;
-    }
-
-  return TRUE;
-}
-
 gboolean
 ot_readlinkat_gfile_info (int             dfd,
                           const char     *path,
@@ -262,6 +170,31 @@ ot_openat_ignore_enoent (int dfd,
   *out_fd = target_fd;
  out:
   return ret;
+}
+
+/* Like glnx_dirfd_iterator_init_at(), but if %ENOENT, then set
+ * @out_exists to %FALSE, and return successfully.
+ */
+gboolean
+ot_dfd_iter_init_allow_noent (int dfd,
+                              const char *path,
+                              GLnxDirFdIterator *dfd_iter,
+                              gboolean *out_exists,
+                              GError **error)
+{
+  glnx_fd_close int fd = glnx_opendirat_with_errno (dfd, path, TRUE);
+  if (fd < 0)
+    {
+      if (errno != ENOENT)
+        return glnx_throw_errno_prefix (error, "opendirat");
+      *out_exists = FALSE;
+      return TRUE;
+    }
+  if (!glnx_dirfd_iterator_init_take_fd (fd, dfd_iter, error))
+    return FALSE;
+  fd = -1;
+  *out_exists = TRUE;
+  return TRUE;
 }
 
 GBytes *

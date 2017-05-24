@@ -207,6 +207,9 @@
     <keyword type="enum" name="enum OstreeRepoMode" link="ostree-Content-addressed-object-store.html#OstreeRepoMode"/>
     <keyword type="enum" name="enum OstreeRepoRemoteChange" link="ostree-Content-addressed-object-store.html#OstreeRepoRemoteChange"/>
     <keyword type="struct" name="struct OstreeRepoTransactionStats" link="ostree-Content-addressed-object-store.html#OstreeRepoTransactionStats"/>
+    <keyword type="enum" name="enum OstreeRepoResolveRevExtFlags" link="ostree-Content-addressed-object-store.html#OstreeRepoResolveRevExtFlags"/>
+    <keyword type="enum" name="enum OstreeRepoListRefsExtFlags" link="ostree-Content-addressed-object-store.html#OstreeRepoListRefsExtFlags"/>
+    <keyword type="enum" name="enum OstreeRepoCommitState" link="ostree-Content-addressed-object-store.html#OstreeRepoCommitState"/>
     <keyword type="enum" name="enum OstreeRepoCommitFilterResult" link="ostree-Content-addressed-object-store.html#OstreeRepoCommitFilterResult"/>
     <keyword type="typedef" name="OstreeRepoCommitModifier" link="ostree-Content-addressed-object-store.html#OstreeRepoCommitModifier"/>
     <keyword type="enum" name="enum OstreeRepoCommitModifierFlags" link="ostree-Content-addressed-object-store.html#OstreeRepoCommitModifierFlags"/>
@@ -215,6 +218,8 @@
     <keyword type="enum" name="enum OstreeRepoListObjectsFlags" link="ostree-Content-addressed-object-store.html#OstreeRepoListObjectsFlags"/>
     <keyword type="macro" name="OSTREE_REPO_LIST_OBJECTS_VARIANT_TYPE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-LIST-OBJECTS-VARIANT-TYPE:CAPS"/>
     <keyword type="enum" name="enum OstreeStaticDeltaGenerateOpt" link="ostree-Content-addressed-object-store.html#OstreeStaticDeltaGenerateOpt"/>
+    <keyword type="enum" name="enum OstreeRepoCommitTraverseFlags" link="ostree-Content-addressed-object-store.html#OstreeRepoCommitTraverseFlags"/>
+    <keyword type="enum" name="enum OstreeRepoCommitIterResult" link="ostree-Content-addressed-object-store.html#OstreeRepoCommitIterResult"/>
     <keyword type="enum" name="enum OstreeRepoPruneFlags" link="ostree-Content-addressed-object-store.html#OstreeRepoPruneFlags"/>
     <keyword type="enum" name="enum OstreeRepoPullFlags" link="ostree-Content-addressed-object-store.html#OstreeRepoPullFlags"/>
     <keyword type="function" name="ostree_mutable_tree_new ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-new"/>
@@ -268,10 +273,14 @@
     <keyword type="enum" name="enum OstreeSysrootSimpleWriteDeploymentFlags" link="ostree-Root-partition-mount-point.html#OstreeSysrootSimpleWriteDeploymentFlags"/>
     <keyword type="function" name="ostree_async_progress_new ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-new"/>
     <keyword type="function" name="ostree_async_progress_new_and_connect ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-new-and-connect"/>
-    <keyword type="function" name="ostree_async_progress_get_status ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-status"/>
+    <keyword type="function" name="ostree_async_progress_get_status ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-status" since="2017.6"/>
+    <keyword type="function" name="ostree_async_progress_get ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get" since="2017.6"/>
+    <keyword type="function" name="ostree_async_progress_get_variant ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-variant" since="2017.6"/>
     <keyword type="function" name="ostree_async_progress_get_uint ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-uint"/>
     <keyword type="function" name="ostree_async_progress_get_uint64 ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-uint64"/>
-    <keyword type="function" name="ostree_async_progress_set_status ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set-status"/>
+    <keyword type="function" name="ostree_async_progress_set_status ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set-status" since="2017.6"/>
+    <keyword type="function" name="ostree_async_progress_set ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set" since="2017.6"/>
+    <keyword type="function" name="ostree_async_progress_set_variant ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set-variant" since="2017.6"/>
     <keyword type="function" name="ostree_async_progress_set_uint ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set-uint"/>
     <keyword type="function" name="ostree_async_progress_set_uint64 ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set-uint64"/>
     <keyword type="function" name="ostree_async_progress_finish ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-finish"/>
@@ -379,6 +388,9 @@
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-REMOTE-CHANGE-ADD-IF-NOT-EXISTS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_DELETE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-REMOTE-CHANGE-DELETE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_DELETE_IF_EXISTS" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-REMOTE-CHANGE-DELETE-IF-EXISTS:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_RESOLVE_REV_EXT_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-RESOLVE-REV-EXT-NONE:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-LIST-REFS-EXT-NONE:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_PARTIAL" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-STATE-PARTIAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_ALLOW" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-FILTER-ALLOW:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_SKIP" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-FILTER-SKIP:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-NONE:CAPS"/>
@@ -397,6 +409,11 @@
     <keyword type="constant" name="OSTREE_REPO_LIST_OBJECTS_NO_PARENTS" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-LIST-OBJECTS-NO-PARENTS:CAPS"/>
     <keyword type="constant" name="OSTREE_STATIC_DELTA_GENERATE_OPT_LOWLATENCY" link="ostree-Content-addressed-object-store.html#OSTREE-STATIC-DELTA-GENERATE-OPT-LOWLATENCY:CAPS"/>
     <keyword type="constant" name="OSTREE_STATIC_DELTA_GENERATE_OPT_MAJOR" link="ostree-Content-addressed-object-store.html#OSTREE-STATIC-DELTA-GENERATE-OPT-MAJOR:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_TRAVERSE_FLAG_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-TRAVERSE-FLAG-NONE:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_ITER_RESULT_ERROR" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-ITER-RESULT-ERROR:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_ITER_RESULT_END" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-ITER-RESULT-END:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_ITER_RESULT_FILE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-ITER-RESULT-FILE:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_ITER_RESULT_DIR" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-ITER-RESULT-DIR:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PRUNE_FLAGS_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-PRUNE-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-PRUNE-FLAGS-NO-PRUNE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PRUNE_FLAGS_REFS_ONLY" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-PRUNE-FLAGS-REFS-ONLY:CAPS"/>

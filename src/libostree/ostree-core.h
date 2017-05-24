@@ -104,9 +104,9 @@ typedef enum {
 /**
  * OSTREE_DIRMETA_GVARIANT_FORMAT:
  *
- * - u - uid
- * - u - gid
- * - u - mode
+ * - u - uid (big-endian)
+ * - u - gid (big-endian)
+ * - u - mode (big-endian)
  * - a(ayay) - xattrs
  */
 #define OSTREE_DIRMETA_GVARIANT_STRING "(uuua(ayay))"
@@ -120,9 +120,9 @@ typedef enum {
  * can't store in the real filesystem but we can still use a regular .file object
  * that we can hardlink to in the case of a user-mode checkout.
  *
- * - u - uid
- * - u - gid
- * - u - mode
+ * - u - uid (big-endian)
+ * - u - gid (big-endian)
+ * - u - mode (big-endian)
  * - a(ayay) - xattrs
  */
 #define OSTREE_FILEMETA_GVARIANT_STRING "(uuua(ayay))"
@@ -145,7 +145,7 @@ typedef enum {
  * - a(say) - Related objects
  * - s - subject
  * - s - body
- * - t - Timestamp in seconds since the epoch (UTC)
+ * - t - Timestamp in seconds since the epoch (UTC, big-endian)
  * - ay - Root tree contents
  * - ay - Root tree metadata
  */
@@ -158,6 +158,17 @@ typedef enum {
  * - a(s(taya{sv})) - Map of ref name -> (latest commit size, latest commit checksum, additional metadata), sorted by ref name
  * - a{sv} - Additional metadata, at the current time the following are defined:
  *   - key: "ostree.static-deltas", value: a{sv}, static delta name -> 32 bytes of checksum
+ *   - key: "ostree.summary.last-modified", value: t, timestamp (seconds since
+ *     the Unix epoch in UTC, big-endian) when the summary was last regenerated
+ *     (similar to the HTTP `Last-Modified` header)
+ *   - key: "ostree.summary.expires", value: t, timestamp (seconds since the
+ *     Unix epoch in UTC, big-endian) after which the summary is considered
+ *     stale and should be re-downloaded if possible (similar to the HTTP
+ *     `Expires` header)
+ *
+ * The currently defined keys for the `a{sv}` of additional metadata for each commit are:
+ *  - key: `ostree.commit.timestamp`, value: `t`, timestamp (seconds since the
+ *    Unix epoch in UTC, big-endian) when the commit was committed
  */
 #define OSTREE_SUMMARY_GVARIANT_STRING "(a(s(taya{sv}))a{sv})"
 #define OSTREE_SUMMARY_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_SUMMARY_GVARIANT_STRING)
