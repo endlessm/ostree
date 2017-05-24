@@ -11,16 +11,21 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2017.2@LIBOSTREE_2017.2 2017.2
  LIBOSTREE_2017.3@LIBOSTREE_2017.3 2017.3
  LIBOSTREE_2017.4@LIBOSTREE_2017.4 2017.4
+ LIBOSTREE_2017.6@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
+ ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_type@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_uint64@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get_uint@LIBOSTREE_2016.3 2016.4
+ ostree_async_progress_get_variant@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_new@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_new_and_connect@LIBOSTREE_2016.3 2016.4
+ ostree_async_progress_set@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_set_status@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_set_uint64@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_set_uint@LIBOSTREE_2016.3 2016.4
+ ostree_async_progress_set_variant@LIBOSTREE_2017.6 2017.6
  ostree_bootconfig_parser_clone@LIBOSTREE_2016.3 2016.4
  ostree_bootconfig_parser_get@LIBOSTREE_2016.3 2016.4
  ostree_bootconfig_parser_get_type@LIBOSTREE_2016.3 2016.4

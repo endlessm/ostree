@@ -24,6 +24,7 @@ override_dh_auto_configure:
 		--with-dracut \
 		--with-grub2 \
 		--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
+		--with-systemdsystemgeneratordir=/lib/systemd/system-generators \
 		--with-systemdsystemunitdir=/lib/systemd/system \
 		$(NULL)
 
@@ -48,6 +49,7 @@ override_dh_install:
 	# debian/ostree-boot.* and https://bugs.debian.org/824650
 	rm -f debian/tmp/etc/dracut.conf.d/ostree.conf
 	rm -f debian/tmp/etc/grub.d/15_ostree
+	rm -f debian/tmp/lib/systemd/system-generators/ostree-system-generator
 	rm -f debian/tmp/lib/systemd/system/ostree-prepare-root.service
 	rm -f debian/tmp/lib/systemd/system/ostree-remount.service
 	rm -fr debian/tmp/usr/lib/dracut/modules.d/98ostree/
