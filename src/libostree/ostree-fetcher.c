@@ -59,6 +59,7 @@ typedef struct {
 
   GVariant *extra_headers;
   int max_outstanding;
+  gboolean transfer_gzip;
 
   /* Queue for libsoup, see bgo#708591 */
   GQueue pending_queue;
@@ -557,6 +558,9 @@ ostree_fetcher_session_thread (gpointer data)
                                                           SOUP_SESSION_IDLE_TIMEOUT, 60,
                                                           NULL);
 
+  if (closure->transfer_gzip)
+    soup_session_add_feature_by_type (closure->session, SOUP_TYPE_CONTENT_DECODER);
+
   /* XXX: Now that we have mirrorlist support, we could make this even smarter
    * by spreading requests across mirrors. */
   g_object_get (closure->session, "max-conns-per-host", &max_conns, NULL);
@@ -669,6 +673,7 @@ _ostree_fetcher_constructed (GObject *object)
   self->thread_closure->ref_count = 1;
   self->thread_closure->main_context = g_main_context_ref (main_context);
   self->thread_closure->running = 1;
+  self->thread_closure->transfer_gzip = (self->config_flags & OSTREE_FETCHER_FLAGS_TRANSFER_GZIP) != 0;
   self->thread_closure->tmpdir_dfd = -1;
   self->thread_closure->tmpdir_lock = empty_lockfile;
 
