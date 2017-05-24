@@ -1,7 +1,7 @@
 AC_PREREQ([2.63])
 dnl If incrementing the version here, remember to update libostree.sym too
 m4_define([year_version], [2017])
-m4_define([release_version], [5])
+m4_define([release_version], [6])
 m4_define([package_version], [year_version.release_version])
 
 AC_INIT([libostree], [package_version], [walters@verbum.org])
@@ -389,8 +389,19 @@ AS_IF([test "x$have_libsystemd" = "xyes"], [
   AS_IF([test "x$with_systemdsystemunitdir" != "xno"], [
     AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])
   ])
+  AC_ARG_WITH([systemdsystemgeneratordir],
+              AS_HELP_STRING([--with-systemdsystemgeneratordir=DIR], [Directory for systemd generators]),
+              [],
+              [with_systemdsystemgeneratordir=$($PKG_CONFIG --variable=systemdsystemgeneratordir systemd)])
+  AS_IF([test "x$with_systemdsystemgeneratordir" != "xno"], [
+    AC_SUBST([systemdsystemgeneratordir], [$with_systemdsystemgeneratordir])
+  ])
 ])
 AM_CONDITIONAL(BUILDOPT_SYSTEMD, test x$with_systemd = xyes)
+dnl If we have both, we use the "new /var" model with ostree-system-generator
+AM_CONDITIONAL(BUILDOPT_SYSTEMD_AND_LIBMOUNT,[test x$with_systemd = xyes && test x$with_libmount = xyes])
+AM_COND_IF(BUILDOPT_SYSTEMD_AND_LIBMOUNT,
+  AC_DEFINE([BUILDOPT_LIBSYSTEMD_AND_LIBMOUNT], 1, [Define if systemd and libmount]))
 
 AC_ARG_WITH(builtin-grub2-mkconfig,
             AS_HELP_STRING([--with-builtin-grub2-mkconfig],
@@ -429,6 +440,22 @@ AS_IF([test "x$found_introspection" = xyes && test x$using_asan != xyes], [
 ], [have_gjs=no])
 AM_CONDITIONAL(BUILDOPT_GJS, test x$have_gjs = xyes)
 
+# Do we enable building experimental (non-stable) API?
+# The OSTREE_ENABLE_EXPERIMENTAL_API #define is used internally and in public
+# headers, so any consumer of libostree who wants to use experimental API must
+#    #define OSTREE_ENABLE_EXPERIMENTAL_API 1
+# before including libostree headers. This means the name in the AC_DEFINE below
+# is public API.
+AC_ARG_ENABLE([experimental-api],
+  [AS_HELP_STRING([--enable-experimental-api],
+                  [Enable unstable experimental API in libostree [default=no]])],,
+  [enable_experimental_api=no])
+AS_IF([test x$enable_experimental_api = xyes],
+  [AC_DEFINE([OSTREE_ENABLE_EXPERIMENTAL_API],[1],[Define if experimental API should be enabled])
+   OSTREE_FEATURES="$OSTREE_FEATURES experimental"]
+)
+AM_CONDITIONAL([ENABLE_EXPERIMENTAL_API],[test x$enable_experimental_api = xyes])
+
 AC_CONFIG_FILES([
 Makefile
 apidoc/Makefile
@@ -457,10 +484,12 @@ echo "
     wrpseudo-compat:                              $enable_wrpseudo_compat
     man pages (xsltproc):                         $enable_man
     api docs (gtk-doc):                           $enable_gtk_doc
+    installed tests:                              $enable_installed_tests
     gjs-based tests:                              $have_gjs
     dracut:                                       $with_dracut
     mkinitcpio:                                   $with_mkinitcpio
-    Static compiler for ostree-prepare-root:      $with_static_compiler"
+    Static compiler for ostree-prepare-root:      $with_static_compiler
+    Experimental API                              $enable_experimental_api"
 AS_IF([test x$with_builtin_grub2_mkconfig = xyes], [
     echo "    builtin grub2-mkconfig (instead of system):   $with_builtin_grub2_mkconfig"
 ], [

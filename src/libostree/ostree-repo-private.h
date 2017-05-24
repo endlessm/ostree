@@ -21,6 +21,7 @@
 #pragma once
 
 #include "ostree-repo.h"
+#include "ostree-remote-private.h"
 #include "libglnx.h"
 
 G_BEGIN_DECLS
@@ -42,6 +43,14 @@ G_BEGIN_DECLS
  * situation towards EMFILE.
  * */
 #define _OSTREE_MAX_OUTSTANDING_WRITE_REQUESTS 16
+
+/* Well-known keys for the additional metadata field in a summary file. */
+#define OSTREE_SUMMARY_LAST_MODIFIED "ostree.summary.last-modified"
+#define OSTREE_SUMMARY_EXPIRES "ostree.summary.expires"
+
+/* Well-known keys for the additional metadata field in a commit in a ref entry
+ * in a summary file. */
+#define OSTREE_COMMIT_TIMESTAMP "ostree.commit.timestamp"
 
 typedef enum {
   OSTREE_REPO_TEST_ERROR_PRE_COMMIT = (1 << 0)
@@ -78,7 +87,6 @@ struct OstreeRepo {
 
   GFile *repodir;
   int    repo_dir_fd;
-  GFile *tmp_dir;
   int    tmp_dir_fd;
   int    cache_dir_fd;
   char  *cache_dir;
@@ -92,8 +100,9 @@ struct OstreeRepo {
   OstreeRepoTransactionStats txn_stats;
 
   GMutex cache_lock;
-  GPtrArray *cached_meta_indexes;
-  GPtrArray *cached_content_indexes;
+  guint dirmeta_cache_refcount;
+  /* char * checksum → GVariant * for dirmeta objects, used in the checkout path */
+  GHashTable *dirmeta_cache;
 
   gboolean inited;
   gboolean writable;
@@ -127,6 +136,24 @@ typedef struct {
   ino_t ino;
   char checksum[OSTREE_SHA256_STRING_LEN+1];
 } OstreeDevIno;
+
+/* A MemoryCacheRef is an in-memory cache of objects (currently just DIRMETA).  This can
+ * be used when performing an operation that traverses a repository in someway.  Currently,
+ * the primary use case is ostree_repo_checkout_at() avoiding lots of duplicate dirmeta
+ * lookups.
+ */
+typedef struct {
+  OstreeRepo *repo;
+} OstreeRepoMemoryCacheRef;
+
+
+void
+_ostree_repo_memory_cache_ref_init (OstreeRepoMemoryCacheRef *state,
+                                    OstreeRepo               *repo);
+
+void
+_ostree_repo_memory_cache_ref_destroy (OstreeRepoMemoryCacheRef *state);
+G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(OstreeRepoMemoryCacheRef, _ostree_repo_memory_cache_ref_destroy);
 
 #define OSTREE_REPO_TMPDIR_STAGING "staging-"
 #define OSTREE_REPO_TMPDIR_FETCHER "fetcher-"
@@ -323,5 +350,17 @@ _ostree_repo_read_bare_fd (OstreeRepo           *self,
 gboolean
 _ostree_repo_update_mtime (OstreeRepo        *self,
                            GError           **error);
+
+void
+_ostree_repo_add_remote (OstreeRepo   *self,
+                         OstreeRemote *remote);
+OstreeRemote *
+_ostree_repo_get_remote (OstreeRepo  *self,
+                         const char  *name,
+                         GError     **error);
+OstreeRemote *
+_ostree_repo_get_remote_inherited (OstreeRepo  *self,
+                                   const char  *name,
+                                   GError     **error);
 
 G_END_DECLS

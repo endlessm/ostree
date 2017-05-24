@@ -21,30 +21,11 @@
 #pragma once
 
 #include "ot-unix-utils.h"
+#include "libglnx.h"
 
 G_BEGIN_DECLS
 
 GFile * ot_fdrel_to_gfile (int dfd, const char *path);
-
-int ot_opendirat (int dfd, const char *path, gboolean follow);
-gboolean ot_gopendirat (int             dfd,
-                        const char     *path,
-                        gboolean        follow,
-                        int            *out_fd,
-                        GError        **error);
-
-GBytes * ot_lgetxattrat (int            dfd,
-                         const char    *path,
-                         const char    *attribute,
-                         GError       **error);
-
-gboolean ot_lsetxattrat (int            dfd,
-                         const char    *path,
-                         const char    *attribute,
-                         const void    *value,
-                         gsize          value_size,
-                         int            flags,
-                         GError       **error);
 
 gboolean ot_readlinkat_gfile_info (int             dfd,
                                    const char     *path,
@@ -72,6 +53,12 @@ gboolean ot_openat_ignore_enoent (int dfd,
                                   const char *path,
                                   int *out_fd,
                                   GError **error);
+
+gboolean ot_dfd_iter_init_allow_noent (int dfd,
+                                       const char *path,
+                                       GLnxDirFdIterator *dfd_iter,
+                                       gboolean *out_exists,
+                                       GError **error);
 
 GBytes *ot_file_mapat_bytes (int dfd,
                              const char *path,

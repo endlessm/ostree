@@ -767,14 +767,17 @@ typedef struct {
   gboolean enable_fsync;  /* Deprecated */
   gboolean process_whiteouts;
   gboolean no_copy_fallback;
-  gboolean unused_bools[7];
+  gboolean force_copy; /* Since: 2017.6 */
+  gboolean unused_bools[6];
 
   const char *subpath;
 
   OstreeRepoDevInoCache *devino_to_csum_cache;
 
   int unused_ints[6];
-  gpointer unused_ptrs[7];
+  gpointer unused_ptrs[5];
+  OstreeSePolicy *sepolicy; /* Since: 2017.6 */
+  const char *sepolicy_prefix;
 } OstreeRepoCheckoutAtOptions;
 
 _OSTREE_PUBLIC

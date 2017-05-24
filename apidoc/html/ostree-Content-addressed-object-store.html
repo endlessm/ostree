@@ -881,7 +881,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<span class="returnvalue">OstreeRepoCommitIterResult</span>
+<a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoCommitIterResult" title="enum OstreeRepoCommitIterResult"><span class="returnvalue">OstreeRepoCommitIterResult</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-commit-traverse-iter-next" title="ostree_repo_commit_traverse_iter_next ()">ostree_repo_commit_traverse_iter_next</a> <span class="c_punctuation">()</span>
@@ -1044,6 +1044,18 @@
 </tr>
 <tr>
 <td class="datatype_keyword">enum</td>
+<td class="function_name"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoResolveRevExtFlags" title="enum OstreeRepoResolveRevExtFlags">OstreeRepoResolveRevExtFlags</a></td>
+</tr>
+<tr>
+<td class="datatype_keyword">enum</td>
+<td class="function_name"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoListRefsExtFlags" title="enum OstreeRepoListRefsExtFlags">OstreeRepoListRefsExtFlags</a></td>
+</tr>
+<tr>
+<td class="datatype_keyword">enum</td>
+<td class="function_name"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoCommitState" title="enum OstreeRepoCommitState">OstreeRepoCommitState</a></td>
+</tr>
+<tr>
+<td class="datatype_keyword">enum</td>
 <td class="function_name"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoCommitFilterResult" title="enum OstreeRepoCommitFilterResult">OstreeRepoCommitFilterResult</a></td>
 </tr>
 <tr>
@@ -1073,6 +1085,14 @@
 <tr>
 <td class="datatype_keyword">enum</td>
 <td class="function_name"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeStaticDeltaGenerateOpt" title="enum OstreeStaticDeltaGenerateOpt">OstreeStaticDeltaGenerateOpt</a></td>
+</tr>
+<tr>
+<td class="datatype_keyword">enum</td>
+<td class="function_name"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoCommitTraverseFlags" title="enum OstreeRepoCommitTraverseFlags">OstreeRepoCommitTraverseFlags</a></td>
+</tr>
+<tr>
+<td class="datatype_keyword">enum</td>
+<td class="function_name"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoCommitIterResult" title="enum OstreeRepoCommitIterResult">OstreeRepoCommitIterResult</a></td>
 </tr>
 <tr>
 <td class="datatype_keyword">enum</td>
@@ -1971,7 +1991,10 @@ ostree_repo_remote_fetch_summary_with_options
                                 <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Like <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-remote-fetch-summary" title="ostree_repo_remote_fetch_summary ()"><code class="function">ostree_repo_remote_fetch_summary()</code></a>, but supports an extensible set of flags.
 The following are currently defined:</p>
-<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>override-url (s): Fetch summary from this URL if remote specifies no metalink in options</p></li></ul></div>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; ">
+<li class="listitem"><p>override-url (s): Fetch summary from this URL if remote specifies no metalink in options</p></li>
+<li class="listitem"><p>http-headers (a(ss)): Additional headers to add to all HTTP requests</p></li>
+</ul></div>
 <div class="refsect3">
 <a name="ostree-repo-remote-fetch-summary-with-options.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -2504,8 +2527,8 @@ arguments.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>checksum</p></td>
-<td class="parameter_description"><p>The checksum to point it to</p></td>
-<td class="parameter_annotations"> </td>
+<td class="parameter_description"><p> The checksum to point it to. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 </tbody>
 </table></div>
@@ -2558,8 +2581,8 @@ be made to the repository.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>checksum</p></td>
-<td class="parameter_description"><p>The checksum to point it to</p></td>
-<td class="parameter_annotations"> </td>
+<td class="parameter_description"><p> The checksum to point it to. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 </tbody>
 </table></div>
@@ -3349,7 +3372,7 @@ is true and it does not exist. </p></td>
 ostree_repo_resolve_rev_ext (<em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
                              <em class="parameter"><code>const <span class="type">char</span> *refspec</code></em>,
                              <em class="parameter"><code><span class="type">gboolean</span> allow_noent</code></em>,
-                             <em class="parameter"><code><span class="type">OstreeRepoResolveRevExtFlags</span> flags</code></em>,
+                             <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoResolveRevExtFlags" title="enum OstreeRepoResolveRevExtFlags"><span class="type">OstreeRepoResolveRevExtFlags</span></a> flags</code></em>,
                              <em class="parameter"><code><span class="type">char</span> **out_rev</code></em>,
                              <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Look up the given refspec, returning the checksum it references in
@@ -3461,7 +3484,7 @@ refspecs which have <em class="parameter"><code>refspec_prefix</code></em>
 ostree_repo_list_refs_ext (<em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
                            <em class="parameter"><code>const <span class="type">char</span> *refspec_prefix</code></em>,
                            <em class="parameter"><code><span class="type">GHashTable</span> **out_all_refs</code></em>,
-                           <em class="parameter"><code><span class="type">OstreeRepoListRefsExtFlags</span> flags</code></em>,
+                           <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoListRefsExtFlags" title="enum OstreeRepoListRefsExtFlags"><span class="type">OstreeRepoListRefsExtFlags</span></a> flags</code></em>,
                            <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
                            <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>If <em class="parameter"><code>refspec_prefix</code></em>
@@ -3621,11 +3644,11 @@ result in <em class="parameter"><code>out_variant</code></em>
 ostree_repo_load_commit (<em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
                          <em class="parameter"><code>const <span class="type">char</span> *checksum</code></em>,
                          <em class="parameter"><code><span class="type">GVariant</span> **out_commit</code></em>,
-                         <em class="parameter"><code><span class="type">OstreeRepoCommitState</span> *out_state</code></em>,
+                         <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoCommitState" title="enum OstreeRepoCommitState"><span class="type">OstreeRepoCommitState</span></a> *out_state</code></em>,
                          <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>A version of <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-load-variant" title="ostree_repo_load_variant ()"><code class="function">ostree_repo_load_variant()</code></a> specialized to commits,
 capable of returning extended state information.  Currently
-the only extended state is <code class="literal">OSTREE_REPO_COMMIT_STATE_PARTIAL</code>, which
+the only extended state is <a class="link" href="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-STATE-PARTIAL:CAPS"><code class="literal">OSTREE_REPO_COMMIT_STATE_PARTIAL</code></a>, which
 means that only a sub-path of the commit is available.</p>
 <div class="refsect3">
 <a name="ostree-repo-load-commit.parameters"></a><h4>Parameters</h4>
@@ -5734,7 +5757,7 @@ ostree_repo_commit_traverse_iter_get_dir
                                 <em class="parameter"><code><span class="type">char</span> **out_content_checksum</code></em>,
                                 <em class="parameter"><code><span class="type">char</span> **out_meta_checksum</code></em>);</pre>
 <p>Return information on the current directory.  This function may
-only be called if <code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_DIR</code> was returned
+only be called if <a class="link" href="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-ITER-RESULT-DIR:CAPS"><code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_DIR</code></a> was returned
 from <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-commit-traverse-iter-next" title="ostree_repo_commit_traverse_iter_next ()"><code class="function">ostree_repo_commit_traverse_iter_next()</code></a>.</p>
 <div class="refsect3">
 <a name="ostree-repo-commit-traverse-iter-get-dir.parameters"></a><h4>Parameters</h4>
@@ -5778,7 +5801,7 @@ ostree_repo_commit_traverse_iter_get_file
                                 <em class="parameter"><code><span class="type">char</span> **out_name</code></em>,
                                 <em class="parameter"><code><span class="type">char</span> **out_checksum</code></em>);</pre>
 <p>Return information on the current file.  This function may only be
-called if <code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_FILE</code> was returned from
+called if <a class="link" href="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-ITER-RESULT-FILE:CAPS"><code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_FILE</code></a> was returned from
 <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-commit-traverse-iter-next" title="ostree_repo_commit_traverse_iter_next ()"><code class="function">ostree_repo_commit_traverse_iter_next()</code></a>.</p>
 <div class="refsect3">
 <a name="ostree-repo-commit-traverse-iter-get-file.parameters"></a><h4>Parameters</h4>
@@ -5816,7 +5839,7 @@ ostree_repo_commit_traverse_iter_init_commit
                                (<em class="parameter"><code><span class="type">OstreeRepoCommitTraverseIter</span> *iter</code></em>,
                                 <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *repo</code></em>,
                                 <em class="parameter"><code><span class="type">GVariant</span> *commit</code></em>,
-                                <em class="parameter"><code><span class="type">OstreeRepoCommitTraverseFlags</span> flags</code></em>,
+                                <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoCommitTraverseFlags" title="enum OstreeRepoCommitTraverseFlags"><span class="type">OstreeRepoCommitTraverseFlags</span></a> flags</code></em>,
                                 <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Initialize (in place) an iterator over the root of a commit object.</p>
 <div class="refsect3">
@@ -5865,7 +5888,7 @@ ostree_repo_commit_traverse_iter_init_dirtree
                                (<em class="parameter"><code><span class="type">OstreeRepoCommitTraverseIter</span> *iter</code></em>,
                                 <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *repo</code></em>,
                                 <em class="parameter"><code><span class="type">GVariant</span> *dirtree</code></em>,
-                                <em class="parameter"><code><span class="type">OstreeRepoCommitTraverseFlags</span> flags</code></em>,
+                                <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoCommitTraverseFlags" title="enum OstreeRepoCommitTraverseFlags"><span class="type">OstreeRepoCommitTraverseFlags</span></a> flags</code></em>,
                                 <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Initialize (in place) an iterator over a directory tree.</p>
 <div class="refsect3">
@@ -5909,19 +5932,19 @@ ostree_repo_commit_traverse_iter_init_dirtree
 <hr>
 <div class="refsect2">
 <a name="ostree-repo-commit-traverse-iter-next"></a><h3>ostree_repo_commit_traverse_iter_next ()</h3>
-<pre class="programlisting"><span class="returnvalue">OstreeRepoCommitIterResult</span>
+<pre class="programlisting"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoCommitIterResult" title="enum OstreeRepoCommitIterResult"><span class="returnvalue">OstreeRepoCommitIterResult</span></a>
 ostree_repo_commit_traverse_iter_next (<em class="parameter"><code><span class="type">OstreeRepoCommitTraverseIter</span> *iter</code></em>,
                                        <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
                                        <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Step the interator to the next item.  Files will be returned first,
 then subdirectories.  Call this in a loop; upon encountering
-<code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_END</code>, there will be no more files or
-directories.  If <code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_DIR</code> is returned,
+<a class="link" href="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-ITER-RESULT-END:CAPS"><code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_END</code></a>, there will be no more files or
+directories.  If <a class="link" href="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-ITER-RESULT-DIR:CAPS"><code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_DIR</code></a> is returned,
 then call <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-commit-traverse-iter-get-dir" title="ostree_repo_commit_traverse_iter_get_dir ()"><code class="function">ostree_repo_commit_traverse_iter_get_dir()</code></a> to retrieve
 data for that directory.  Similarly, if
-<code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_FILE</code> is returned, call
+<a class="link" href="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-ITER-RESULT-FILE:CAPS"><code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_FILE</code></a> is returned, call
 <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-commit-traverse-iter-get-file" title="ostree_repo_commit_traverse_iter_get_file ()"><code class="function">ostree_repo_commit_traverse_iter_get_file()</code></a>.</p>
-<p>If <code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_ERROR</code> is returned, it is a
+<p>If <a class="link" href="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-ITER-RESULT-ERROR:CAPS"><code class="literal">OSTREE_REPO_COMMIT_ITER_RESULT_ERROR</code></a> is returned, it is a
 program error to call any further API on <em class="parameter"><code>iter</code></em>
  except for
 <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-commit-traverse-iter-clear" title="ostree_repo_commit_traverse_iter_clear ()"><code class="function">ostree_repo_commit_traverse_iter_clear()</code></a>.</p>
@@ -6314,7 +6337,7 @@ The following are currently defined:</p>
 <li class="listitem"><p>override-commit-ids (as): Array of specific commit IDs to fetch for refs</p></li>
 <li class="listitem"><p>dry-run (b): Only print information on what will be downloaded (requires static deltas)</p></li>
 <li class="listitem"><p>override-url (s): Fetch objects from this URL if remote specifies no metalink in options</p></li>
-<li class="listitem"><p>inherit-transaction (b): Don't initiate, finish or abort a transaction, usefult to do mutliple pulls in one transaction.</p></li>
+<li class="listitem"><p>inherit-transaction (b): Don't initiate, finish or abort a transaction, usefult to do multiple pulls in one transaction.</p></li>
 <li class="listitem"><p>http-headers (a(ss)): Additional headers to add to all HTTP requests</p></li>
 <li class="listitem"><p>update-frequency (u): Frequency to call the async progress callback in milliseconds, if any; only values higher than 0 are valid</p></li>
 </ul></div>
@@ -6882,6 +6905,10 @@ ostree_repo_regenerate_summary (<em class="parameter"><code><a class="link" href
                                 <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>An OSTree repository can contain a high level "summary" file that
 describes the available branches and other metadata.</p>
+<p>If the timetable for making commits and updating the summary file is fairly
+regular, setting the <code class="literal">ostree.summary.expires</code> key in <em class="parameter"><code>additional_metadata</code></em>
+
+will aid clients in working out when to check for updates.</p>
 <p>It is regenerated automatically after a commit if
 <code class="literal">core/commit-update-summary</code> is set.</p>
 <div class="refsect3">
@@ -7094,6 +7121,67 @@ in bytes, counting only content objects.</p></td>
 <td class="struct_member_annotations"> </td>
 </tr>
 </tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="OstreeRepoResolveRevExtFlags"></a><h3>enum OstreeRepoResolveRevExtFlags</h3>
+<div class="refsect3">
+<a name="OstreeRepoResolveRevExtFlags.members"></a><h4>Members</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="300px" class="enum_members_name">
+<col class="enum_members_description">
+<col width="200px" class="enum_members_annotations">
+</colgroup>
+<tbody><tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-RESOLVE-REV-EXT-NONE:CAPS"></a>OSTREE_REPO_RESOLVE_REV_EXT_NONE</p></td>
+<td class="enum_member_description">
+<p>No flags.</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="OstreeRepoListRefsExtFlags"></a><h3>enum OstreeRepoListRefsExtFlags</h3>
+<div class="refsect3">
+<a name="OstreeRepoListRefsExtFlags.members"></a><h4>Members</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="300px" class="enum_members_name">
+<col class="enum_members_description">
+<col width="200px" class="enum_members_annotations">
+</colgroup>
+<tbody><tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-LIST-REFS-EXT-NONE:CAPS"></a>OSTREE_REPO_LIST_REFS_EXT_NONE</p></td>
+<td class="enum_member_description">
+<p>No flags.</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="OstreeRepoCommitState"></a><h3>enum OstreeRepoCommitState</h3>
+<div class="refsect3">
+<a name="OstreeRepoCommitState.members"></a><h4>Members</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="300px" class="enum_members_name">
+<col class="enum_members_description">
+<col width="200px" class="enum_members_annotations">
+</colgroup>
+<tbody><tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-STATE-PARTIAL:CAPS"></a>OSTREE_REPO_COMMIT_STATE_PARTIAL</p></td>
+<td> </td>
+<td> </td>
+</tr></tbody>
 </table></div>
 </div>
 </div>
@@ -7330,6 +7418,61 @@ as - List of pack file checksums in which this object appears</p>
 <p>Optimize for delta size (may be very slow)</p>
 </td>
 <td class="enum_member_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="OstreeRepoCommitTraverseFlags"></a><h3>enum OstreeRepoCommitTraverseFlags</h3>
+<div class="refsect3">
+<a name="OstreeRepoCommitTraverseFlags.members"></a><h4>Members</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="300px" class="enum_members_name">
+<col class="enum_members_description">
+<col width="200px" class="enum_members_annotations">
+</colgroup>
+<tbody><tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-TRAVERSE-FLAG-NONE:CAPS"></a>OSTREE_REPO_COMMIT_TRAVERSE_FLAG_NONE</p></td>
+<td> </td>
+<td> </td>
+</tr></tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="OstreeRepoCommitIterResult"></a><h3>enum OstreeRepoCommitIterResult</h3>
+<div class="refsect3">
+<a name="OstreeRepoCommitIterResult.members"></a><h4>Members</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="300px" class="enum_members_name">
+<col class="enum_members_description">
+<col width="200px" class="enum_members_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-ITER-RESULT-ERROR:CAPS"></a>OSTREE_REPO_COMMIT_ITER_RESULT_ERROR</p></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-ITER-RESULT-END:CAPS"></a>OSTREE_REPO_COMMIT_ITER_RESULT_END</p></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-ITER-RESULT-FILE:CAPS"></a>OSTREE_REPO_COMMIT_ITER_RESULT_FILE</p></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-ITER-RESULT-DIR:CAPS"></a>OSTREE_REPO_COMMIT_ITER_RESULT_DIR</p></td>
+<td> </td>
+<td> </td>
 </tr>
 </tbody>
 </table></div>

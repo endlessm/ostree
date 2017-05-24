@@ -130,6 +130,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_1 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-remote.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
+
 subdir = apidoc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/buildutil/attributes.m4 \
@@ -352,31 +356,26 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
+systemdsystemgeneratordir = @systemdsystemgeneratordir@
 systemdsystemunitdir = @systemdsystemunitdir@
 target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-libostree_public_headers = \
-	src/libostree/ostree.h \
+libostree_public_headers = src/libostree/ostree.h \
 	src/libostree/ostree-async-progress.h \
 	src/libostree/ostree-autocleanups.h \
 	src/libostree/ostree-core.h \
 	src/libostree/ostree-dummy-enumtypes.h \
 	src/libostree/ostree-mutable-tree.h \
-	src/libostree/ostree-repo.h \
-	src/libostree/ostree-types.h \
-	src/libostree/ostree-repo-file.h \
-	src/libostree/ostree-diff.h \
+	src/libostree/ostree-repo.h src/libostree/ostree-types.h \
+	src/libostree/ostree-repo-file.h src/libostree/ostree-diff.h \
 	src/libostree/ostree-gpg-verify-result.h \
-	src/libostree/ostree-sepolicy.h \
-	src/libostree/ostree-sysroot.h \
+	src/libostree/ostree-sepolicy.h src/libostree/ostree-sysroot.h \
 	src/libostree/ostree-sysroot-upgrader.h \
 	src/libostree/ostree-deployment.h \
 	src/libostree/ostree-bootconfig-parser.h \
-	src/libostree/ostree-repo-deprecated.h \
-	$(NULL)
-
+	src/libostree/ostree-repo-deprecated.h $(NULL) $(am__append_1)
 
 # This one is generated via configure.ac, and the gtk-doc
 # code hence needs to look in the builddir.
@@ -499,7 +498,7 @@ SETUP_FILES = \
 
 # This includes the standard gtk-doc make rules, copied by gtkdocize.
 EXTRA_DIST = $(HTML_IMAGES) $(SETUP_FILES) version.xml \
-	ostree-sections.txt $(NULL)
+	ostree-sections.txt ostree-experimental-sections.txt $(NULL)
 DOC_STAMPS = setup-build.stamp scan-build.stamp sgml-build.stamp \
 	html-build.stamp pdf-build.stamp \
 	sgml.stamp html.stamp pdf.stamp

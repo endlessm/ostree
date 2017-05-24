@@ -38,4 +38,8 @@ typedef struct OstreeSysrootUpgrader OstreeSysrootUpgrader;
 typedef struct OstreeMutableTree OstreeMutableTree;
 typedef struct OstreeRepoFile OstreeRepoFile;
 
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+typedef struct OstreeRemote OstreeRemote;
+#endif
+
 G_END_DECLS

@@ -2,7 +2,7 @@
 .\"     Title: ostree admin os-init
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 04/14/2017
+.\"      Date: 05/17/2017
 .\"    Manual: ostree admin os-init
 .\"    Source: OSTree
 .\"  Language: English
@@ -31,21 +31,21 @@
 ostree-admin-os-init \- Initialize empty state for a given operating system
 .SH "SYNOPSIS"
 .HP \w'\fBostree\ admin\ os\-init\fR\ 'u
-\fBostree admin os\-init\fR {OSNAME}
+\fBostree admin os\-init\fR {STATEROOT}
 .SH "DESCRIPTION"
 .PP
-Initializes an new state for an operating system\&. Ensures that the core subdirectories of /var (/tmp, /lib, /run, and /lock) exist and initialize the given OSNAME as OSTree root\&. Each deployment location is comprised of a single shared
+Initializes an new stateroot (AKA "osname") for an operating system\&. Ensures that the core subdirectories of /var (/tmp, /lib, /run, and /lock) exist and initialize the given STATEROOT as OSTree stateroot\&. Each deployment location is comprised of a single shared
 var
 and a set of deployments (chroots)\&.
 .SH "EXAMPLE"
 .PP
-\fB$ ostree admin os\-init gnome\-ostree\fR
+\fB$ ostree admin os\-init exampleos\fR
 .sp
 .if n \{\
 .RS 4
 .\}
 .nf
-        ostree/deploy/gnome\-ostree initialized as OSTree root
+        ostree/deploy/exampleos initialized as OSTree root
     
 .fi
 .if n \{\

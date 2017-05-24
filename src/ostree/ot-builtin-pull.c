@@ -43,12 +43,12 @@ static char* opt_url;
 
 static GOptionEntry options[] = {
    { "commit-metadata-only", 0, 0, G_OPTION_ARG_NONE, &opt_commit_only, "Fetch only the commit metadata", NULL },
-   { "cache-dir", 0, 0, G_OPTION_ARG_STRING, &opt_cache_dir, "Use custom cache dir", NULL },
+   { "cache-dir", 0, 0, G_OPTION_ARG_FILENAME, &opt_cache_dir, "Use custom cache dir", NULL },
    { "disable-fsync", 0, 0, G_OPTION_ARG_NONE, &opt_disable_fsync, "Do not invoke fsync()", NULL },
    { "disable-static-deltas", 0, 0, G_OPTION_ARG_NONE, &opt_disable_static_deltas, "Do not use static deltas", NULL },
    { "require-static-deltas", 0, 0, G_OPTION_ARG_NONE, &opt_require_static_deltas, "Require static deltas", NULL },
    { "mirror", 0, 0, G_OPTION_ARG_NONE, &opt_mirror, "Write refs suitable for a mirror", NULL },
-   { "subpath", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_subpaths, "Only pull the provided subpath(s)", NULL },
+   { "subpath", 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_subpaths, "Only pull the provided subpath(s)", NULL },
    { "untrusted", 0, 0, G_OPTION_ARG_NONE, &opt_untrusted, "Do not trust (local) sources", NULL },
    { "dry-run", 0, 0, G_OPTION_ARG_NONE, &opt_dry_run, "Only print information on what will be downloaded (requires static deltas)", NULL },
    { "depth", 0, 0, G_OPTION_ARG_INT, &opt_depth, "Traverse DEPTH parents (-1=infinite) (default: 0)", "DEPTH" },
@@ -84,27 +84,29 @@ dry_run_console_progress_changed (OstreeAsyncProgress *progress,
   guint fetched_delta_parts, total_delta_parts;
   guint fetched_delta_part_fallbacks, total_delta_part_fallbacks;
   guint64 fetched_delta_part_size, total_delta_part_size, total_delta_part_usize;
-  GString *buf;
 
   g_assert (!printed_console_progress);
   printed_console_progress = TRUE;
 
-  /* Number of parts */
-  fetched_delta_parts = ostree_async_progress_get_uint (progress, "fetched-delta-parts");
-  total_delta_parts = ostree_async_progress_get_uint (progress, "total-delta-parts");
-  fetched_delta_part_fallbacks = ostree_async_progress_get_uint (progress, "fetched-delta-fallbacks");
-  total_delta_part_fallbacks = ostree_async_progress_get_uint (progress, "total-delta-fallbacks");
+  ostree_async_progress_get (progress,
+                             /* Number of parts */
+                             "fetched-delta-parts", "u", &fetched_delta_parts,
+                             "total-delta-parts", "u", &total_delta_parts,
+                             "fetched-delta-fallbacks", "u", &fetched_delta_part_fallbacks,
+                             "total-delta-fallbacks", "u", &total_delta_part_fallbacks,
+                             /* Size variables */
+                             "fetched-delta-part-size", "t", &fetched_delta_part_size,
+                             "total-delta-part-size", "t", &total_delta_part_size,
+                             "total-delta-part-usize", "t", &total_delta_part_usize,
+                             NULL);
+
   /* Fold the count of deltaparts + fallbacks for simplicity; if changing this,
    * please change ostree_repo_pull_default_console_progress_changed() first.
    */
   fetched_delta_parts += fetched_delta_part_fallbacks;
   total_delta_parts += total_delta_part_fallbacks;
-  /* Size variables */
-  fetched_delta_part_size = ostree_async_progress_get_uint64 (progress, "fetched-delta-part-size");
-  total_delta_part_size = ostree_async_progress_get_uint64 (progress, "total-delta-part-size");
-  total_delta_part_usize = ostree_async_progress_get_uint64 (progress, "total-delta-part-usize");
 
-  buf = g_string_new ("");
+  g_autoptr(GString) buf = g_string_new ("");
 
   { g_autofree char *formatted_fetched =
       g_format_size (fetched_delta_part_size);
@@ -119,7 +121,6 @@ dry_run_console_progress_changed (OstreeAsyncProgress *progress,
                             formatted_usize);
   }
   g_print ("%s\n", buf->str);
-  g_string_free (buf, TRUE);
 }
 
 gboolean

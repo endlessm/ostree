@@ -2289,9 +2289,9 @@ content, the other types are metadata.</p>
 <pre class="programlisting">#define OSTREE_DIRMETA_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_DIRMETA_GVARIANT_STRING)
 </pre>
 <div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; ">
-<li class="listitem"><p>u - uid</p></li>
-<li class="listitem"><p>u - gid</p></li>
-<li class="listitem"><p>u - mode</p></li>
+<li class="listitem"><p>u - uid (big-endian)</p></li>
+<li class="listitem"><p>u - gid (big-endian)</p></li>
+<li class="listitem"><p>u - mode (big-endian)</p></li>
 <li class="listitem"><p>a(ayay) - xattrs</p></li>
 </ul></div>
 </div>
@@ -2311,9 +2311,9 @@ in bare-user repositories. This allows us to store metadata information that we
 can't store in the real filesystem but we can still use a regular .file object
 that we can hardlink to in the case of a user-mode checkout.</p>
 <div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; ">
-<li class="listitem"><p>u - uid</p></li>
-<li class="listitem"><p>u - gid</p></li>
-<li class="listitem"><p>u - mode</p></li>
+<li class="listitem"><p>u - uid (big-endian)</p></li>
+<li class="listitem"><p>u - gid (big-endian)</p></li>
+<li class="listitem"><p>u - mode (big-endian)</p></li>
 <li class="listitem"><p>a(ayay) - xattrs</p></li>
 </ul></div>
 </div>
@@ -2350,7 +2350,7 @@ that we can hardlink to in the case of a user-mode checkout.</p>
 <li class="listitem"><p>a(say) - Related objects</p></li>
 <li class="listitem"><p>s - subject</p></li>
 <li class="listitem"><p>s - body</p></li>
-<li class="listitem"><p>t - Timestamp in seconds since the epoch (UTC)</p></li>
+<li class="listitem"><p>t - Timestamp in seconds since the epoch (UTC, big-endian)</p></li>
 <li class="listitem"><p>ay - Root tree contents</p></li>
 <li class="listitem"><p>ay - Root tree metadata</p></li>
 </ul></div>
@@ -2370,9 +2370,21 @@ that we can hardlink to in the case of a user-mode checkout.</p>
 <li class="listitem"><p>a(s(taya{sv})) - Map of ref name -&gt; (latest commit size, latest commit checksum, additional metadata), sorted by ref name</p></li>
 <li class="listitem">
 <p>a{sv} - Additional metadata, at the current time the following are defined:</p>
-<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: circle; "><li class="listitem"><p>key: "ostree.static-deltas", value: a{sv}, static delta name -&gt; 32 bytes of checksum</p></li></ul></div>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: circle; ">
+<li class="listitem"><p>key: "ostree.static-deltas", value: a{sv}, static delta name -&gt; 32 bytes of checksum</p></li>
+<li class="listitem"><p>key: "ostree.summary.last-modified", value: t, timestamp (seconds since
+the Unix epoch in UTC, big-endian) when the summary was last regenerated
+(similar to the HTTP <code class="literal">Last-Modified</code> header)</p></li>
+<li class="listitem"><p>key: "ostree.summary.expires", value: t, timestamp (seconds since the
+Unix epoch in UTC, big-endian) after which the summary is considered
+stale and should be re-downloaded if possible (similar to the HTTP
+<code class="literal">Expires</code> header)</p></li>
+</ul></div>
 </li>
 </ul></div>
+<p>The currently defined keys for the <code class="literal">a{sv}</code> of additional metadata for each commit are:</p>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>key: <code class="literal">ostree.commit.timestamp</code>, value: <code class="literal">t</code>, timestamp (seconds since the
+Unix epoch in UTC, big-endian) when the commit was committed</p></li></ul></div>
 </div>
 </div>
 </div>

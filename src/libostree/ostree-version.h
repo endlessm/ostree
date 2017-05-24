@@ -40,14 +40,14 @@
  *
  * ostree release version component (e.g. 2 if %OSTREE_VERSION is 2017.2)
  */
-#define OSTREE_RELEASE_VERSION (5)
+#define OSTREE_RELEASE_VERSION (6)
 
 /**
  * OSTREE_VERSION
  *
  * ostree version.
  */
-#define OSTREE_VERSION (2017.5)
+#define OSTREE_VERSION (2017.6)
 
 /**
  * OSTREE_VERSION_S:
@@ -55,7 +55,7 @@
  * ostree version, encoded as a string, useful for printing and
  * concatenation.
  */
-#define OSTREE_VERSION_S "2017.5"
+#define OSTREE_VERSION_S "2017.6"
 
 #define OSTREE_ENCODE_VERSION(year,release) \
         ((year) << 16 | (release))
