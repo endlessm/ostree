@@ -1,3 +1,102 @@
+ostree (2017.6-1) experimental; urgency=medium
+
+  * New upstream release
+    - Update debian/copyright
+    - Update disabled ostree-boot packaging for new systemd generator
+    - Add new ABI to symbols file
+  * Skip build-time tests when nocheck is in DEB_BUILD_OPTIONS
+    (Closes: #862803). Thanks to Krzesimir Nowak
+  * Drop libsoup input streams races patch.
+  * Add compatibility metadata support (Dan Nicholson)
+
+ -- Simon McVittie <smcv@debian.org> Thu, 25 May 2017 10:01:12 +0100
+
+ostree (2017.6-0) experimental; urgency=low
+
+  * Stub changelog entry for Jenkins
+
+ -- Georges Basile Stavracas Neto <georges@endlessm.com> Tue, 30 May 2017 13:06:04 -0300
+
+ostree (2017.5-1) experimental; urgency=high
+
+  * New upstream release
+    - This release fixes a regression in 2017.4 that caused symlinks
+      in Flatpak apps and runtimes to be checked out as regular files.
+      Any apps or runtimes that were installed or updated with 2017.4
+      will need to be removed and reinstalled.
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 19 Apr 2017 14:18:16 +0100
+
+ostree (2017.4-1) experimental; urgency=medium
+
+  * New upstream release
+    - d/rules: Explicitly enable trivial-httpd: the tests still need it
+    - Update symbols file for new ABI
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 17 Apr 2017 17:19:58 +0100
+
+ostree (2017.3-2) experimental; urgency=medium
+
+  * d/ostree.maintscript: Clean up obsolete conffiles from before we
+    started removing what will eventually become ostree-boot
+    (see #824650)
+  * libostree-dev: Add missing dependency on libostree-1-1
+    (Closes: #860047)
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 10 Apr 2017 18:52:26 +0100
+
+ostree (2017.3-1) experimental; urgency=medium
+
+  * d/watch, d/copyright: upstream project is now named libostree
+  * New upstream release
+    - d/copyright: update
+    - symbols file: update
+    - tests, ostree-tests.install: update for new location of tests
+    - d/control: ostree-tests now needs python-yaml
+    - build-depend on python, python-yaml for tests
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 16 Mar 2017 06:58:46 +0000
+
+ostree (2017.1-1) experimental; urgency=medium
+
+  * Branch to experimental to avoid interfering with the Debian 9 freeze
+  * Remove an unintended line in the previous changelog
+  * New upstream release
+    - trivial-httpd is now a separate binary. Move it to ostree-tests,
+      so that it doesn't continue to pull in libsoup if the ostree
+      downloader is ported to libcurl.
+    - d/copyright: update
+    - d/patches: drop all patches, applied upstream
+  * Explicitly depend on autoconf, automake, libtool. This avoids
+    builds for experimental non-deterministically pulling in an older
+    version of automake, in my case automake1.11 which is far too old.
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 27 Jan 2017 10:23:47 +0000
+
+ostree (2016.15-3) unstable; urgency=medium
+
+  * debian/control: Don't run gjs tests on sparc64. gjs doesn't seem
+    to work there at all (#827815)
+    - d/ostree-tests.lintian-overrides: silence
+      missing-dep-for-interpreter error on sparc64, where we install
+      the script but do not attempt to run it
+  * debian/tests/gnome-desktop-testing: Skip test-local-pull.sh.test
+    which suffers from a known bug (#842606)
+    - debian/tests/test-local-pull: Run the unreliable test separately,
+      repeated 3 times to assess how often it fails
+  * d/p/Sourced-test-snippets-remove-shebang-and-make-non-executa.patch,
+    d/p/Make-corrupt-repo-ref.js-executable.patch:
+    Fix permissions and #! lines for some tests in the upstream build
+    system
+  * d/rules: remove workarounds for script permissions.
+    The upstream build system now uses the intended permissions throughout.
+    - Retain explicit chmod for *.js, which dh_fixperms assumes should
+      not be executable.
+  * d/p/Fix-TAP-syntax-in-test-basic-user.sh-and-run-it.patch:
+    Run an additional test, which was previously installed but not run
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 19 Jan 2017 13:23:32 +0000
+
 ostree (2016.15-2) unstable; urgency=medium
 
   * Make all test failures non-fatal at build time, so that intermittent

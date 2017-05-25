@@ -8,6 +8,8 @@ Uploaders:
  Sjoerd Simons <sjoerd@debian.org>
 Build-Depends:
  attr,
+ autoconf,
+ automake,
  bison,
  ca-certificates,
  cpio,
@@ -17,7 +19,7 @@ Build-Depends:
  e2fslibs-dev,
  elfutils,
  fuse,
- gjs,
+ gjs [!sparc64],
  gobject-introspection,
  gtk-doc-tools (>= 1.15),
  libarchive-dev (>= 2.8.0),
@@ -33,7 +35,10 @@ Build-Depends:
  libselinux1-dev,
  libsoup2.4-dev (>= 2.39.1),
  libsystemd-dev,
+ libtool,
  procps,
+ python <!nocheck>,
+ python-yaml <!nocheck>,
  xsltproc,
  zlib1g-dev,
 Standards-Version: 3.9.8
@@ -68,7 +73,7 @@ Pre-Depends:
  ${misc:Pre-Depends},
 Provides: libostree-1
 Conflicts: libostree-1
-Replaces: libostree-1
+Breaks: libostree-1
 Multi-arch: same
 Description: content-addressed filesystem for operating system binaries (library)
  OSTree is a tool and library for managing bootable, immutable, versioned
@@ -89,6 +94,7 @@ Section: libdevel
 Depends:
  gir1.2-ostree-1.0 (= ${binary:Version}),
  libglib2.0-dev,
+ libostree-1-1 (= ${binary:Version}),
  pkg-config,
  ${misc:Depends},
 Suggests:
@@ -115,7 +121,7 @@ Suggests:
  devhelp,
 Provides: ostree-doc
 Conflicts: ostree-doc
-Replaces: ostree-doc
+Breaks: ostree-doc
 Description: Development documentation for the ostree library
  OSTree is a tool for managing bootable, immutable, versioned filesystem
  trees. See the ostree package's description for more details.
@@ -148,9 +154,10 @@ Depends:
  cpio,
  fuse,
  gir1.2-ostree-1.0,
- gjs,
+ gjs [!sparc64],
  ostree,
  python,
+ python-yaml,
  ${misc:Depends},
  ${shlibs:Depends},
 Description: content-addressed filesystem for operating system binaries - tests
