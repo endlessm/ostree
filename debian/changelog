@@ -1,4 +1,4 @@
-ostree (2017.6-1) UNRELEASED; urgency=medium
+ostree (2017.6-1) experimental; urgency=medium
 
   * New upstream release
     - Update debian/copyright
@@ -7,7 +7,7 @@ ostree (2017.6-1) UNRELEASED; urgency=medium
   * Skip build-time tests when nocheck is in DEB_BUILD_OPTIONS
     (Closes: #862803). Thanks to Krzesimir Nowak
 
- -- Simon McVittie <smcv@debian.org>  Wed, 24 May 2017 20:50:51 +0100
+ -- Simon McVittie <smcv@debian.org>  Thu, 25 May 2017 10:01:12 +0100
 
 ostree (2017.5-1) experimental; urgency=high
 
