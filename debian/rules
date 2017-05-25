@@ -29,7 +29,9 @@ override_dh_auto_configure:
 		$(NULL)
 
 override_dh_auto_test:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	debian/test.sh
+endif
 
 override_dh_auto_install:
 	dh_auto_install

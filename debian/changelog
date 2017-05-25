@@ -4,6 +4,8 @@ ostree (2017.6-1) UNRELEASED; urgency=medium
     - Update debian/copyright
     - Update disabled ostree-boot packaging for new systemd generator
     - Add new ABI to symbols file
+  * Skip build-time tests when nocheck is in DEB_BUILD_OPTIONS
+    (Closes: #862803). Thanks to Krzesimir Nowak
 
  -- Simon McVittie <smcv@debian.org>  Wed, 24 May 2017 20:50:51 +0100
 
