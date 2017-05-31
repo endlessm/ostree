@@ -4895,7 +4895,7 @@ ostree_repo_delete_compat_signature (OstreeRepo     *self,
       _ostree_loose_path_with_extension (compat_sig_loose, commit_checksum,
                                          "sig");
 
-      if (TEMP_FAILURE_RETRY (unlinkat (self->objects_dir_fd, compat_sig_loose, 0) < 0)
+      if (TEMP_FAILURE_RETRY (unlinkat (self->objects_dir_fd, compat_sig_loose, 0) < 0))
         {
           glnx_set_error_from_errno (error);
           return FALSE;
