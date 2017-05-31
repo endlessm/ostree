@@ -7,7 +7,7 @@ export VERBOSE=1
 try_tests=5
 
 failed=0
-make check || failed=1
+dh_auto_test || failed=1
 
 if [ "$failed" -gt 0 ]; then
     [ "$failed" -eq 0 ] || echo "Test failed! Checking how reproducible it is..."
