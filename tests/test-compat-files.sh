@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-if ! ${CMD_PREFIX} ostree --version | grep -q -e 'gpgme'; then
+if ! ostree --version | grep -q -e 'gpgme'; then
     exit 77
 fi
 
