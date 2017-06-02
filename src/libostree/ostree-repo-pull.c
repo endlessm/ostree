@@ -1698,19 +1698,10 @@ process_one_static_delta_fallback (OtPullData   *pull_data,
       /* The delta compiler never did this, there's no reason to support it */
       if (OSTREE_OBJECT_TYPE_IS_META (objtype))
         {
-          if (!g_hash_table_lookup (pull_data->requested_metadata, checksum))
-            {
-              FetchObjectType fetchtype;
-              g_hash_table_add (pull_data->requested_metadata, checksum);
-
-              if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
-                fetchtype = OSTREE_FETCH_OBJECT_DETACHED_METADATA;
-              else
-                fetchtype = OSTREE_FETCH_OBJECT_CORE;
-              enqueue_one_object_request (pull_data, checksum, objtype, NULL,
-                                          fetchtype, FALSE);
-              checksum = NULL;  /* Transfer ownership */
-            }
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                       "Found metadata object as fallback: %s.%s", checksum,
+                       ostree_object_type_to_string (objtype));
+          goto out;
         }
       else
         {
