@@ -964,7 +964,7 @@ meta_fetch_on_complete (GObject           *object,
               if (pull_data->has_tombstone_commits)
                 {
                   enqueue_one_object_request (pull_data, checksum, OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT,
-                                              fetch_data->path, FALSE, FALSE);
+                                              fetch_data->path, OSTREE_FETCH_OBJECT_CORE, FALSE);
                 }
             }
         }
