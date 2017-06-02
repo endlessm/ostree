@@ -1470,10 +1470,6 @@ scan_one_metadata_object_c (OtPullData         *pull_data,
                                     OSTREE_FETCH_OBJECT_DETACHED_METADATA, TRUE);
       else
         {
-          /* For commits, always refetch detached metadata. */
-          enqueue_one_object_request (pull_data, tmp_checksum, objtype, path,
-                                      OSTREE_FETCH_OBJECT_DETACHED_METADATA, TRUE);
-
           if (!scan_commit_object (pull_data, tmp_checksum, recursion_depth,
                                    pull_data->cancellable, error))
             goto out;
