@@ -948,7 +948,8 @@ meta_fetch_on_complete (GObject           *object,
               if (next == OSTREE_FETCH_OBJECT_CORE && fetch_data->object_is_stored)
                 queue_scan_one_metadata_object (pull_data, checksum, objtype, fetch_data->path, 0);
               else
-                enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path, next, FALSE);
+                enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path, next,
+                                            fetch_data->object_is_stored);
             }
 
           /* When traversing parents, do not fail on a missing commit.
@@ -997,7 +998,8 @@ meta_fetch_on_complete (GObject           *object,
 
       /* Request compat sizes */
       enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path,
-                                  OSTREE_FETCH_OBJECT_COMPAT_SIZES, FALSE);
+                                  OSTREE_FETCH_OBJECT_COMPAT_SIZES,
+                                  fetch_data->object_is_stored);
     }
   else if (fetch_data->type == OSTREE_FETCH_OBJECT_COMPAT_SIZES)
     {
@@ -1014,7 +1016,8 @@ meta_fetch_on_complete (GObject           *object,
 
       /* Request compat signature */
       enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path,
-                                  OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE, FALSE);
+                                  OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE,
+                                  fetch_data->object_is_stored);
     }
   else if (fetch_data->type == OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE)
     {
