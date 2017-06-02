@@ -899,7 +899,6 @@ meta_fetch_on_complete (GObject           *object,
   FetchObjectData *fetch_data = user_data;
   OtPullData *pull_data = fetch_data->pull_data;
   g_autoptr(GVariant) metadata = NULL;
-  GMappedFile *signature_file = NULL;
   g_autofree char *temp_path = NULL;
   const char *checksum;
   g_autofree char *checksum_obj = NULL;
@@ -1019,6 +1018,7 @@ meta_fetch_on_complete (GObject           *object,
     }
   else if (fetch_data->type == OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE)
     {
+      g_autoptr(GMappedFile) signature_file = NULL;
       g_autoptr(GBytes) signature = NULL;
 
       signature_file = g_mapped_file_new_from_fd (fd, FALSE, error);
@@ -1070,8 +1070,6 @@ meta_fetch_on_complete (GObject           *object,
   pull_data->n_outstanding_metadata_fetches--;
   pull_data->n_fetched_metadata++;
   check_outstanding_requests_handle_error (pull_data, &local_error);
-  if (signature_file)
-    g_mapped_file_unref (signature_file);
   if (free_fetch_data)
     fetch_object_data_free (fetch_data);
 }
