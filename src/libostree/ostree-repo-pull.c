@@ -1560,6 +1560,12 @@ start_fetch (OtPullData *pull_data,
   is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
   fetchtype = fetch->type;
 
+  g_debug ("starting fetch of %s.%s%s%s%s", expected_checksum,
+           ostree_object_type_to_string (objtype),
+           (fetchtype == OSTREE_FETCH_OBJECT_DETACHED_METADATA) ? " (detached)" : "",
+           (fetchtype == OSTREE_FETCH_OBJECT_COMPAT_SIZES) ? " (compat sizes)" : "",
+           (fetchtype == OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE) ? " (compat signature)" : "");
+
   is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
   if (is_meta)
     pull_data->n_outstanding_metadata_fetches++;
