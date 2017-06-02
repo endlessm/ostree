@@ -899,7 +899,6 @@ meta_fetch_on_complete (GObject           *object,
   FetchObjectData *fetch_data = user_data;
   OtPullData *pull_data = fetch_data->pull_data;
   g_autoptr(GVariant) metadata = NULL;
-  GMappedFile *signature_file = NULL;
   g_autofree char *temp_path = NULL;
   const char *checksum;
   g_autofree char *checksum_obj = NULL;
@@ -923,7 +922,6 @@ meta_fetch_on_complete (GObject           *object,
           if (fetch_data->type != OSTREE_FETCH_OBJECT_CORE)
             {
               FetchObjectType next;
-              gboolean do_fetch = TRUE;
 
               /* Non-core object missing, just fetch the next object */
               g_clear_error (&local_error);
@@ -937,20 +935,21 @@ meta_fetch_on_complete (GObject           *object,
                   break;
                 case OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE:
                   next = OSTREE_FETCH_OBJECT_CORE;
-                  do_fetch = !fetch_data->object_is_stored;
                   break;
                 default:
                   g_assert_not_reached ();
                 }
 
-              /* Now that we've at least tried to fetch it, we can proceed to
-               * scan/fetch the commit object */
-              g_hash_table_add (pull_data->fetched_detached_metadata, g_strdup (checksum));
+              /* If we've at least tried to fetch all the non-core objects, we
+               * can proceed to scan/fetch the commit object */
+              if (next == OSTREE_FETCH_OBJECT_CORE)
+                g_hash_table_add (pull_data->fetched_detached_metadata, g_strdup (checksum));
 
-              if (do_fetch)
-                enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path, next, FALSE);
-              else
+              if (next == OSTREE_FETCH_OBJECT_CORE && fetch_data->object_is_stored)
                 queue_scan_one_metadata_object (pull_data, checksum, objtype, fetch_data->path, 0);
+              else
+                enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path, next,
+                                            fetch_data->object_is_stored);
             }
 
           /* When traversing parents, do not fail on a missing commit.
@@ -965,7 +964,7 @@ meta_fetch_on_complete (GObject           *object,
               if (pull_data->has_tombstone_commits)
                 {
                   enqueue_one_object_request (pull_data, checksum, OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT,
-                                              fetch_data->path, FALSE, FALSE);
+                                              fetch_data->path, OSTREE_FETCH_OBJECT_CORE, FALSE);
                 }
             }
         }
@@ -997,13 +996,10 @@ meta_fetch_on_complete (GObject           *object,
                                                        pull_data->cancellable, error))
         goto out;
 
-      g_hash_table_add (pull_data->fetched_detached_metadata, g_strdup (checksum));
-
-      if (!fetch_data->object_is_stored)
-        enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path,
-                                    OSTREE_FETCH_OBJECT_COMPAT_SIZES, FALSE);
-      else
-        queue_scan_one_metadata_object (pull_data, checksum, objtype, fetch_data->path, 0);
+      /* Request compat sizes */
+      enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path,
+                                  OSTREE_FETCH_OBJECT_COMPAT_SIZES,
+                                  fetch_data->object_is_stored);
     }
   else if (fetch_data->type == OSTREE_FETCH_OBJECT_COMPAT_SIZES)
     {
@@ -1020,10 +1016,12 @@ meta_fetch_on_complete (GObject           *object,
 
       /* Request compat signature */
       enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path,
-                                  OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE, FALSE);
+                                  OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE,
+                                  fetch_data->object_is_stored);
     }
   else if (fetch_data->type == OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE)
     {
+      g_autoptr(GMappedFile) signature_file = NULL;
       g_autoptr(GBytes) signature = NULL;
 
       signature_file = g_mapped_file_new_from_fd (fd, FALSE, error);
@@ -1038,10 +1036,15 @@ meta_fetch_on_complete (GObject           *object,
                                                        pull_data->cancellable, error))
         goto out;
 
-      /* Request commit if it isn't stored yet */
+      /* Got all non-core types, mark the detached metadata as fetched */
+      g_hash_table_add (pull_data->fetched_detached_metadata, g_strdup (checksum));
+
+      /* Request/scan commit object */
       if (!fetch_data->object_is_stored)
         enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path,
                                     OSTREE_FETCH_OBJECT_CORE, FALSE);
+      else
+        queue_scan_one_metadata_object (pull_data, checksum, objtype, fetch_data->path, 0);
     }
   else
     {
@@ -1070,8 +1073,6 @@ meta_fetch_on_complete (GObject           *object,
   pull_data->n_outstanding_metadata_fetches--;
   pull_data->n_fetched_metadata++;
   check_outstanding_requests_handle_error (pull_data, &local_error);
-  if (signature_file)
-    g_mapped_file_unref (signature_file);
   if (free_fetch_data)
     fetch_object_data_free (fetch_data);
 }
@@ -1470,10 +1471,6 @@ scan_one_metadata_object_c (OtPullData         *pull_data,
                                     OSTREE_FETCH_OBJECT_DETACHED_METADATA, TRUE);
       else
         {
-          /* For commits, always refetch detached metadata. */
-          enqueue_one_object_request (pull_data, tmp_checksum, objtype, path,
-                                      OSTREE_FETCH_OBJECT_DETACHED_METADATA, TRUE);
-
           if (!scan_commit_object (pull_data, tmp_checksum, recursion_depth,
                                    pull_data->cancellable, error))
             goto out;
@@ -1563,6 +1560,12 @@ start_fetch (OtPullData *pull_data,
   ostree_object_name_deserialize (fetch->object, &expected_checksum, &objtype);
   is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
   fetchtype = fetch->type;
+
+  g_debug ("starting fetch of %s.%s%s%s%s", expected_checksum,
+           ostree_object_type_to_string (objtype),
+           (fetchtype == OSTREE_FETCH_OBJECT_DETACHED_METADATA) ? " (detached)" : "",
+           (fetchtype == OSTREE_FETCH_OBJECT_COMPAT_SIZES) ? " (compat sizes)" : "",
+           (fetchtype == OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE) ? " (compat signature)" : "");
 
   is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
   if (is_meta)
@@ -1696,19 +1699,10 @@ process_one_static_delta_fallback (OtPullData   *pull_data,
       /* The delta compiler never did this, there's no reason to support it */
       if (OSTREE_OBJECT_TYPE_IS_META (objtype))
         {
-          if (!g_hash_table_lookup (pull_data->requested_metadata, checksum))
-            {
-              FetchObjectType fetchtype;
-              g_hash_table_add (pull_data->requested_metadata, checksum);
-
-              if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
-                fetchtype = OSTREE_FETCH_OBJECT_DETACHED_METADATA;
-              else
-                fetchtype = OSTREE_FETCH_OBJECT_CORE;
-              enqueue_one_object_request (pull_data, checksum, objtype, NULL,
-                                          fetchtype, FALSE);
-              checksum = NULL;  /* Transfer ownership */
-            }
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                       "Found metadata object as fallback: %s.%s", checksum,
+                       ostree_object_type_to_string (objtype));
+          goto out;
         }
       else
         {
