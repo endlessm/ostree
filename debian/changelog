@@ -6,6 +6,7 @@ ostree (2017.7-1) UNRELEASED; urgency=medium
   * debian/dist/: Add ostree-trivial-httpd.xml, which was incorrectly
     excluded from the upstream release
   * Implement <nodoc> build profile
+  * Add post-release patches so test-symbols.sh passes again
 
  -- Simon McVittie <smcv@debian.org>  Wed, 21 Jun 2017 10:07:42 +0100
 

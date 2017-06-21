@@ -1,0 +1,65 @@
+From: Colin Walters <walters@verbum.org>
+Date: Mon, 19 Jun 2017 11:23:45 -0400
+Subject: main: DevelBuild=yes to `ostree --version` for devel builds
+
+And use it in `test-symbols.sh`, to fix the `distcheck` case;
+the previous change stopped distributing `libostree-devel.sym`
+in release builds.
+
+Closes: #944
+Approved by: jlebon
+
+Origin: upstream, 2017.8, commit:2a082b20b8da2ffecb4f2c0e179a961c0fd26bd0
+---
+ configure.ac          | 5 ++++-
+ src/ostree/ot-main.c  | 3 +++
+ tests/test-symbols.sh | 6 +++++-
+ 3 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 7946f4f..58795a7 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -460,7 +460,10 @@ AS_IF([test x$enable_experimental_api = xyes],
+ )
+ AM_CONDITIONAL([ENABLE_EXPERIMENTAL_API],[test x$enable_experimental_api = xyes])
+ AM_CONDITIONAL([BUILDOPT_IS_DEVEL_BUILD],[test x$is_release_build != xyes])
+-AM_COND_IF([BUILDOPT_IS_DEVEL_BUILD], release_build_type=devel, release_build_type=release)
++AM_COND_IF([BUILDOPT_IS_DEVEL_BUILD],
++            AC_DEFINE([BUILDOPT_IS_DEVEL_BUILD], [1], [Define if doing a development build])
++            release_build_type=devel,
++            release_build_type=release)
+ 
+ AC_CONFIG_FILES([
+ Makefile
+diff --git a/src/ostree/ot-main.c b/src/ostree/ot-main.c
+index 9aca828..40d77f5 100644
+--- a/src/ostree/ot-main.c
++++ b/src/ostree/ot-main.c
+@@ -242,6 +242,9 @@ ostree_option_context_parse (GOptionContext *context,
+       g_print (" Version: %s\n", PACKAGE_VERSION);
+       if (strlen (OSTREE_GITREV) > 0)
+         g_print (" Git: %s\n", OSTREE_GITREV);
++#ifdef BUILDOPT_IS_DEVEL_BUILD
++      g_print (" DevelBuild: yes\n");
++#endif
+       g_print (" Features:\n");
+       for (char **iter = features; iter && *iter; iter++)
+         g_print ("  - %s\n", *iter);
+diff --git a/tests/test-symbols.sh b/tests/test-symbols.sh
+index d22231d..3f62730 100755
+--- a/tests/test-symbols.sh
++++ b/tests/test-symbols.sh
+@@ -22,7 +22,11 @@ set -xeuo pipefail
+ echo '1..3'
+ 
+ released_syms=${G_TEST_SRCDIR}/src/libostree/libostree-released.sym
+-devel_syms=${G_TEST_SRCDIR}/src/libostree/libostree-devel.sym
++if echo "$OSTREE_FEATURES" | grep --quiet --no-messages "DevelBuild"; then
++    devel_syms=${G_TEST_SRCDIR}/src/libostree/libostree-devel.sym
++else
++    devel_syms=
++fi
+ if echo "$OSTREE_FEATURES" | grep --quiet --no-messages "experimental"; then
+   experimental_sym="${G_TEST_SRCDIR}/src/libostree/libostree-experimental.sym"
+   experimental_sections="${G_TEST_SRCDIR}/apidoc/ostree-experimental-sections.txt"
