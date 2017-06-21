@@ -1,4 +1,4 @@
-ostree (2017.7-1) UNRELEASED; urgency=medium
+ostree (2017.7-1) unstable; urgency=medium
 
   * New upstream release
     - Update symbols file
@@ -8,8 +8,9 @@ ostree (2017.7-1) UNRELEASED; urgency=medium
   * Standards-Version: 4.0.0
     - Use https URL for copyright-format
   * Implement <nodoc> build profile
+  * Upload to unstable
 
- -- Simon McVittie <smcv@debian.org>  Wed, 21 Jun 2017 10:07:42 +0100
+ -- Simon McVittie <smcv@debian.org>  Wed, 21 Jun 2017 13:06:54 +0100
 
 ostree (2017.6-1) experimental; urgency=medium
 
