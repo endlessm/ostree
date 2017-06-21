@@ -9,10 +9,12 @@ export LC_ALL=C.UTF-8
 	dh $@ --with=gir
 
 override_dh_auto_clean:
+	rm -f man/ostree-trivial-httpd.xml
 	if [ -e Makefile ]; then dh_auto_clean; fi
 
 override_dh_autoreconf:
 	env NOCONFIGURE=1 dh_autoreconf ./autogen.sh
+	cp debian/dist/ostree-trivial-httpd.xml man/
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
