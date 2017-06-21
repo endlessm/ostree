@@ -14,14 +14,15 @@ Build-Depends:
  ca-certificates,
  cpio,
  debhelper (>= 10~),
- docbook-xml,
- docbook-xsl,
+ dh-exec,
+ docbook-xml <!nodoc>,
+ docbook-xsl <!nodoc>,
  e2fslibs-dev,
  elfutils,
  fuse,
  gjs [!sparc64],
  gobject-introspection,
- gtk-doc-tools,
+ gtk-doc-tools <!nodoc>,
  libarchive-dev,
  libattr1-dev,
  libcap-dev,
@@ -38,7 +39,7 @@ Build-Depends:
  procps,
  python <!nocheck>,
  python-yaml <!nocheck>,
- xsltproc,
+ xsltproc <!nodoc>,
  zlib1g-dev,
 Standards-Version: 4.0.0
 Homepage: https://github.com/ostreedev/ostree/
@@ -105,6 +106,7 @@ Description: Development files for the ostree library
  This package contains development headers and the pkg-config file for ostree.
 
 Package: libostree-doc
+Build-Profiles: <!nodoc>
 Architecture: all
 Multi-Arch: foreign
 Section: doc

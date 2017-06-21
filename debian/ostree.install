@@ -1,5 +1,7 @@
+#!/usr/bin/dh-exec
+
 etc/ostree
 usr/bin/ostree
 usr/bin/rofiles-fuse
-usr/share/man
+usr/share/man <!nodoc>
 usr/share/ostree/trusted.gpg.d
