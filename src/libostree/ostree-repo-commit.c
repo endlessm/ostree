@@ -179,10 +179,13 @@ _ostree_repo_commit_loose_final (OstreeRepo        *self,
   return TRUE;
 }
 
+/* Given either a file or symlink, apply the final metadata to it depending on
+ * the repository mode. Note that @checksum is assumed to have been validated by
+ * the caller.
+ */
 static gboolean
-commit_loose_object_trusted (OstreeRepo        *self,
+commit_loose_content_object (OstreeRepo        *self,
                              const char        *checksum,
-                             OstreeObjectType   objtype,
                              const char        *temp_filename,
                              gboolean           object_is_symlink,
                              guint32            uid,
@@ -193,8 +196,6 @@ commit_loose_object_trusted (OstreeRepo        *self,
                              GCancellable      *cancellable,
                              GError           **error)
 {
-  gboolean ret = FALSE;
-
   /* We may be writing as root to a non-root-owned repository; if so,
    * automatically inherit the non-root ownership.
    */
@@ -204,19 +205,13 @@ commit_loose_object_trusted (OstreeRepo        *self,
       if (fd != -1)
         {
           if (fchown (fd, self->target_owner_uid, self->target_owner_gid) < 0)
-            {
-              glnx_set_error_from_errno (error);
-              goto out;
-            }
+            return glnx_throw_errno_prefix (error, "fchown");
         }
       else if (G_UNLIKELY (fchownat (self->tmp_dir_fd, temp_filename,
                                      self->target_owner_uid,
                                      self->target_owner_gid,
                                      AT_SYMLINK_NOFOLLOW) == -1))
-        {
-          glnx_set_error_from_errno (error);
-          goto out;
-        }
+        return glnx_throw_errno_prefix (error, "fchownat");
     }
 
   /* Special handling for symlinks in bare repositories */
@@ -235,85 +230,70 @@ commit_loose_object_trusted (OstreeRepo        *self,
       if (G_UNLIKELY (fchownat (self->tmp_dir_fd, temp_filename,
                                 uid, gid,
                                 AT_SYMLINK_NOFOLLOW) == -1))
-        {
-          glnx_set_error_from_errno (error);
-          goto out;
-        }
+        return glnx_throw_errno_prefix (error, "fchownat");
 
       if (xattrs != NULL)
         {
           ot_security_smack_reset_dfd_name (self->tmp_dir_fd, temp_filename);
           if (!glnx_dfd_name_set_all_xattrs (self->tmp_dir_fd, temp_filename,
                                                xattrs, cancellable, error))
-            goto out;
+            return FALSE;
         }
     }
   else
     {
-      int res;
-
-      if (objtype == OSTREE_OBJECT_TYPE_FILE && self->mode == OSTREE_REPO_MODE_BARE)
+      if (self->mode == OSTREE_REPO_MODE_BARE)
         {
-          do
-            res = fchown (fd, uid, gid);
-          while (G_UNLIKELY (res == -1 && errno == EINTR));
-          if (G_UNLIKELY (res == -1))
-            {
-              glnx_set_error_from_errno (error);
-              goto out;
-            }
+          if (TEMP_FAILURE_RETRY (fchown (fd, uid, gid)) < 0)
+            return glnx_throw_errno_prefix (error, "fchown");
 
-          do
-            res = fchmod (fd, mode);
-          while (G_UNLIKELY (res == -1 && errno == EINTR));
-          if (G_UNLIKELY (res == -1))
-            {
-              glnx_set_error_from_errno (error);
-              goto out;
-            }
+          if (TEMP_FAILURE_RETRY (fchmod (fd, mode)) < 0)
+            return glnx_throw_errno_prefix (error, "fchmod");
 
           if (xattrs)
             {
               ot_security_smack_reset_fd (fd);
               if (!glnx_fd_set_all_xattrs (fd, xattrs, cancellable, error))
-                goto out;
+                return FALSE;
             }
         }
-
-      if (objtype == OSTREE_OBJECT_TYPE_FILE &&
-          (self->mode == OSTREE_REPO_MODE_BARE_USER || self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY))
+      else if (self->mode == OSTREE_REPO_MODE_BARE_USER)
         {
+          if (!write_file_metadata_to_xattr (fd, uid, gid, mode, xattrs, error))
+            return FALSE;
+
           if (!object_is_symlink)
             {
-              /* We need to apply at least some mode bits, because the repo file was created
-                 with mode 644, and we need e.g. exec bits to be right when we do a user-mode
-                 checkout. To make this work we apply all user bits and the read bits for
-                 group/other.  Furthermore, setting user xattrs requires write access, so
-                 this makes sure it's at least writable by us.  (O_TMPFILE uses mode 0 by default) */
-              if (fchmod (fd, mode | 0744) < 0)
-                return glnx_throw_errno (error);
+              /* Note that previously this path added `| 0755` which made every
+               * file executable, see
+               * https://github.com/ostreedev/ostree/issues/907
+               */
+              const mode_t content_mode = (mode & (S_IFREG | 0775));
+              if (fchmod (fd, content_mode) < 0)
+                return glnx_throw_errno_prefix (error, "fchmod");
             }
+        }
+      else if (self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY
+               && !object_is_symlink)
+        {
+          guint32 invalid_modebits = (mode & ~S_IFMT) & ~0775;
+          if (invalid_modebits > 0)
+            return glnx_throw (error, "Invalid mode 0%04o with bits 0%04o in bare-user-only repository",
+                               mode, invalid_modebits);
 
-          if (self->mode == OSTREE_REPO_MODE_BARE_USER &&
-              !write_file_metadata_to_xattr (fd, uid, gid, mode, xattrs, error))
-            return FALSE;
+          if (fchmod (fd, mode) < 0)
+            return glnx_throw_errno_prefix (error, "fchmod");
         }
 
-      if (objtype == OSTREE_OBJECT_TYPE_FILE && _ostree_repo_mode_is_bare (self->mode))
+      if (_ostree_repo_mode_is_bare (self->mode))
         {
           /* To satisfy tools such as guile which compare mtimes
            * to determine whether or not source files need to be compiled,
            * set the modification time to OSTREE_TIMESTAMP.
            */
           const struct timespec times[2] = { { OSTREE_TIMESTAMP, UTIME_OMIT }, { OSTREE_TIMESTAMP, 0} };
-          do
-            res = futimens (fd, times);
-          while (G_UNLIKELY (res == -1 && errno == EINTR));
-          if (G_UNLIKELY (res == -1))
-            {
-              glnx_set_error_from_errno (error);
-              goto out;
-            }
+          if (TEMP_FAILURE_RETRY (futimens (fd, times)) < 0)
+            return glnx_throw_errno_prefix (error, "futimens");
         }
 
       /* Ensure that in case of a power cut, these files have the data we
@@ -322,23 +302,16 @@ commit_loose_object_trusted (OstreeRepo        *self,
       if (!self->in_transaction && !self->disable_fsync)
         {
           if (fsync (fd) == -1)
-            {
-              glnx_set_error_from_errno (error);
-              goto out;
-            }
+            return glnx_throw_errno_prefix (error, "fsync");
         }
     }
 
-  if (!_ostree_repo_commit_loose_final (self, checksum, objtype,
+  if (!_ostree_repo_commit_loose_final (self, checksum, OSTREE_OBJECT_TYPE_FILE,
                                         self->tmp_dir_fd, fd, temp_filename,
                                         cancellable, error))
-    goto out;
-  
-  ret = TRUE;
- out:
-  if (G_UNLIKELY (error && *error))
-    g_prefix_error (error, "Writing object %s.%s: ", checksum, ostree_object_type_to_string (objtype));
-  return ret;
+    return FALSE;
+
+  return TRUE;
 }
 
 typedef struct
@@ -535,12 +508,15 @@ _ostree_repo_commit_trusted_content_bare (OstreeRepo          *self,
 
   if (state->fd != -1)
     {
-      if (!commit_loose_object_trusted (self, checksum, OSTREE_OBJECT_TYPE_FILE,
+      if (!commit_loose_content_object (self, checksum,
                                         state->temp_filename,
                                         FALSE, uid, gid, mode,
                                         xattrs, state->fd,
                                         cancellable, error))
-        goto out;
+        {
+          g_prefix_error (error, "Writing object %s.%s: ", checksum, ostree_object_type_to_string (OSTREE_OBJECT_TYPE_FILE));
+          goto out;
+        }
     }
 
   ret = TRUE;
@@ -591,306 +567,356 @@ create_regular_tmpfile_linkable_with_content (OstreeRepo *self,
   return TRUE;
 }
 
-static gboolean
-write_object (OstreeRepo         *self,
-              OstreeObjectType    objtype,
-              const char         *expected_checksum,
-              GInputStream       *input,
-              guint64             file_object_length,
-              guchar            **out_csum,
-              GCancellable       *cancellable,
-              GError            **error)
-{
-  gboolean ret = FALSE;
-  const char *actual_checksum = NULL;
-  g_autofree char *actual_checksum_owned = NULL;
-  gboolean do_commit;
-  OstreeRepoMode repo_mode;
-  g_autofree char *temp_filename = NULL;
-  g_autofree guchar *ret_csum = NULL;
-  glnx_unref_object OtChecksumInstream *checksum_input = NULL;
-  g_autoptr(GInputStream) file_input = NULL;
-  g_autoptr(GFileInfo) file_info = NULL;
-  g_autoptr(GVariant) xattrs = NULL;
-  gboolean have_obj;
-  gboolean temp_file_is_regular;
-  gboolean temp_file_is_symlink;
-  glnx_fd_close int temp_fd = -1;
-  gboolean object_is_symlink = FALSE;
-  gssize unpacked_size = 0;
-  gboolean indexable = FALSE;
+/* A little helper to call unlinkat() as a cleanup
+ * function.  Mostly only necessary to handle
+ * deletion of temporary symlinks.
+ */
+typedef struct {
+  int dfd;
+  const char *path;
+} CleanupUnlinkat;
 
+static void
+cleanup_unlinkat (CleanupUnlinkat *cleanup)
+{
+  if (cleanup->path)
+    (void) unlinkat (cleanup->dfd, cleanup->path, 0);
+}
+G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(CleanupUnlinkat, cleanup_unlinkat);
+
+/* Write a content object. */
+static gboolean
+write_content_object (OstreeRepo         *self,
+                      const char         *expected_checksum,
+                      GInputStream       *input,
+                      guint64             file_object_length,
+                      guchar            **out_csum,
+                      GCancellable       *cancellable,
+                      GError            **error)
+{
   g_return_val_if_fail (expected_checksum || out_csum, FALSE);
 
   if (g_cancellable_set_error_if_cancelled (cancellable, error))
     return FALSE;
 
-  if (expected_checksum)
-    {
-      if (!_ostree_repo_has_loose_object (self, expected_checksum, objtype, &have_obj,
-                                          cancellable, error))
-        goto out;
-      if (have_obj)
-        {
-          if (out_csum)
-            *out_csum = ostree_checksum_to_bytes (expected_checksum);
-          ret = TRUE;
-          goto out;
-        }
-    }
+  OstreeRepoMode repo_mode = ostree_repo_get_mode (self);
 
-  repo_mode = ostree_repo_get_mode (self);
-
+  glnx_unref_object OtChecksumInstream *checksum_input = NULL;
   if (out_csum)
     checksum_input = ot_checksum_instream_new (input, G_CHECKSUM_SHA256);
 
-  if (objtype == OSTREE_OBJECT_TYPE_FILE)
+  g_autoptr(GInputStream) file_input = NULL;
+  g_autoptr(GVariant) xattrs = NULL;
+  g_autoptr(GFileInfo) file_info = NULL;
+  if (!ostree_content_stream_parse (FALSE, checksum_input ? (GInputStream*)checksum_input : input,
+                                    file_object_length, FALSE,
+                                    &file_input, &file_info, &xattrs,
+                                    cancellable, error))
+    return FALSE;
+
+  gboolean temp_file_is_regular = g_file_info_get_file_type (file_info) == G_FILE_TYPE_REGULAR;
+  gboolean temp_file_is_symlink = g_file_info_get_file_type (file_info) == G_FILE_TYPE_SYMBOLIC_LINK;
+  gboolean object_is_symlink = temp_file_is_symlink;
+
+  if (repo_mode == OSTREE_REPO_MODE_BARE_USER && object_is_symlink)
     {
-      if (!ostree_content_stream_parse (FALSE, checksum_input ? (GInputStream*)checksum_input : input,
-                                        file_object_length, FALSE,
-                                        &file_input, &file_info, &xattrs,
-                                        cancellable, error))
-        goto out;
+      const char *target_str = g_file_info_get_symlink_target (file_info);
+      g_autoptr(GBytes) target = g_bytes_new (target_str, strlen (target_str) + 1);
 
-      temp_file_is_regular = g_file_info_get_file_type (file_info) == G_FILE_TYPE_REGULAR;
-      temp_file_is_symlink = object_is_symlink =
-        g_file_info_get_file_type (file_info) == G_FILE_TYPE_SYMBOLIC_LINK;
+      /* For bare-user we can't store symlinks as symlinks, as symlinks don't
+         support user xattrs to store the ownership. So, instead store them
+         as regular files */
+      temp_file_is_regular = TRUE;
+      temp_file_is_symlink = FALSE;
 
-      if (repo_mode == OSTREE_REPO_MODE_BARE_USER && object_is_symlink)
-        {
-          const char *target_str = g_file_info_get_symlink_target (file_info);
-          g_autoptr(GBytes) target = g_bytes_new (target_str, strlen (target_str) + 1);
-
-          /* For bare-user we can't store symlinks as symlinks, as symlinks don't
-             support user xattrs to store the ownership. So, instead store them
-             as regular files */
-          temp_file_is_regular = TRUE;
-          temp_file_is_symlink = FALSE;
-          if (file_input != NULL)
-            g_object_unref (file_input);
-
-          /* Include the terminating zero so we can e.g. mmap this file */
-          file_input = g_memory_input_stream_new_from_bytes (target);
-        }
-
-      if (!(temp_file_is_regular || temp_file_is_symlink))
-        {
-          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                       "Unsupported file type %u", g_file_info_get_file_type (file_info));
-          goto out;
-        }
-
-      /* For regular files, we create them with default mode, and only
-       * later apply any xattrs and setuid bits.  The rationale here
-       * is that an attacker on the network with the ability to MITM
-       * could potentially cause the system to make a temporary setuid
-       * binary with trailing garbage, creating a window on the local
-       * system where a malicious setuid binary exists.
-       */
-      if ((_ostree_repo_mode_is_bare (repo_mode)) && temp_file_is_regular)
-        {
-          guint64 size = g_file_info_get_size (file_info);
-
-          if (!create_regular_tmpfile_linkable_with_content (self, size, file_input,
-                                                             &temp_fd, &temp_filename,
-                                                             cancellable, error))
-            goto out;
-        }
-      else if (_ostree_repo_mode_is_bare (repo_mode) && temp_file_is_symlink)
-        {
-          /* Note: This will not be hit for bare-user mode because its converted to a
-             regular file and take the branch above */
-          if (!_ostree_make_temporary_symlink_at (self->tmp_dir_fd,
-                                                  g_file_info_get_symlink_target (file_info),
-                                                  &temp_filename,
-                                                  cancellable, error))
-            goto out;
-        }
-      else if (repo_mode == OSTREE_REPO_MODE_ARCHIVE_Z2)
-        {
-          g_autoptr(GVariant) file_meta = NULL;
-          g_autoptr(GConverter) zlib_compressor = NULL;
-          g_autoptr(GOutputStream) compressed_out_stream = NULL;
-          g_autoptr(GOutputStream) temp_out = NULL;
-
-          if (self->generate_sizes)
-            indexable = TRUE;
-
-          if (!glnx_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_WRONLY|O_CLOEXEC,
-                                              &temp_fd, &temp_filename,
-                                              error))
-            goto out;
-          temp_file_is_regular = TRUE;
-          temp_out = g_unix_output_stream_new (temp_fd, FALSE);
-
-          file_meta = _ostree_zlib_file_header_new (file_info, xattrs);
-
-          if (!_ostree_write_variant_with_size (temp_out, file_meta, 0, NULL, NULL,
-                                                cancellable, error))
-            goto out;
-
-          if (g_file_info_get_file_type (file_info) == G_FILE_TYPE_REGULAR)
-            {
-              zlib_compressor = (GConverter*)g_zlib_compressor_new (G_ZLIB_COMPRESSOR_FORMAT_RAW, self->zlib_compression_level);
-              compressed_out_stream = g_converter_output_stream_new (temp_out, zlib_compressor);
-              /* Don't close the base; we'll do that later */
-              g_filter_output_stream_set_close_base_stream ((GFilterOutputStream*)compressed_out_stream, FALSE);
-              
-              unpacked_size = g_output_stream_splice (compressed_out_stream, file_input,
-                                                      0, cancellable, error);
-              if (unpacked_size < 0)
-                goto out;
-            }
-
-          if (!g_output_stream_flush (temp_out, cancellable, error))
-            goto out;
-
-          if (fchmod (temp_fd, 0644) < 0)
-            {
-              glnx_set_error_from_errno (error);
-              goto out;
-            }
-        }
-      else
-        g_assert_not_reached ();
+      if (file_input != NULL)
+        g_object_unref (file_input);
+      /* Include the terminating zero so we can e.g. mmap this file */
+      file_input = g_memory_input_stream_new_from_bytes (target);
     }
-  else
+
+  if (!(temp_file_is_regular || temp_file_is_symlink))
+    return glnx_throw (error, "Unsupported file type %u", g_file_info_get_file_type (file_info));
+
+  /* For regular files, we create them with default mode, and only
+   * later apply any xattrs and setuid bits.  The rationale here
+   * is that an attacker on the network with the ability to MITM
+   * could potentially cause the system to make a temporary setuid
+   * binary with trailing garbage, creating a window on the local
+   * system where a malicious setuid binary exists.
+   */
+  /* These variables are almost equivalent to OtTmpfile, except
+   * temp_filename might also be a symlink.  Hence the CleanupUnlinkat
+   * which handles that case.
+   */
+  g_auto(CleanupUnlinkat) tmp_unlinker = { self->tmp_dir_fd, NULL };
+  glnx_fd_close int temp_fd = -1;
+  g_autofree char *temp_filename = NULL;
+  gssize unpacked_size = 0;
+  gboolean indexable = FALSE;
+  if ((_ostree_repo_mode_is_bare (repo_mode)) && temp_file_is_regular)
     {
-      if (!create_regular_tmpfile_linkable_with_content (self, file_object_length,
-                                                         checksum_input ? (GInputStream*)checksum_input : input,
+      guint64 size = g_file_info_get_size (file_info);
+
+      if (!create_regular_tmpfile_linkable_with_content (self, size, file_input,
                                                          &temp_fd, &temp_filename,
                                                          cancellable, error))
-        goto out;
+        return FALSE;
+      tmp_unlinker.path = temp_filename;
+    }
+  else if (_ostree_repo_mode_is_bare (repo_mode) && temp_file_is_symlink)
+    {
+      /* Note: This will not be hit for bare-user mode because its converted to a
+         regular file and take the branch above */
+      if (!_ostree_make_temporary_symlink_at (self->tmp_dir_fd,
+                                              g_file_info_get_symlink_target (file_info),
+                                              &temp_filename,
+                                              cancellable, error))
+        return FALSE;
+      tmp_unlinker.path = temp_filename;
+    }
+  else if (repo_mode == OSTREE_REPO_MODE_ARCHIVE_Z2)
+    {
+      g_autoptr(GVariant) file_meta = NULL;
+      g_autoptr(GConverter) zlib_compressor = NULL;
+      g_autoptr(GOutputStream) compressed_out_stream = NULL;
+      g_autoptr(GOutputStream) temp_out = NULL;
+
+      if (self->generate_sizes)
+        indexable = TRUE;
+
+      if (!glnx_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_WRONLY|O_CLOEXEC,
+                                          &temp_fd, &temp_filename,
+                                          error))
+        return FALSE;
+      tmp_unlinker.path = temp_filename;
       temp_file_is_regular = TRUE;
+      temp_out = g_unix_output_stream_new (temp_fd, FALSE);
+
+      file_meta = _ostree_zlib_file_header_new (file_info, xattrs);
+
+      if (!_ostree_write_variant_with_size (temp_out, file_meta, 0, NULL, NULL,
+                                            cancellable, error))
+        return FALSE;
+
+      if (g_file_info_get_file_type (file_info) == G_FILE_TYPE_REGULAR)
+        {
+          zlib_compressor = (GConverter*)g_zlib_compressor_new (G_ZLIB_COMPRESSOR_FORMAT_RAW, self->zlib_compression_level);
+          compressed_out_stream = g_converter_output_stream_new (temp_out, zlib_compressor);
+          /* Don't close the base; we'll do that later */
+          g_filter_output_stream_set_close_base_stream ((GFilterOutputStream*)compressed_out_stream, FALSE);
+
+          unpacked_size = g_output_stream_splice (compressed_out_stream, file_input,
+                                                  0, cancellable, error);
+          if (unpacked_size < 0)
+            return FALSE;
+        }
+
+      if (!g_output_stream_flush (temp_out, cancellable, error))
+        return FALSE;
+
+      if (fchmod (temp_fd, 0644) < 0)
+        return glnx_throw_errno_prefix (error, "fchmod");
     }
 
+  const char *actual_checksum = NULL;
+  g_autofree char *actual_checksum_owned = NULL;
   if (!checksum_input)
     actual_checksum = expected_checksum;
   else
     {
       actual_checksum = actual_checksum_owned = ot_checksum_instream_get_string (checksum_input);
       if (expected_checksum && strcmp (actual_checksum, expected_checksum) != 0)
-        {
-          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                       "Corrupted %s object %s (actual checksum is %s)",
-                       ostree_object_type_to_string (objtype),
-                       expected_checksum, actual_checksum);
-          goto out;
-        }
+        return glnx_throw (error, "Corrupted %s object %s (actual checksum is %s)",
+                           ostree_object_type_to_string (OSTREE_OBJECT_TYPE_FILE),
+                           expected_checksum, actual_checksum);
     }
 
   g_assert (actual_checksum != NULL); /* Pacify static analysis */
-          
+
+  /* See whether or not we have the object, now that we know the
+   * checksum.
+   */
+  gboolean have_obj;
+  if (!_ostree_repo_has_loose_object (self, actual_checksum, OSTREE_OBJECT_TYPE_FILE,
+                                      &have_obj, cancellable, error))
+    return FALSE;
+  /* If we already have it, just update the stats. */
+  if (have_obj)
+    {
+      g_mutex_lock (&self->txn_stats_lock);
+      self->txn_stats.content_objects_total++;
+      g_mutex_unlock (&self->txn_stats_lock);
+      if (out_csum)
+        *out_csum = ostree_checksum_to_bytes (actual_checksum);
+      /* Note early return */
+      return TRUE;
+    }
+
+  const guint32 uid = g_file_info_get_attribute_uint32 (file_info, "unix::uid");
+  const guint32 gid = g_file_info_get_attribute_uint32 (file_info, "unix::gid");
+  const guint32 mode = g_file_info_get_attribute_uint32 (file_info, "unix::mode");
+  if (!commit_loose_content_object (self, actual_checksum,
+                                    temp_filename,
+                                    object_is_symlink,
+                                    uid, gid, mode,
+                                    xattrs, temp_fd,
+                                    cancellable, error))
+    return glnx_prefix_error (error, "Writing object %s.%s: ", actual_checksum,
+                              ostree_object_type_to_string (OSTREE_OBJECT_TYPE_FILE));
+  /* Clear the unlinker path, it was consumed */
+  tmp_unlinker.path = NULL;
+
+  /* Update size metadata if configured */
   if (indexable && temp_file_is_regular)
     {
       struct stat stbuf;
 
-      if (fstat (temp_fd, &stbuf) == -1)
-        {
-          glnx_set_error_from_errno (error);
-          goto out;
-        }
+      if (!glnx_fstat (temp_fd, &stbuf, error))
+        return FALSE;
 
       repo_store_size_entry (self, actual_checksum, unpacked_size, stbuf.st_size);
     }
 
-  if (!_ostree_repo_has_loose_object (self, actual_checksum, objtype, &have_obj,
-                                      cancellable, error))
-    goto out;
-          
-  do_commit = !have_obj;
-
-  if (do_commit)
-    {
-      guint32 uid, gid, mode;
-
-      if (file_info)
-        {
-          uid = g_file_info_get_attribute_uint32 (file_info, "unix::uid");
-          gid = g_file_info_get_attribute_uint32 (file_info, "unix::gid");
-          mode = g_file_info_get_attribute_uint32 (file_info, "unix::mode");
-        }
-      else
-        uid = gid = mode = 0;
-      
-      if (!commit_loose_object_trusted (self, actual_checksum, objtype,
-                                        temp_filename,
-                                        object_is_symlink,
-                                        uid, gid, mode,
-                                        xattrs, temp_fd,
-                                        cancellable, error))
-        goto out;
-
-
-      if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
-        {
-          GError *local_error = NULL;
-          /* If we are writing a commit, be sure there is no tombstone for it.
-             We may have deleted the commit and now we are trying to pull it again.  */
-          if (!ostree_repo_delete_object (self,
-                                          OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT,
-                                          actual_checksum,
-                                          cancellable,
-                                          &local_error))
-            {
-              if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-                g_clear_error (&local_error);
-              else
-                {
-                  g_propagate_error (error, local_error);
-                  goto out;
-                }
-            }
-        }
-
-      if (OSTREE_OBJECT_TYPE_IS_META (objtype))
-        {
-          if (G_UNLIKELY (file_object_length > OSTREE_MAX_METADATA_WARN_SIZE))
-            {
-              g_autofree char *metasize = g_format_size (file_object_length);
-              g_autofree char *warnsize = g_format_size (OSTREE_MAX_METADATA_WARN_SIZE);
-              g_autofree char *maxsize = g_format_size (OSTREE_MAX_METADATA_SIZE);
-              g_warning ("metadata object %s is %s, which is larger than the warning threshold of %s." \
-                         "  The hard limit on metadata size is %s.  Put large content in the tree itself, not in metadata.",
-                         actual_checksum,
-                         metasize, warnsize, maxsize);
-            }
-        }
-
-      g_clear_pointer (&temp_filename, g_free);
-    }
-
+  /* Update statistics */
   g_mutex_lock (&self->txn_stats_lock);
-  if (do_commit)
-    {
-      if (OSTREE_OBJECT_TYPE_IS_META (objtype))
-        {
-          self->txn_stats.metadata_objects_written++;
-        }
-      else
-        {
-          self->txn_stats.content_objects_written++;
-          self->txn_stats.content_bytes_written += file_object_length;
-        }
-    }
-  if (OSTREE_OBJECT_TYPE_IS_META (objtype))
-    self->txn_stats.metadata_objects_total++;
-  else
-    self->txn_stats.content_objects_total++;
+  self->txn_stats.content_objects_written++;
+  self->txn_stats.content_bytes_written += file_object_length;
+  self->txn_stats.content_objects_total++;
   g_mutex_unlock (&self->txn_stats_lock);
 
-  if (checksum_input)
+  if (out_csum)
     {
       g_assert (actual_checksum);
-      ret_csum = ostree_checksum_to_bytes (actual_checksum);
+      *out_csum = ostree_checksum_to_bytes (actual_checksum);
     }
 
-  ret = TRUE;
-  ot_transfer_out_value(out_csum, &ret_csum);
- out:
-  if (temp_filename)
-    (void) unlinkat (self->tmp_dir_fd, temp_filename, 0);
-  return ret;
+  return TRUE;
+}
+
+static gboolean
+write_metadata_object (OstreeRepo         *self,
+                       OstreeObjectType    objtype,
+                       const char         *expected_checksum,
+                       GBytes             *buf,
+                       guchar            **out_csum,
+                       GCancellable       *cancellable,
+                       GError            **error)
+{
+  g_return_val_if_fail (expected_checksum || out_csum, FALSE);
+
+  if (g_cancellable_set_error_if_cancelled (cancellable, error))
+    return FALSE;
+
+  /* In the metadata case, we're not streaming, so we don't bother creating a
+   * tempfile until we compute the checksum. Some metadata like dirmeta is
+   * commonly duplicated, and computing the checksum is going to be cheaper than
+   * making a tempfile.
+   *
+   * However, tombstone commit types don't make sense to checksum, because for
+   * historical reasons we used ostree_repo_write_metadata_trusted() with the
+   * *original* sha256 to say what commit was being killed.
+   */
+  const gboolean is_tombstone = (objtype == OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT);
+  g_autofree char *actual_checksum = NULL;
+  if (is_tombstone)
+    {
+      actual_checksum = g_strdup (expected_checksum);
+    }
+  else
+    {
+      actual_checksum = g_compute_checksum_for_bytes (G_CHECKSUM_SHA256, buf);
+      gboolean have_obj;
+      if (!_ostree_repo_has_loose_object (self, actual_checksum, objtype, &have_obj,
+                                          cancellable, error))
+        return FALSE;
+      /* If we already have the object, we just need to update the tried-to-commit
+       * stat for metadata and be done here.
+       */
+      if (have_obj)
+        {
+          g_mutex_lock (&self->txn_stats_lock);
+          self->txn_stats.metadata_objects_total++;
+          g_mutex_unlock (&self->txn_stats_lock);
+
+          if (out_csum)
+            *out_csum = ostree_checksum_to_bytes (actual_checksum);
+          /* Note early return */
+          return TRUE;
+        }
+
+      if (expected_checksum && strcmp (actual_checksum, expected_checksum) != 0)
+        return glnx_throw (error, "Corrupted %s object %s (actual checksum is %s)",
+                           ostree_object_type_to_string (objtype),
+                           expected_checksum, actual_checksum);
+    }
+
+  /* Ok, checksum is known, let's get the data */
+  gsize len;
+  const guint8 *bufp = g_bytes_get_data (buf, &len);
+
+  /* Do the size warning here, to avoid warning for already extant metadata */
+  if (G_UNLIKELY (len > OSTREE_MAX_METADATA_WARN_SIZE))
+    {
+      g_autofree char *metasize = g_format_size (len);
+      g_autofree char *warnsize = g_format_size (OSTREE_MAX_METADATA_WARN_SIZE);
+      g_autofree char *maxsize = g_format_size (OSTREE_MAX_METADATA_SIZE);
+      g_warning ("metadata object %s is %s, which is larger than the warning threshold of %s." \
+                 "  The hard limit on metadata size is %s.  Put large content in the tree itself, not in metadata.",
+                 actual_checksum,
+                 metasize, warnsize, maxsize);
+    }
+
+  /* Write the metadata to a temporary file */
+  g_auto(OtTmpfile) tmpf = { 0, };
+  if (!ot_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_WRONLY|O_CLOEXEC,
+                                    &tmpf, error))
+    return FALSE;
+  if (!ot_fallocate (tmpf.fd, len, error))
+    return FALSE;
+  if (glnx_loop_write (tmpf.fd, bufp, len) < 0)
+    return glnx_throw_errno_prefix (error, "write()");
+  if (fchmod (tmpf.fd, 0644) < 0)
+    return glnx_throw_errno_prefix (error, "fchmod");
+
+  /* And commit it into place */
+  if (!_ostree_repo_commit_loose_final (self, actual_checksum, objtype,
+                                        self->tmp_dir_fd, tmpf.fd, tmpf.path,
+                                        cancellable, error))
+    return FALSE;
+  /* The temp path was consumed */
+  g_clear_pointer (&tmpf.path, g_free);
+
+  if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
+    {
+      GError *local_error = NULL;
+      /* If we are writing a commit, be sure there is no tombstone for it.
+         We may have deleted the commit and now we are trying to pull it again.  */
+      if (!ostree_repo_delete_object (self,
+                                      OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT,
+                                      actual_checksum,
+                                      cancellable,
+                                      &local_error))
+        {
+          if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+            g_clear_error (&local_error);
+          else
+            {
+              g_propagate_error (error, local_error);
+              return FALSE;
+            }
+        }
+    }
+
+  /* Update the stats, note we both wrote one and add to total */
+  g_mutex_lock (&self->txn_stats_lock);
+  self->txn_stats.metadata_objects_written++;
+  self->txn_stats.metadata_objects_total++;
+  g_mutex_unlock (&self->txn_stats_lock);
+
+  if (out_csum)
+    *out_csum = ostree_checksum_to_bytes (actual_checksum);
+  return TRUE;
 }
 
 static gboolean
@@ -1141,7 +1167,9 @@ rename_pending_loose_objects (OstreeRepo        *self,
   while (TRUE)
     {
       struct dirent *dent;
+      gboolean renamed_some_object = FALSE;
       g_auto(GLnxDirFdIterator) child_dfd_iter = { 0, };
+      char loose_objpath[_OSTREE_LOOSE_PATH_MAX];
 
       if (!glnx_dirfd_iterator_next_dent_ensure_dtype (&dfd_iter, &dent, cancellable, error))
         return FALSE;
@@ -1159,20 +1187,19 @@ rename_pending_loose_objects (OstreeRepo        *self,
                                         &child_dfd_iter, error))
         return FALSE;
 
+      loose_objpath[0] = dent->d_name[0];
+      loose_objpath[1] = dent->d_name[1];
+      loose_objpath[2] = '/';
+
       /* Iterate over inner checksum dir */
       while (TRUE)
         {
           struct dirent *child_dent;
-          char loose_objpath[_OSTREE_LOOSE_PATH_MAX];
 
           if (!glnx_dirfd_iterator_next_dent (&child_dfd_iter, &child_dent, cancellable, error))
             return FALSE;
           if (child_dent == NULL)
             break;
-
-          loose_objpath[0] = dent->d_name[0];
-          loose_objpath[1] = dent->d_name[1];
-          loose_objpath[2] = '/';
 
           g_strlcpy (loose_objpath + 3, child_dent->d_name, sizeof (loose_objpath)-3);
 
@@ -1183,8 +1210,33 @@ rename_pending_loose_objects (OstreeRepo        *self,
           if (G_UNLIKELY (renameat (child_dfd_iter.fd, loose_objpath + 3,
                                     self->objects_dir_fd, loose_objpath) < 0))
             return glnx_throw_errno (error);
+
+          renamed_some_object = TRUE;
+        }
+
+      if (renamed_some_object)
+        {
+          /* Ensure that in the case of a power cut all the directory metadata that
+             we want has reached the disk. In particular, we want this before we
+             update the refs to point to these objects. */
+          glnx_fd_close int target_dir_fd = -1;
+
+          loose_objpath[2] = 0;
+
+          if (!glnx_opendirat (self->objects_dir_fd,
+                               loose_objpath, FALSE,
+                               &target_dir_fd,
+                               error))
+            return FALSE;
+
+          if (fsync (target_dir_fd) == -1)
+            return glnx_throw_errno_prefix (error, "fsync");
         }
     }
+
+  /* In case we created any loose object subdirs, make sure they are on disk */
+  if (fsync (self->objects_dir_fd) == -1)
+    return glnx_throw_errno_prefix (error, "fsync");
 
   if (!glnx_shutil_rm_rf_at (self->tmp_dir_fd, self->commit_stagedir_name,
                              cancellable, error))
@@ -1481,6 +1533,25 @@ ostree_repo_abort_transaction (OstreeRepo     *self,
   return TRUE;
 }
 
+/* These limits were introduced since in some cases we may be processing
+ * malicious metadata, and we want to make disk space exhaustion attacks harder.
+ */
+static gboolean
+metadata_size_valid (OstreeObjectType objtype,
+                     gsize len,
+                     GError **error)
+{
+  if (G_UNLIKELY (len > OSTREE_MAX_METADATA_SIZE))
+    {
+      g_autofree char *input_bytes = g_format_size (len);
+      g_autofree char *max_bytes = g_format_size (OSTREE_MAX_METADATA_SIZE);
+      return glnx_throw (error, "Metadata object of type '%s' is %s; maximum metadata size is %s",
+                         ostree_object_type_to_string (objtype), input_bytes, max_bytes);
+    }
+
+  return TRUE;
+}
+
 /**
  * ostree_repo_write_metadata:
  * @self: Repo
@@ -1507,23 +1578,38 @@ ostree_repo_write_metadata (OstreeRepo         *self,
                             GError            **error)
 {
   g_autoptr(GVariant) normalized = NULL;
-
-  normalized = g_variant_get_normal_form (object);
-
-  if (G_UNLIKELY (g_variant_get_size (normalized) > OSTREE_MAX_METADATA_SIZE))
+  /* First, if we have an expected checksum, see if we already have this
+   * object.  This mirrors the same logic in ostree_repo_write_content().
+   */
+  if (expected_checksum)
     {
-      g_autofree char *input_bytes = g_format_size (g_variant_get_size (normalized));
-      g_autofree char *max_bytes = g_format_size (OSTREE_MAX_METADATA_SIZE);
-      return glnx_throw (error, "Metadata object of type '%s' is %s; maximum metadata size is %s",
-                         ostree_object_type_to_string (objtype), input_bytes, max_bytes);
+      gboolean have_obj;
+      if (!_ostree_repo_has_loose_object (self, expected_checksum, objtype, &have_obj,
+                                          cancellable, error))
+        return FALSE;
+      if (have_obj)
+        {
+          if (out_csum)
+            *out_csum = ostree_checksum_to_bytes (expected_checksum);
+          return TRUE;
+        }
+      /* If the caller is giving us an expected checksum, the object really has
+       * to be normalized already.  Otherwise, how would they know the checksum?
+       * There's no sense in redoing it.
+       */
+      normalized = g_variant_ref (object);
+    }
+  else
+    {
+      normalized = g_variant_get_normal_form (object);
     }
 
-  g_autoptr(GInputStream) input = ot_variant_read (normalized);
+  if (!metadata_size_valid (objtype, g_variant_get_size (normalized), error))
+    return FALSE;
 
-  if (!write_object (self, objtype, expected_checksum,
-                     input, g_variant_get_size (normalized),
-                     out_csum,
-                     cancellable, error))
+  g_autoptr(GBytes) vdata = g_variant_get_data_as_bytes (normalized);
+  if (!write_metadata_object (self, objtype, expected_checksum,
+                              vdata, out_csum, cancellable, error))
     return FALSE;
 
   return TRUE;
@@ -1551,8 +1637,22 @@ ostree_repo_write_metadata_stream_trusted (OstreeRepo        *self,
                                            GCancellable      *cancellable,
                                            GError           **error)
 {
-  return write_object (self, objtype, checksum, object_input, length, NULL,
-                       cancellable, error);
+  if (length > 0 && !metadata_size_valid (objtype, length, error))
+    return FALSE;
+
+  /* This is all pretty ridiculous, but we're keeping this API for backwards
+   * compatibility, it doesn't really need to be fast.
+   */
+  g_autoptr(GMemoryOutputStream) tmpbuf = (GMemoryOutputStream*)g_memory_output_stream_new_resizable ();
+  if (g_output_stream_splice ((GOutputStream*)tmpbuf, object_input,
+                              G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET, cancellable, error) < 0)
+    return FALSE;
+  g_autoptr(GBytes) tmpb = g_memory_output_stream_steal_as_bytes (tmpbuf);
+
+  g_autoptr(GVariant) tmpv = g_variant_new_from_bytes (ostree_metadata_variant_type (objtype),
+                                                       tmpb, TRUE);
+  return ostree_repo_write_metadata_trusted (self, objtype, checksum, tmpv,
+                                             cancellable, error);
 }
 
 /**
@@ -1575,16 +1675,9 @@ ostree_repo_write_metadata_trusted (OstreeRepo         *self,
                                     GCancellable       *cancellable,
                                     GError            **error)
 {
-  g_autoptr(GInputStream) input = NULL;
-  g_autoptr(GVariant) normalized = NULL;
-
-  normalized = g_variant_get_normal_form (variant);
-  input = ot_variant_read (normalized);
-
-  return write_object (self, type, checksum,
-                       input, g_variant_get_size (normalized),
-                       NULL,
-                       cancellable, error);
+  return ostree_repo_write_metadata (self, type,
+                                     checksum, variant, NULL,
+                                     cancellable, error);
 }
 
 typedef struct {
@@ -1731,9 +1824,8 @@ ostree_repo_write_content_trusted (OstreeRepo       *self,
                                    GCancellable     *cancellable,
                                    GError          **error)
 {
-  return write_object (self, OSTREE_OBJECT_TYPE_FILE, checksum,
-                       object_input, length, NULL,
-                       cancellable, error);
+  return ostree_repo_write_content (self, checksum, object_input, length,
+                                    NULL, cancellable, error);
 }
 
 /**
@@ -1759,9 +1851,27 @@ ostree_repo_write_content (OstreeRepo       *self,
                            GCancellable     *cancellable,
                            GError          **error)
 {
-  return write_object (self, OSTREE_OBJECT_TYPE_FILE, expected_checksum,
-                       object_input, length, out_csum,
-                       cancellable, error);
+  /* First, if we have an expected checksum, see if we already have this
+   * object.  This mirrors the same logic in ostree_repo_write_metadata().
+   */
+  if (expected_checksum)
+    {
+      gboolean have_obj;
+      if (!_ostree_repo_has_loose_object (self, expected_checksum,
+                                          OSTREE_OBJECT_TYPE_FILE, &have_obj,
+                                          cancellable, error))
+        return FALSE;
+      if (have_obj)
+        {
+          if (out_csum)
+            *out_csum = ostree_checksum_to_bytes (expected_checksum);
+          return TRUE;
+        }
+    }
+
+  return write_content_object (self, expected_checksum,
+                               object_input, length, out_csum,
+                               cancellable, error);
 }
 
 typedef struct {
@@ -2185,11 +2295,23 @@ _ostree_repo_commit_modifier_apply (OstreeRepo               *self,
 
   if ((modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS) != 0)
     {
-
-      if (g_file_info_get_file_type (file_info) == G_FILE_TYPE_REGULAR)
+      guint mode = g_file_info_get_attribute_uint32 (modified_info, "unix::mode");
+      switch (g_file_info_get_file_type (file_info))
         {
-          guint current_mode = g_file_info_get_attribute_uint32 (modified_info, "unix::mode");
-          g_file_info_set_attribute_uint32 (modified_info, "unix::mode", current_mode | 0744);
+        case G_FILE_TYPE_REGULAR:
+          /* In particular, we want to squash the s{ug}id bits, but this also
+           * catches the sticky bit for example.
+           */
+          g_file_info_set_attribute_uint32 (modified_info, "unix::mode", mode & (S_IFREG | 0755));
+          break;
+        case G_FILE_TYPE_DIRECTORY:
+          /* Like the above but for directories */
+          g_file_info_set_attribute_uint32 (modified_info, "unix::mode", mode & (S_IFDIR | 0755));
+          break;
+        case G_FILE_TYPE_SYMBOLIC_LINK:
+          break;
+        default:
+          g_assert_not_reached ();
         }
       g_file_info_set_attribute_uint32 (modified_info, "unix::uid", 0);
       g_file_info_set_attribute_uint32 (modified_info, "unix::gid", 0);

@@ -73,7 +73,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<span class="returnvalue">GVariant</span> *
+<a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="returnvalue">GVariant</span></a> *
 </td>
 <td class="function_name">
 <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-variant" title="ostree_async_progress_get_variant ()">ostree_async_progress_get_variant</a> <span class="c_punctuation">()</span>
@@ -81,7 +81,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<span class="returnvalue">guint</span>
+<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="returnvalue">guint</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-uint" title="ostree_async_progress_get_uint ()">ostree_async_progress_get_uint</a> <span class="c_punctuation">()</span>
@@ -89,7 +89,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<span class="returnvalue">guint64</span>
+<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint64"><span class="returnvalue">guint64</span></a>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-uint64" title="ostree_async_progress_get_uint64 ()">ostree_async_progress_get_uint64</a> <span class="c_punctuation">()</span>
@@ -171,7 +171,7 @@ handles thread safety, ensuring that the progress change
 notification occurs in the thread-default context of the calling
 operation.</p>
 <p>The <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-status" title="ostree_async_progress_get_status ()"><code class="function">ostree_async_progress_get_status()</code></a> and <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set-status" title="ostree_async_progress_set_status ()"><code class="function">ostree_async_progress_set_status()</code></a>
-methods get and set a well-known <code class="literal">status</code> key of type <code class="literal">G_VARIANT_TYPE_STRING</code>.
+methods get and set a well-known <code class="literal">status</code> key of type <a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-STRING:CAPS"><code class="literal">G_VARIANT_TYPE_STRING</code></a>.
 This key may be accessed using the other <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> methods, but it
 must always have the correct type.</p>
 </div>
@@ -192,7 +192,7 @@ ostree_async_progress_new (<em class="parameter"><code><span class="type">void</
 <a name="ostree-async-progress-new-and-connect"></a><h3>ostree_async_progress_new_and_connect ()</h3>
 <pre class="programlisting"><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="returnvalue">OstreeAsyncProgress</span></a> *
 ostree_async_progress_new_and_connect (<em class="parameter"><code><span class="type">void</span> (*changed) (OstreeAsyncProgress *self, gpointer user_data)</code></em>,
-                                       <em class="parameter"><code><span class="type">gpointer</span> user_data</code></em>);</pre>
+                                       <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> user_data</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
@@ -200,7 +200,7 @@ ostree_async_progress_new_and_connect (<em class="parameter"><code><span class="
 <pre class="programlisting"><span class="returnvalue">char</span> *
 ostree_async_progress_get_status (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>);</pre>
 <p>Get the human-readable status string from the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a>. This
-operation is thread-safe. The retuned value may be <code class="literal">NULL</code> if no status is
+operation is thread-safe. The retuned value may be <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> if no status is
 set.</p>
 <p>This is a convenience function to get the well-known <code class="literal">status</code> key.</p>
 <div class="refsect3">
@@ -220,7 +220,7 @@ set.</p>
 </div>
 <div class="refsect3">
 <a name="ostree-async-progress-get-status.returns"></a><h4>Returns</h4>
-<p> the current status, or <code class="literal">NULL</code> if none is set. </p>
+<p> the current status, or <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> if none is set. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
 <p class="since">Since: 2017.6</p>
@@ -233,9 +233,9 @@ ostree_async_progress_get (<em class="parameter"><code><a class="link" href="ost
                            <em class="parameter"><code>...</code></em>);</pre>
 <p>Get the values corresponding to zero or more keys from the
 <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a>. Each key is specified in @... as the key name, followed
-by a <span class="type">GVariant</span> format string, followed by the necessary arguments for that
-format string, just as for <code class="function">g_variant_get()</code>. After those arguments is the
-next key name. The varargs list must be <code class="literal">NULL</code>-terminated.</p>
+by a <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> format string, followed by the necessary arguments for that
+format string, just as for <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#g-variant-get"><code class="function">g_variant_get()</code></a>. After those arguments is the
+next key name. The varargs list must be <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a>-terminated.</p>
 <p>Each format string must make deep copies of its value, as the values stored
 in the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> may be freed from another thread after this
 function returns.</p>
@@ -257,15 +257,15 @@ function returns.</p>
 11</pre></td>
         <td class="listing_code"><pre class="programlisting"><span class="usertype">guint32</span><span class="normal"> outstanding_fetches</span><span class="symbol">;</span>
 <span class="usertype">guint64</span><span class="normal"> bytes_received</span><span class="symbol">;</span>
-<span class="usertype">g_autofree</span><span class="normal"> </span><span class="usertype">gchar</span><span class="normal"> </span><span class="symbol">*</span><span class="normal">status </span><span class="symbol">=</span><span class="normal"> NULL</span><span class="symbol">;</span>
-<span class="function">g_autoptr</span><span class="symbol">(</span><span class="normal">GVariant</span><span class="symbol">)</span><span class="normal"> refs_variant </span><span class="symbol">=</span><span class="normal"> NULL</span><span class="symbol">;</span>
+<span class="usertype">g_autofree</span><span class="normal"> </span><span class="usertype">gchar</span><span class="normal"> </span><span class="symbol">*</span><span class="normal">status </span><span class="symbol">=</span><span class="normal"> <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS">NULL</a></span><span class="symbol">;</span>
+<span class="function"><a href="https://developer.gnome.org/glib/unstable/glib-Miscellaneous-Macros.html#g-autoptr">g_autoptr</a></span><span class="symbol">(</span><span class="normal"><a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant">GVariant</a></span><span class="symbol">)</span><span class="normal"> refs_variant </span><span class="symbol">=</span><span class="normal"> <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS">NULL</a></span><span class="symbol">;</span>
 
 <span class="function"><a href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get">ostree_async_progress_get</a></span><span class="normal"> </span><span class="symbol">(</span><span class="normal">progress</span><span class="symbol">,</span>
 <span class="normal">                           </span><span class="string">"outstanding-fetches"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"u"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">outstanding_fetches</span><span class="symbol">,</span>
 <span class="normal">                           </span><span class="string">"bytes-received"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"t"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">bytes_received</span><span class="symbol">,</span>
 <span class="normal">                           </span><span class="string">"status"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"s"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">status</span><span class="symbol">,</span>
 <span class="normal">                           </span><span class="string">"refs"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"@a{ss}"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">refs_variant</span><span class="symbol">,</span>
-<span class="normal">                           NULL</span><span class="symbol">);</span></pre></td>
+<span class="normal">                           <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS">NULL</a></span><span class="symbol">);</span></pre></td>
       </tr>
     </tbody>
   </table>
@@ -288,7 +288,7 @@ function returns.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>...</p></td>
-<td class="parameter_description"><p>key name, format string, <span class="type">GVariant</span> return locations, …, followed by <code class="literal">NULL</code></p></td>
+<td class="parameter_description"><p>key name, format string, <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> return locations, …, followed by <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a></p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 </tbody>
@@ -299,10 +299,10 @@ function returns.</p>
 <hr>
 <div class="refsect2">
 <a name="ostree-async-progress-get-variant"></a><h3>ostree_async_progress_get_variant ()</h3>
-<pre class="programlisting"><span class="returnvalue">GVariant</span> *
+<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="returnvalue">GVariant</span></a> *
 ostree_async_progress_get_variant (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                    <em class="parameter"><code>const <span class="type">char</span> *key</code></em>);</pre>
-<p>Look up a key in the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> and return the <span class="type">GVariant</span> associated
+<p>Look up a key in the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> and return the <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> associated
 with it. The lookup is thread-safe.</p>
 <div class="refsect3">
 <a name="ostree-async-progress-get-variant.parameters"></a><h4>Parameters</h4>
@@ -329,7 +329,7 @@ with it. The lookup is thread-safe.</p>
 <div class="refsect3">
 <a name="ostree-async-progress-get-variant.returns"></a><h4>Returns</h4>
 <p> value for the given <em class="parameter"><code>key</code></em>
-, or <code class="literal">NULL</code> if
+, or <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> if
 it was not set. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
@@ -338,14 +338,14 @@ it was not set. </p>
 <hr>
 <div class="refsect2">
 <a name="ostree-async-progress-get-uint"></a><h3>ostree_async_progress_get_uint ()</h3>
-<pre class="programlisting"><span class="returnvalue">guint</span>
+<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="returnvalue">guint</span></a>
 ostree_async_progress_get_uint (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                 <em class="parameter"><code>const <span class="type">char</span> *key</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-async-progress-get-uint64"></a><h3>ostree_async_progress_get_uint64 ()</h3>
-<pre class="programlisting"><span class="returnvalue">guint64</span>
+<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint64"><span class="returnvalue">guint64</span></a>
 ostree_async_progress_get_uint64 (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                   <em class="parameter"><code>const <span class="type">char</span> *key</code></em>);</pre>
 </div>
@@ -356,7 +356,7 @@ ostree_async_progress_get_uint64 (<em class="parameter"><code><a class="link" hr
 ostree_async_progress_set_status (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                   <em class="parameter"><code>const <span class="type">char</span> *status</code></em>);</pre>
 <p>Set the human-readable status string for the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a>. This
-operation is thread-safe. <code class="literal">NULL</code> may be passed to clear the status.</p>
+operation is thread-safe. <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> may be passed to clear the status.</p>
 <p>This is a convenience function to set the well-known <code class="literal">status</code> key.</p>
 <div class="refsect3">
 <a name="ostree-async-progress-set-status.parameters"></a><h4>Parameters</h4>
@@ -374,7 +374,7 @@ operation is thread-safe. <code class="literal">NULL</code> may be passed to cle
 </tr>
 <tr>
 <td class="parameter_name"><p>status</p></td>
-<td class="parameter_description"><p> new status string, or <code class="literal">NULL</code> to clear the status. </p></td>
+<td class="parameter_description"><p> new status string, or <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> to clear the status. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 </tbody>
@@ -389,11 +389,11 @@ operation is thread-safe. <code class="literal">NULL</code> may be passed to cle
 ostree_async_progress_set (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                            <em class="parameter"><code>...</code></em>);</pre>
 <p>Set the values for zero or more keys in the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a>. Each key is
-specified in @... as the key name, followed by a <span class="type">GVariant</span> format string,
+specified in @... as the key name, followed by a <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> format string,
 followed by the necessary arguments for that format string, just as for
-<code class="function">g_variant_new()</code>. After those arguments is the next key name. The varargs list
-must be <code class="literal">NULL</code>-terminated.</p>
-<p>g_variant_ref_sink() will be called as appropriate on the <span class="type">GVariant</span>
+<a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#g-variant-new"><code class="function">g_variant_new()</code></a>. After those arguments is the next key name. The varargs list
+must be <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a>-terminated.</p>
+<p>g_variant_ref_sink() will be called as appropriate on the <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a>
 parameters, so they may be floating.</p>
 <p>This operation is thread-safe, and all the keys are set atomically.</p>
 <div class="informalexample">
@@ -416,8 +416,8 @@ parameters, so they may be floating.</p>
 <span class="normal">                           </span><span class="string">"outstanding-fetches"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"u"</span><span class="symbol">,</span><span class="normal"> outstanding_fetches</span><span class="symbol">,</span>
 <span class="normal">                           </span><span class="string">"bytes-received"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"t"</span><span class="symbol">,</span><span class="normal"> bytes_received</span><span class="symbol">,</span>
 <span class="normal">                           </span><span class="string">"status"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"s"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"Updated status"</span><span class="symbol">,</span>
-<span class="normal">                           </span><span class="string">"refs"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"@a{ss}"</span><span class="symbol">,</span><span class="normal"> </span><span class="function">g_variant_new_parsed</span><span class="normal"> </span><span class="symbol">(</span><span class="string">"@a{ss} {}"</span><span class="symbol">),</span>
-<span class="normal">                           NULL</span><span class="symbol">);</span></pre></td>
+<span class="normal">                           </span><span class="string">"refs"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"@a{ss}"</span><span class="symbol">,</span><span class="normal"> </span><span class="function"><a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#g-variant-new-parsed">g_variant_new_parsed</a></span><span class="normal"> </span><span class="symbol">(</span><span class="string">"@a{ss} {}"</span><span class="symbol">),</span>
+<span class="normal">                           <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS">NULL</a></span><span class="symbol">);</span></pre></td>
       </tr>
     </tbody>
   </table>
@@ -440,7 +440,7 @@ parameters, so they may be floating.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>...</p></td>
-<td class="parameter_description"><p>key name, format string, <span class="type">GVariant</span> parameters, …, followed by <code class="literal">NULL</code></p></td>
+<td class="parameter_description"><p>key name, format string, <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> parameters, …, followed by <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a></p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 </tbody>
@@ -454,13 +454,13 @@ parameters, so they may be floating.</p>
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_async_progress_set_variant (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                    <em class="parameter"><code>const <span class="type">char</span> *key</code></em>,
-                                   <em class="parameter"><code><span class="type">GVariant</span> *value</code></em>);</pre>
+                                   <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> *value</code></em>);</pre>
 <p>Assign a new <em class="parameter"><code>value</code></em>
  to the given <em class="parameter"><code>key</code></em>
 , replacing any existing value. The
 operation is thread-safe. <em class="parameter"><code>value</code></em>
  may be a floating reference;
-<code class="function">g_variant_ref_sink()</code> will be called on it.</p>
+<a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#g-variant-ref-sink"><code class="function">g_variant_ref_sink()</code></a> will be called on it.</p>
 <p>Any watchers of the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> will be notified of the change if
 <em class="parameter"><code>value</code></em>
  differs from the existing value for <em class="parameter"><code>key</code></em>
@@ -501,7 +501,7 @@ operation is thread-safe. <em class="parameter"><code>value</code></em>
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_async_progress_set_uint (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                 <em class="parameter"><code>const <span class="type">char</span> *key</code></em>,
-                                <em class="parameter"><code><span class="type">guint</span> value</code></em>);</pre>
+                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="type">guint</span></a> value</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
@@ -509,7 +509,7 @@ ostree_async_progress_set_uint (<em class="parameter"><code><a class="link" href
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_async_progress_set_uint64 (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                   <em class="parameter"><code>const <span class="type">char</span> *key</code></em>,
-                                  <em class="parameter"><code><span class="type">guint64</span> value</code></em>);</pre>
+                                  <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint64"><span class="type">guint64</span></a> value</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">

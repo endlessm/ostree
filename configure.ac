@@ -1,10 +1,13 @@
 AC_PREREQ([2.63])
-dnl If incrementing the version here, remember to update libostree.sym too
+dnl If doing a final release, remember to follow the instructions to
+dnl update libostree-released.sym from libostree-devel.sym, and update the checksum
+dnl in test-symbols.sh, and also set is_release_build=yes below.  Then make
+dnl another post-release commit to bump the version, and set is_release_build=no.
 m4_define([year_version], [2017])
-m4_define([release_version], [6])
+m4_define([release_version], [7])
 m4_define([package_version], [year_version.release_version])
-
 AC_INIT([libostree], [package_version], [walters@verbum.org])
+is_release_build=yes
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([buildutil])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -148,7 +151,8 @@ AC_ARG_ENABLE(trivial-httpd-cmdline,
   [AS_HELP_STRING([--enable-trivial-httpd-cmdline],
   [Continue to support "ostree trivial-httpd" [default=no]])],,
   enable_trivial_httpd_cmdline=no)
-AS_IF([test x$enable_trivial_httpd_cmdline = xyes],
+AM_CONDITIONAL(BUILDOPT_TRIVIAL_HTTPD, test x$enable_trivial_httpd_cmdline = xyes)
+AM_COND_IF(BUILDOPT_TRIVIAL_HTTPD,
   [AC_DEFINE([BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE], 1, [Define if we are enabling ostree trivial-httpd entrypoint])]
 )
 
@@ -455,6 +459,8 @@ AS_IF([test x$enable_experimental_api = xyes],
    OSTREE_FEATURES="$OSTREE_FEATURES experimental"]
 )
 AM_CONDITIONAL([ENABLE_EXPERIMENTAL_API],[test x$enable_experimental_api = xyes])
+AM_CONDITIONAL([BUILDOPT_IS_DEVEL_BUILD],[test x$is_release_build != xyes])
+AM_COND_IF([BUILDOPT_IS_DEVEL_BUILD], release_build_type=devel, release_build_type=release)
 
 AC_CONFIG_FILES([
 Makefile
@@ -465,7 +471,7 @@ src/libostree/ostree-version.h
 AC_OUTPUT
 
 echo "
-    libOSTree $VERSION
+    libOSTree $VERSION ($release_build_type)
     ===============
 
 

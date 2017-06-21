@@ -46,9 +46,12 @@ struct OstreeFetcherClass
   GObjectClass parent_class;
 };
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(OstreeFetcher, g_object_unref)
+
 typedef enum {
   OSTREE_FETCHER_FLAGS_NONE = 0,
-  OSTREE_FETCHER_FLAGS_TLS_PERMISSIVE = (1 << 0)
+  OSTREE_FETCHER_FLAGS_TLS_PERMISSIVE = (1 << 0),
+  OSTREE_FETCHER_FLAGS_TRANSFER_GZIP = (1 << 1)
 } OstreeFetcherConfigFlags;
 
 void

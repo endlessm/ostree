@@ -32,6 +32,8 @@
  * OSTREE_YEAR_VERSION:
  *
  * ostree year version component (e.g. 2017 if %OSTREE_VERSION is 2017.2)
+ *
+ * Since: 2017.4
  */
 #define OSTREE_YEAR_VERSION (2017)
 
@@ -39,23 +41,29 @@
  * OSTREE_RELEASE_VERSION:
  *
  * ostree release version component (e.g. 2 if %OSTREE_VERSION is 2017.2)
+ *
+ * Since: 2017.4
  */
-#define OSTREE_RELEASE_VERSION (6)
+#define OSTREE_RELEASE_VERSION (7)
 
 /**
  * OSTREE_VERSION
  *
  * ostree version.
+ *
+ * Since: 2017.4
  */
-#define OSTREE_VERSION (2017.6)
+#define OSTREE_VERSION (2017.7)
 
 /**
  * OSTREE_VERSION_S:
  *
  * ostree version, encoded as a string, useful for printing and
  * concatenation.
+ *
+ * Since: 2017.4
  */
-#define OSTREE_VERSION_S "2017.6"
+#define OSTREE_VERSION_S "2017.7"
 
 #define OSTREE_ENCODE_VERSION(year,release) \
         ((year) << 16 | (release))
@@ -65,6 +73,8 @@
  *
  * ostree version, encoded as an hexadecimal number, useful for
  * integer comparisons.
+ *
+ * Since: 2017.4
  */
 #define OSTREE_VERSION_HEX \
         (OSTREE_ENCODE_VERSION (OSTREE_YEAR_VERSION, OSTREE_RELEASE_VERSION))
@@ -76,6 +86,8 @@
  *
  * Compile-time version checking. Evaluates to %TRUE if the version
  * of ostree is equal or greater than the required one.
+ *
+ * Since: 2017.4
  */
 #define OSTREE_CHECK_VERSION(year,release)   \
         (OSTREE_YEAR_VERSION > (year) || \
