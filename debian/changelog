@@ -2,6 +2,7 @@ ostree (2017.7-1) UNRELEASED; urgency=medium
 
   * New upstream release
   * Standards-Version: 4.0.0
+    - Use https URL for copyright-format
 
  -- Simon McVittie <smcv@debian.org>  Wed, 21 Jun 2017 10:07:42 +0100
 
