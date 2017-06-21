@@ -60,13 +60,11 @@ checkout_object_for_uncompressed_cache (OstreeRepo      *self,
   guint32 file_mode = g_file_info_get_attribute_uint32 (src_info, "unix::mode");
   file_mode &= ~(S_ISUID|S_ISGID);
 
-  glnx_fd_close int fd = -1;
-  g_autofree char *temp_filename = NULL;
-  if (!glnx_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_WRONLY | O_CLOEXEC,
-                                      &fd, &temp_filename,
-                                      error))
+  g_auto(OtTmpfile) tmpf = { 0, };
+  if (!ot_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_WRONLY | O_CLOEXEC,
+                                    &tmpf, error))
     return FALSE;
-  g_autoptr(GOutputStream) temp_out = g_unix_output_stream_new (fd, FALSE);
+  g_autoptr(GOutputStream) temp_out = g_unix_output_stream_new (tmpf.fd, FALSE);
 
   if (g_output_stream_splice (temp_out, content, 0, cancellable, error) < 0)
     return FALSE;
@@ -76,14 +74,14 @@ checkout_object_for_uncompressed_cache (OstreeRepo      *self,
 
   if (!self->disable_fsync)
     {
-      if (TEMP_FAILURE_RETRY (fsync (fd)) < 0)
+      if (TEMP_FAILURE_RETRY (fsync (tmpf.fd)) < 0)
         return glnx_throw_errno (error);
     }
 
   if (!g_output_stream_close (temp_out, cancellable, error))
     return FALSE;
 
-  if (fchmod (fd, file_mode) < 0)
+  if (fchmod (tmpf.fd, file_mode) < 0)
     return glnx_throw_errno (error);
 
   if (!_ostree_repo_ensure_loose_objdir_at (self->uncompressed_objects_dir_fd,
@@ -91,10 +89,9 @@ checkout_object_for_uncompressed_cache (OstreeRepo      *self,
                                             cancellable, error))
     return FALSE;
 
-  if (!glnx_link_tmpfile_at (self->tmp_dir_fd, GLNX_LINK_TMPFILE_NOREPLACE_IGNORE_EXIST,
-                             fd, temp_filename,
-                             self->uncompressed_objects_dir_fd, loose_path,
-                             error))
+  if (!ot_link_tmpfile_at (&tmpf, GLNX_LINK_TMPFILE_NOREPLACE_IGNORE_EXIST,
+                           self->uncompressed_objects_dir_fd, loose_path,
+                           error))
     return FALSE;
 
   return TRUE;
@@ -143,10 +140,7 @@ write_regular_file_content (OstreeRepo            *self,
     {
       if (TEMP_FAILURE_RETRY (fchown (outfd, g_file_info_get_attribute_uint32 (file_info, "unix::uid"),
                                       g_file_info_get_attribute_uint32 (file_info, "unix::gid"))) < 0)
-        return glnx_throw_errno (error);
-
-      if (TEMP_FAILURE_RETRY (fchmod (outfd, g_file_info_get_attribute_uint32 (file_info, "unix::mode"))) < 0)
-        return glnx_throw_errno (error);
+        return glnx_throw_errno_prefix (error, "fchown");
 
       if (xattrs)
         {
@@ -155,10 +149,19 @@ write_regular_file_content (OstreeRepo            *self,
         }
     }
 
+  guint32 file_mode = g_file_info_get_attribute_uint32 (file_info, "unix::mode");
+
+  /* Don't make setuid files on checkout when we're doing --user */
+  if (mode == OSTREE_REPO_CHECKOUT_MODE_USER)
+    file_mode &= ~(S_ISUID|S_ISGID);
+
+  if (TEMP_FAILURE_RETRY (fchmod (outfd, file_mode)) < 0)
+    return glnx_throw_errno_prefix (error, "fchmod");
+
   if (fsync_is_enabled (self, options))
     {
       if (fsync (outfd) == -1)
-        return glnx_throw_errno (error);
+        return glnx_throw_errno_prefix (error, "fsync");
     }
 
   if (outstream)
@@ -185,7 +188,6 @@ create_file_copy_from_input_at (OstreeRepo     *repo,
                                 GCancellable   *cancellable,
                                 GError        **error)
 {
-  g_autofree char *temp_filename = NULL;
   const gboolean union_mode = options->overwrite_mode == OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES;
   const gboolean add_mode = options->overwrite_mode == OSTREE_REPO_CHECKOUT_OVERWRITE_ADD_FILES;
   const gboolean sepolicy_enabled = options->sepolicy && !repo->disable_xattrs;
@@ -252,33 +254,26 @@ create_file_copy_from_input_at (OstreeRepo     *repo,
     }
   else if (g_file_info_get_file_type (file_info) == G_FILE_TYPE_REGULAR)
     {
-      glnx_fd_close int temp_fd = -1;
-      guint32 file_mode;
+      g_auto(OtTmpfile) tmpf = { 0, };
       GLnxLinkTmpfileReplaceMode replace_mode;
 
-      file_mode = g_file_info_get_attribute_uint32 (file_info, "unix::mode");
-      /* Don't make setuid files on checkout when we're doing --user */
-      if (options->mode == OSTREE_REPO_CHECKOUT_MODE_USER)
-        file_mode &= ~(S_ISUID|S_ISGID);
-
-      if (!glnx_open_tmpfile_linkable_at (destination_dfd, ".", O_WRONLY | O_CLOEXEC,
-                                          &temp_fd, &temp_filename,
-                                          error))
+      if (!ot_open_tmpfile_linkable_at (destination_dfd, ".", O_WRONLY | O_CLOEXEC,
+                                        &tmpf, error))
         return FALSE;
 
-      if (sepolicy_enabled)
+      if (sepolicy_enabled && options->mode != OSTREE_REPO_CHECKOUT_MODE_USER)
         {
           g_autofree char *label = NULL;
-          if (!ostree_sepolicy_get_label (options->sepolicy,
-                                          state->selabel_path_buf->str,
+          if (!ostree_sepolicy_get_label (options->sepolicy, state->selabel_path_buf->str,
                                           g_file_info_get_attribute_uint32 (file_info, "unix::mode"),
                                           &label, cancellable, error))
             return FALSE;
-          if (fsetxattr (temp_fd, "security.selinux", label, strlen (label), 0) < 0)
+
+          if (fsetxattr (tmpf.fd, "security.selinux", label, strlen (label), 0) < 0)
             return glnx_throw_errno_prefix (error, "Setting security.selinux");
         }
 
-      if (!write_regular_file_content (repo, options, temp_fd, file_info, xattrs, input,
+      if (!write_regular_file_content (repo, options, tmpf.fd, file_info, xattrs, input,
                                        cancellable, error))
         return FALSE;
 
@@ -290,10 +285,9 @@ create_file_copy_from_input_at (OstreeRepo     *repo,
       else
         replace_mode = GLNX_LINK_TMPFILE_NOREPLACE;
 
-      if (!glnx_link_tmpfile_at (destination_dfd, replace_mode,
-                                 temp_fd, temp_filename, destination_dfd,
-                                 destination_name,
-                                 error))
+      if (!ot_link_tmpfile_at (&tmpf, replace_mode,
+                               destination_dfd, destination_name,
+                               error))
         return FALSE;
     }
   else
@@ -699,9 +693,9 @@ checkout_tree_at_recurse (OstreeRepo                        *self,
     g_autoptr(GVariant) contents_csum_v = NULL;
     while (g_variant_iter_loop (&viter, "(&s@ay)", &fname, &contents_csum_v))
       {
-        const size_t namelen = strlen (fname);
+        const size_t origlen = selabel_path_buf ? selabel_path_buf->len : 0;
         if (selabel_path_buf)
-          g_string_append_len (selabel_path_buf, fname, namelen);
+          g_string_append (selabel_path_buf, fname);
 
         char tmp_checksum[OSTREE_SHA256_STRING_LEN+1];
         _ostree_checksum_inplace_from_bytes_v (contents_csum_v, tmp_checksum);
@@ -713,7 +707,7 @@ checkout_tree_at_recurse (OstreeRepo                        *self,
           return FALSE;
 
         if (selabel_path_buf)
-          g_string_truncate (selabel_path_buf, selabel_path_buf->len - namelen);
+          g_string_truncate (selabel_path_buf, origlen);
       }
     contents_csum_v = NULL; /* iter_loop freed it */
   }
@@ -728,10 +722,10 @@ checkout_tree_at_recurse (OstreeRepo                        *self,
     while (g_variant_iter_loop (&viter, "(&s@ay@ay)", &dname,
                                 &subdirtree_csum_v, &subdirmeta_csum_v))
       {
-        const size_t namelen = strlen (dname);
+        const size_t origlen = selabel_path_buf ? selabel_path_buf->len : 0;
         if (selabel_path_buf)
           {
-            g_string_append_len (selabel_path_buf, dname, namelen);
+            g_string_append (selabel_path_buf, dname);
             g_string_append_c (selabel_path_buf, '/');
           }
 
@@ -746,7 +740,7 @@ checkout_tree_at_recurse (OstreeRepo                        *self,
           return FALSE;
 
         if (selabel_path_buf)
-          g_string_truncate (selabel_path_buf, selabel_path_buf->len - namelen);
+          g_string_truncate (selabel_path_buf, origlen);
       }
   }
 
@@ -755,8 +749,18 @@ checkout_tree_at_recurse (OstreeRepo                        *self,
    */
   if (!did_exist)
     {
-      if (TEMP_FAILURE_RETRY (fchmod (destination_dfd, mode)) < 0)
-        return glnx_throw_errno (error);
+      guint32 canonical_mode;
+      /* Silently ignore world-writable directories (plus sticky, suid bits,
+       * etc.) when doing a checkout for bare-user-only repos, or if requested explicitly.
+       * This is related to the logic in ostree-repo-commit.c for files.
+       * See also: https://github.com/ostreedev/ostree/pull/909 i.e. 0c4b3a2b6da950fd78e63f9afec602f6188f1ab0
+       */
+      if (self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY || options->bareuseronly_dirs)
+        canonical_mode = (mode & 0775) | S_IFDIR;
+      else
+        canonical_mode = mode;
+      if (TEMP_FAILURE_RETRY (fchmod (destination_dfd, canonical_mode)) < 0)
+        return glnx_throw_errno_prefix (error, "fchmod");
     }
 
   if (!did_exist && options->mode != OSTREE_REPO_CHECKOUT_MODE_USER)

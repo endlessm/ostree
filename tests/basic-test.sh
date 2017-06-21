@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-echo "1..66"
+echo "1..$((69 + ${extra_basic_tests:-0}))"
 
 $CMD_PREFIX ostree --version > version.yaml
 python -c 'import yaml; yaml.safe_load(open("version.yaml"))'
@@ -28,7 +28,7 @@ echo "ok yaml version"
 CHECKOUT_U_ARG=""
 COMMIT_ARGS=""
 DIFF_ARGS=""
-if grep -q bare-user-only repo/config; then
+if is_bare_user_only_repo repo; then
     # In bare-user-only repos we can only represent files with uid/gid 0, no
     # xattrs and canonical permissions, so we need to commit them as such, or
     # we end up with repos that don't pass fsck
@@ -66,7 +66,7 @@ validate_checkout_basic checkout-test2
 rm checkout-test2 -rf
 # Only do these tests on bare-user/bare, not bare-user-only
 # since the latter automatically synthesizes -U if it's not passed.
-if ! grep -q bare-user-only repo/config; then
+if ! is_bare_user_only_repo repo; then
 if grep -q bare-user repo/config; then
     if $OSTREE checkout -H test2 checkout-test2 2>err.txt; then
         assert_not_reached "checkout -H worked?"
@@ -254,9 +254,44 @@ echo "ok diff file changing type"
 
 cd ${test_tmpdir}
 mkdir repo2
-ostree_repo_init repo2 --mode=bare-user
+# Use a different mode to test hardlinking metadata only
+if grep -q 'mode=archive' repo/config || is_bare_user_only_repo repo; then
+    opposite_mode=bare-user
+else
+    opposite_mode=archive
+fi
+ostree_repo_init repo2 --mode=$opposite_mode
 ${CMD_PREFIX} ostree --repo=repo2 pull-local repo
-echo "ok pull-local"
+test2_commitid=$(${CMD_PREFIX} ostree --repo=repo rev-parse test2)
+test2_commit_relpath=/objects/${test2_commitid:0:2}/${test2_commitid:2}.commit
+assert_files_hardlinked repo/${test2_commit_relpath} repo2/${test2_commit_relpath}
+echo "ok pull-local (hardlinking metadata)"
+
+cd ${test_tmpdir}
+rm repo2 -rf && mkdir repo2
+ostree_repo_init repo2 --mode=$opposite_mode
+${CMD_PREFIX} ostree --repo=repo2 pull-local --bareuseronly-files repo test2
+${CMD_PREFIX} ostree --repo=repo2 fsck -q
+echo "ok pull-local --bareuseronly-files"
+
+# This is mostly a copy of the suid test in test-basic-user-only.sh,
+# but for the `pull --bareuseronly-files` case.
+cd ${test_tmpdir}
+rm repo-input -rf
+ostree_repo_init repo-input init --mode=archive
+cd ${test_tmpdir}
+cat > statoverride.txt <<EOF
+2048 /some-setuid
+EOF
+mkdir -p files/
+echo "a setuid file" > files/some-setuid
+chmod 0644 files/some-setuid
+$CMD_PREFIX ostree --repo=repo-input commit -b content-with-suid --statoverride=statoverride.txt --tree=dir=files
+if $CMD_PREFIX ostree pull-local --repo=repo --bareuseronly-files repo-input content-with-suid 2>err.txt; then
+    assert_not_reached "copying suid file with --bareuseronly-files worked?"
+fi
+assert_file_has_content err.txt 'object.*\.file: invalid mode.*with bits 040.*'
+echo "ok pull-local (bareuseronly files)"
 
 cd ${test_tmpdir}
 ${CMD_PREFIX} ostree --repo=repo2 checkout ${CHECKOUT_U_ARG} test2 test2-checkout-from-local-clone
@@ -312,8 +347,13 @@ cd ${test_tmpdir}/checkout-test2-4
 $OSTREE commit ${COMMIT_ARGS} -b test2-override -s "with statoverride" --statoverride=../test-statoverride.txt
 cd ${test_tmpdir}
 $OSTREE checkout test2-override checkout-test2-override
-test -g checkout-test2-override/a/nested/2
-test -u checkout-test2-override/a/nested/3
+if ! is_bare_user_only_repo repo; then
+    test -g checkout-test2-override/a/nested/2
+    test -u checkout-test2-override/a/nested/3
+else
+    test '!' -g checkout-test2-override/a/nested/2
+    test '!' -u checkout-test2-override/a/nested/3
+fi
 echo "ok commit statoverride"
 
 cd ${test_tmpdir}
@@ -333,8 +373,30 @@ $OSTREE prune
 echo "ok prune didn't fail"
 
 cd ${test_tmpdir}
+# Verify we can't cat dirs
+for path in / /baz; do
+    if $OSTREE cat test2 $path 2>err.txt; then
+        assert_not_reached "cat directory"
+    fi
+    assert_file_has_content err.txt "open directory"
+done
+rm checkout-test2 -rf
 $OSTREE cat test2 /yet/another/tree/green > greenfile-contents
 assert_file_has_content greenfile-contents "leaf"
+$OSTREE checkout test2 checkout-test2
+ls -alR checkout-test2
+ln -sr checkout-test2/{four,four-link}
+ln -sr checkout-test2/{baz/cow,cow-link}
+ln -sr checkout-test2/{cow-link,cow-link-link}
+$OSTREE commit -b test2-withlink --tree=dir=checkout-test2
+if $OSTREE cat test2-withlink /four-link 2>err.txt; then
+    assert_not_reached "cat directory"
+fi
+assert_file_has_content err.txt "open directory"
+for path in /cow-link /cow-link-link; do
+    $OSTREE cat test2-withlink $path >contents.txt
+    assert_file_has_content contents.txt moo
+done
 echo "ok cat-file"
 
 cd ${test_tmpdir}
@@ -382,6 +444,22 @@ $OSTREE checkout --union-add test-union-add checkout-test-union-add
 assert_file_has_content checkout-test-union-add/union-add-test 'existing file for union add'
 assert_file_has_content checkout-test-union-add/union-add-test2 'another file for union add testing'
 echo "ok checkout union add"
+
+cd ${test_tmpdir}
+rm files -rf && mkdir files
+mkdir files/worldwritable-dir
+chmod a+w files/worldwritable-dir
+$CMD_PREFIX ostree --repo=repo commit -b content-with-dir-world-writable --tree=dir=files
+rm dir-co -rf
+$CMD_PREFIX ostree --repo=repo checkout -U -H -M content-with-dir-world-writable dir-co
+assert_file_has_mode dir-co/worldwritable-dir 775
+if ! is_bare_user_only_repo repo; then
+    rm dir-co -rf
+    $CMD_PREFIX ostree --repo=repo checkout -U -H content-with-dir-world-writable dir-co
+    assert_file_has_mode dir-co/worldwritable-dir 777
+fi
+rm dir-co -rf
+echo "ok checkout bareuseronly dir"
 
 cd ${test_tmpdir}
 rm -rf shadow-repo
@@ -566,6 +644,17 @@ rm test2-checkout -rf
 ${CMD_PREFIX} ostree --repo=repo2 checkout -U test2 test2-checkout
 assert_file_has_content test2-checkout/baz/cow moo
 assert_has_dir repo2/uncompressed-objects-cache
+ls repo2/uncompressed-objects-cache > ls.txt
+if ! test -s ls.txt; then
+    assert_not_reached "repo didn't cache uncompressed objects"
+fi
+# we're in archive mode, but the repo we pull-local from might be
+# bare-user-only, in which case, we skip these checks since bare-user-only
+# doesn't store permission bits
+if ! is_bare_user_only_repo repo; then
+    assert_file_has_mode test2-checkout/baz/cowro 600
+    assert_file_has_mode test2-checkout/baz/deeper/ohyeahx 755
+fi
 echo "ok disable cache checkout"
 
 cd ${test_tmpdir}

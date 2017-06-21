@@ -106,6 +106,7 @@ struct OstreeRepo {
 
   gboolean inited;
   gboolean writable;
+  gboolean is_system; /* Was this repo created via ostree_sysroot_get_repo() ? */
   GError *writable_error;
   gboolean in_transaction;
   gboolean disable_fsync;
@@ -115,6 +116,7 @@ struct OstreeRepo {
   GHashTable *updated_uncompressed_dirs;
   GHashTable *object_sizes;
 
+  uid_t owner_uid;
   uid_t target_owner_uid;
   gid_t target_owner_gid;
 
@@ -319,28 +321,6 @@ _ostree_repo_commit_trusted_content_bare (OstreeRepo          *self,
                                           GError             **error);
 
 gboolean
-_ostree_repo_open_untrusted_content_bare (OstreeRepo          *self,
-                                          const char          *expected_checksum,
-                                          guint64              content_len,
-                                          OstreeRepoContentBareCommit *out_state,
-                                          GOutputStream      **out_stream,
-                                          gboolean            *out_have_object,
-                                          GCancellable        *cancellable,
-                                          GError             **error);
-
-gboolean
-_ostree_repo_commit_untrusted_content_bare (OstreeRepo          *self,
-                                            const char          *expected_checksum,
-                                            OstreeRepoContentBareCommit *state,
-                                            guint32              uid,
-                                            guint32              gid,
-                                            guint32              mode,
-                                            GVariant            *xattrs,
-                                            GCancellable        *cancellable,
-                                            GError             **error);
-
-
-gboolean
 _ostree_repo_read_bare_fd (OstreeRepo           *self,
                            const char           *checksum,
                            int                  *out_fd,
@@ -351,9 +331,12 @@ gboolean
 _ostree_repo_update_mtime (OstreeRepo        *self,
                            GError           **error);
 
-void
+gboolean
 _ostree_repo_add_remote (OstreeRepo   *self,
                          OstreeRemote *remote);
+gboolean
+_ostree_repo_remove_remote (OstreeRepo   *self,
+                            OstreeRemote *remote);
 OstreeRemote *
 _ostree_repo_get_remote (OstreeRepo  *self,
                          const char  *name,

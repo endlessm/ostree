@@ -394,7 +394,7 @@ check_PROGRAMS = $(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11)
 @ENABLE_EXPERIMENTAL_API_FALSE@	src/libostree/ostree-remote.h \
 @ENABLE_EXPERIMENTAL_API_FALSE@	$(NULL)
 
-@ENABLE_EXPERIMENTAL_API_TRUE@am__append_22 = -Wl,--version-script=$(top_srcdir)/src/libostree/libostree-experimental.sym
+@BUILDOPT_IS_DEVEL_BUILD_TRUE@am__append_22 = $(top_srcdir)/src/libostree/libostree-devel.sym
 @ENABLE_EXPERIMENTAL_API_TRUE@am__append_23 = $(top_srcdir)/src/libostree/libostree-experimental.sym
 @USE_LIBARCHIVE_TRUE@am__append_24 = $(OT_DEP_LIBARCHIVE_CFLAGS)
 @USE_LIBARCHIVE_TRUE@am__append_25 = $(OT_DEP_LIBARCHIVE_LIBS)
@@ -475,9 +475,10 @@ check_PROGRAMS = $(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11)
 # We're using the system grub2-mkconfig generator
 @BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_70 = src/boot/grub2/grub2-15_ostree
 @BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_71 = install-grub2-config-hook
-@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_72 = rofiles-fuse.1
-@ENABLE_MAN_TRUE@am__append_73 = $(man1_MANS) $(man5_MANS) $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
-@ENABLE_MAN_TRUE@am__append_74 = \
+@BUILDOPT_TRIVIAL_HTTPD_TRUE@@ENABLE_MAN_TRUE@am__append_72 = ostree-trivial-httpd.1
+@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_73 = rofiles-fuse.1
+@ENABLE_MAN_TRUE@am__append_74 = $(man1_MANS) $(man5_MANS) $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
+@ENABLE_MAN_TRUE@am__append_75 = \
 @ENABLE_MAN_TRUE@	$(man1_MANS) \
 @ENABLE_MAN_TRUE@	$(man5_MANS) \
 @ENABLE_MAN_TRUE@	$(NULL)
@@ -1497,6 +1498,7 @@ am__EXEEXT_17 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-pull-override-url.sh tests/test-local-pull.sh \
 	tests/test-local-pull-depth.sh tests/test-gpg-signed-commit.sh \
 	tests/test-admin-upgrade-unconfigured.sh \
+	tests/test-admin-upgrade-endoflife.sh \
 	tests/test-admin-deploy-syslinux.sh \
 	tests/test-admin-deploy-2.sh tests/test-admin-deploy-karg.sh \
 	tests/test-admin-deploy-switch.sh \
@@ -1818,15 +1820,14 @@ CLEANFILES = $(am__append_13) $(BUILT_SOURCES) $(am__append_42) \
 	tests/ostree-remount-symlink-stamp \
 	tests/rofiles-fuse-symlink-stamp tests/ostree \
 	tests/ostree-prepare-root tests/ostree-remount \
-	tests/rofiles-fuse $(am__append_74)
+	tests/rofiles-fuse $(am__append_75)
 EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	COPYING README.md $(am__append_15) libglnx/README.md \
 	libglnx/COPYING libglnx/libglnx.m4 $(NULL) \
 	libglnx/Makefile-libglnx.am bsdiff/bsdiff.h bsdiff/bspatch.h \
 	bsdiff/LICENSE bsdiff/README.md bsdiff/Makefile-bsdiff.am \
-	$(am__append_17) src/libostree/libostree.sym \
-	src/libostree/libostree-experimental.sym $(NULL) \
-	src/libostree/README-gpg src/libostree/bupsplit.h \
+	$(am__append_17) $(symbol_files) src/libostree/README-gpg \
+	src/libostree/bupsplit.h \
 	src/libostree/ostree-enumtypes.h.template \
 	src/libostree/ostree-enumtypes.c.template \
 	src/libostree/ostree-deployment-private.h \
@@ -1840,7 +1841,7 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/boot/mkinitcpio/ostree \
 	src/boot/ostree-prepare-root.service \
 	src/boot/ostree-remount.service src/boot/grub2/grub2-15_ostree \
-	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_73)
+	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_74)
 bin_SCRIPTS = 
 lib_LTLIBRARIES = libostree-1.la
 pkglibexec_SCRIPTS = $(am__append_70)
@@ -1862,7 +1863,7 @@ ostree_bootdir = $(prefix)/lib/ostree
 # We should probably consider flipping the default for DEBUG.  Also,
 # include the builddir in $PATH so we find our just-built ostree
 # binary.
-TESTS_ENVIRONMENT = G_TEST_SRCDIR="$(abs_srcdir)" \
+AM_TESTS_ENVIRONMENT = G_TEST_SRCDIR="$(abs_srcdir)" \
 	G_TEST_BUILDDIR="$(abs_builddir)" UNINSTALLEDTESTS=1 \
 	G_DEBUG=gc-friendly MALLOC_CHECK_=2 \
 	MALLOC_PERTURB_=$$(($${RANDOM:-256} % 256)) OT_TESTS_DEBUG=1 \
@@ -2119,6 +2120,10 @@ libostree_1_la_SOURCES = src/libostree/ostree-async-progress.c \
 	src/libostree/ostree-autocleanups.h $(NULL) $(am__append_19) \
 	$(am__append_20) $(am__append_21) $(am__append_28) \
 	$(am__append_29) $(am__append_32)
+symbol_files = $(top_srcdir)/src/libostree/libostree-released.sym \
+	$(am__append_22) $(am__append_23)
+# http://blog.jgc.org/2007/06/escaping-comma-and-space-in-gnu-make.html
+wl_versionscript_arg = -Wl,--version-script=
 libostree_1_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/bsdiff \
 	-I$(srcdir)/libglnx -I$(srcdir)/src/libotutil \
 	-I$(srcdir)/src/libostree -I$(builddir)/src/libostree \
@@ -2128,17 +2133,14 @@ libostree_1_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/bsdiff \
 	'-D_OSTREE_PUBLIC=__attribute__((visibility("default"))) \
 	extern' $(am__append_24) $(am__append_26) $(am__append_30) \
 	$(am__append_33) $(am__append_35) $(am__append_37)
-libostree_1_la_LDFLAGS = -version-number 1:0:0 -Bsymbolic-functions \
-	-Wl,--version-script=$(top_srcdir)/src/libostree/libostree.sym \
-	$(am__append_22)
+libostree_1_la_LDFLAGS = -version-number 1:0:0 -Bsymbolic-functions $(addprefix $(wl_versionscript_arg),$(symbol_files))
 libostree_1_la_LIBADD = libotutil.la libglnx.la libbsdiff.la \
 	libostree-kernel-args.la $(OT_INTERNAL_GIO_UNIX_LIBS) \
 	$(OT_INTERNAL_GPGME_LIBS) $(OT_DEP_LZMA_LIBS) \
 	$(OT_DEP_ZLIB_LIBS) $(OT_DEP_OPENSSL_LIBS) $(bupsplitpath) \
 	$(am__append_25) $(am__append_27) $(am__append_31) \
 	$(am__append_34) $(am__append_36) $(am__append_38)
-EXTRA_libostree_1_la_DEPENDENCIES =  \
-	$(top_srcdir)/src/libostree/libostree.sym $(am__append_23)
+EXTRA_libostree_1_la_DEPENDENCIES = $(symbol_files)
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_EXPORT_PACKAGES = ostree-1
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_INCLUDES = Gio-2.0
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_CFLAGS = $(libostree_1_la_CFLAGS)
@@ -2277,6 +2279,7 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-pull-override-url.sh tests/test-local-pull.sh \
 	tests/test-local-pull-depth.sh tests/test-gpg-signed-commit.sh \
 	tests/test-admin-upgrade-unconfigured.sh \
+	tests/test-admin-upgrade-endoflife.sh \
 	tests/test-admin-deploy-syslinux.sh \
 	tests/test-admin-deploy-2.sh tests/test-admin-deploy-karg.sh \
 	tests/test-admin-deploy-switch.sh \
@@ -2441,8 +2444,8 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 @ENABLE_MAN_TRUE@	ostree-pull.1 ostree-refs.1 ostree-remote.1 \
 @ENABLE_MAN_TRUE@	ostree-reset.1 ostree-rev-parse.1 \
 @ENABLE_MAN_TRUE@	ostree-show.1 ostree-summary.1 \
-@ENABLE_MAN_TRUE@	ostree-static-delta.1 ostree-trivial-httpd.1 \
-@ENABLE_MAN_TRUE@	$(am__append_72)
+@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_72) \
+@ENABLE_MAN_TRUE@	$(am__append_73)
 @ENABLE_MAN_TRUE@man5_files = ostree.repo.5 ostree.repo-config.5
 @ENABLE_MAN_TRUE@man1_MANS = $(addprefix man/,$(man1_files))
 @ENABLE_MAN_TRUE@man5_MANS = $(addprefix man/,$(man5_files))
@@ -6785,6 +6788,13 @@ tests/test-gpg-signed-commit.sh.log: tests/test-gpg-signed-commit.sh
 tests/test-admin-upgrade-unconfigured.sh.log: tests/test-admin-upgrade-unconfigured.sh
 	@p='tests/test-admin-upgrade-unconfigured.sh'; \
 	b='tests/test-admin-upgrade-unconfigured.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-admin-upgrade-endoflife.sh.log: tests/test-admin-upgrade-endoflife.sh
+	@p='tests/test-admin-upgrade-endoflife.sh'; \
+	b='tests/test-admin-upgrade-endoflife.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

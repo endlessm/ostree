@@ -127,6 +127,9 @@ gboolean ostree_sysroot_write_origin_file (OstreeSysroot         *sysroot,
                                            GError               **error);
 
 _OSTREE_PUBLIC
+OstreeRepo * ostree_sysroot_repo (OstreeSysroot *self);
+
+_OSTREE_PUBLIC
 gboolean ostree_sysroot_get_repo (OstreeSysroot         *self,
                                   OstreeRepo           **out_repo,
                                   GCancellable          *cancellable,
@@ -183,6 +186,12 @@ gboolean ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
                                            OstreeDeploymentUnlockedState unlocked_state,
                                            GCancellable      *cancellable,
                                            GError           **error);
+
+_OSTREE_PUBLIC
+void ostree_sysroot_query_deployments_for (OstreeSysroot     *self,
+                                           const char        *osname,
+                                           OstreeDeployment  **out_pending,
+                                           OstreeDeployment  **out_rollback);
 
 _OSTREE_PUBLIC
 OstreeDeployment *ostree_sysroot_get_merge_deployment (OstreeSysroot     *self,

@@ -68,7 +68,6 @@
     <keyword type="function" name="ostree_check_version ()" link="ostree-Core-repository-independent-functions.html#ostree-check-version"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-SIZE:CAPS"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_WARN_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-WARN-SIZE:CAPS"/>
-    <keyword type="macro" name="OSTREE_MAX_RECURSION" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-RECURSION:CAPS"/>
     <keyword type="enum" name="enum OstreeObjectType" link="ostree-Core-repository-independent-functions.html#OstreeObjectType"/>
     <keyword type="macro" name="OSTREE_OBJECT_TYPE_LAST" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-LAST:CAPS"/>
     <keyword type="macro" name="OSTREE_DIRMETA_GVARIANT_STRING" link="ostree-Core-repository-independent-functions.html#OSTREE-DIRMETA-GVARIANT-STRING:CAPS"/>
@@ -257,6 +256,7 @@
     <keyword type="function" name="ostree_sysroot_get_deployment_origin_path ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-deployment-origin-path"/>
     <keyword type="function" name="ostree_sysroot_cleanup ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-cleanup"/>
     <keyword type="function" name="ostree_sysroot_prepare_cleanup ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-prepare-cleanup"/>
+    <keyword type="function" name="ostree_sysroot_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-repo"/>
     <keyword type="function" name="ostree_sysroot_get_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-repo"/>
     <keyword type="function" name="ostree_sysroot_init_osname ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-init-osname"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_kargs ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-kargs"/>
@@ -267,6 +267,7 @@
     <keyword type="function" name="ostree_sysroot_write_origin_file ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-origin-file"/>
     <keyword type="function" name="ostree_sysroot_deploy_tree ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deploy-tree"/>
     <keyword type="function" name="ostree_sysroot_get_merge_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-merge-deployment"/>
+    <keyword type="function" name="ostree_sysroot_query_deployments_for ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-query-deployments-for" since="2017.7"/>
     <keyword type="function" name="ostree_sysroot_origin_new_from_refspec ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-origin-new-from-refspec"/>
     <keyword type="function" name="ostree_sysroot_simple_write_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-simple-write-deployment"/>
     <keyword type="typedef" name="OstreeSysroot" link="ostree-Root-partition-mount-point.html#OstreeSysroot"/>
@@ -421,6 +422,7 @@
     <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_MIRROR" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-PULL-FLAGS-MIRROR:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-PULL-FLAGS-COMMIT-ONLY:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_UNTRUSTED" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-PULL-FLAGS-UNTRUSTED:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-PULL-FLAGS-BAREUSERONLY-FILES:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NONE" link="ostree-Root-partition-mount-point.html#OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN" link="ostree-Root-partition-mount-point.html#OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-RETAIN:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NOT_DEFAULT" link="ostree-Root-partition-mount-point.html#OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-NOT-DEFAULT:CAPS"/>

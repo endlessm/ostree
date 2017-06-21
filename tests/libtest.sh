@@ -116,10 +116,16 @@ else
     fi
 fi
 
+files_are_hardlinked() {
+    f1=$(stat -c %i $1)
+    f2=$(stat -c %i $2)
+    [ "$f1" == "$f2" ]
+}
+
 assert_files_hardlinked() {
     f1=$(stat -c %i $1)
     f2=$(stat -c %i $2)
-    if [ "$f1" != "$f2" ]; then
+    if ! files_are_hardlinked "$f1" "$f2"; then
         fatal "Files '$1' and '$2' are not hardlinked"
     fi
 }
@@ -157,9 +163,13 @@ setup_test_repository () {
 
     mkdir baz
     echo moo > baz/cow
+    echo mooro > baz/cowro
+    chmod 600 baz/cowro
     echo alien > baz/saucer
     mkdir baz/deeper
     echo hi > baz/deeper/ohyeah
+    echo hix > baz/deeper/ohyeahx
+    chmod 755 baz/deeper/ohyeahx
     ln -s nonexistent baz/alink
     mkdir baz/another/
     echo x > baz/another/y
@@ -446,6 +456,7 @@ os_repository_new_commit ()
 {
     boot_checksum_iteration=${1:-0}
     content_iteration=${2:-0}
+    branch=${3:-testos/buildmaster/x86_64-runtime}
     echo "BOOT ITERATION: $boot_checksum_iteration"
     cd ${test_tmpdir}/osdata
     rm boot/*
@@ -464,7 +475,7 @@ os_repository_new_commit ()
 
     version=$(date "+%Y%m%d.${content_iteration}")
 
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit  --add-metadata-string "version=${version}" -b testos/buildmaster/x86_64-runtime -s "Build"
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit  --add-metadata-string "version=${version}" -b $branch -s "Build"
     cd ${test_tmpdir}
 }
 
@@ -493,4 +504,36 @@ has_gpgme () {
 
 libtest_cleanup_gpg () {
     gpg-connect-agent --homedir ${test_tmpdir}/gpghome killagent /bye || true
+}
+
+is_bare_user_only_repo () {
+  grep -q 'mode=bare-user-only' $1/config
+}
+
+# Given a path to a file in a repo for a ref, print its checksum
+ostree_file_path_to_checksum() {
+    repo=$1
+    ref=$2
+    path=$3
+    $CMD_PREFIX ostree --repo=$repo ls -C $ref $path | awk '{ print $5 }'
+}
+
+# Given a path to a file in a repo for a ref, print the (relative) path to its
+# object
+ostree_file_path_to_relative_object_path() {
+    repo=$1
+    ref=$2
+    path=$3
+    checksum=$(ostree_file_path_to_checksum $repo $ref $path)
+    test -n "${checksum}"
+    echo objects/${checksum:0:2}/${checksum:2}.file
+}
+
+# Given a path to a file in a repo for a ref, print the path to its object
+ostree_file_path_to_object_path() {
+    repo=$1
+    ref=$2
+    path=$3
+    relpath=$(ostree_file_path_to_relative_object_path $repo $ref $path)
+    echo ${repo}/${relpath}
 }

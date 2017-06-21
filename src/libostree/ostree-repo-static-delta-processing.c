@@ -115,9 +115,7 @@ read_varuint64 (StaticDeltaExecutionState  *state,
   gsize bytes_read;
   if (!_ostree_read_varuint64 (state->opdata, state->oplen, out_value, &bytes_read))
     {
-      g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                           "Unexpected EOF reading varint");
-      return FALSE;
+      return glnx_throw (error, "%s", "Unexpected EOF reading varint");
     }
   state->opdata += bytes_read;
   state->oplen -= bytes_read;
@@ -692,7 +690,8 @@ dispatch_open (OstreeRepo                 *repo,
   if (!state->stats_only)
     {
       g_assert (repo->mode == OSTREE_REPO_MODE_BARE ||
-                repo->mode == OSTREE_REPO_MODE_BARE_USER);
+                repo->mode == OSTREE_REPO_MODE_BARE_USER ||
+                repo->mode == OSTREE_REPO_MODE_BARE_USER_ONLY);
     }
   
   if (!open_output_target (state, cancellable, error))
