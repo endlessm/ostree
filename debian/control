@@ -68,6 +68,8 @@ Depends:
  ${shlibs:Depends},
 Pre-Depends:
  ${misc:Pre-Depends},
+Breaks:
+ flatpak (<< 0.8.7-2~),
 Multi-arch: same
 Description: content-addressed filesystem for operating system binaries (library)
  OSTree is a tool and library for managing bootable, immutable, versioned
