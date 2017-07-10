@@ -1,3 +1,5 @@
+#!/usr/bin/dh-exec
+
 etc/dracut.conf.d/ostree.conf
 etc/ostree
 lib/systemd/system/ostree*.service
@@ -7,5 +9,5 @@ usr/bin/rofiles-fuse
 usr/lib/dracut/modules.d/98ostree		
 usr/lib/ostree/ostree-prepare-root		
 usr/lib/ostree/ostree-remount
-usr/share/man
+usr/share/man <!nodoc>
 usr/share/ostree/trusted.gpg.d

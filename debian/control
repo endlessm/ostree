@@ -14,23 +14,23 @@ Build-Depends:
  ca-certificates,
  cpio,
  debhelper (>= 10~),
- docbook-xml,
- docbook-xsl,
+ dh-exec,
+ docbook-xml <!nodoc>,
+ docbook-xsl <!nodoc>,
  e2fslibs-dev,
  elfutils,
  fuse,
  gjs [!sparc64],
  gobject-introspection,
- gtk-doc-tools (>= 1.15),
- libarchive-dev (>= 2.8.0),
+ gtk-doc-tools <!nodoc>,
+ libarchive-dev,
  libattr1-dev,
- libc6-dev (>= 2.19-18+deb8u4endless4) [!amd64 !i386],
  libcap-dev,
  libfuse-dev,
- libgirepository1.0-dev (>= 1.34.0),
+ libgirepository1.0-dev,
  libglib2.0-dev (>= 2.40.0),
- libgpgme11-dev (>= 1.1.8),
- liblzma-dev (>= 5.0.5),
+ libgpgme11-dev,
+ liblzma-dev,
  libmount-dev (>= 2.23),
  libselinux1-dev,
  libsoup2.4-dev (>= 2.39.1),
@@ -39,9 +39,9 @@ Build-Depends:
  procps,
  python <!nocheck>,
  python-yaml <!nocheck>,
- xsltproc,
+ xsltproc <!nodoc>,
  zlib1g-dev,
-Standards-Version: 3.9.8
+Standards-Version: 4.0.0
 Homepage: https://github.com/ostreedev/ostree/
 Vcs-Git: https://anonscm.debian.org/git/collab-maint/ostree.git
 Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ostree.git
@@ -53,9 +53,6 @@ Section: introspection
 Depends:
  ${gir:Depends},
  ${misc:Depends},
-Provides: gir1.2-ostree
-Conflicts: gir1.2-ostree
-Breaks: gir1.2-ostree
 Description: content-addressed filesystem for operating system binaries (introspection)
  OSTree is a tool for managing bootable, immutable, versioned filesystem
  trees. See the ostree package's description for more details.
@@ -71,9 +68,6 @@ Depends:
  ${shlibs:Depends},
 Pre-Depends:
  ${misc:Pre-Depends},
-Provides: libostree-1
-Conflicts: libostree-1
-Breaks: libostree-1
 Multi-arch: same
 Description: content-addressed filesystem for operating system binaries (library)
  OSTree is a tool and library for managing bootable, immutable, versioned
@@ -112,6 +106,7 @@ Description: Development files for the ostree library
  This package contains development headers and the pkg-config file for ostree.
 
 Package: libostree-doc
+Build-Profiles: <!nodoc>
 Architecture: all
 Multi-Arch: foreign
 Section: doc
@@ -119,9 +114,6 @@ Depends:
  ${misc:Depends},
 Suggests:
  devhelp,
-Provides: ostree-doc
-Conflicts: ostree-doc
-Breaks: ostree-doc
 Description: Development documentation for the ostree library
  OSTree is a tool for managing bootable, immutable, versioned filesystem
  trees. See the ostree package's description for more details.

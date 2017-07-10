@@ -9,24 +9,34 @@ export LC_ALL=C.UTF-8
 	dh $@ --with=gir
 
 override_dh_auto_clean:
+	rm -f man/ostree-trivial-httpd.xml
 	if [ -e Makefile ]; then dh_auto_clean; fi
 
 override_dh_autoreconf:
 	env NOCONFIGURE=1 dh_autoreconf ./autogen.sh
+	cp debian/dist/ostree-trivial-httpd.xml man/
+
+configure_options = \
+	--enable-installed-tests \
+	--enable-trivial-httpd-cmdline \
+	--libexecdir='$${prefix}/lib' \
+	--with-dracut \
+	--with-grub2 \
+	--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
+	--with-systemdsystemgeneratordir=/lib/systemd/system-generators \
+	--with-systemdsystemunitdir=/lib/systemd/system \
+	$(NULL)
+
+ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
+configure_options += --enable-gtk-doc
+configure_options += --enable-man
+else
+configure_options += --disable-gtk-doc
+configure_options += --disable-man
+endif
 
 override_dh_auto_configure:
-	dh_auto_configure -- \
-		--disable-silent-rules \
-		--enable-gtk-doc \
-		--enable-installed-tests \
-		--enable-trivial-httpd-cmdline \
-		--libexecdir='$${prefix}/lib' \
-		--with-dracut \
-		--with-grub2 \
-		--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
-		--with-systemdsystemgeneratordir=/lib/systemd/system-generators \
-		--with-systemdsystemunitdir=/lib/systemd/system \
-		$(NULL)
+	dh_auto_configure -- $(configure_options)
 
 override_dh_auto_test:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
@@ -35,12 +45,14 @@ endif
 
 override_dh_auto_install:
 	dh_auto_install
+ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
 	# docbook-xsl capitalizes the whole heading, including the macro
 	# used to represent a single quote... https://bugs.debian.org/821235
 	sed -i -e 's,\*(AQ,*(Aq,g' \
 		debian/tmp/usr/share/man/man1/ostree-remote.1 \
 		debian/tmp/usr/share/man/man1/ostree-static-delta.1 \
 		$(NULL)
+endif
 
 override_dh_install:
 	rm -f debian/tmp/usr/lib/*/*.la

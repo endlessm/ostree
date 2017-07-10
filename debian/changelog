@@ -1,3 +1,27 @@
+ostree (2017.7-1endless1) unstable; urgency=medium
+
+  * Resync Debian packaging changes
+    - Keep Endless specific ostree_repo_delete_compat_signature() and
+      ostree_repo_get_commit_sizes() ABIs.
+    - Keep the parts needed for boot in the main ostree package, as
+      ostree-boot does not yet exist in the upstream Debian packaging.
+
+ -- Philip Withnall <withnall@endlessm.com>  Mon, 10 Jul 2017 19:11:00 +0100
+
+ostree (2017.7-1) unstable; urgency=medium
+
+  * New upstream release
+    - Update symbols file
+    - Add post-release patches so test-symbols.sh passes again
+    - debian/dist/: Add ostree-trivial-httpd.xml, which was incorrectly
+      excluded from the upstream release
+  * Standards-Version: 4.0.0
+    - Use https URL for copyright-format
+  * Implement <nodoc> build profile
+  * Upload to unstable
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 21 Jun 2017 13:06:54 +0100
+
 ostree (2017.6-1) experimental; urgency=medium
 
   * New upstream release
