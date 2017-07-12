@@ -17,6 +17,7 @@ override_dh_autoreconf:
 	cp debian/dist/ostree-trivial-httpd.xml man/
 
 configure_options = \
+	--enable-experimental-api \
 	--enable-installed-tests \
 	--enable-trivial-httpd-cmdline \
 	--libexecdir='$${prefix}/lib' \
@@ -25,6 +26,7 @@ configure_options = \
 	--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
 	--with-systemdsystemgeneratordir=/lib/systemd/system-generators \
 	--with-systemdsystemunitdir=/lib/systemd/system \
+	BASH_COMPLETIONSDIR=/usr/share/bash-completion/completions \
 	$(NULL)
 
 ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))

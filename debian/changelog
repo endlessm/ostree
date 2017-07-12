@@ -1,3 +1,13 @@
+ostree (2017.10-0endless1) unstable; urgency=medium
+
+  * New upstream release
+    - Update symbols file
+    - Add Build-Depends-Indep for docs as per upstream packaging
+  * Enable --enable-experimental-api configure flag — this will enable P2P
+    functionality in libostree
+
+ -- Philip Withnall <withnall@endlessm.com>  Wed, 22 Aug 2017 12:08:00 +0100
+
 ostree (2017.7-1endless1) unstable; urgency=medium
 
   * Resync Debian packaging changes
