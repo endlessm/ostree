@@ -17,6 +17,7 @@ override_dh_autoreconf:
 	cp debian/dist/ostree-trivial-httpd.xml man/
 
 configure_options = \
+	--enable-experimental-api \
 	--enable-installed-tests \
 	--enable-trivial-httpd-cmdline \
 	--libexecdir='$${prefix}/lib' \

@@ -1,3 +1,14 @@
+ostree (2017.8-1endless1) unstable; urgency=medium
+
+  * New upstream release
+  * Pull in latest experimental API patches from after the 2017.8 release
+    - Add experimental symbols to Debian symbols file
+    - Uncomment new experimental documentation
+  * Enable --enable-experimental-api configure flag — this will enable P2P
+    functionality in libostree
+
+ -- Philip Withnall <withnall@endlessm.com>  Wed, 12 Jul 2017 14:12:00 +0100
+
 ostree (2017.7-1endless1) unstable; urgency=medium
 
   * Resync Debian packaging changes
