@@ -13,6 +13,7 @@ override_dh_autoreconf:
 
 configure_options = \
 	GJS=some-nonexistent-gjs-binary \
+	--enable-experimental-api \
 	--enable-installed-tests \
 	--libexecdir='$${prefix}/lib' \
 	--with-dracut \
