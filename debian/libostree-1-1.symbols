@@ -59,6 +59,14 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_checksum_to_bytes_v@LIBOSTREE_2016.3 2016.4
  ostree_cmd__private__@LIBOSTREE_2016.3 2016.4
  ostree_cmp_checksum_bytes@LIBOSTREE_2016.3 2016.4
+ ostree_collection_ref_dup@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_collection_ref_dupv@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_collection_ref_equal@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_collection_ref_free@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_collection_ref_freev@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_collection_ref_get_type@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_collection_ref_hash@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_collection_ref_new@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_commit_get_parent@LIBOSTREE_2016.3 2016.4
  ostree_commit_get_timestamp@LIBOSTREE_2016.3 2016.4
  ostree_content_file_parse@LIBOSTREE_2016.3 2016.4
@@ -126,6 +134,9 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_raw_file_to_archive_z2_stream@LIBOSTREE_2016.6 2016.6
  ostree_raw_file_to_archive_z2_stream_with_options@LIBOSTREE_2017.3 2017.3
  ostree_raw_file_to_content_stream@LIBOSTREE_2016.3 2016.4
+ ostree_remote_ref@LIBOSTREE_2017.6_EXPERIMENTAL 2017.8
+ ostree_remote_unref@LIBOSTREE_2017.6_EXPERIMENTAL 2017.8
+ ostree_remote_get_name@LIBOSTREE_2017.7_EXPERIMENTAL 2017.8
  ostree_repo_abort_transaction@LIBOSTREE_2016.3 2016.4
  ostree_repo_add_gpg_signature_summary@LIBOSTREE_2016.3 2016.4
  ostree_repo_append_gpg_signature@LIBOSTREE_2016.3 2016.4
@@ -170,6 +181,28 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_file_tree_get_metadata_checksum@LIBOSTREE_2016.3 2016.4
  ostree_repo_file_tree_query_child@LIBOSTREE_2016.3 2016.4
  ostree_repo_file_tree_set_metadata@LIBOSTREE_2016.3 2016.4
+ ostree_repo_find_remotes_async@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_find_remotes_finish@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_avahi_get_type@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_avahi_new@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_avahi_start@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_avahi_stop@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_config_get_type@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_config_new@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_get_type@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_mount_get_type@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_mount_new@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_resolve_async@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_resolve_all_async@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_resolve_all_finish@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_resolve_finish@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_result_compare@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_result_dup@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_result_free@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_result_freev@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_result_get_type@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_result_new@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_get_collection_id@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_get_commit_sizes@LIBOSTREE_2016.3 2016.3
  ostree_repo_get_config@LIBOSTREE_2016.3 2016.4
  ostree_repo_get_dfd@LIBOSTREE_2016.4 2016.4
@@ -188,6 +221,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_import_object_from_with_trust@LIBOSTREE_2016.5 2016.5
  ostree_repo_is_system@LIBOSTREE_2016.3 2016.4
  ostree_repo_is_writable@LIBOSTREE_2016.3 2016.4
+ ostree_repo_list_collection_refs@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_list_commit_objects_starting_with@LIBOSTREE_2016.3 2016.4
  ostree_repo_list_objects@LIBOSTREE_2016.3 2016.4
  ostree_repo_list_refs@LIBOSTREE_2016.3 2016.4
@@ -209,6 +243,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_prune_static_deltas@LIBOSTREE_2016.3 2016.4
  ostree_repo_pull@LIBOSTREE_2016.3 2016.4
  ostree_repo_pull_default_console_progress_changed@LIBOSTREE_2016.3 2016.4
+ ostree_repo_pull_from_remotes_async@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_pull_from_remotes_finish@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_pull_one_dir@LIBOSTREE_2016.3 2016.4
  ostree_repo_pull_with_options@LIBOSTREE_2016.3 2016.4
  ostree_repo_query_object_storage_size@LIBOSTREE_2016.3 2016.4
@@ -227,16 +263,20 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_remote_gpg_import@LIBOSTREE_2016.3 2016.4
  ostree_repo_remote_list@LIBOSTREE_2016.3 2016.4
  ostree_repo_remote_list_refs@LIBOSTREE_2016.3 2016.4
+ ostree_repo_resolve_keyring_for_collection@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_resolve_rev@LIBOSTREE_2016.3 2016.4
  ostree_repo_resolve_rev_ext@LIBOSTREE_2016.7 2016.7
  ostree_repo_scan_hardlinks@LIBOSTREE_2016.3 2016.4
  ostree_repo_set_cache_dir@LIBOSTREE_2016.5 2016.5
+ ostree_repo_set_collection_id@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_set_collection_ref_immediate@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_set_disable_fsync@LIBOSTREE_2016.3 2016.4
  ostree_repo_set_ref_immediate@LIBOSTREE_2016.3 2016.4
  ostree_repo_sign_commit@LIBOSTREE_2016.3 2016.4
  ostree_repo_sign_delta@LIBOSTREE_2016.3 2016.4
  ostree_repo_static_delta_execute_offline@LIBOSTREE_2016.3 2016.4
  ostree_repo_static_delta_generate@LIBOSTREE_2016.3 2016.4
+ ostree_repo_transaction_set_collection_ref@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_transaction_set_ref@LIBOSTREE_2016.3 2016.4
  ostree_repo_transaction_set_refspec@LIBOSTREE_2016.3 2016.4
  ostree_repo_transaction_stats_get_type@LIBOSTREE_2016.3 2016.4
@@ -325,6 +365,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sysroot_write_deployments_with_options@LIBOSTREE_2017.4 2017.4
  ostree_sysroot_write_origin_file@LIBOSTREE_2016.3 2016.4
  ostree_validate_checksum_string@LIBOSTREE_2016.3 2016.4
+ ostree_validate_collection_id@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_validate_rev@LIBOSTREE_2016.3 2016.4
  ostree_validate_structureof_checksum_string@LIBOSTREE_2016.3 2016.4
  ostree_validate_structureof_commit@LIBOSTREE_2016.3 2016.4
