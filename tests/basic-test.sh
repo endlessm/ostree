@@ -342,8 +342,11 @@ cd ${test_tmpdir}
 cat > test-statoverride.txt <<EOF
 +1048 /a/nested/2
 2048 /a/nested/3
+=384 /a/readable-only
 EOF
 cd ${test_tmpdir}/checkout-test2-4
+echo readable only > a/readable-only
+chmod 664 a/readable-only
 $OSTREE commit ${COMMIT_ARGS} -b test2-override -s "with statoverride" --statoverride=../test-statoverride.txt
 cd ${test_tmpdir}
 $OSTREE checkout test2-override checkout-test2-override
@@ -354,6 +357,7 @@ else
     test '!' -g checkout-test2-override/a/nested/2
     test '!' -u checkout-test2-override/a/nested/3
 fi
+assert_file_has_mode checkout-test2-override/a/readable-only 600
 echo "ok commit statoverride"
 
 cd ${test_tmpdir}
@@ -492,7 +496,7 @@ echo "ok pull-local with --remote arg"
 cd ${test_tmpdir}
 ${CMD_PREFIX} ostree --repo=repo3 prune
 find repo3/objects -name '*.commit' > objlist-before-prune
-rm repo3/refs/heads/* repo3/refs/remotes/* -rf
+rm repo3/refs/heads/* repo3/refs/mirrors/* repo3/refs/remotes/* -rf
 ${CMD_PREFIX} ostree --repo=repo3 prune --refs-only
 find repo3/objects -name '*.commit' > objlist-after-prune
 if cmp -s objlist-before-prune objlist-after-prune; then
@@ -512,7 +516,7 @@ find repo3/objects -name '*.filez' > file-objects
 if test -s file-objects; then
     assert_not_reached "prune didn't delete all objects"
 fi
-echo "ok prune in archive-z2 deleted everything"
+echo "ok prune in archive deleted everything"
 
 cd ${test_tmpdir}
 rm -rf test2-checkout
@@ -730,7 +734,7 @@ $OSTREE commit ${COMMIT_ARGS} -b test2 -s "Unfsynced commit" --fsync=false
 if test "$(id -u)" != "0"; then
     cd ${test_tmpdir}
     rm -f expected-fail error-message
-    $OSTREE init --mode=archive-z2 --repo=repo-noperm
+    $OSTREE init --mode=archive --repo=repo-noperm
     chmod -w repo-noperm/objects
     $OSTREE --repo=repo-noperm pull-local repo 2> error-message || touch expected-fail
     chmod +w repo-noperm/objects

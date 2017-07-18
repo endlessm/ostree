@@ -22,7 +22,11 @@ set -xeuo pipefail
 echo '1..3'
 
 released_syms=${G_TEST_SRCDIR}/src/libostree/libostree-released.sym
-devel_syms=${G_TEST_SRCDIR}/src/libostree/libostree-devel.sym
+if echo "$OSTREE_FEATURES" | grep --quiet --no-messages "devel"; then
+    devel_syms=${G_TEST_SRCDIR}/src/libostree/libostree-devel.sym
+else
+    devel_syms=
+fi
 if echo "$OSTREE_FEATURES" | grep --quiet --no-messages "experimental"; then
   experimental_sym="${G_TEST_SRCDIR}/src/libostree/libostree-experimental.sym"
   experimental_sections="${G_TEST_SRCDIR}/apidoc/ostree-experimental-sections.txt"
@@ -48,7 +52,7 @@ echo 'ok documented symbols'
 
 # ONLY update this checksum in release commits!
 cat > released-sha256.txt <<EOF
-42f98d8816acbe22e925d18bf76ea2c6f7e12ee5d7a381979e6ed07bb6a1f755  ${released_syms}
+d3f3d564e4679d603220da0cea940867fde28622857d088a8287db730bcc8001  ${released_syms}
 EOF
 sha256sum -c released-sha256.txt
 

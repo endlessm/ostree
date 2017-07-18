@@ -21,6 +21,7 @@
 #pragma once
 
 #include "ostree-core.h"
+#include <sys/stat.h>
 
 G_BEGIN_DECLS
 
@@ -88,7 +89,8 @@ _ostree_make_temporary_symlink_at (int             tmp_dirfd,
                                    GCancellable   *cancellable,
                                    GError        **error);
 
-GFileInfo * _ostree_header_gfile_info_new (mode_t mode, uid_t uid, gid_t gid);
+GFileInfo * _ostree_stbuf_to_gfileinfo (const struct stat *stbuf);
+GFileInfo * _ostree_mode_uidgid_to_gfileinfo (mode_t mode, uid_t uid, gid_t gid);
 
 static inline void
 _ostree_checksum_inplace_from_bytes_v (GVariant *csum_v, char *buf)
@@ -173,6 +175,29 @@ _ostree_raw_file_to_archive_stream (GInputStream       *input,
                                     GCancellable       *cancellable,
                                     GError            **error);
 
+#ifndef OSTREE_ENABLE_EXPERIMENTAL_API
+gboolean ostree_validate_collection_id (const char *collection_id, GError **error);
+#endif /* !OSTREE_ENABLE_EXPERIMENTAL_API */
 
+#if (defined(OSTREE_COMPILATION) || GLIB_CHECK_VERSION(2, 44, 0)) && !defined(OSTREE_ENABLE_EXPERIMENTAL_API)
+#include <libglnx.h>
+#include "ostree-ref.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeCollectionRef, ostree_collection_ref_free)
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC (OstreeCollectionRefv, ostree_collection_ref_freev, NULL)
+
+#include "ostree-repo-finder.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinder, g_object_unref)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderResult, ostree_repo_finder_result_free)
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC (OstreeRepoFinderResultv, ostree_repo_finder_result_freev, NULL)
+
+#include "ostree-repo-finder-avahi.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderAvahi, g_object_unref)
+
+#include "ostree-repo-finder-config.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderConfig, g_object_unref)
+
+#include "ostree-repo-finder-mount.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderMount, g_object_unref)
+#endif
 
 G_END_DECLS

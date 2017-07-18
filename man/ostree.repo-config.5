@@ -2,7 +2,7 @@
 .\"     Title: ostree.repo-config
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 06/19/2017
+.\"      Date: 07/05/2017
 .\"    Manual: ostree.repo-config
 .\"    Source: OSTree
 .\"  Language: English
@@ -135,6 +135,11 @@ Path to file containing trusted anchors instead of the system CA database\&.
 \fIunconfigured\-state\fR
 .RS 4
 If set, pulls from this remote will fail with the configured text\&. This is intended for OS vendors which have a subscription process to access content\&.
+.RE
+.PP
+\fImin\-free\-space\-percent\fR
+.RS 4
+Integer percentage value (0\-99) that specifies a minimum percentage of total space (in blocks) in the underlying filesystem to keep free\&. The default value is 3\&.
 .RE
 .SH "/ETC/OSTREE/REMOTES\&.D"
 .PP

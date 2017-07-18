@@ -2,7 +2,7 @@
 .\"     Title: ostree refs
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 06/19/2017
+.\"      Date: 07/04/2017
 .\"    Manual: ostree refs
 .\"    Source: OSTree
 .\"  Language: English
@@ -50,6 +50,21 @@ Delete refs which match PREFIX, rather than listing them\&. If you are trying to
 \fBostree prune\fR
 or
 \fBostree admin cleanup\fR\&.
+.RE
+.PP
+\fB\-\-collections\fR
+.RS 4
+Enable interactions with refs using the combination of their collection IDs and ref names\&. When listing refs, this changes the output format to include collection IDs, and enables listing remote mirrored refs\&.
+.sp
+When creating refs, the refspec value passed to the
+\fB\-\-create\fR
+option is treated as
+COLLECTION\-ID:REF\-NAME
+and a mirrored ref is created\&. (This is an abuse of the refspec syntax\&.)
+.sp
+When deleting refs, all refs whose collection ID equals the value of the
+\fB\-\-delete\fR
+argument are deleted\&.
 .RE
 .SH "EXAMPLE"
 .PP

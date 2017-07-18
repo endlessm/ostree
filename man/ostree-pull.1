@@ -2,7 +2,7 @@
 .\"     Title: ostree pull
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 06/19/2017
+.\"      Date: 07/04/2017
 .\"    Manual: ostree pull
 .\"    Source: OSTree
 .\"  Language: English
@@ -42,6 +42,12 @@ Fetch only the commit metadata\&.
 \fB\-\-disable\-fsync\fR
 .RS 4
 Do no invoke fsync()\&.
+.RE
+.PP
+\fB\-\-localcache\-repo\fR
+.RS 4
+Like git\*(Aqs
+clone \-\-reference\&. Reuse the provided OSTree repo as a local object cache of objects when doing HTTP fetches\&. May be specified multiple times\&.
 .RE
 .PP
 \fB\-\-untrusted\fR

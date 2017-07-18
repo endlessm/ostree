@@ -340,13 +340,13 @@ host_triplet = @host@
 bin_PROGRAMS = ostree$(EXEEXT) $(am__EXEEXT_1)
 sbin_PROGRAMS =
 libexec_PROGRAMS =
-pkglibexec_PROGRAMS = $(am__EXEEXT_16)
-noinst_PROGRAMS = $(am__EXEEXT_13) tests/test-rollsum-cli$(EXEEXT)
-ostree_boot_PROGRAMS = $(am__EXEEXT_14) $(am__EXEEXT_15)
-TESTS = $(am__EXEEXT_6) $(am__EXEEXT_19) \
-	$(dist_uninstalled_test_scripts) $(am__EXEEXT_10)
-installed_test_PROGRAMS = $(am__EXEEXT_12)
-check_PROGRAMS = $(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11)
+pkglibexec_PROGRAMS = $(am__EXEEXT_18)
+noinst_PROGRAMS = $(am__EXEEXT_15) tests/test-rollsum-cli$(EXEEXT)
+ostree_boot_PROGRAMS = $(am__EXEEXT_16) $(am__EXEEXT_17)
+TESTS = $(am__EXEEXT_8) $(am__EXEEXT_22) \
+	$(dist_uninstalled_test_scripts) $(am__EXEEXT_12)
+installed_test_PROGRAMS = $(am__EXEEXT_14)
+check_PROGRAMS = $(am__EXEEXT_11) $(am__EXEEXT_12) $(am__EXEEXT_13)
 @ENABLE_ALWAYS_BUILD_TESTS_TRUE@am__append_1 = $(all_test_ltlibs)
 @ENABLE_ALWAYS_BUILD_TESTS_TRUE@am__append_2 = $(all_test_programs)
 @ENABLE_ALWAYS_BUILD_TESTS_TRUE@am__append_3 = $(all_test_scripts)
@@ -375,7 +375,12 @@ check_PROGRAMS = $(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11)
 @ENABLE_GTK_DOC_TRUE@am__append_14 = apidoc
 @ENABLE_RUST_TRUE@am__append_15 = $(srcdir)/rust/Cargo.toml $(srcdir)/rust/cargo-vendor-config
 @ENABLE_EXPERIMENTAL_API_TRUE@am__append_16 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-ref.h \
 @ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-remote.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-avahi.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-config.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-mount.h \
 @ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
 
 @ENABLE_RUST_TRUE@am__append_17 = $(BUPSPLIT_RUST_SRCS)
@@ -390,17 +395,30 @@ check_PROGRAMS = $(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11)
 @HAVE_LIBSOUP_CLIENT_CERTS_TRUE@	src/libostree/ostree-tls-cert-interaction.h \
 @HAVE_LIBSOUP_CLIENT_CERTS_TRUE@	$(NULL)
 
-@ENABLE_EXPERIMENTAL_API_FALSE@am__append_21 = \
-@ENABLE_EXPERIMENTAL_API_FALSE@	src/libostree/ostree-remote.h \
-@ENABLE_EXPERIMENTAL_API_FALSE@	$(NULL)
+@ENABLE_EXPERIMENTAL_API_FALSE@am__append_21 = $(libostree_experimental_headers)
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_22 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-bloom.c \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-bloom-private.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder.c \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-avahi.c \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-config.c \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-mount.c \
+@ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
 
-@BUILDOPT_IS_DEVEL_BUILD_TRUE@am__append_22 = $(top_srcdir)/src/libostree/libostree-devel.sym
-@ENABLE_EXPERIMENTAL_API_TRUE@am__append_23 = $(top_srcdir)/src/libostree/libostree-experimental.sym
-@USE_LIBARCHIVE_TRUE@am__append_24 = $(OT_DEP_LIBARCHIVE_CFLAGS)
-@USE_LIBARCHIVE_TRUE@am__append_25 = $(OT_DEP_LIBARCHIVE_LIBS)
-@BUILDOPT_LIBSYSTEMD_TRUE@am__append_26 = $(LIBSYSTEMD_CFLAGS)
-@BUILDOPT_LIBSYSTEMD_TRUE@am__append_27 = $(LIBSYSTEMD_LIBS)
-@USE_CURL_OR_SOUP_TRUE@am__append_28 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__append_23 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@	src/libostree/ostree-repo-finder-avahi-parser.c \
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@	src/libostree/ostree-repo-finder-avahi-private.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@	$(NULL)
+
+@BUILDOPT_IS_DEVEL_BUILD_TRUE@am__append_24 = $(top_srcdir)/src/libostree/libostree-devel.sym
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_25 = $(top_srcdir)/src/libostree/libostree-experimental.sym
+@USE_LIBARCHIVE_TRUE@am__append_26 = $(OT_DEP_LIBARCHIVE_CFLAGS)
+@USE_LIBARCHIVE_TRUE@am__append_27 = $(OT_DEP_LIBARCHIVE_LIBS)
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__append_28 = $(OT_DEP_AVAHI_CFLAGS)
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__append_29 = $(OT_DEP_AVAHI_LIBS)
+@BUILDOPT_LIBSYSTEMD_TRUE@am__append_30 = $(LIBSYSTEMD_CFLAGS)
+@BUILDOPT_LIBSYSTEMD_TRUE@am__append_31 = $(LIBSYSTEMD_LIBS)
+@USE_CURL_OR_SOUP_TRUE@am__append_32 = \
 @USE_CURL_OR_SOUP_TRUE@	src/libostree/ostree-fetcher.h \
 @USE_CURL_OR_SOUP_TRUE@	src/libostree/ostree-fetcher-util.h \
 @USE_CURL_OR_SOUP_TRUE@	src/libostree/ostree-fetcher-util.c \
@@ -409,25 +427,26 @@ check_PROGRAMS = $(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11)
 @USE_CURL_OR_SOUP_TRUE@	src/libostree/ostree-metalink.c \
 @USE_CURL_OR_SOUP_TRUE@	$(NULL)
 
-@USE_CURL_TRUE@am__append_29 = src/libostree/ostree-fetcher-curl.c \
+@USE_CURL_TRUE@am__append_33 = src/libostree/ostree-fetcher-curl.c \
 @USE_CURL_TRUE@	src/libostree/ostree-soup-uri.h src/libostree/ostree-soup-uri.c \
 @USE_CURL_TRUE@  src/libostree/ostree-soup-form.c \
 @USE_CURL_TRUE@  $(NULL)
 
-@USE_CURL_TRUE@am__append_30 = $(OT_DEP_CURL_CFLAGS)
-@USE_CURL_TRUE@am__append_31 = $(OT_DEP_CURL_LIBS)
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_32 = src/libostree/ostree-fetcher-soup.c
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_33 = $(OT_INTERNAL_SOUP_CFLAGS)
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_34 = $(OT_INTERNAL_SOUP_LIBS)
-@USE_LIBMOUNT_TRUE@am__append_35 = $(OT_DEP_LIBMOUNT_CFLAGS)
-@USE_LIBMOUNT_TRUE@am__append_36 = $(OT_DEP_LIBMOUNT_LIBS)
-@USE_SELINUX_TRUE@am__append_37 = $(OT_DEP_SELINUX_CFLAGS)
-@USE_SELINUX_TRUE@am__append_38 = $(OT_DEP_SELINUX_LIBS)
-@BUILDOPT_INTROSPECTION_TRUE@am__append_39 = OSTree-1.0.gir
-@BUILDOPT_INTROSPECTION_TRUE@am__append_40 = OSTree-1.0.gir
-@BUILDOPT_INTROSPECTION_TRUE@am__append_41 = OSTree-1.0.typelib
-@BUILDOPT_INTROSPECTION_TRUE@am__append_42 = $(gir_DATA) $(typelib_DATA)
-@USE_CURL_OR_SOUP_TRUE@am__append_43 = src/ostree/ot-remote-builtin-add-cookie.c \
+@USE_CURL_TRUE@am__append_34 = $(OT_DEP_CURL_CFLAGS)
+@USE_CURL_TRUE@am__append_35 = $(OT_DEP_CURL_LIBS)
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_36 = src/libostree/ostree-fetcher-soup.c
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_37 = $(OT_INTERNAL_SOUP_CFLAGS)
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_38 = $(OT_INTERNAL_SOUP_LIBS)
+@USE_LIBMOUNT_TRUE@am__append_39 = $(OT_DEP_LIBMOUNT_CFLAGS)
+@USE_LIBMOUNT_TRUE@am__append_40 = $(OT_DEP_LIBMOUNT_LIBS)
+@USE_SELINUX_TRUE@am__append_41 = $(OT_DEP_SELINUX_CFLAGS)
+@USE_SELINUX_TRUE@am__append_42 = $(OT_DEP_SELINUX_LIBS)
+@BUILDOPT_INTROSPECTION_TRUE@am__append_43 = OSTree-1.0.gir
+@BUILDOPT_INTROSPECTION_TRUE@am__append_44 = OSTree-1.0.gir
+@BUILDOPT_INTROSPECTION_TRUE@am__append_45 = OSTree-1.0.typelib
+@BUILDOPT_INTROSPECTION_TRUE@am__append_46 = $(gir_DATA) $(typelib_DATA)
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_47 = src/ostree/ot-builtin-find-remotes.c
+@USE_CURL_OR_SOUP_TRUE@am__append_48 = src/ostree/ot-remote-builtin-add-cookie.c \
 @USE_CURL_OR_SOUP_TRUE@	src/ostree/ot-remote-builtin-delete-cookie.c \
 @USE_CURL_OR_SOUP_TRUE@	src/ostree/ot-remote-builtin-list-cookies.c \
 @USE_CURL_OR_SOUP_TRUE@	src/ostree/ot-remote-cookie-util.h \
@@ -435,50 +454,69 @@ check_PROGRAMS = $(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11)
 @USE_CURL_OR_SOUP_TRUE@	$(NULL) src/ostree/ot-builtin-pull.c
 
 # Eventually once we stop things from using this, we should support disabling this
-@USE_LIBSOUP_TRUE@am__append_44 = src/ostree/ot-builtin-trivial-httpd.c
-@USE_LIBSOUP_TRUE@am__append_45 = ostree-trivial-httpd
+@USE_LIBSOUP_TRUE@am__append_49 = src/ostree/ot-builtin-trivial-httpd.c
+@USE_LIBSOUP_TRUE@am__append_50 = ostree-trivial-httpd
 
 # This is necessary for the cookie jar bits
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_46 = $(OT_INTERNAL_SOUP_CFLAGS)
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_47 = $(OT_INTERNAL_SOUP_LIBS)
-@USE_LIBARCHIVE_TRUE@am__append_48 = $(OT_DEP_LIBARCHIVE_CFLAGS)
-@USE_LIBARCHIVE_TRUE@am__append_49 = $(OT_DEP_LIBARCHIVE_LIBS)
-@BUILDOPT_SYSTEMD_TRUE@am__append_50 = ostree-remount
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_51 = $(OT_INTERNAL_SOUP_CFLAGS)
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_52 = $(OT_INTERNAL_SOUP_LIBS)
+@USE_LIBARCHIVE_TRUE@am__append_53 = $(OT_DEP_LIBARCHIVE_CFLAGS)
+@USE_LIBARCHIVE_TRUE@am__append_54 = $(OT_DEP_LIBARCHIVE_LIBS)
+@BUILDOPT_SYSTEMD_TRUE@am__append_55 = ostree-remount
 # It is built anyway as a side-effect of having the symlink in tests/,
 # and if we declare it here, it gets cleaned up properly
-@BUILDOPT_SYSTEMD_FALSE@am__append_51 = ostree-remount
-@BUILDOPT_USE_STATIC_COMPILER_FALSE@am__append_52 = ostree-prepare-root
+@BUILDOPT_SYSTEMD_FALSE@am__append_56 = ostree-remount
+@BUILDOPT_USE_STATIC_COMPILER_FALSE@am__append_57 = ostree-prepare-root
 
 # This is the "new mode" of using a generator for /var; see
 # https://github.com/ostreedev/ostree/issues/855
-@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_53 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
-@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_54 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
+@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_58 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
+@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_59 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@systemdsystemgenerator_PROGRAMS = ostree-system-generator$(EXEEXT)
-@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_55 = $(systemdsystemgenerator_PROGRAMS)
-@BUILDOPT_FUSE_TRUE@am__append_56 = rofiles-fuse
-@BUILDOPT_ASAN_TRUE@am__append_57 = OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
-@BUILDOPT_FUSE_TRUE@am__append_58 = tests/test-rofiles-fuse.sh
-@BUILDOPT_FUSE_FALSE@am__append_59 = tests/test-rofiles-fuse.sh
-@USE_LIBSOUP_TRUE@am__append_60 = tests/test-remote-cookies.sh
-@BUILDOPT_GJS_TRUE@am__append_61 = $(js_tests)
-@BUILDOPT_GJS_FALSE@am__append_62 = $(js_tests)
-@BUILDOPT_GJS_FALSE@am__append_63 = $(js_installed_tests)
-@ENABLE_INSTALLED_TESTS_FALSE@am__append_64 = -rpath $(abs_builddir)
-@USE_LIBARCHIVE_TRUE@am__append_65 = tests/test-libarchive-import
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_66 = $(_installed_or_uninstalled_test_scripts)
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_67 = $(_installed_or_uninstalled_test_programs)
-@ENABLE_INSTALLED_TESTS_TRUE@am__append_68 = install-installed-tests-extra
+@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_60 = $(systemdsystemgenerator_PROGRAMS)
+@BUILDOPT_FUSE_TRUE@am__append_61 = rofiles-fuse
+@BUILDOPT_ASAN_TRUE@am__append_62 = OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_63 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-find-remotes.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-fsck-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-init-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-prune-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-refs-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-remote-add-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-summary-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
+
+@BUILDOPT_FUSE_TRUE@am__append_64 = tests/test-rofiles-fuse.sh
+@BUILDOPT_FUSE_FALSE@am__append_65 = tests/test-rofiles-fuse.sh
+@USE_LIBSOUP_TRUE@am__append_66 = tests/test-remote-cookies.sh
+@BUILDOPT_GJS_TRUE@am__append_67 = $(js_tests)
+@BUILDOPT_GJS_FALSE@am__append_68 = $(js_tests)
+@BUILDOPT_GJS_FALSE@am__append_69 = $(js_installed_tests)
+@ENABLE_INSTALLED_TESTS_FALSE@am__append_70 = -rpath $(abs_builddir)
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_71 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-bloom \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-repo-finder-config \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-repo-finder-mount \
+@ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
+
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__append_72 = tests/test-repo-finder-avahi
+@USE_LIBARCHIVE_TRUE@am__append_73 = tests/test-libarchive-import
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_74 = $(_installed_or_uninstalled_test_scripts)
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_75 = $(_installed_or_uninstalled_test_programs)
+@ENABLE_INSTALLED_TESTS_TRUE@am__append_76 = install-installed-tests-extra
 
 # Allow the distcheck install under $prefix test to pass
-@BUILDOPT_SYSTEMD_TRUE@am__append_69 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
+@BUILDOPT_SYSTEMD_TRUE@am__append_77 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
 
 # We're using the system grub2-mkconfig generator
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_70 = src/boot/grub2/grub2-15_ostree
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_71 = install-grub2-config-hook
-@BUILDOPT_TRIVIAL_HTTPD_TRUE@@ENABLE_MAN_TRUE@am__append_72 = ostree-trivial-httpd.1
-@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_73 = rofiles-fuse.1
-@ENABLE_MAN_TRUE@am__append_74 = $(man1_MANS) $(man5_MANS) $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
-@ENABLE_MAN_TRUE@am__append_75 = \
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_78 = src/boot/grub2/grub2-15_ostree
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_79 = install-grub2-config-hook
+@BUILDOPT_TRIVIAL_HTTPD_TRUE@@ENABLE_MAN_TRUE@am__append_80 = ostree-trivial-httpd.1
+# We still want to distribute the source, even if we are not building it
+@BUILDOPT_TRIVIAL_HTTPD_FALSE@@ENABLE_MAN_TRUE@am__append_81 = man/ostree-trivial-httpd.xml
+@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_82 = rofiles-fuse.1
+@ENABLE_MAN_TRUE@am__append_83 = $(man1_MANS) $(man5_MANS) $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
+@ENABLE_MAN_TRUE@am__append_84 = \
 @ENABLE_MAN_TRUE@	$(man1_MANS) \
 @ENABLE_MAN_TRUE@	$(man5_MANS) \
 @ENABLE_MAN_TRUE@	$(NULL)
@@ -596,19 +634,21 @@ libglnx_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(CFLAGS) $(libglnx_la_LDFLAGS) $(LDFLAGS) -o $@
 am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 @USE_LIBARCHIVE_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
-@BUILDOPT_LIBSYSTEMD_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
-@USE_CURL_TRUE@am__DEPENDENCIES_6 = $(am__DEPENDENCIES_1)
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__DEPENDENCIES_7 =  \
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
+@BUILDOPT_LIBSYSTEMD_TRUE@am__DEPENDENCIES_6 = $(am__DEPENDENCIES_1)
+@USE_CURL_TRUE@am__DEPENDENCIES_7 = $(am__DEPENDENCIES_1)
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__DEPENDENCIES_8 =  \
 @USE_CURL_FALSE@@USE_LIBSOUP_TRUE@	$(am__DEPENDENCIES_2)
-@USE_LIBMOUNT_TRUE@am__DEPENDENCIES_8 = $(am__DEPENDENCIES_1)
-@USE_SELINUX_TRUE@am__DEPENDENCIES_9 = $(am__DEPENDENCIES_1)
+@USE_LIBMOUNT_TRUE@am__DEPENDENCIES_9 = $(am__DEPENDENCIES_1)
+@USE_SELINUX_TRUE@am__DEPENDENCIES_10 = $(am__DEPENDENCIES_1)
 libostree_1_la_DEPENDENCIES = libotutil.la libglnx.la libbsdiff.la \
 	libostree-kernel-args.la $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) $(bupsplitpath) \
 	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_5) \
 	$(am__DEPENDENCIES_6) $(am__DEPENDENCIES_7) \
-	$(am__DEPENDENCIES_8) $(am__DEPENDENCIES_9)
+	$(am__DEPENDENCIES_8) $(am__DEPENDENCIES_9) \
+	$(am__DEPENDENCIES_10)
 am__libostree_1_la_SOURCES_DIST =  \
 	src/libostree/ostree-async-progress.c \
 	src/libostree/ostree-cmdprivate.h \
@@ -630,7 +670,7 @@ am__libostree_1_la_SOURCES_DIST =  \
 	src/libostree/ostree-varint.h src/libostree/ostree-varint.c \
 	src/libostree/ostree-linuxfsutil.h \
 	src/libostree/ostree-linuxfsutil.c src/libostree/ostree-diff.c \
-	src/libostree/ostree-mutable-tree.c \
+	src/libostree/ostree-mutable-tree.c src/libostree/ostree-ref.c \
 	src/libostree/ostree-remote.c \
 	src/libostree/ostree-remote-private.h \
 	src/libostree/ostree-repo.c \
@@ -678,7 +718,20 @@ am__libostree_1_la_SOURCES_DIST =  \
 	src/libostree/ostree-libarchive-private.h \
 	src/libostree/ostree-tls-cert-interaction.c \
 	src/libostree/ostree-tls-cert-interaction.h \
-	src/libostree/ostree-remote.h src/libostree/ostree-fetcher.h \
+	src/libostree/ostree-ref.h src/libostree/ostree-remote.h \
+	src/libostree/ostree-repo-finder.h \
+	src/libostree/ostree-repo-finder-avahi.h \
+	src/libostree/ostree-repo-finder-config.h \
+	src/libostree/ostree-repo-finder-mount.h \
+	src/libostree/ostree-bloom.c \
+	src/libostree/ostree-bloom-private.h \
+	src/libostree/ostree-repo-finder.c \
+	src/libostree/ostree-repo-finder-avahi.c \
+	src/libostree/ostree-repo-finder-config.c \
+	src/libostree/ostree-repo-finder-mount.c \
+	src/libostree/ostree-repo-finder-avahi-parser.c \
+	src/libostree/ostree-repo-finder-avahi-private.h \
+	src/libostree/ostree-fetcher.h \
 	src/libostree/ostree-fetcher-util.h \
 	src/libostree/ostree-fetcher-util.c \
 	src/libostree/ostree-fetcher-uri.c \
@@ -693,16 +746,25 @@ am__libostree_1_la_SOURCES_DIST =  \
 @USE_LIBARCHIVE_TRUE@	$(am__objects_1)
 @HAVE_LIBSOUP_CLIENT_CERTS_TRUE@am__objects_3 = src/libostree/libostree_1_la-ostree-tls-cert-interaction.lo \
 @HAVE_LIBSOUP_CLIENT_CERTS_TRUE@	$(am__objects_1)
-@ENABLE_EXPERIMENTAL_API_FALSE@am__objects_4 = $(am__objects_1)
-@USE_CURL_OR_SOUP_TRUE@am__objects_5 = src/libostree/libostree_1_la-ostree-fetcher-util.lo \
+am__objects_4 = $(am__objects_1)
+@ENABLE_EXPERIMENTAL_API_FALSE@am__objects_5 = $(am__objects_4)
+@ENABLE_EXPERIMENTAL_API_TRUE@am__objects_6 = src/libostree/libostree_1_la-ostree-bloom.lo \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/libostree_1_la-ostree-repo-finder.lo \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/libostree_1_la-ostree-repo-finder-avahi.lo \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/libostree_1_la-ostree-repo-finder-config.lo \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/libostree_1_la-ostree-repo-finder-mount.lo \
+@ENABLE_EXPERIMENTAL_API_TRUE@	$(am__objects_1)
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__objects_7 = src/libostree/libostree_1_la-ostree-repo-finder-avahi-parser.lo \
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@	$(am__objects_1)
+@USE_CURL_OR_SOUP_TRUE@am__objects_8 = src/libostree/libostree_1_la-ostree-fetcher-util.lo \
 @USE_CURL_OR_SOUP_TRUE@	src/libostree/libostree_1_la-ostree-fetcher-uri.lo \
 @USE_CURL_OR_SOUP_TRUE@	src/libostree/libostree_1_la-ostree-metalink.lo \
 @USE_CURL_OR_SOUP_TRUE@	$(am__objects_1)
-@USE_CURL_TRUE@am__objects_6 = src/libostree/libostree_1_la-ostree-fetcher-curl.lo \
+@USE_CURL_TRUE@am__objects_9 = src/libostree/libostree_1_la-ostree-fetcher-curl.lo \
 @USE_CURL_TRUE@	src/libostree/libostree_1_la-ostree-soup-uri.lo \
 @USE_CURL_TRUE@	src/libostree/libostree_1_la-ostree-soup-form.lo \
 @USE_CURL_TRUE@	$(am__objects_1)
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__objects_7 = src/libostree/libostree_1_la-ostree-fetcher-soup.lo
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__objects_10 = src/libostree/libostree_1_la-ostree-fetcher-soup.lo
 am_libostree_1_la_OBJECTS =  \
 	src/libostree/libostree_1_la-ostree-async-progress.lo \
 	src/libostree/libostree_1_la-ostree-cmdprivate.lo \
@@ -718,6 +780,7 @@ am_libostree_1_la_OBJECTS =  \
 	src/libostree/libostree_1_la-ostree-linuxfsutil.lo \
 	src/libostree/libostree_1_la-ostree-diff.lo \
 	src/libostree/libostree_1_la-ostree-mutable-tree.lo \
+	src/libostree/libostree_1_la-ostree-ref.lo \
 	src/libostree/libostree_1_la-ostree-remote.lo \
 	src/libostree/libostree_1_la-ostree-repo.lo \
 	src/libostree/libostree_1_la-ostree-repo-checkout.lo \
@@ -748,8 +811,8 @@ am_libostree_1_la_OBJECTS =  \
 	src/libostree/libostree_1_la-ostree-gpg-verifier.lo \
 	src/libostree/libostree_1_la-ostree-gpg-verify-result.lo \
 	$(am__objects_1) $(am__objects_2) $(am__objects_3) \
-	$(am__objects_4) $(am__objects_5) $(am__objects_6) \
-	$(am__objects_7)
+	$(am__objects_5) $(am__objects_6) $(am__objects_7) \
+	$(am__objects_8) $(am__objects_9) $(am__objects_10)
 nodist_libostree_1_la_OBJECTS =  \
 	src/libostree/libostree_1_la-ostree-enumtypes.lo \
 	$(am__objects_1)
@@ -769,11 +832,12 @@ libostree_kernel_args_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libostree_kernel_args_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am__DEPENDENCIES_10 = libglnx.la libotutil.la libostree-1.la \
+am__DEPENDENCIES_11 = libglnx.la libotutil.la libostree-1.la \
 	$(am__DEPENDENCIES_2)
-am__DEPENDENCIES_11 = $(am__DEPENDENCIES_10) $(am__DEPENDENCIES_2)
-libostreetest_la_DEPENDENCIES = $(am__DEPENDENCIES_11)
-am_libostreetest_la_OBJECTS = tests/libostreetest_la-libostreetest.lo
+am__DEPENDENCIES_12 = $(am__DEPENDENCIES_11) $(am__DEPENDENCIES_2)
+libostreetest_la_DEPENDENCIES = $(am__DEPENDENCIES_12)
+am_libostreetest_la_OBJECTS = tests/libostreetest_la-libostreetest.lo \
+	tests/libostreetest_la-test-mock-gio.lo
 libostreetest_la_OBJECTS = $(am_libostreetest_la_OBJECTS)
 libostreetest_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -813,9 +877,15 @@ libreaddir_rand_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @ENABLE_INSTALLED_TESTS_TRUE@	$(installed_testdir)
 @BUILDOPT_FUSE_TRUE@am__EXEEXT_1 = rofiles-fuse$(EXEEXT)
 am__EXEEXT_2 =
-@USE_LIBARCHIVE_TRUE@am__EXEEXT_3 =  \
+@ENABLE_EXPERIMENTAL_API_TRUE@am__EXEEXT_3 =  \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-bloom$(EXEEXT) \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-repo-finder-config$(EXEEXT) \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-repo-finder-mount$(EXEEXT) \
+@ENABLE_EXPERIMENTAL_API_TRUE@	$(am__EXEEXT_2)
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__EXEEXT_4 = tests/test-repo-finder-avahi$(EXEEXT)
+@USE_LIBARCHIVE_TRUE@am__EXEEXT_5 =  \
 @USE_LIBARCHIVE_TRUE@	tests/test-libarchive-import$(EXEEXT)
-am__EXEEXT_4 = tests/test-varint$(EXEEXT) \
+am__EXEEXT_6 = tests/test-varint$(EXEEXT) \
 	tests/test-ot-unix-utils$(EXEEXT) tests/test-bsdiff$(EXEEXT) \
 	tests/test-mutable-tree$(EXEEXT) \
 	tests/test-keyfile-utils$(EXEEXT) \
@@ -825,22 +895,24 @@ am__EXEEXT_4 = tests/test-varint$(EXEEXT) \
 	tests/test-checksum$(EXEEXT) tests/test-lzma$(EXEEXT) \
 	tests/test-rollsum$(EXEEXT) tests/test-basic-c$(EXEEXT) \
 	tests/test-sysroot-c$(EXEEXT) tests/test-pull-c$(EXEEXT) \
-	$(am__EXEEXT_3)
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_5 =  \
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_4)
-am__EXEEXT_6 = $(am__EXEEXT_2) $(am__EXEEXT_5)
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_TRUE@am__EXEEXT_7 = $(am__EXEEXT_4)
-am__EXEEXT_8 = $(am__EXEEXT_6) $(am__EXEEXT_7)
-@ENABLE_ALWAYS_BUILD_TESTS_FALSE@am__EXEEXT_9 = $(am__EXEEXT_8)
-am__EXEEXT_10 = test-libglnx-xattrs$(EXEEXT) \
-	test-libglnx-fdio$(EXEEXT) test-libglnx-errors$(EXEEXT)
-@BUILDOPT_SYSTEMD_FALSE@am__EXEEXT_11 = ostree-remount$(EXEEXT)
-@ENABLE_INSTALLED_TESTS_TRUE@am__EXEEXT_12 = $(am__EXEEXT_6) \
-@ENABLE_INSTALLED_TESTS_TRUE@	$(am__EXEEXT_7)
-@ENABLE_ALWAYS_BUILD_TESTS_TRUE@am__EXEEXT_13 = $(am__EXEEXT_8)
-@BUILDOPT_SYSTEMD_TRUE@am__EXEEXT_14 = ostree-remount$(EXEEXT)
-@BUILDOPT_USE_STATIC_COMPILER_FALSE@am__EXEEXT_15 = ostree-prepare-root$(EXEEXT)
-@USE_LIBSOUP_TRUE@am__EXEEXT_16 = ostree-trivial-httpd$(EXEEXT)
+	$(am__EXEEXT_5)
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_7 =  \
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_6)
+am__EXEEXT_8 = $(am__EXEEXT_2) $(am__EXEEXT_3) $(am__EXEEXT_4) \
+	$(am__EXEEXT_7)
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_TRUE@am__EXEEXT_9 = $(am__EXEEXT_6)
+am__EXEEXT_10 = $(am__EXEEXT_8) $(am__EXEEXT_9)
+@ENABLE_ALWAYS_BUILD_TESTS_FALSE@am__EXEEXT_11 = $(am__EXEEXT_10)
+am__EXEEXT_12 = test-libglnx-xattrs$(EXEEXT) \
+	test-libglnx-fdio$(EXEEXT) test-libglnx-errors$(EXEEXT) \
+	test-libglnx-macros$(EXEEXT)
+@BUILDOPT_SYSTEMD_FALSE@am__EXEEXT_13 = ostree-remount$(EXEEXT)
+@ENABLE_INSTALLED_TESTS_TRUE@am__EXEEXT_14 = $(am__EXEEXT_8) \
+@ENABLE_INSTALLED_TESTS_TRUE@	$(am__EXEEXT_9)
+@ENABLE_ALWAYS_BUILD_TESTS_TRUE@am__EXEEXT_15 = $(am__EXEEXT_10)
+@BUILDOPT_SYSTEMD_TRUE@am__EXEEXT_16 = ostree-remount$(EXEEXT)
+@BUILDOPT_USE_STATIC_COMPILER_FALSE@am__EXEEXT_17 = ostree-prepare-root$(EXEEXT)
+@USE_LIBSOUP_TRUE@am__EXEEXT_18 = ostree-trivial-httpd$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(installed_test_PROGRAMS) \
 	$(libexec_PROGRAMS) $(noinst_PROGRAMS) $(ostree_boot_PROGRAMS) \
 	$(pkglibexec_PROGRAMS) $(sbin_PROGRAMS) \
@@ -863,6 +935,7 @@ am__ostree_SOURCES_DIST = src/ostree/main.c \
 	src/ostree/ot-main.c src/ostree/ot-dump.h src/ostree/ot-dump.c \
 	src/ostree/ot-editor.c src/ostree/ot-editor.h \
 	src/ostree/parse-datetime.h src/ostree/parse-datetime.c \
+	src/ostree/ot-builtin-find-remotes.c \
 	src/ostree/ot-admin-builtin-init-fs.c \
 	src/ostree/ot-admin-builtin-diff.c \
 	src/ostree/ot-admin-builtin-deploy.c \
@@ -897,13 +970,14 @@ am__ostree_SOURCES_DIST = src/ostree/main.c \
 	src/ostree/ot-remote-cookie-util.c \
 	src/ostree/ot-builtin-pull.c \
 	src/ostree/ot-builtin-trivial-httpd.c
-@USE_CURL_OR_SOUP_TRUE@am__objects_8 = src/ostree/ostree-ot-remote-builtin-add-cookie.$(OBJEXT) \
+@ENABLE_EXPERIMENTAL_API_TRUE@am__objects_11 = src/ostree/ostree-ot-builtin-find-remotes.$(OBJEXT)
+@USE_CURL_OR_SOUP_TRUE@am__objects_12 = src/ostree/ostree-ot-remote-builtin-add-cookie.$(OBJEXT) \
 @USE_CURL_OR_SOUP_TRUE@	src/ostree/ostree-ot-remote-builtin-delete-cookie.$(OBJEXT) \
 @USE_CURL_OR_SOUP_TRUE@	src/ostree/ostree-ot-remote-builtin-list-cookies.$(OBJEXT) \
 @USE_CURL_OR_SOUP_TRUE@	src/ostree/ostree-ot-remote-cookie-util.$(OBJEXT) \
 @USE_CURL_OR_SOUP_TRUE@	$(am__objects_1) \
 @USE_CURL_OR_SOUP_TRUE@	src/ostree/ostree-ot-builtin-pull.$(OBJEXT)
-@USE_LIBSOUP_TRUE@am__objects_9 = src/ostree/ostree-ot-builtin-trivial-httpd.$(OBJEXT)
+@USE_LIBSOUP_TRUE@am__objects_13 = src/ostree/ostree-ot-builtin-trivial-httpd.$(OBJEXT)
 am_ostree_OBJECTS = src/ostree/ostree-main.$(OBJEXT) \
 	src/ostree/ostree-ot-builtin-admin.$(OBJEXT) \
 	src/ostree/ostree-ot-builtin-cat.$(OBJEXT) \
@@ -931,6 +1005,7 @@ am_ostree_OBJECTS = src/ostree/ostree-main.$(OBJEXT) \
 	src/ostree/ostree-ot-dump.$(OBJEXT) \
 	src/ostree/ostree-ot-editor.$(OBJEXT) \
 	src/ostree/ostree-parse-datetime.$(OBJEXT) $(am__objects_1) \
+	$(am__objects_11) \
 	src/ostree/ostree-ot-admin-builtin-init-fs.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-diff.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-deploy.$(OBJEXT) \
@@ -955,11 +1030,11 @@ am_ostree_OBJECTS = src/ostree/ostree-main.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-show-url.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-refs.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-summary.$(OBJEXT) \
-	$(am__objects_1) $(am__objects_8) $(am__objects_9)
+	$(am__objects_1) $(am__objects_12) $(am__objects_13)
 ostree_OBJECTS = $(am_ostree_OBJECTS)
-ostree_DEPENDENCIES = $(am__DEPENDENCIES_10) libbsdiff.la \
+ostree_DEPENDENCIES = $(am__DEPENDENCIES_11) libbsdiff.la \
 	libostree-kernel-args.la $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_7) $(am__DEPENDENCIES_4)
+	$(am__DEPENDENCIES_8) $(am__DEPENDENCIES_4)
 ostree_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(ostree_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -994,7 +1069,7 @@ am__ostree_trivial_httpd_SOURCES_DIST =  \
 @USE_LIBSOUP_TRUE@am_ostree_trivial_httpd_OBJECTS = src/ostree/ostree_trivial_httpd-ostree-trivial-httpd.$(OBJEXT)
 ostree_trivial_httpd_OBJECTS = $(am_ostree_trivial_httpd_OBJECTS)
 @USE_LIBSOUP_TRUE@ostree_trivial_httpd_DEPENDENCIES =  \
-@USE_LIBSOUP_TRUE@	$(am__DEPENDENCIES_10) $(am__DEPENDENCIES_2)
+@USE_LIBSOUP_TRUE@	$(am__DEPENDENCIES_11) $(am__DEPENDENCIES_2)
 ostree_trivial_httpd_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(ostree_trivial_httpd_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -1023,6 +1098,13 @@ test_libglnx_fdio_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(test_libglnx_fdio_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
+am_test_libglnx_macros_OBJECTS = libglnx/tests/test_libglnx_macros-test-libglnx-macros.$(OBJEXT)
+test_libglnx_macros_OBJECTS = $(am_test_libglnx_macros_OBJECTS)
+test_libglnx_macros_DEPENDENCIES = $(am__DEPENDENCIES_2) libglnx.la
+test_libglnx_macros_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(test_libglnx_macros_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_test_libglnx_xattrs_OBJECTS = libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.$(OBJEXT)
 test_libglnx_xattrs_OBJECTS = $(am_test_libglnx_xattrs_OBJECTS)
 test_libglnx_xattrs_DEPENDENCIES = $(am__DEPENDENCIES_2) libglnx.la
@@ -1033,16 +1115,25 @@ test_libglnx_xattrs_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 tests_test_basic_c_SOURCES = tests/test-basic-c.c
 tests_test_basic_c_OBJECTS =  \
 	tests/tests_test_basic_c-test-basic-c.$(OBJEXT)
-am__DEPENDENCIES_12 = $(am__DEPENDENCIES_11) libostreetest.la
-tests_test_basic_c_DEPENDENCIES = $(am__DEPENDENCIES_12)
+am__DEPENDENCIES_13 = $(am__DEPENDENCIES_12) libostreetest.la
+tests_test_basic_c_DEPENDENCIES = $(am__DEPENDENCIES_13)
 tests_test_basic_c_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_basic_c_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_tests_test_bloom_OBJECTS =  \
+	src/libostree/tests_test_bloom-ostree-bloom.$(OBJEXT) \
+	tests/tests_test_bloom-test-bloom.$(OBJEXT)
+tests_test_bloom_OBJECTS = $(am_tests_test_bloom_OBJECTS)
+tests_test_bloom_DEPENDENCIES = $(am__DEPENDENCIES_13)
+tests_test_bloom_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(tests_test_bloom_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 tests_test_bsdiff_SOURCES = tests/test-bsdiff.c
 tests_test_bsdiff_OBJECTS =  \
 	tests/tests_test_bsdiff-test-bsdiff.$(OBJEXT)
-tests_test_bsdiff_DEPENDENCIES = libbsdiff.la $(am__DEPENDENCIES_12)
+tests_test_bsdiff_DEPENDENCIES = libbsdiff.la $(am__DEPENDENCIES_13)
 tests_test_bsdiff_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_bsdiff_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
@@ -1051,7 +1142,7 @@ am_tests_test_checksum_OBJECTS =  \
 	src/libostree/tests_test_checksum-ostree-core.$(OBJEXT) \
 	tests/tests_test_checksum-test-checksum.$(OBJEXT)
 tests_test_checksum_OBJECTS = $(am_tests_test_checksum_OBJECTS)
-tests_test_checksum_DEPENDENCIES = $(am__DEPENDENCIES_12)
+tests_test_checksum_DEPENDENCIES = $(am__DEPENDENCIES_13)
 tests_test_checksum_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_checksum_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -1059,7 +1150,7 @@ tests_test_checksum_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 am_tests_test_gpg_verify_result_OBJECTS = tests/tests_test_gpg_verify_result-test-gpg-verify-result.$(OBJEXT)
 tests_test_gpg_verify_result_OBJECTS =  \
 	$(am_tests_test_gpg_verify_result_OBJECTS)
-tests_test_gpg_verify_result_DEPENDENCIES = $(am__DEPENDENCIES_12) \
+tests_test_gpg_verify_result_DEPENDENCIES = $(am__DEPENDENCIES_13) \
 	$(am__DEPENDENCIES_3)
 tests_test_gpg_verify_result_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -1068,7 +1159,7 @@ tests_test_gpg_verify_result_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 tests_test_keyfile_utils_SOURCES = tests/test-keyfile-utils.c
 tests_test_keyfile_utils_OBJECTS =  \
 	tests/tests_test_keyfile_utils-test-keyfile-utils.$(OBJEXT)
-tests_test_keyfile_utils_DEPENDENCIES = $(am__DEPENDENCIES_12)
+tests_test_keyfile_utils_DEPENDENCIES = $(am__DEPENDENCIES_13)
 tests_test_keyfile_utils_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_keyfile_utils_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -1076,7 +1167,7 @@ tests_test_keyfile_utils_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 am_tests_test_libarchive_import_OBJECTS = tests/tests_test_libarchive_import-test-libarchive-import.$(OBJEXT)
 tests_test_libarchive_import_OBJECTS =  \
 	$(am_tests_test_libarchive_import_OBJECTS)
-tests_test_libarchive_import_DEPENDENCIES = $(am__DEPENDENCIES_12) \
+tests_test_libarchive_import_DEPENDENCIES = $(am__DEPENDENCIES_13) \
 	$(am__DEPENDENCIES_1)
 tests_test_libarchive_import_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -1088,7 +1179,7 @@ am_tests_test_lzma_OBJECTS =  \
 	src/libostree/tests_test_lzma-ostree-lzma-decompressor.$(OBJEXT) \
 	tests/tests_test_lzma-test-lzma.$(OBJEXT)
 tests_test_lzma_OBJECTS = $(am_tests_test_lzma_OBJECTS)
-tests_test_lzma_DEPENDENCIES = $(am__DEPENDENCIES_12) \
+tests_test_lzma_DEPENDENCIES = $(am__DEPENDENCIES_13) \
 	$(am__DEPENDENCIES_1)
 tests_test_lzma_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -1097,7 +1188,7 @@ tests_test_lzma_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 tests_test_mutable_tree_SOURCES = tests/test-mutable-tree.c
 tests_test_mutable_tree_OBJECTS =  \
 	tests/tests_test_mutable_tree-test-mutable-tree.$(OBJEXT)
-tests_test_mutable_tree_DEPENDENCIES = $(am__DEPENDENCIES_12)
+tests_test_mutable_tree_DEPENDENCIES = $(am__DEPENDENCIES_13)
 tests_test_mutable_tree_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_mutable_tree_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -1105,7 +1196,7 @@ tests_test_mutable_tree_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 tests_test_ot_opt_utils_SOURCES = tests/test-ot-opt-utils.c
 tests_test_ot_opt_utils_OBJECTS =  \
 	tests/tests_test_ot_opt_utils-test-ot-opt-utils.$(OBJEXT)
-tests_test_ot_opt_utils_DEPENDENCIES = $(am__DEPENDENCIES_12)
+tests_test_ot_opt_utils_DEPENDENCIES = $(am__DEPENDENCIES_13)
 tests_test_ot_opt_utils_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_ot_opt_utils_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -1113,7 +1204,7 @@ tests_test_ot_opt_utils_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 tests_test_ot_tool_util_SOURCES = tests/test-ot-tool-util.c
 tests_test_ot_tool_util_OBJECTS =  \
 	tests/tests_test_ot_tool_util-test-ot-tool-util.$(OBJEXT)
-tests_test_ot_tool_util_DEPENDENCIES = $(am__DEPENDENCIES_12)
+tests_test_ot_tool_util_DEPENDENCIES = $(am__DEPENDENCIES_13)
 tests_test_ot_tool_util_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_ot_tool_util_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -1121,7 +1212,7 @@ tests_test_ot_tool_util_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 tests_test_ot_unix_utils_SOURCES = tests/test-ot-unix-utils.c
 tests_test_ot_unix_utils_OBJECTS =  \
 	tests/tests_test_ot_unix_utils-test-ot-unix-utils.$(OBJEXT)
-tests_test_ot_unix_utils_DEPENDENCIES = $(am__DEPENDENCIES_12)
+tests_test_ot_unix_utils_DEPENDENCIES = $(am__DEPENDENCIES_13)
 tests_test_ot_unix_utils_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_ot_unix_utils_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -1129,17 +1220,46 @@ tests_test_ot_unix_utils_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 tests_test_pull_c_SOURCES = tests/test-pull-c.c
 tests_test_pull_c_OBJECTS =  \
 	tests/tests_test_pull_c-test-pull-c.$(OBJEXT)
-tests_test_pull_c_DEPENDENCIES = $(am__DEPENDENCIES_12)
+tests_test_pull_c_DEPENDENCIES = $(am__DEPENDENCIES_13)
 tests_test_pull_c_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_pull_c_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
+am__tests_test_repo_finder_avahi_SOURCES_DIST =  \
+	src/libostree/ostree-repo-finder-avahi-parser.c \
+	tests/test-repo-finder-avahi.c
+@USE_AVAHI_TRUE@am_tests_test_repo_finder_avahi_OBJECTS = src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.$(OBJEXT) \
+@USE_AVAHI_TRUE@	tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.$(OBJEXT)
+tests_test_repo_finder_avahi_OBJECTS =  \
+	$(am_tests_test_repo_finder_avahi_OBJECTS)
+@USE_AVAHI_TRUE@tests_test_repo_finder_avahi_DEPENDENCIES =  \
+@USE_AVAHI_TRUE@	$(am__DEPENDENCIES_13)
+tests_test_repo_finder_avahi_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(tests_test_repo_finder_avahi_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_tests_test_repo_finder_config_OBJECTS = tests/tests_test_repo_finder_config-test-repo-finder-config.$(OBJEXT)
+tests_test_repo_finder_config_OBJECTS =  \
+	$(am_tests_test_repo_finder_config_OBJECTS)
+tests_test_repo_finder_config_DEPENDENCIES = $(am__DEPENDENCIES_13)
+tests_test_repo_finder_config_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(tests_test_repo_finder_config_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_tests_test_repo_finder_mount_OBJECTS = tests/tests_test_repo_finder_mount-test-repo-finder-mount.$(OBJEXT)
+tests_test_repo_finder_mount_OBJECTS =  \
+	$(am_tests_test_repo_finder_mount_OBJECTS)
+tests_test_repo_finder_mount_DEPENDENCIES = $(am__DEPENDENCIES_13)
+tests_test_repo_finder_mount_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(tests_test_repo_finder_mount_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_tests_test_rollsum_OBJECTS =  \
 	src/libostree/tests_test_rollsum-ostree-rollsum.$(OBJEXT) \
 	tests/tests_test_rollsum-test-rollsum.$(OBJEXT)
 tests_test_rollsum_OBJECTS = $(am_tests_test_rollsum_OBJECTS)
 tests_test_rollsum_DEPENDENCIES = $(bupsplitpath) \
-	$(am__DEPENDENCIES_12) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_13) $(am__DEPENDENCIES_1)
 tests_test_rollsum_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_rollsum_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -1149,7 +1269,7 @@ am_tests_test_rollsum_cli_OBJECTS =  \
 	tests/tests_test_rollsum_cli-test-rollsum-cli.$(OBJEXT)
 tests_test_rollsum_cli_OBJECTS = $(am_tests_test_rollsum_cli_OBJECTS)
 tests_test_rollsum_cli_DEPENDENCIES = $(bupsplitpath) \
-	$(am__DEPENDENCIES_12) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_13) $(am__DEPENDENCIES_1)
 tests_test_rollsum_cli_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_rollsum_cli_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -1157,7 +1277,7 @@ tests_test_rollsum_cli_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 tests_test_sysroot_c_SOURCES = tests/test-sysroot-c.c
 tests_test_sysroot_c_OBJECTS =  \
 	tests/tests_test_sysroot_c-test-sysroot-c.$(OBJEXT)
-tests_test_sysroot_c_DEPENDENCIES = $(am__DEPENDENCIES_12)
+tests_test_sysroot_c_DEPENDENCIES = $(am__DEPENDENCIES_13)
 tests_test_sysroot_c_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_sysroot_c_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -1166,7 +1286,7 @@ am_tests_test_varint_OBJECTS =  \
 	src/libostree/tests_test_varint-ostree-varint.$(OBJEXT) \
 	tests/tests_test_varint-test-varint.$(OBJEXT)
 tests_test_varint_OBJECTS = $(am_tests_test_varint_OBJECTS)
-tests_test_varint_DEPENDENCIES = $(am__DEPENDENCIES_12)
+tests_test_varint_DEPENDENCIES = $(am__DEPENDENCIES_13)
 tests_test_varint_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(tests_test_varint_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
@@ -1218,7 +1338,8 @@ SOURCES = $(libbsdiff_la_SOURCES) $(libbupsplit_la_SOURCES) \
 	$(ostree_system_generator_SOURCES) \
 	$(ostree_trivial_httpd_SOURCES) $(rofiles_fuse_SOURCES) \
 	$(test_libglnx_errors_SOURCES) $(test_libglnx_fdio_SOURCES) \
-	$(test_libglnx_xattrs_SOURCES) tests/test-basic-c.c \
+	$(test_libglnx_macros_SOURCES) $(test_libglnx_xattrs_SOURCES) \
+	tests/test-basic-c.c $(tests_test_bloom_SOURCES) \
 	tests/test-bsdiff.c $(tests_test_checksum_SOURCES) \
 	$(tests_test_gpg_verify_result_SOURCES) \
 	tests/test-keyfile-utils.c \
@@ -1226,6 +1347,9 @@ SOURCES = $(libbsdiff_la_SOURCES) $(libbupsplit_la_SOURCES) \
 	$(tests_test_lzma_SOURCES) tests/test-mutable-tree.c \
 	tests/test-ot-opt-utils.c tests/test-ot-tool-util.c \
 	tests/test-ot-unix-utils.c tests/test-pull-c.c \
+	$(tests_test_repo_finder_avahi_SOURCES) \
+	$(tests_test_repo_finder_config_SOURCES) \
+	$(tests_test_repo_finder_mount_SOURCES) \
 	$(tests_test_rollsum_SOURCES) \
 	$(tests_test_rollsum_cli_SOURCES) tests/test-sysroot-c.c \
 	$(tests_test_varint_SOURCES)
@@ -1240,7 +1364,8 @@ DIST_SOURCES = $(libbsdiff_la_SOURCES) \
 	$(am__ostree_trivial_httpd_SOURCES_DIST) \
 	$(am__rofiles_fuse_SOURCES_DIST) \
 	$(test_libglnx_errors_SOURCES) $(test_libglnx_fdio_SOURCES) \
-	$(test_libglnx_xattrs_SOURCES) tests/test-basic-c.c \
+	$(test_libglnx_macros_SOURCES) $(test_libglnx_xattrs_SOURCES) \
+	tests/test-basic-c.c $(tests_test_bloom_SOURCES) \
 	tests/test-bsdiff.c $(tests_test_checksum_SOURCES) \
 	$(tests_test_gpg_verify_result_SOURCES) \
 	tests/test-keyfile-utils.c \
@@ -1248,6 +1373,9 @@ DIST_SOURCES = $(libbsdiff_la_SOURCES) \
 	$(tests_test_lzma_SOURCES) tests/test-mutable-tree.c \
 	tests/test-ot-opt-utils.c tests/test-ot-tool-util.c \
 	tests/test-ot-unix-utils.c tests/test-pull-c.c \
+	$(am__tests_test_repo_finder_avahi_SOURCES_DIST) \
+	$(tests_test_repo_finder_config_SOURCES) \
+	$(tests_test_repo_finder_mount_SOURCES) \
 	$(tests_test_rollsum_SOURCES) \
 	$(tests_test_rollsum_cli_SOURCES) tests/test-sysroot-c.c \
 	$(tests_test_varint_SOURCES)
@@ -1296,7 +1424,12 @@ am__libostreeinclude_HEADERS_DIST = src/libostree/ostree.h \
 	src/libostree/ostree-deployment.h \
 	src/libostree/ostree-bootconfig-parser.h \
 	src/libostree/ostree-repo-deprecated.h \
-	src/libostree/ostree-remote.h src/libostree/ostree-version.h
+	src/libostree/ostree-ref.h src/libostree/ostree-remote.h \
+	src/libostree/ostree-repo-finder.h \
+	src/libostree/ostree-repo-finder-avahi.h \
+	src/libostree/ostree-repo-finder-config.h \
+	src/libostree/ostree-repo-finder-mount.h \
+	src/libostree/ostree-version.h
 HEADERS = $(libostreeinclude_HEADERS)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
@@ -1483,20 +1616,30 @@ am__set_TESTS_bases = \
   bases=`for i in $$bases; do echo $$i; done | sed 's/\.log$$//'`; \
   bases=`echo $$bases`
 RECHECK_LOGS = $(TEST_LOGS)
-am__EXEEXT_17 = tests/test-basic.sh tests/test-basic-user.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@am__EXEEXT_19 =  \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-find-remotes.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-fsck-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-init-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-prune-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-refs-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-remote-add-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-summary-collections.sh \
+@ENABLE_EXPERIMENTAL_API_TRUE@	$(am__EXEEXT_2)
+am__EXEEXT_20 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-basic-user-only.sh tests/test-basic-root.sh \
 	tests/test-pull-subpath.sh tests/test-archivez.sh \
 	tests/test-remote-add.sh tests/test-remote-headers.sh \
 	tests/test-remote-gpg-import.sh tests/test-commit-sign.sh \
 	tests/test-export.sh tests/test-help.sh \
 	tests/test-libarchive.sh tests/test-parent.sh \
-	tests/test-pull-archive-z.sh tests/test-pull-commit-only.sh \
+	tests/test-pull-archive.sh tests/test-pull-commit-only.sh \
 	tests/test-pull-depth.sh tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
-	tests/test-pull-override-url.sh tests/test-local-pull.sh \
-	tests/test-local-pull-depth.sh tests/test-gpg-signed-commit.sh \
+	tests/test-pull-override-url.sh tests/test-pull-localcache.sh \
+	tests/test-local-pull.sh tests/test-local-pull-depth.sh \
+	tests/test-gpg-signed-commit.sh \
 	tests/test-admin-upgrade-unconfigured.sh \
 	tests/test-admin-upgrade-endoflife.sh \
 	tests/test-admin-deploy-syslinux.sh \
@@ -1516,12 +1659,12 @@ am__EXEEXT_17 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-auto-summary.sh tests/test-prune.sh \
 	tests/test-refs.sh tests/test-demo-buildsystem.sh \
 	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
-	tests/test-pull-mirrorlist.sh tests/test-summary-view.sh \
-	$(am__EXEEXT_2) $(am__append_58) $(am__append_60) \
-	$(am__append_61)
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_18 =  \
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_17)
-am__EXEEXT_19 = $(am__EXEEXT_2) $(am__EXEEXT_18)
+	tests/test-pull-mirrorlist.sh tests/test-summary-update.sh \
+	tests/test-summary-view.sh $(am__EXEEXT_2) $(am__EXEEXT_19) \
+	$(am__append_64) $(am__append_66) $(am__append_67)
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_21 =  \
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_20)
+am__EXEEXT_22 = $(am__EXEEXT_2) $(am__EXEEXT_21)
 TEST_SUITE_LOG = test-suite.log
 TEST_EXTENSIONS = @EXEEXT@ .test
 LOG_COMPILE = $(LOG_COMPILER) $(AM_LOG_FLAGS) $(LOG_FLAGS)
@@ -1689,6 +1832,8 @@ OBJEXT = @OBJEXT@
 OSTREE_FEATURES = @OSTREE_FEATURES@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
+OT_DEP_AVAHI_CFLAGS = @OT_DEP_AVAHI_CFLAGS@
+OT_DEP_AVAHI_LIBS = @OT_DEP_AVAHI_LIBS@
 OT_DEP_CURL_CFLAGS = @OT_DEP_CURL_CFLAGS@
 OT_DEP_CURL_LIBS = @OT_DEP_CURL_LIBS@
 OT_DEP_E2P_CFLAGS = @OT_DEP_E2P_CFLAGS@
@@ -1803,24 +1948,24 @@ AM_CPPFLAGS = -DDATADIR='"$(datadir)"' -DLIBEXECDIR='"$(libexecdir)"' \
 	-DOSTREE_FEATURES='"$(OSTREE_FEATURES)"' -DOSTREE_COMPILATION \
 	-DG_LOG_DOMAIN=\"OSTree\" -DOSTREE_GITREV='"$(OSTREE_GITREV)"' \
 	-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_40 \
-	-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_40 \
+	-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_50 \
 	-DSOUP_VERSION_MIN_REQUIRED=SOUP_VERSION_2_40 \
 	-DSOUP_VERSION_MAX_ALLOWED=SOUP_VERSION_2_48
 AM_CFLAGS = -std=gnu99 $(WARN_CFLAGS)
 AM_DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-man \
-	--disable-maintainer-mode $(NULL) $(am__append_69)
+	--disable-maintainer-mode $(NULL) $(am__append_77)
 SUBDIRS = . $(am__append_14)
 NULL = 
 BUILT_SOURCES = $(nodist_libostree_1_la_SOURCES)
 MANPAGES = 
-CLEANFILES = $(am__append_13) $(BUILT_SOURCES) $(am__append_42) \
+CLEANFILES = $(am__append_13) $(BUILT_SOURCES) $(am__append_46) \
 	src/ostree/parse-datetime.c tests/libreaddir-rand.so \
 	tests/ostree-symlink-stamp \
 	tests/ostree-prepare-root-symlink-stamp \
 	tests/ostree-remount-symlink-stamp \
 	tests/rofiles-fuse-symlink-stamp tests/ostree \
 	tests/ostree-prepare-root tests/ostree-remount \
-	tests/rofiles-fuse $(am__append_75)
+	tests/rofiles-fuse $(am__append_84)
 EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	COPYING README.md $(am__append_15) libglnx/README.md \
 	libglnx/COPYING libglnx/libglnx.m4 $(NULL) \
@@ -1834,17 +1979,18 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/libostree/ostree-repo-deprecated.h \
 	src/libostree/ostree-version.h src/ostree/parse-datetime.y \
 	buildutil/tap-driver.sh buildutil/tap-test tests/glib.supp \
-	tests/ostree.supp $(NULL) $(am__append_59) $(am__append_62) \
-	tests/libtest.sh $(am__append_63) tests/libostreetest.h \
+	tests/ostree.supp $(NULL) $(am__append_65) $(am__append_68) \
+	tests/libtest.sh $(am__append_69) tests/libostreetest.h \
 	tests/libtest.sh tests/gpg-verify-data/README.md $(NULL) \
 	src/boot/dracut/module-setup.sh src/boot/dracut/ostree.conf \
 	src/boot/mkinitcpio/ostree \
 	src/boot/ostree-prepare-root.service \
 	src/boot/ostree-remount.service src/boot/grub2/grub2-15_ostree \
-	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_74)
+	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_81) \
+	$(am__append_83)
 bin_SCRIPTS = 
 lib_LTLIBRARIES = libostree-1.la
-pkglibexec_SCRIPTS = $(am__append_70)
+pkglibexec_SCRIPTS = $(am__append_78)
 noinst_LTLIBRARIES = $(am__append_1) libglnx.la libbsdiff.la \
 	libotutil.la libostree-kernel-args.la $(am__append_18) \
 	libostreetest.la
@@ -1852,11 +1998,11 @@ privlibdir = $(pkglibdir)
 privlib_LTLIBRARIES = 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = src/libostree/ostree-1.pc
-INTROSPECTION_GIRS = $(am__append_39)
+INTROSPECTION_GIRS = $(am__append_43)
 girdir = $(datadir)/gir-1.0
-gir_DATA = $(am__append_40)
+gir_DATA = $(am__append_44)
 typelibdir = $(libdir)/girepository-1.0
-typelib_DATA = $(am__append_41)
+typelib_DATA = $(am__append_45)
 gsettings_SCHEMAS = 
 ostree_bootdir = $(prefix)/lib/ostree
 
@@ -1874,7 +2020,7 @@ AM_TESTS_ENVIRONMENT = G_TEST_SRCDIR="$(abs_srcdir)" \
 	LD_LIBRARY_PATH=$$(cd $(top_builddir)/.libs && \
 	pwd)$${LD_LIBRARY_PATH:+:$${LD_LIBRARY_PATH}} PATH=$$(cd \
 	$(top_builddir)/tests && pwd):$${PATH} \
-	OSTREE_FEATURES="$(OSTREE_FEATURES)" $(NULL) $(am__append_57)
+	OSTREE_FEATURES="$(OSTREE_FEATURES)" $(NULL) $(am__append_62)
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/buildutil/tap-driver.sh
 LOG_COMPILER = $(top_srcdir)/buildutil/tap-test
 installed_test_LTLIBRARIES = $(am__append_12)
@@ -1914,14 +2060,14 @@ all_test_ltlibs = $(test_ltlibraries) $(uninstalled_test_ltlibraries) $(installe
 # This initializes some more variables
 
 # This is a special facility to chain together hooks easily
-INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_68) \
-	$(am__append_71)
+INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_76) \
+	$(am__append_79)
 ALL_LOCAL_RULES = tests/libreaddir-rand.so
 shortened_sysconfdir = $$(echo "$(sysconfdir)" | sed -e 's|^$(prefix)||' -e 's|^/||')
 OSTREE_GITREV = $(shell cd $(srcdir) && if command -v git >/dev/null 2>&1 && test -d .git; then git describe --abbrev=42 --tags --always HEAD; fi)
 ACLOCAL_AMFLAGS = -I buildutil -I libglnx ${ACLOCAL_FLAGS}
 GITIGNOREFILES = aclocal.m4 build-aux/ buildutil/*.m4 config.h.in \
-	gtk-doc.make $(am__append_55)
+	gtk-doc.make $(am__append_60)
 OT_INTERNAL_GIO_UNIX_CFLAGS = $(OT_DEP_GIO_UNIX_CFLAGS)
 OT_INTERNAL_GIO_UNIX_LIBS = $(OT_DEP_GIO_UNIX_LIBS)
 OT_INTERNAL_SOUP_CFLAGS = $(OT_DEP_SOUP_CFLAGS)
@@ -1940,7 +2086,7 @@ libglnx_srcpath := $(srcdir)/libglnx
 libglnx_cflags := $(OT_DEP_GIO_UNIX_CFLAGS) "-I$(libglnx_srcpath)"
 libglnx_libs := $(OT_DEP_GIO_UNIX_LIBS)
 libglnx_la_SOURCES = \
-	libglnx/glnx-alloca.h \
+	libglnx/glnx-macros.h \
 	libglnx/glnx-backport-autocleanups.h \
 	libglnx/glnx-backport-autoptr.h \
 	libglnx/glnx-backports.h \
@@ -1969,7 +2115,7 @@ libglnx_la_SOURCES = \
 libglnx_la_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 libglnx_la_LDFLAGS = -avoid-version -Bsymbolic-functions -export-symbols-regex "^glnx_" -no-undefined -export-dynamic 
 libglnx_la_LIBADD = $(libglnx_libs)
-libglnx_tests = test-libglnx-xattrs test-libglnx-fdio test-libglnx-errors
+libglnx_tests = test-libglnx-xattrs test-libglnx-fdio test-libglnx-errors test-libglnx-macros
 test_libglnx_xattrs_SOURCES = libglnx/tests/test-libglnx-xattrs.c
 test_libglnx_xattrs_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 test_libglnx_xattrs_LDADD = $(libglnx_libs) libglnx.la
@@ -1979,6 +2125,9 @@ test_libglnx_fdio_LDADD = $(libglnx_libs) libglnx.la
 test_libglnx_errors_SOURCES = libglnx/tests/test-libglnx-errors.c
 test_libglnx_errors_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 test_libglnx_errors_LDADD = $(libglnx_libs) libglnx.la
+test_libglnx_macros_SOURCES = libglnx/tests/test-libglnx-macros.c
+test_libglnx_macros_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
+test_libglnx_macros_LDADD = $(libglnx_libs) libglnx.la
 libbsdiff_srcpath := $(srcdir)/bsdiff
 libbsdiff_cflags := $(OT_DEP_GIO_UNIX_CFLAGS) "-I$(bsdiff_srcpath)"
 libbsdiff_libs := $(OT_DEP_GIO_UNIX_LIBS)
@@ -2075,7 +2224,7 @@ libostree_1_la_SOURCES = src/libostree/ostree-async-progress.c \
 	src/libostree/ostree-varint.h src/libostree/ostree-varint.c \
 	src/libostree/ostree-linuxfsutil.h \
 	src/libostree/ostree-linuxfsutil.c src/libostree/ostree-diff.c \
-	src/libostree/ostree-mutable-tree.c \
+	src/libostree/ostree-mutable-tree.c src/libostree/ostree-ref.c \
 	src/libostree/ostree-remote.c \
 	src/libostree/ostree-remote-private.h \
 	src/libostree/ostree-repo.c \
@@ -2118,10 +2267,20 @@ libostree_1_la_SOURCES = src/libostree/ostree-async-progress.c \
 	src/libostree/ostree-gpg-verify-result.c \
 	src/libostree/ostree-gpg-verify-result-private.h \
 	src/libostree/ostree-autocleanups.h $(NULL) $(am__append_19) \
-	$(am__append_20) $(am__append_21) $(am__append_28) \
-	$(am__append_29) $(am__append_32)
+	$(am__append_20) $(am__append_21) $(am__append_22) \
+	$(am__append_23) $(am__append_32) $(am__append_33) \
+	$(am__append_36)
+libostree_experimental_headers = \
+	src/libostree/ostree-ref.h \
+	src/libostree/ostree-remote.h \
+	src/libostree/ostree-repo-finder.h \
+	src/libostree/ostree-repo-finder-avahi.h \
+	src/libostree/ostree-repo-finder-config.h \
+	src/libostree/ostree-repo-finder-mount.h \
+	$(NULL)
+
 symbol_files = $(top_srcdir)/src/libostree/libostree-released.sym \
-	$(am__append_22) $(am__append_23)
+	$(am__append_24) $(am__append_25)
 # http://blog.jgc.org/2007/06/escaping-comma-and-space-in-gnu-make.html
 wl_versionscript_arg = -Wl,--version-script=
 libostree_1_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/bsdiff \
@@ -2131,22 +2290,24 @@ libostree_1_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/bsdiff \
 	$(OT_DEP_LZMA_CFLAGS) $(OT_DEP_ZLIB_CFLAGS) \
 	$(OT_DEP_OPENSSL_CFLAGS) -fvisibility=hidden \
 	'-D_OSTREE_PUBLIC=__attribute__((visibility("default"))) \
-	extern' $(am__append_24) $(am__append_26) $(am__append_30) \
-	$(am__append_33) $(am__append_35) $(am__append_37)
+	extern' $(am__append_26) $(am__append_28) $(am__append_30) \
+	$(am__append_34) $(am__append_37) $(am__append_39) \
+	$(am__append_41)
 libostree_1_la_LDFLAGS = -version-number 1:0:0 -Bsymbolic-functions $(addprefix $(wl_versionscript_arg),$(symbol_files))
 libostree_1_la_LIBADD = libotutil.la libglnx.la libbsdiff.la \
 	libostree-kernel-args.la $(OT_INTERNAL_GIO_UNIX_LIBS) \
 	$(OT_INTERNAL_GPGME_LIBS) $(OT_DEP_LZMA_LIBS) \
 	$(OT_DEP_ZLIB_LIBS) $(OT_DEP_OPENSSL_LIBS) $(bupsplitpath) \
-	$(am__append_25) $(am__append_27) $(am__append_31) \
-	$(am__append_34) $(am__append_36) $(am__append_38)
+	$(am__append_27) $(am__append_29) $(am__append_31) \
+	$(am__append_35) $(am__append_38) $(am__append_40) \
+	$(am__append_42)
 EXTRA_libostree_1_la_DEPENDENCIES = $(symbol_files)
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_EXPORT_PACKAGES = ostree-1
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_INCLUDES = Gio-2.0
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_CFLAGS = $(libostree_1_la_CFLAGS)
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_LIBS = libostree-1.la
-@BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_SCANNERFLAGS = --warn-all --identifier-prefix=Ostree --symbol-prefix=ostree
-@BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_FILES = $(libostreeinclude_HEADERS) $(filter-out %-private.h %/ostree-soup-uri.h,$(libostree_1_la_SOURCES))
+@BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_SCANNERFLAGS = --warn-all --identifier-prefix=Ostree --symbol-prefix=ostree $(GI_SCANNERFLAGS)
+@BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_FILES = $(libostreeinclude_HEADERS) $(filter-out %-private.h %/ostree-soup-uri.h $(libostree_experimental_headers),$(libostree_1_la_SOURCES))
 gpgreadme_DATA = src/libostree/README-gpg
 gpgreadmedir = $(datadir)/ostree/trusted.gpg.d
 
@@ -2171,7 +2332,7 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-main.c src/ostree/ot-dump.h src/ostree/ot-dump.c \
 	src/ostree/ot-editor.c src/ostree/ot-editor.h \
 	src/ostree/parse-datetime.h src/ostree/parse-datetime.c \
-	$(NULL) src/ostree/ot-admin-builtin-init-fs.c \
+	$(NULL) $(am__append_47) src/ostree/ot-admin-builtin-init-fs.c \
 	src/ostree/ot-admin-builtin-diff.c \
 	src/ostree/ot-admin-builtin-deploy.c \
 	src/ostree/ot-admin-builtin-undeploy.c \
@@ -2198,7 +2359,7 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-remote-builtin-show-url.c \
 	src/ostree/ot-remote-builtin-refs.c \
 	src/ostree/ot-remote-builtin-summary.c $(NULL) \
-	$(am__append_43) $(am__append_44)
+	$(am__append_48) $(am__append_49)
 ostree_bin_shared_cflags = $(AM_CFLAGS) -I$(srcdir)/src/libotutil -I$(srcdir)/src/libostree \
 	-I$(builddir)/src/libostree -I$(srcdir)/src/ostree -I$(srcdir)/libglnx $(OT_INTERNAL_GIO_UNIX_CFLAGS) \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"
@@ -2206,11 +2367,11 @@ ostree_bin_shared_cflags = $(AM_CFLAGS) -I$(srcdir)/src/libotutil -I$(srcdir)/sr
 ostree_bin_shared_ldadd = $(AM_LDFLAGS) libglnx.la libotutil.la libostree-1.la \
 	$(OT_INTERNAL_GIO_UNIX_LIBS)
 
-ostree_CFLAGS = $(ostree_bin_shared_cflags) $(am__append_46) \
-	$(am__append_48)
+ostree_CFLAGS = $(ostree_bin_shared_cflags) $(am__append_51) \
+	$(am__append_53)
 ostree_LDADD = $(ostree_bin_shared_ldadd) libbsdiff.la \
-	libostree-kernel-args.la $(LIBSYSTEMD_LIBS) $(am__append_47) \
-	$(am__append_49)
+	libostree-kernel-args.la $(LIBSYSTEMD_LIBS) $(am__append_52) \
+	$(am__append_54)
 @USE_LIBSOUP_TRUE@ostree_trivial_httpd_SOURCES = src/ostree/ostree-trivial-httpd.c
 @USE_LIBSOUP_TRUE@ostree_trivial_httpd_CFLAGS = $(ostree_bin_shared_cflags) $(OT_INTERNAL_SOUP_CFLAGS)
 @USE_LIBSOUP_TRUE@ostree_trivial_httpd_LDADD = $(ostree_bin_shared_ldadd) $(OT_INTERNAL_SOUP_LIBS)
@@ -2219,7 +2380,7 @@ ostree_prepare_root_SOURCES = \
     src/switchroot/ostree-prepare-root.c \
     $(NULL)
 
-ostree_prepare_root_CPPFLAGS = $(AM_CPPFLAGS) $(am__append_53)
+ostree_prepare_root_CPPFLAGS = $(AM_CPPFLAGS) $(am__append_58)
 # We're using our internal generator
 @BUILDOPT_BUILTIN_GRUB2_MKCONFIG_TRUE@ostree_boot_SCRIPTS = src/boot/grub2/ostree-grub-generator
 
@@ -2241,7 +2402,7 @@ ostree_remount_SOURCES = \
     $(NULL)
 
 ostree_remount_CPPFLAGS = $(AM_CPPFLAGS) -Isrc/switchroot \
-	$(am__append_54)
+	$(am__append_59)
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@ostree_system_generator_SOURCES = src/switchroot/ostree-mount-util.h \
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@                                  src/switchroot/ostree-system-generator.c
 
@@ -2261,8 +2422,9 @@ dist_uninstalled_test_scripts = tests/test-symbols.sh tests/coccinelle.sh
 # tests *only* run installed, to avoid having to run them twice in CI.
 # This overrides the glib-tap.mk emphasis on doing both, if we'd
 # used e.g. `dist_test_scripts`.
-dist_test_scripts = $(NULL) $(am__append_66)
-test_programs = $(NULL) $(am__append_67)
+dist_test_scripts = $(NULL) $(am__append_74)
+test_programs = $(NULL) $(am__append_71) $(am__append_72) \
+	$(am__append_75)
 _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-basic-user.sh tests/test-basic-user-only.sh \
 	tests/test-basic-root.sh tests/test-pull-subpath.sh \
@@ -2270,14 +2432,15 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-remote-headers.sh tests/test-remote-gpg-import.sh \
 	tests/test-commit-sign.sh tests/test-export.sh \
 	tests/test-help.sh tests/test-libarchive.sh \
-	tests/test-parent.sh tests/test-pull-archive-z.sh \
+	tests/test-parent.sh tests/test-pull-archive.sh \
 	tests/test-pull-commit-only.sh tests/test-pull-depth.sh \
 	tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
-	tests/test-pull-override-url.sh tests/test-local-pull.sh \
-	tests/test-local-pull-depth.sh tests/test-gpg-signed-commit.sh \
+	tests/test-pull-override-url.sh tests/test-pull-localcache.sh \
+	tests/test-local-pull.sh tests/test-local-pull-depth.sh \
+	tests/test-gpg-signed-commit.sh \
 	tests/test-admin-upgrade-unconfigured.sh \
 	tests/test-admin-upgrade-endoflife.sh \
 	tests/test-admin-deploy-syslinux.sh \
@@ -2297,8 +2460,9 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-auto-summary.sh tests/test-prune.sh \
 	tests/test-refs.sh tests/test-demo-buildsystem.sh \
 	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
-	tests/test-pull-mirrorlist.sh tests/test-summary-view.sh \
-	$(NULL) $(am__append_58) $(am__append_60) $(am__append_61)
+	tests/test-pull-mirrorlist.sh tests/test-summary-update.sh \
+	tests/test-summary-view.sh $(NULL) $(am__append_63) \
+	$(am__append_64) $(am__append_66) $(am__append_67)
 
 # These call into gjs scripts
 js_tests = tests/test-corruption.sh tests/test-pull-corruption.sh
@@ -2353,17 +2517,17 @@ libreaddir_rand_la_LIBADD = \
 	$(NULL)
 
 libreaddir_rand_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version \
-	$(am__append_64)
+	$(am__append_70)
 _installed_or_uninstalled_test_programs = tests/test-varint \
 	tests/test-ot-unix-utils tests/test-bsdiff \
 	tests/test-mutable-tree tests/test-keyfile-utils \
 	tests/test-ot-opt-utils tests/test-ot-tool-util \
 	tests/test-gpg-verify-result tests/test-checksum \
 	tests/test-lzma tests/test-rollsum tests/test-basic-c \
-	tests/test-sysroot-c tests/test-pull-c $(am__append_65)
+	tests/test-sysroot-c tests/test-pull-c $(am__append_73)
 common_tests_cflags = $(ostree_bin_shared_cflags) $(OT_INTERNAL_GIO_UNIX_CFLAGS) -I$(srcdir)/libglnx
 common_tests_ldadd = $(ostree_bin_shared_ldadd) $(OT_INTERNAL_GIO_UNIX_LIBS)
-libostreetest_la_SOURCES = tests/libostreetest.c
+libostreetest_la_SOURCES = tests/libostreetest.c tests/test-mock-gio.c tests/test-mock-gio.h
 libostreetest_la_CFLAGS = $(common_tests_cflags) -I $(srcdir)/tests
 libostreetest_la_LIBADD = $(common_tests_ldadd)
 TESTS_CFLAGS = $(common_tests_cflags)
@@ -2374,6 +2538,18 @@ tests_test_rollsum_cli_LDADD = $(bupsplitpath) $(TESTS_LDADD) $(OT_DEP_ZLIB_LIBS
 tests_test_rollsum_SOURCES = src/libostree/ostree-rollsum.c tests/test-rollsum.c
 tests_test_rollsum_CFLAGS = $(TESTS_CFLAGS) $(OT_DEP_ZLIB_CFLAGS)
 tests_test_rollsum_LDADD = $(bupsplitpath) $(TESTS_LDADD) $(OT_DEP_ZLIB_LIBS)
+tests_test_bloom_SOURCES = src/libostree/ostree-bloom.c tests/test-bloom.c
+tests_test_bloom_CFLAGS = $(TESTS_CFLAGS)
+tests_test_bloom_LDADD = $(TESTS_LDADD)
+@USE_AVAHI_TRUE@tests_test_repo_finder_avahi_SOURCES = src/libostree/ostree-repo-finder-avahi-parser.c tests/test-repo-finder-avahi.c
+@USE_AVAHI_TRUE@tests_test_repo_finder_avahi_CFLAGS = $(TESTS_CFLAGS)
+@USE_AVAHI_TRUE@tests_test_repo_finder_avahi_LDADD = $(TESTS_LDADD)
+tests_test_repo_finder_config_SOURCES = tests/test-repo-finder-config.c
+tests_test_repo_finder_config_CFLAGS = $(TESTS_CFLAGS)
+tests_test_repo_finder_config_LDADD = $(TESTS_LDADD)
+tests_test_repo_finder_mount_SOURCES = tests/test-repo-finder-mount.c
+tests_test_repo_finder_mount_CFLAGS = $(TESTS_CFLAGS)
+tests_test_repo_finder_mount_LDADD = $(TESTS_LDADD)
 tests_test_mutable_tree_CFLAGS = $(TESTS_CFLAGS)
 tests_test_mutable_tree_LDADD = $(TESTS_LDADD)
 tests_test_basic_c_CFLAGS = $(TESTS_CFLAGS)
@@ -2444,8 +2620,8 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 @ENABLE_MAN_TRUE@	ostree-pull.1 ostree-refs.1 ostree-remote.1 \
 @ENABLE_MAN_TRUE@	ostree-reset.1 ostree-rev-parse.1 \
 @ENABLE_MAN_TRUE@	ostree-show.1 ostree-summary.1 \
-@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_72) \
-@ENABLE_MAN_TRUE@	$(am__append_73)
+@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_80) \
+@ENABLE_MAN_TRUE@	$(am__append_82)
 @ENABLE_MAN_TRUE@man5_files = ostree.repo.5 ostree.repo-config.5
 @ENABLE_MAN_TRUE@man1_MANS = $(addprefix man/,$(man1_files))
 @ENABLE_MAN_TRUE@man5_MANS = $(addprefix man/,$(man5_files))
@@ -2739,6 +2915,9 @@ src/libostree/libostree_1_la-ostree-diff.lo:  \
 src/libostree/libostree_1_la-ostree-mutable-tree.lo:  \
 	src/libostree/$(am__dirstamp) \
 	src/libostree/$(DEPDIR)/$(am__dirstamp)
+src/libostree/libostree_1_la-ostree-ref.lo:  \
+	src/libostree/$(am__dirstamp) \
+	src/libostree/$(DEPDIR)/$(am__dirstamp)
 src/libostree/libostree_1_la-ostree-remote.lo:  \
 	src/libostree/$(am__dirstamp) \
 	src/libostree/$(DEPDIR)/$(am__dirstamp)
@@ -2832,6 +3011,24 @@ src/libostree/libostree_1_la-ostree-libarchive-input-stream.lo:  \
 src/libostree/libostree_1_la-ostree-tls-cert-interaction.lo:  \
 	src/libostree/$(am__dirstamp) \
 	src/libostree/$(DEPDIR)/$(am__dirstamp)
+src/libostree/libostree_1_la-ostree-bloom.lo:  \
+	src/libostree/$(am__dirstamp) \
+	src/libostree/$(DEPDIR)/$(am__dirstamp)
+src/libostree/libostree_1_la-ostree-repo-finder.lo:  \
+	src/libostree/$(am__dirstamp) \
+	src/libostree/$(DEPDIR)/$(am__dirstamp)
+src/libostree/libostree_1_la-ostree-repo-finder-avahi.lo:  \
+	src/libostree/$(am__dirstamp) \
+	src/libostree/$(DEPDIR)/$(am__dirstamp)
+src/libostree/libostree_1_la-ostree-repo-finder-config.lo:  \
+	src/libostree/$(am__dirstamp) \
+	src/libostree/$(DEPDIR)/$(am__dirstamp)
+src/libostree/libostree_1_la-ostree-repo-finder-mount.lo:  \
+	src/libostree/$(am__dirstamp) \
+	src/libostree/$(DEPDIR)/$(am__dirstamp)
+src/libostree/libostree_1_la-ostree-repo-finder-avahi-parser.lo:  \
+	src/libostree/$(am__dirstamp) \
+	src/libostree/$(DEPDIR)/$(am__dirstamp)
 src/libostree/libostree_1_la-ostree-fetcher-util.lo:  \
 	src/libostree/$(am__dirstamp) \
 	src/libostree/$(DEPDIR)/$(am__dirstamp)
@@ -2872,6 +3069,8 @@ tests/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) tests/$(DEPDIR)
 	@: > tests/$(DEPDIR)/$(am__dirstamp)
 tests/libostreetest_la-libostreetest.lo: tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+tests/libostreetest_la-test-mock-gio.lo: tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 
 libostreetest.la: $(libostreetest_la_OBJECTS) $(libostreetest_la_DEPENDENCIES) $(EXTRA_libostreetest_la_DEPENDENCIES) 
@@ -3368,6 +3567,9 @@ src/ostree/ostree-ot-editor.$(OBJEXT): src/ostree/$(am__dirstamp) \
 src/ostree/ostree-parse-datetime.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
+src/ostree/ostree-ot-builtin-find-remotes.$(OBJEXT):  \
+	src/ostree/$(am__dirstamp) \
+	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-admin-builtin-init-fs.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
@@ -3526,6 +3728,13 @@ libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.$(OBJEXT):  \
 test-libglnx-fdio$(EXEEXT): $(test_libglnx_fdio_OBJECTS) $(test_libglnx_fdio_DEPENDENCIES) $(EXTRA_test_libglnx_fdio_DEPENDENCIES) 
 	@rm -f test-libglnx-fdio$(EXEEXT)
 	$(AM_V_CCLD)$(test_libglnx_fdio_LINK) $(test_libglnx_fdio_OBJECTS) $(test_libglnx_fdio_LDADD) $(LIBS)
+libglnx/tests/test_libglnx_macros-test-libglnx-macros.$(OBJEXT):  \
+	libglnx/tests/$(am__dirstamp) \
+	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
+
+test-libglnx-macros$(EXEEXT): $(test_libglnx_macros_OBJECTS) $(test_libglnx_macros_DEPENDENCIES) $(EXTRA_test_libglnx_macros_DEPENDENCIES) 
+	@rm -f test-libglnx-macros$(EXEEXT)
+	$(AM_V_CCLD)$(test_libglnx_macros_LINK) $(test_libglnx_macros_OBJECTS) $(test_libglnx_macros_LDADD) $(LIBS)
 libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.$(OBJEXT):  \
 	libglnx/tests/$(am__dirstamp) \
 	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
@@ -3539,6 +3748,15 @@ tests/tests_test_basic_c-test-basic-c.$(OBJEXT):  \
 tests/test-basic-c$(EXEEXT): $(tests_test_basic_c_OBJECTS) $(tests_test_basic_c_DEPENDENCIES) $(EXTRA_tests_test_basic_c_DEPENDENCIES) tests/$(am__dirstamp)
 	@rm -f tests/test-basic-c$(EXEEXT)
 	$(AM_V_CCLD)$(tests_test_basic_c_LINK) $(tests_test_basic_c_OBJECTS) $(tests_test_basic_c_LDADD) $(LIBS)
+src/libostree/tests_test_bloom-ostree-bloom.$(OBJEXT):  \
+	src/libostree/$(am__dirstamp) \
+	src/libostree/$(DEPDIR)/$(am__dirstamp)
+tests/tests_test_bloom-test-bloom.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+
+tests/test-bloom$(EXEEXT): $(tests_test_bloom_OBJECTS) $(tests_test_bloom_DEPENDENCIES) $(EXTRA_tests_test_bloom_DEPENDENCIES) tests/$(am__dirstamp)
+	@rm -f tests/test-bloom$(EXEEXT)
+	$(AM_V_CCLD)$(tests_test_bloom_LINK) $(tests_test_bloom_OBJECTS) $(tests_test_bloom_LDADD) $(LIBS)
 tests/tests_test_bsdiff-test-bsdiff.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 
@@ -3617,6 +3835,27 @@ tests/tests_test_pull_c-test-pull-c.$(OBJEXT): tests/$(am__dirstamp) \
 tests/test-pull-c$(EXEEXT): $(tests_test_pull_c_OBJECTS) $(tests_test_pull_c_DEPENDENCIES) $(EXTRA_tests_test_pull_c_DEPENDENCIES) tests/$(am__dirstamp)
 	@rm -f tests/test-pull-c$(EXEEXT)
 	$(AM_V_CCLD)$(tests_test_pull_c_LINK) $(tests_test_pull_c_OBJECTS) $(tests_test_pull_c_LDADD) $(LIBS)
+src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.$(OBJEXT):  \
+	src/libostree/$(am__dirstamp) \
+	src/libostree/$(DEPDIR)/$(am__dirstamp)
+tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.$(OBJEXT):  \
+	tests/$(am__dirstamp) tests/$(DEPDIR)/$(am__dirstamp)
+
+tests/test-repo-finder-avahi$(EXEEXT): $(tests_test_repo_finder_avahi_OBJECTS) $(tests_test_repo_finder_avahi_DEPENDENCIES) $(EXTRA_tests_test_repo_finder_avahi_DEPENDENCIES) tests/$(am__dirstamp)
+	@rm -f tests/test-repo-finder-avahi$(EXEEXT)
+	$(AM_V_CCLD)$(tests_test_repo_finder_avahi_LINK) $(tests_test_repo_finder_avahi_OBJECTS) $(tests_test_repo_finder_avahi_LDADD) $(LIBS)
+tests/tests_test_repo_finder_config-test-repo-finder-config.$(OBJEXT):  \
+	tests/$(am__dirstamp) tests/$(DEPDIR)/$(am__dirstamp)
+
+tests/test-repo-finder-config$(EXEEXT): $(tests_test_repo_finder_config_OBJECTS) $(tests_test_repo_finder_config_DEPENDENCIES) $(EXTRA_tests_test_repo_finder_config_DEPENDENCIES) tests/$(am__dirstamp)
+	@rm -f tests/test-repo-finder-config$(EXEEXT)
+	$(AM_V_CCLD)$(tests_test_repo_finder_config_LINK) $(tests_test_repo_finder_config_OBJECTS) $(tests_test_repo_finder_config_LDADD) $(LIBS)
+tests/tests_test_repo_finder_mount-test-repo-finder-mount.$(OBJEXT):  \
+	tests/$(am__dirstamp) tests/$(DEPDIR)/$(am__dirstamp)
+
+tests/test-repo-finder-mount$(EXEEXT): $(tests_test_repo_finder_mount_OBJECTS) $(tests_test_repo_finder_mount_DEPENDENCIES) $(EXTRA_tests_test_repo_finder_mount_DEPENDENCIES) tests/$(am__dirstamp)
+	@rm -f tests/test-repo-finder-mount$(EXEEXT)
+	$(AM_V_CCLD)$(tests_test_repo_finder_mount_LINK) $(tests_test_repo_finder_mount_OBJECTS) $(tests_test_repo_finder_mount_LDADD) $(LIBS)
 src/libostree/tests_test_rollsum-ostree-rollsum.$(OBJEXT):  \
 	src/libostree/$(am__dirstamp) \
 	src/libostree/$(DEPDIR)/$(am__dirstamp)
@@ -3894,9 +4133,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/$(DEPDIR)/libglnx_la-glnx-xattrs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/bupsplit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-async-progress.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-bloom.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootconfig-parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-grub2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-syslinux.Plo@am__quote@
@@ -3924,11 +4165,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-lzma-decompressor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-metalink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-mutable-tree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-ref.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-remote.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-checkout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-commit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-file-enumerator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-file.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-avahi-parser.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-avahi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-config.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-mount.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-libarchive.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-prune.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-pull.Plo@am__quote@
@@ -3950,10 +4197,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-tls-cert-interaction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-varint.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_kernel_args_la-ostree-kernel-args.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_bloom-ostree-bloom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_checksum-ostree-core.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_lzma-ostree-lzma-common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_lzma-ostree-lzma-compressor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_lzma-ostree-lzma-decompressor.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_rollsum-ostree-rollsum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_rollsum_cli-ostree-rollsum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/tests_test_varint-ostree-varint.Po@am__quote@
@@ -3994,6 +4243,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-builtin-config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-builtin-diff.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-builtin-export.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-builtin-find-remotes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-builtin-fsck.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-builtin-gpg-sign.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-builtin-init.Po@am__quote@
@@ -4031,8 +4281,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/switchroot/$(DEPDIR)/ostree_remount-ostree-remount.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/switchroot/$(DEPDIR)/ostree_system_generator-ostree-system-generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/libostreetest_la-libostreetest.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/libostreetest_la-test-mock-gio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/libreaddir_rand_la-readdir-rand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_basic_c-test-basic-c.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_bloom-test-bloom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_bsdiff-test-bsdiff.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_checksum-test-checksum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_gpg_verify_result-test-gpg-verify-result.Po@am__quote@
@@ -4044,6 +4296,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_ot_tool_util-test-ot-tool-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_ot_unix_utils-test-ot-unix-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_pull_c-test-pull-c.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_repo_finder_avahi-test-repo-finder-avahi.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_repo_finder_config-test-repo-finder-config.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_repo_finder_mount-test-repo-finder-mount.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_rollsum-test-rollsum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_rollsum_cli-test-rollsum-cli.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_test_sysroot_c-test-sysroot-c.Po@am__quote@
@@ -4247,6 +4502,13 @@ src/libostree/libostree_1_la-ostree-mutable-tree.lo: src/libostree/ostree-mutabl
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-mutable-tree.c' object='src/libostree/libostree_1_la-ostree-mutable-tree.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-mutable-tree.lo `test -f 'src/libostree/ostree-mutable-tree.c' || echo '$(srcdir)/'`src/libostree/ostree-mutable-tree.c
+
+src/libostree/libostree_1_la-ostree-ref.lo: src/libostree/ostree-ref.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-ref.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-ref.Tpo -c -o src/libostree/libostree_1_la-ostree-ref.lo `test -f 'src/libostree/ostree-ref.c' || echo '$(srcdir)/'`src/libostree/ostree-ref.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/libostree_1_la-ostree-ref.Tpo src/libostree/$(DEPDIR)/libostree_1_la-ostree-ref.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-ref.c' object='src/libostree/libostree_1_la-ostree-ref.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-ref.lo `test -f 'src/libostree/ostree-ref.c' || echo '$(srcdir)/'`src/libostree/ostree-ref.c
 
 src/libostree/libostree_1_la-ostree-remote.lo: src/libostree/ostree-remote.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-remote.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-remote.Tpo -c -o src/libostree/libostree_1_la-ostree-remote.lo `test -f 'src/libostree/ostree-remote.c' || echo '$(srcdir)/'`src/libostree/ostree-remote.c
@@ -4465,6 +4727,48 @@ src/libostree/libostree_1_la-ostree-tls-cert-interaction.lo: src/libostree/ostre
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-tls-cert-interaction.lo `test -f 'src/libostree/ostree-tls-cert-interaction.c' || echo '$(srcdir)/'`src/libostree/ostree-tls-cert-interaction.c
 
+src/libostree/libostree_1_la-ostree-bloom.lo: src/libostree/ostree-bloom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-bloom.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-bloom.Tpo -c -o src/libostree/libostree_1_la-ostree-bloom.lo `test -f 'src/libostree/ostree-bloom.c' || echo '$(srcdir)/'`src/libostree/ostree-bloom.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/libostree_1_la-ostree-bloom.Tpo src/libostree/$(DEPDIR)/libostree_1_la-ostree-bloom.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-bloom.c' object='src/libostree/libostree_1_la-ostree-bloom.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-bloom.lo `test -f 'src/libostree/ostree-bloom.c' || echo '$(srcdir)/'`src/libostree/ostree-bloom.c
+
+src/libostree/libostree_1_la-ostree-repo-finder.lo: src/libostree/ostree-repo-finder.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-repo-finder.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder.Tpo -c -o src/libostree/libostree_1_la-ostree-repo-finder.lo `test -f 'src/libostree/ostree-repo-finder.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder.Tpo src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-repo-finder.c' object='src/libostree/libostree_1_la-ostree-repo-finder.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-repo-finder.lo `test -f 'src/libostree/ostree-repo-finder.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder.c
+
+src/libostree/libostree_1_la-ostree-repo-finder-avahi.lo: src/libostree/ostree-repo-finder-avahi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-repo-finder-avahi.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-avahi.Tpo -c -o src/libostree/libostree_1_la-ostree-repo-finder-avahi.lo `test -f 'src/libostree/ostree-repo-finder-avahi.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder-avahi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-avahi.Tpo src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-avahi.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-repo-finder-avahi.c' object='src/libostree/libostree_1_la-ostree-repo-finder-avahi.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-repo-finder-avahi.lo `test -f 'src/libostree/ostree-repo-finder-avahi.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder-avahi.c
+
+src/libostree/libostree_1_la-ostree-repo-finder-config.lo: src/libostree/ostree-repo-finder-config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-repo-finder-config.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-config.Tpo -c -o src/libostree/libostree_1_la-ostree-repo-finder-config.lo `test -f 'src/libostree/ostree-repo-finder-config.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder-config.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-config.Tpo src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-config.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-repo-finder-config.c' object='src/libostree/libostree_1_la-ostree-repo-finder-config.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-repo-finder-config.lo `test -f 'src/libostree/ostree-repo-finder-config.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder-config.c
+
+src/libostree/libostree_1_la-ostree-repo-finder-mount.lo: src/libostree/ostree-repo-finder-mount.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-repo-finder-mount.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-mount.Tpo -c -o src/libostree/libostree_1_la-ostree-repo-finder-mount.lo `test -f 'src/libostree/ostree-repo-finder-mount.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder-mount.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-mount.Tpo src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-mount.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-repo-finder-mount.c' object='src/libostree/libostree_1_la-ostree-repo-finder-mount.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-repo-finder-mount.lo `test -f 'src/libostree/ostree-repo-finder-mount.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder-mount.c
+
+src/libostree/libostree_1_la-ostree-repo-finder-avahi-parser.lo: src/libostree/ostree-repo-finder-avahi-parser.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-repo-finder-avahi-parser.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-avahi-parser.Tpo -c -o src/libostree/libostree_1_la-ostree-repo-finder-avahi-parser.lo `test -f 'src/libostree/ostree-repo-finder-avahi-parser.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder-avahi-parser.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-avahi-parser.Tpo src/libostree/$(DEPDIR)/libostree_1_la-ostree-repo-finder-avahi-parser.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-repo-finder-avahi-parser.c' object='src/libostree/libostree_1_la-ostree-repo-finder-avahi-parser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-repo-finder-avahi-parser.lo `test -f 'src/libostree/ostree-repo-finder-avahi-parser.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder-avahi-parser.c
+
 src/libostree/libostree_1_la-ostree-fetcher-util.lo: src/libostree/ostree-fetcher-util.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-fetcher-util.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-fetcher-util.Tpo -c -o src/libostree/libostree_1_la-ostree-fetcher-util.lo `test -f 'src/libostree/ostree-fetcher-util.c' || echo '$(srcdir)/'`src/libostree/ostree-fetcher-util.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/libostree_1_la-ostree-fetcher-util.Tpo src/libostree/$(DEPDIR)/libostree_1_la-ostree-fetcher-util.Plo
@@ -4534,6 +4838,13 @@ tests/libostreetest_la-libostreetest.lo: tests/libostreetest.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/libostreetest.c' object='tests/libostreetest_la-libostreetest.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostreetest_la_CFLAGS) $(CFLAGS) -c -o tests/libostreetest_la-libostreetest.lo `test -f 'tests/libostreetest.c' || echo '$(srcdir)/'`tests/libostreetest.c
+
+tests/libostreetest_la-test-mock-gio.lo: tests/test-mock-gio.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostreetest_la_CFLAGS) $(CFLAGS) -MT tests/libostreetest_la-test-mock-gio.lo -MD -MP -MF tests/$(DEPDIR)/libostreetest_la-test-mock-gio.Tpo -c -o tests/libostreetest_la-test-mock-gio.lo `test -f 'tests/test-mock-gio.c' || echo '$(srcdir)/'`tests/test-mock-gio.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/libostreetest_la-test-mock-gio.Tpo tests/$(DEPDIR)/libostreetest_la-test-mock-gio.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-mock-gio.c' object='tests/libostreetest_la-test-mock-gio.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostreetest_la_CFLAGS) $(CFLAGS) -c -o tests/libostreetest_la-test-mock-gio.lo `test -f 'tests/test-mock-gio.c' || echo '$(srcdir)/'`tests/test-mock-gio.c
 
 src/libotutil/libotutil_la-ot-checksum-utils.lo: src/libotutil/ot-checksum-utils.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -MT src/libotutil/libotutil_la-ot-checksum-utils.lo -MD -MP -MF src/libotutil/$(DEPDIR)/libotutil_la-ot-checksum-utils.Tpo -c -o src/libotutil/libotutil_la-ot-checksum-utils.lo `test -f 'src/libotutil/ot-checksum-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-checksum-utils.c
@@ -5003,6 +5314,20 @@ src/ostree/ostree-parse-datetime.obj: src/ostree/parse-datetime.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/parse-datetime.c' object='src/ostree/ostree-parse-datetime.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-parse-datetime.obj `if test -f 'src/ostree/parse-datetime.c'; then $(CYGPATH_W) 'src/ostree/parse-datetime.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/parse-datetime.c'; fi`
+
+src/ostree/ostree-ot-builtin-find-remotes.o: src/ostree/ot-builtin-find-remotes.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-builtin-find-remotes.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-builtin-find-remotes.Tpo -c -o src/ostree/ostree-ot-builtin-find-remotes.o `test -f 'src/ostree/ot-builtin-find-remotes.c' || echo '$(srcdir)/'`src/ostree/ot-builtin-find-remotes.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-builtin-find-remotes.Tpo src/ostree/$(DEPDIR)/ostree-ot-builtin-find-remotes.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-builtin-find-remotes.c' object='src/ostree/ostree-ot-builtin-find-remotes.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-builtin-find-remotes.o `test -f 'src/ostree/ot-builtin-find-remotes.c' || echo '$(srcdir)/'`src/ostree/ot-builtin-find-remotes.c
+
+src/ostree/ostree-ot-builtin-find-remotes.obj: src/ostree/ot-builtin-find-remotes.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-builtin-find-remotes.obj -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-builtin-find-remotes.Tpo -c -o src/ostree/ostree-ot-builtin-find-remotes.obj `if test -f 'src/ostree/ot-builtin-find-remotes.c'; then $(CYGPATH_W) 'src/ostree/ot-builtin-find-remotes.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-builtin-find-remotes.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-builtin-find-remotes.Tpo src/ostree/$(DEPDIR)/ostree-ot-builtin-find-remotes.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-builtin-find-remotes.c' object='src/ostree/ostree-ot-builtin-find-remotes.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-builtin-find-remotes.obj `if test -f 'src/ostree/ot-builtin-find-remotes.c'; then $(CYGPATH_W) 'src/ostree/ot-builtin-find-remotes.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-builtin-find-remotes.c'; fi`
 
 src/ostree/ostree-ot-admin-builtin-init-fs.o: src/ostree/ot-admin-builtin-init-fs.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-builtin-init-fs.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-init-fs.Tpo -c -o src/ostree/ostree-ot-admin-builtin-init-fs.o `test -f 'src/ostree/ot-admin-builtin-init-fs.c' || echo '$(srcdir)/'`src/ostree/ot-admin-builtin-init-fs.c
@@ -5508,6 +5833,20 @@ libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.obj: libglnx/tests/test-libgln
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.obj `if test -f 'libglnx/tests/test-libglnx-fdio.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-fdio.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-fdio.c'; fi`
 
+libglnx/tests/test_libglnx_macros-test-libglnx-macros.o: libglnx/tests/test-libglnx-macros.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_macros_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_macros-test-libglnx-macros.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Tpo -c -o libglnx/tests/test_libglnx_macros-test-libglnx-macros.o `test -f 'libglnx/tests/test-libglnx-macros.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-macros.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/test-libglnx-macros.c' object='libglnx/tests/test_libglnx_macros-test-libglnx-macros.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_macros_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_macros-test-libglnx-macros.o `test -f 'libglnx/tests/test-libglnx-macros.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-macros.c
+
+libglnx/tests/test_libglnx_macros-test-libglnx-macros.obj: libglnx/tests/test-libglnx-macros.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_macros_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_macros-test-libglnx-macros.obj -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Tpo -c -o libglnx/tests/test_libglnx_macros-test-libglnx-macros.obj `if test -f 'libglnx/tests/test-libglnx-macros.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-macros.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-macros.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/test-libglnx-macros.c' object='libglnx/tests/test_libglnx_macros-test-libglnx-macros.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_macros_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_macros-test-libglnx-macros.obj `if test -f 'libglnx/tests/test-libglnx-macros.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-macros.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-macros.c'; fi`
+
 libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.o: libglnx/tests/test-libglnx-xattrs.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_xattrs_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Tpo -c -o libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.o `test -f 'libglnx/tests/test-libglnx-xattrs.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-xattrs.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Po
@@ -5535,6 +5874,34 @@ tests/tests_test_basic_c-test-basic-c.obj: tests/test-basic-c.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-basic-c.c' object='tests/tests_test_basic_c-test-basic-c.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_basic_c_CFLAGS) $(CFLAGS) -c -o tests/tests_test_basic_c-test-basic-c.obj `if test -f 'tests/test-basic-c.c'; then $(CYGPATH_W) 'tests/test-basic-c.c'; else $(CYGPATH_W) '$(srcdir)/tests/test-basic-c.c'; fi`
+
+src/libostree/tests_test_bloom-ostree-bloom.o: src/libostree/ostree-bloom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_bloom_CFLAGS) $(CFLAGS) -MT src/libostree/tests_test_bloom-ostree-bloom.o -MD -MP -MF src/libostree/$(DEPDIR)/tests_test_bloom-ostree-bloom.Tpo -c -o src/libostree/tests_test_bloom-ostree-bloom.o `test -f 'src/libostree/ostree-bloom.c' || echo '$(srcdir)/'`src/libostree/ostree-bloom.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/tests_test_bloom-ostree-bloom.Tpo src/libostree/$(DEPDIR)/tests_test_bloom-ostree-bloom.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-bloom.c' object='src/libostree/tests_test_bloom-ostree-bloom.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_bloom_CFLAGS) $(CFLAGS) -c -o src/libostree/tests_test_bloom-ostree-bloom.o `test -f 'src/libostree/ostree-bloom.c' || echo '$(srcdir)/'`src/libostree/ostree-bloom.c
+
+src/libostree/tests_test_bloom-ostree-bloom.obj: src/libostree/ostree-bloom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_bloom_CFLAGS) $(CFLAGS) -MT src/libostree/tests_test_bloom-ostree-bloom.obj -MD -MP -MF src/libostree/$(DEPDIR)/tests_test_bloom-ostree-bloom.Tpo -c -o src/libostree/tests_test_bloom-ostree-bloom.obj `if test -f 'src/libostree/ostree-bloom.c'; then $(CYGPATH_W) 'src/libostree/ostree-bloom.c'; else $(CYGPATH_W) '$(srcdir)/src/libostree/ostree-bloom.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/tests_test_bloom-ostree-bloom.Tpo src/libostree/$(DEPDIR)/tests_test_bloom-ostree-bloom.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-bloom.c' object='src/libostree/tests_test_bloom-ostree-bloom.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_bloom_CFLAGS) $(CFLAGS) -c -o src/libostree/tests_test_bloom-ostree-bloom.obj `if test -f 'src/libostree/ostree-bloom.c'; then $(CYGPATH_W) 'src/libostree/ostree-bloom.c'; else $(CYGPATH_W) '$(srcdir)/src/libostree/ostree-bloom.c'; fi`
+
+tests/tests_test_bloom-test-bloom.o: tests/test-bloom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_bloom_CFLAGS) $(CFLAGS) -MT tests/tests_test_bloom-test-bloom.o -MD -MP -MF tests/$(DEPDIR)/tests_test_bloom-test-bloom.Tpo -c -o tests/tests_test_bloom-test-bloom.o `test -f 'tests/test-bloom.c' || echo '$(srcdir)/'`tests/test-bloom.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/tests_test_bloom-test-bloom.Tpo tests/$(DEPDIR)/tests_test_bloom-test-bloom.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-bloom.c' object='tests/tests_test_bloom-test-bloom.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_bloom_CFLAGS) $(CFLAGS) -c -o tests/tests_test_bloom-test-bloom.o `test -f 'tests/test-bloom.c' || echo '$(srcdir)/'`tests/test-bloom.c
+
+tests/tests_test_bloom-test-bloom.obj: tests/test-bloom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_bloom_CFLAGS) $(CFLAGS) -MT tests/tests_test_bloom-test-bloom.obj -MD -MP -MF tests/$(DEPDIR)/tests_test_bloom-test-bloom.Tpo -c -o tests/tests_test_bloom-test-bloom.obj `if test -f 'tests/test-bloom.c'; then $(CYGPATH_W) 'tests/test-bloom.c'; else $(CYGPATH_W) '$(srcdir)/tests/test-bloom.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/tests_test_bloom-test-bloom.Tpo tests/$(DEPDIR)/tests_test_bloom-test-bloom.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-bloom.c' object='tests/tests_test_bloom-test-bloom.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_bloom_CFLAGS) $(CFLAGS) -c -o tests/tests_test_bloom-test-bloom.obj `if test -f 'tests/test-bloom.c'; then $(CYGPATH_W) 'tests/test-bloom.c'; else $(CYGPATH_W) '$(srcdir)/tests/test-bloom.c'; fi`
 
 tests/tests_test_bsdiff-test-bsdiff.o: tests/test-bsdiff.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_bsdiff_CFLAGS) $(CFLAGS) -MT tests/tests_test_bsdiff-test-bsdiff.o -MD -MP -MF tests/$(DEPDIR)/tests_test_bsdiff-test-bsdiff.Tpo -c -o tests/tests_test_bsdiff-test-bsdiff.o `test -f 'tests/test-bsdiff.c' || echo '$(srcdir)/'`tests/test-bsdiff.c
@@ -5745,6 +6112,62 @@ tests/tests_test_pull_c-test-pull-c.obj: tests/test-pull-c.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-pull-c.c' object='tests/tests_test_pull_c-test-pull-c.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_pull_c_CFLAGS) $(CFLAGS) -c -o tests/tests_test_pull_c-test-pull-c.obj `if test -f 'tests/test-pull-c.c'; then $(CYGPATH_W) 'tests/test-pull-c.c'; else $(CYGPATH_W) '$(srcdir)/tests/test-pull-c.c'; fi`
+
+src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.o: src/libostree/ostree-repo-finder-avahi-parser.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_avahi_CFLAGS) $(CFLAGS) -MT src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.o -MD -MP -MF src/libostree/$(DEPDIR)/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.Tpo -c -o src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.o `test -f 'src/libostree/ostree-repo-finder-avahi-parser.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder-avahi-parser.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.Tpo src/libostree/$(DEPDIR)/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-repo-finder-avahi-parser.c' object='src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_avahi_CFLAGS) $(CFLAGS) -c -o src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.o `test -f 'src/libostree/ostree-repo-finder-avahi-parser.c' || echo '$(srcdir)/'`src/libostree/ostree-repo-finder-avahi-parser.c
+
+src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.obj: src/libostree/ostree-repo-finder-avahi-parser.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_avahi_CFLAGS) $(CFLAGS) -MT src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.obj -MD -MP -MF src/libostree/$(DEPDIR)/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.Tpo -c -o src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.obj `if test -f 'src/libostree/ostree-repo-finder-avahi-parser.c'; then $(CYGPATH_W) 'src/libostree/ostree-repo-finder-avahi-parser.c'; else $(CYGPATH_W) '$(srcdir)/src/libostree/ostree-repo-finder-avahi-parser.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.Tpo src/libostree/$(DEPDIR)/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-repo-finder-avahi-parser.c' object='src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_avahi_CFLAGS) $(CFLAGS) -c -o src/libostree/tests_test_repo_finder_avahi-ostree-repo-finder-avahi-parser.obj `if test -f 'src/libostree/ostree-repo-finder-avahi-parser.c'; then $(CYGPATH_W) 'src/libostree/ostree-repo-finder-avahi-parser.c'; else $(CYGPATH_W) '$(srcdir)/src/libostree/ostree-repo-finder-avahi-parser.c'; fi`
+
+tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.o: tests/test-repo-finder-avahi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_avahi_CFLAGS) $(CFLAGS) -MT tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.o -MD -MP -MF tests/$(DEPDIR)/tests_test_repo_finder_avahi-test-repo-finder-avahi.Tpo -c -o tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.o `test -f 'tests/test-repo-finder-avahi.c' || echo '$(srcdir)/'`tests/test-repo-finder-avahi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/tests_test_repo_finder_avahi-test-repo-finder-avahi.Tpo tests/$(DEPDIR)/tests_test_repo_finder_avahi-test-repo-finder-avahi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-repo-finder-avahi.c' object='tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_avahi_CFLAGS) $(CFLAGS) -c -o tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.o `test -f 'tests/test-repo-finder-avahi.c' || echo '$(srcdir)/'`tests/test-repo-finder-avahi.c
+
+tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.obj: tests/test-repo-finder-avahi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_avahi_CFLAGS) $(CFLAGS) -MT tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.obj -MD -MP -MF tests/$(DEPDIR)/tests_test_repo_finder_avahi-test-repo-finder-avahi.Tpo -c -o tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.obj `if test -f 'tests/test-repo-finder-avahi.c'; then $(CYGPATH_W) 'tests/test-repo-finder-avahi.c'; else $(CYGPATH_W) '$(srcdir)/tests/test-repo-finder-avahi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/tests_test_repo_finder_avahi-test-repo-finder-avahi.Tpo tests/$(DEPDIR)/tests_test_repo_finder_avahi-test-repo-finder-avahi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-repo-finder-avahi.c' object='tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_avahi_CFLAGS) $(CFLAGS) -c -o tests/tests_test_repo_finder_avahi-test-repo-finder-avahi.obj `if test -f 'tests/test-repo-finder-avahi.c'; then $(CYGPATH_W) 'tests/test-repo-finder-avahi.c'; else $(CYGPATH_W) '$(srcdir)/tests/test-repo-finder-avahi.c'; fi`
+
+tests/tests_test_repo_finder_config-test-repo-finder-config.o: tests/test-repo-finder-config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_config_CFLAGS) $(CFLAGS) -MT tests/tests_test_repo_finder_config-test-repo-finder-config.o -MD -MP -MF tests/$(DEPDIR)/tests_test_repo_finder_config-test-repo-finder-config.Tpo -c -o tests/tests_test_repo_finder_config-test-repo-finder-config.o `test -f 'tests/test-repo-finder-config.c' || echo '$(srcdir)/'`tests/test-repo-finder-config.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/tests_test_repo_finder_config-test-repo-finder-config.Tpo tests/$(DEPDIR)/tests_test_repo_finder_config-test-repo-finder-config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-repo-finder-config.c' object='tests/tests_test_repo_finder_config-test-repo-finder-config.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_config_CFLAGS) $(CFLAGS) -c -o tests/tests_test_repo_finder_config-test-repo-finder-config.o `test -f 'tests/test-repo-finder-config.c' || echo '$(srcdir)/'`tests/test-repo-finder-config.c
+
+tests/tests_test_repo_finder_config-test-repo-finder-config.obj: tests/test-repo-finder-config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_config_CFLAGS) $(CFLAGS) -MT tests/tests_test_repo_finder_config-test-repo-finder-config.obj -MD -MP -MF tests/$(DEPDIR)/tests_test_repo_finder_config-test-repo-finder-config.Tpo -c -o tests/tests_test_repo_finder_config-test-repo-finder-config.obj `if test -f 'tests/test-repo-finder-config.c'; then $(CYGPATH_W) 'tests/test-repo-finder-config.c'; else $(CYGPATH_W) '$(srcdir)/tests/test-repo-finder-config.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/tests_test_repo_finder_config-test-repo-finder-config.Tpo tests/$(DEPDIR)/tests_test_repo_finder_config-test-repo-finder-config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-repo-finder-config.c' object='tests/tests_test_repo_finder_config-test-repo-finder-config.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_config_CFLAGS) $(CFLAGS) -c -o tests/tests_test_repo_finder_config-test-repo-finder-config.obj `if test -f 'tests/test-repo-finder-config.c'; then $(CYGPATH_W) 'tests/test-repo-finder-config.c'; else $(CYGPATH_W) '$(srcdir)/tests/test-repo-finder-config.c'; fi`
+
+tests/tests_test_repo_finder_mount-test-repo-finder-mount.o: tests/test-repo-finder-mount.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_mount_CFLAGS) $(CFLAGS) -MT tests/tests_test_repo_finder_mount-test-repo-finder-mount.o -MD -MP -MF tests/$(DEPDIR)/tests_test_repo_finder_mount-test-repo-finder-mount.Tpo -c -o tests/tests_test_repo_finder_mount-test-repo-finder-mount.o `test -f 'tests/test-repo-finder-mount.c' || echo '$(srcdir)/'`tests/test-repo-finder-mount.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/tests_test_repo_finder_mount-test-repo-finder-mount.Tpo tests/$(DEPDIR)/tests_test_repo_finder_mount-test-repo-finder-mount.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-repo-finder-mount.c' object='tests/tests_test_repo_finder_mount-test-repo-finder-mount.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_mount_CFLAGS) $(CFLAGS) -c -o tests/tests_test_repo_finder_mount-test-repo-finder-mount.o `test -f 'tests/test-repo-finder-mount.c' || echo '$(srcdir)/'`tests/test-repo-finder-mount.c
+
+tests/tests_test_repo_finder_mount-test-repo-finder-mount.obj: tests/test-repo-finder-mount.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_mount_CFLAGS) $(CFLAGS) -MT tests/tests_test_repo_finder_mount-test-repo-finder-mount.obj -MD -MP -MF tests/$(DEPDIR)/tests_test_repo_finder_mount-test-repo-finder-mount.Tpo -c -o tests/tests_test_repo_finder_mount-test-repo-finder-mount.obj `if test -f 'tests/test-repo-finder-mount.c'; then $(CYGPATH_W) 'tests/test-repo-finder-mount.c'; else $(CYGPATH_W) '$(srcdir)/tests/test-repo-finder-mount.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) tests/$(DEPDIR)/tests_test_repo_finder_mount-test-repo-finder-mount.Tpo tests/$(DEPDIR)/tests_test_repo_finder_mount-test-repo-finder-mount.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tests/test-repo-finder-mount.c' object='tests/tests_test_repo_finder_mount-test-repo-finder-mount.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_repo_finder_mount_CFLAGS) $(CFLAGS) -c -o tests/tests_test_repo_finder_mount-test-repo-finder-mount.obj `if test -f 'tests/test-repo-finder-mount.c'; then $(CYGPATH_W) 'tests/test-repo-finder-mount.c'; else $(CYGPATH_W) '$(srcdir)/tests/test-repo-finder-mount.c'; fi`
 
 src/libostree/tests_test_rollsum-ostree-rollsum.o: src/libostree/ostree-rollsum.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_test_rollsum_CFLAGS) $(CFLAGS) -MT src/libostree/tests_test_rollsum-ostree-rollsum.o -MD -MP -MF src/libostree/$(DEPDIR)/tests_test_rollsum-ostree-rollsum.Tpo -c -o src/libostree/tests_test_rollsum-ostree-rollsum.o `test -f 'src/libostree/ostree-rollsum.c' || echo '$(srcdir)/'`src/libostree/ostree-rollsum.c
@@ -6484,6 +6907,34 @@ recheck: all $(check_LTLIBRARIES) $(check_PROGRAMS) $(check_SCRIPTS) $(check_DAT
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
+tests/test-bloom.log: tests/test-bloom$(EXEEXT)
+	@p='tests/test-bloom$(EXEEXT)'; \
+	b='tests/test-bloom'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-repo-finder-config.log: tests/test-repo-finder-config$(EXEEXT)
+	@p='tests/test-repo-finder-config$(EXEEXT)'; \
+	b='tests/test-repo-finder-config'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-repo-finder-mount.log: tests/test-repo-finder-mount$(EXEEXT)
+	@p='tests/test-repo-finder-mount$(EXEEXT)'; \
+	b='tests/test-repo-finder-mount'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-repo-finder-avahi.log: tests/test-repo-finder-avahi$(EXEEXT)
+	@p='tests/test-repo-finder-avahi$(EXEEXT)'; \
+	b='tests/test-repo-finder-avahi'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/test-varint.log: tests/test-varint$(EXEEXT)
 	@p='tests/test-varint$(EXEEXT)'; \
 	b='tests/test-varint'; \
@@ -6687,9 +7138,9 @@ tests/test-parent.sh.log: tests/test-parent.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-tests/test-pull-archive-z.sh.log: tests/test-pull-archive-z.sh
-	@p='tests/test-pull-archive-z.sh'; \
-	b='tests/test-pull-archive-z.sh'; \
+tests/test-pull-archive.sh.log: tests/test-pull-archive.sh
+	@p='tests/test-pull-archive.sh'; \
+	b='tests/test-pull-archive.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -6760,6 +7211,13 @@ tests/test-pull-untrusted.sh.log: tests/test-pull-untrusted.sh
 tests/test-pull-override-url.sh.log: tests/test-pull-override-url.sh
 	@p='tests/test-pull-override-url.sh'; \
 	b='tests/test-pull-override-url.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-pull-localcache.sh.log: tests/test-pull-localcache.sh
+	@p='tests/test-pull-localcache.sh'; \
+	b='tests/test-pull-localcache.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -6974,9 +7432,65 @@ tests/test-pull-mirrorlist.sh.log: tests/test-pull-mirrorlist.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-summary-update.sh.log: tests/test-summary-update.sh
+	@p='tests/test-summary-update.sh'; \
+	b='tests/test-summary-update.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/test-summary-view.sh.log: tests/test-summary-view.sh
 	@p='tests/test-summary-view.sh'; \
 	b='tests/test-summary-view.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-find-remotes.sh.log: tests/test-find-remotes.sh
+	@p='tests/test-find-remotes.sh'; \
+	b='tests/test-find-remotes.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-fsck-collections.sh.log: tests/test-fsck-collections.sh
+	@p='tests/test-fsck-collections.sh'; \
+	b='tests/test-fsck-collections.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-init-collections.sh.log: tests/test-init-collections.sh
+	@p='tests/test-init-collections.sh'; \
+	b='tests/test-init-collections.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-prune-collections.sh.log: tests/test-prune-collections.sh
+	@p='tests/test-prune-collections.sh'; \
+	b='tests/test-prune-collections.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-refs-collections.sh.log: tests/test-refs-collections.sh
+	@p='tests/test-refs-collections.sh'; \
+	b='tests/test-refs-collections.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-remote-add-collections.sh.log: tests/test-remote-add-collections.sh
+	@p='tests/test-remote-add-collections.sh'; \
+	b='tests/test-remote-add-collections.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-summary-collections.sh.log: tests/test-summary-collections.sh
+	@p='tests/test-summary-collections.sh'; \
+	b='tests/test-summary-collections.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -7040,6 +7554,13 @@ test-libglnx-fdio.log: test-libglnx-fdio$(EXEEXT)
 test-libglnx-errors.log: test-libglnx-errors$(EXEEXT)
 	@p='test-libglnx-errors$(EXEEXT)'; \
 	b='test-libglnx-errors'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test-libglnx-macros.log: test-libglnx-macros$(EXEEXT)
+	@p='test-libglnx-macros$(EXEEXT)'; \
+	b='test-libglnx-macros'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

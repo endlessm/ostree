@@ -117,15 +117,14 @@ else
 fi
 
 files_are_hardlinked() {
-    f1=$(stat -c %i $1)
-    f2=$(stat -c %i $2)
-    [ "$f1" == "$f2" ]
+    inode1=$(stat -c %i $1)
+    inode2=$(stat -c %i $2)
+    test -n "${inode1}" && test -n "${inode2}"
+    [ "${inode1}" == "${inode2}" ]
 }
 
 assert_files_hardlinked() {
-    f1=$(stat -c %i $1)
-    f2=$(stat -c %i $2)
-    if ! files_are_hardlinked "$f1" "$f2"; then
+    if ! files_are_hardlinked "$1" "$2"; then
         fatal "Files '$1' and '$2' are not hardlinked"
     fi
 }
@@ -536,4 +535,16 @@ ostree_file_path_to_object_path() {
     path=$3
     relpath=$(ostree_file_path_to_relative_object_path $repo $ref $path)
     echo ${repo}/${relpath}
+}
+
+# Assert ref $2 in repo $1 has checksum $3.
+assert_ref () {
+    assert_streq $(${CMD_PREFIX} ostree rev-parse --repo=$1 $2) $3
+}
+
+# Assert no ref named $2 is present in repo $1.
+assert_not_ref () {
+    if ${CMD_PREFIX} ostree rev-parse --repo=$1 $2 2>/dev/null; then
+        fatal "rev-parse $2 unexpectedly succeeded!"
+    fi
 }

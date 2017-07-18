@@ -24,61 +24,7 @@
 #include "libglnx.h"
 #include <sys/xattr.h>
 #include <gio/gunixinputstream.h>
-
-/* Before https://github.com/GNOME/libglnx/commit/9929adc, the libglnx
- * tmpfile API made it hard to clean up tmpfiles in failure cases.
- * it's API breaking. Carry the fix here until we're ready to fully port.
- */
-void
-ot_tmpfile_clear (OtTmpfile *tmpf)
-{
-  if (!tmpf->initialized)
-    return;
-  if (tmpf->fd == -1)
-    return;
-  (void) close (tmpf->fd);
-  /* If ->path is set, we're likely aborting due to an error. Clean it up */
-  if (tmpf->path)
-    {
-      (void) unlinkat (tmpf->src_dfd, tmpf->path, 0);
-      g_free (tmpf->path);
-    }
-}
-
-gboolean
-ot_open_tmpfile_linkable_at (int dfd,
-                             const char *subpath,
-                             int flags,
-                             OtTmpfile *out_tmpf,
-                             GError **error)
-{
-  if (!glnx_open_tmpfile_linkable_at (dfd, subpath, flags, &out_tmpf->fd, &out_tmpf->path, error))
-    return FALSE;
-  out_tmpf->initialized = TRUE;
-  out_tmpf->src_dfd = dfd;
-  return TRUE;
-}
-
-gboolean
-ot_link_tmpfile_at (OtTmpfile *tmpf,
-                    GLnxLinkTmpfileReplaceMode mode,
-                    int target_dfd,
-                    const char *target,
-                    GError **error)
-{
-  g_return_val_if_fail (tmpf->initialized, FALSE);
-  glnx_fd_close int fd = glnx_steal_fd (&tmpf->fd);
-  if (!glnx_link_tmpfile_at (tmpf->src_dfd, mode, fd, tmpf->path,
-                             target_dfd, target, error))
-    {
-      if (tmpf->path)
-        (void) unlinkat (tmpf->src_dfd, tmpf->path, 0);
-      tmpf->initialized = FALSE;
-      return FALSE;
-    }
-  tmpf->initialized = FALSE;
-  return TRUE;
-}
+#include <gio/gunixoutputstream.h>
 
 /* Convert a fd-relative path to a GFile* - use
  * for legacy code.
@@ -213,9 +159,8 @@ ot_dfd_iter_init_allow_noent (int dfd,
       *out_exists = FALSE;
       return TRUE;
     }
-  if (!glnx_dirfd_iterator_init_take_fd (fd, dfd_iter, error))
+  if (!glnx_dirfd_iterator_init_take_fd (&fd, dfd_iter, error))
     return FALSE;
-  fd = -1;
   *out_exists = TRUE;
   return TRUE;
 }
@@ -235,5 +180,31 @@ ot_file_mapat_bytes (int dfd,
   if (!mfile)
     return FALSE;
 
+  return g_mapped_file_get_bytes (mfile);
+}
+
+/* Given an input stream, splice it to an anonymous file (O_TMPFILE).
+ * Useful for potentially large but transient files.
+ */
+GBytes *
+ot_map_anonymous_tmpfile_from_content (GInputStream *instream,
+                                       GCancellable *cancellable,
+                                       GError      **error)
+{
+  g_auto(GLnxTmpfile) tmpf = { 0, };
+  if (!glnx_open_anonymous_tmpfile (O_RDWR | O_CLOEXEC, &tmpf, error))
+    return NULL;
+
+  g_autoptr(GOutputStream) out = g_unix_output_stream_new (tmpf.fd, FALSE);
+  gssize n_bytes_written = g_output_stream_splice (out, instream,
+                                                   G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE |
+                                                   G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
+                                                   cancellable, error);
+  if (n_bytes_written < 0)
+    return NULL;
+
+  g_autoptr(GMappedFile) mfile = g_mapped_file_new_from_fd (tmpf.fd, FALSE, error);
+  if (!mfile)
+    return NULL;
   return g_mapped_file_get_bytes (mfile);
 }

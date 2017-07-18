@@ -2,7 +2,7 @@
 .\"     Title: ostree summary
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 06/19/2017
+.\"      Date: 07/04/2017
 .\"    Manual: ostree summary
 .\"    Source: OSTree
 .\"  Language: English
@@ -42,6 +42,11 @@ file is an optional higher level form of repository metadata that describes the 
 \fB\-u\fR
 .RS 4
 Update the summary file\&.
+.sp
+Any additional arguments to the command are treated as additional key\(envalue pairs to be added to the summary file as additional metadata\&. They must be in the format
+\fB\fIKEY\fR\fR\fB=\fR\fB\fIVALUE\fR\fR
+or as two separate arguments\&. The keys must be namespaced for your organisation or repository using a dot prefix\&. The values must be in GVariant text format\&. For example,
+\fBexampleos\&.end\-of\-life "@t 1445385600"\fR\&.
 .RE
 .PP
 \fB\-\-gpg\-sign\fR=KEYID

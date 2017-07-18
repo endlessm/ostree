@@ -2,7 +2,7 @@
 .\"     Title: ostree init
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 06/19/2017
+.\"      Date: 07/04/2017
 .\"    Manual: ostree init
 .\"    Source: OSTree
 .\"  Language: English
@@ -40,4 +40,15 @@ Creates a new empty repository\&.
 \fB\-\-mode\fR="MODE"
 .RS 4
 Initialize repository in given mode (bare, bare\-user, archive\-z2)\&. Default is "bare"\&.
+.RE
+.PP
+\fB\-\-collection\-id\fR=COLLECTION\-ID
+.RS 4
+Set the collection ID of the repository\&. Remotes in clones of this repository must configure the same value in order to pull refs which originated in this repository over peer to peer\&.
+.sp
+This collection ID must be persistent and globally unique\&. It is formatted as a reverse DNS name (like a D\-Bus interface)\&. It must be set to a reverse DNS domain under your control\&.
+.sp
+This option may be omitted (the default) to leave peer to peer distribution unsupported for the repository\&. A collection ID may be added to an existing repository in future to enable peer to peer distribution from that point onwards\&.
+.sp
+If the collection ID is changed for the repository in future, peer to peer distribution of refs from the repository will break for all peers who do not update their remote configuration to the new collection ID\&.
 .RE

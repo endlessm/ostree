@@ -101,6 +101,7 @@ ostree_validate_checksum_string (const char *sha256,
 
 #define OSTREE_REF_FRAGMENT_REGEXP "[-._\\w\\d]+"
 #define OSTREE_REF_REGEXP "(?:" OSTREE_REF_FRAGMENT_REGEXP "/)*" OSTREE_REF_FRAGMENT_REGEXP
+#define OSTREE_REMOTE_NAME_REGEXP OSTREE_REF_FRAGMENT_REGEXP
 
 /**
  * ostree_parse_refspec:
@@ -125,7 +126,7 @@ ostree_parse_refspec (const char   *refspec,
   static gsize regex_initialized;
   if (g_once_init_enter (&regex_initialized))
     {
-      regex = g_regex_new ("^(" OSTREE_REF_FRAGMENT_REGEXP ":)?(" OSTREE_REF_REGEXP ")$", 0, 0, NULL);
+      regex = g_regex_new ("^(" OSTREE_REMOTE_NAME_REGEXP ":)?(" OSTREE_REF_REGEXP ")$", 0, 0, NULL);
       g_assert (regex);
       g_once_init_leave (&regex_initialized, 1);
     }
@@ -176,6 +177,67 @@ ostree_validate_rev (const char *rev,
 
   if (!g_regex_match (regex, rev, 0, &match))
     return glnx_throw (error, "Invalid ref name %s", rev);
+
+  return TRUE;
+}
+
+/**
+ * ostree_validate_remote_name:
+ * @remote_name: A remote name
+ * @error: Error
+ *
+ * Returns: %TRUE if @remote_name is a valid remote name
+ * Since: 2017.8
+ */
+gboolean
+ostree_validate_remote_name (const char  *remote_name,
+                             GError     **error)
+{
+  g_autoptr(GMatchInfo) match = NULL;
+
+  static gsize regex_initialized;
+  static GRegex *regex;
+  if (g_once_init_enter (&regex_initialized))
+    {
+      regex = g_regex_new ("^" OSTREE_REMOTE_NAME_REGEXP "$", 0, 0, NULL);
+      g_assert (regex);
+      g_once_init_leave (&regex_initialized, 1);
+    }
+
+  if (!g_regex_match (regex, remote_name, 0, &match))
+    return glnx_throw (error, "Invalid remote name %s", remote_name);
+
+  return TRUE;
+}
+
+/**
+ * ostree_validate_collection_id:
+ * @rev: (nullable): A collection ID
+ * @error: Error
+ *
+ * Check whether the given @collection_id is valid. Return an error if it is
+ * invalid or %NULL.
+ *
+ * Valid collection IDs are reverse DNS names:
+ *  * They are composed of 1 or more elements separated by a period (`.`) character.
+ *    All elements must contain at least one character.
+ *  * Each element must only contain the ASCII characters `[A-Z][a-z][0-9]_` and must not
+ *    begin with a digit.
+ *  * They must contain at least one `.` (period) character (and thus at least two elements).
+ *  * They must not begin with a `.` (period) character.
+ *  * They must not exceed 255 characters in length.
+ *
+ * (This makes their format identical to D-Bus interface names, for consistency.)
+ *
+ * Returns: %TRUE if @collection_id is a valid collection ID, %FALSE if it is invalid
+ *    or %NULL
+ */
+gboolean
+ostree_validate_collection_id (const char *collection_id, GError **error)
+{
+  /* Abuse g_dbus_is_interface_name(), since collection IDs have the same format. */
+  if (collection_id == NULL || !g_dbus_is_interface_name (collection_id))
+    return glnx_throw (error, "Invalid collection ID %s", collection_id);
 
   return TRUE;
 }
@@ -614,7 +676,7 @@ ostree_content_stream_parse (gboolean                compressed,
   if (compressed)
     {
       if (!zlib_file_header_parse (file_header,
-                                   out_file_info ? &ret_file_info : NULL,
+                                   &ret_file_info,
                                    out_xattrs ? &ret_xattrs : NULL,
                                    error))
         return FALSE;
@@ -622,12 +684,11 @@ ostree_content_stream_parse (gboolean                compressed,
   else
     {
       if (!file_header_parse (file_header,
-                              out_file_info ? &ret_file_info : NULL,
+                              &ret_file_info,
                               out_xattrs ? &ret_xattrs : NULL,
                               error))
         return FALSE;
-      if (ret_file_info)
-        g_file_info_set_size (ret_file_info, input_length - archive_header_size - 8);
+      g_file_info_set_size (ret_file_info, input_length - archive_header_size - 8);
     }
 
   g_autoptr(GInputStream) ret_input = NULL;
@@ -1432,7 +1493,7 @@ _ostree_loose_path (char              *buf,
 }
 
 /**
- * _ostree_header_gfile_info_new:
+ * _ostree_stbuf_to_gfileinfo:
  * @mode: File mode
  * @uid: File uid
  * @gid: File gid
@@ -1445,15 +1506,40 @@ _ostree_loose_path (char              *buf,
  * Returns: (transfer full): A new #GFileInfo mapping a subset of @stbuf.
  */
 GFileInfo *
-_ostree_header_gfile_info_new (mode_t mode, uid_t uid, gid_t gid)
+_ostree_stbuf_to_gfileinfo (const struct stat *stbuf)
 {
   GFileInfo *ret = g_file_info_new ();
-  g_file_info_set_attribute_uint32 (ret, "standard::type", ot_gfile_type_for_mode (mode));
+  GFileType ftype;
+  const mode_t mode = stbuf->st_mode;
+  if (S_ISDIR (mode))
+    ftype = G_FILE_TYPE_DIRECTORY;
+  else if (S_ISREG (mode))
+    ftype = G_FILE_TYPE_REGULAR;
+  else if (S_ISLNK (mode))
+    ftype = G_FILE_TYPE_SYMBOLIC_LINK;
+  else if (S_ISBLK (mode) || S_ISCHR(mode) || S_ISFIFO(mode))
+    ftype = G_FILE_TYPE_SPECIAL;
+  else
+    ftype = G_FILE_TYPE_UNKNOWN;
+  g_file_info_set_attribute_uint32 (ret, "standard::type", ftype);
   g_file_info_set_attribute_boolean (ret, "standard::is-symlink", S_ISLNK (mode));
-  g_file_info_set_attribute_uint32 (ret, "unix::uid", uid);
-  g_file_info_set_attribute_uint32 (ret, "unix::gid", gid);
+  g_file_info_set_attribute_uint32 (ret, "unix::uid", stbuf->st_uid);
+  g_file_info_set_attribute_uint32 (ret, "unix::gid", stbuf->st_gid);
   g_file_info_set_attribute_uint32 (ret, "unix::mode", mode);
+  if (S_ISREG (mode))
+    g_file_info_set_attribute_uint64 (ret, "standard::size", stbuf->st_size);
+
   return ret;
+}
+
+GFileInfo *
+_ostree_mode_uidgid_to_gfileinfo (mode_t mode, uid_t uid, gid_t gid)
+{
+  struct stat stbuf;
+  stbuf.st_mode = mode;
+  stbuf.st_uid = uid;
+  stbuf.st_gid = gid;
+  return _ostree_stbuf_to_gfileinfo (&stbuf);
 }
 
 /*
@@ -1619,8 +1705,7 @@ file_header_parse (GVariant         *metadata,
   uid = GUINT32_FROM_BE (uid);
   gid = GUINT32_FROM_BE (gid);
   mode = GUINT32_FROM_BE (mode);
-
-  g_autoptr(GFileInfo) ret_file_info = _ostree_header_gfile_info_new (mode, uid, gid);
+  g_autoptr(GFileInfo) ret_file_info = _ostree_mode_uidgid_to_gfileinfo (mode, uid, gid);
 
   if (S_ISREG (mode))
     {
@@ -1670,7 +1755,7 @@ zlib_file_header_parse (GVariant         *metadata,
   uid = GUINT32_FROM_BE (uid);
   gid = GUINT32_FROM_BE (gid);
   mode = GUINT32_FROM_BE (mode);
-  g_autoptr(GFileInfo) ret_file_info = _ostree_header_gfile_info_new (mode, uid, gid);
+  g_autoptr(GFileInfo) ret_file_info = _ostree_mode_uidgid_to_gfileinfo (mode, uid, gid);
   g_file_info_set_size (ret_file_info, GUINT64_FROM_BE (size));
 
   if (S_ISREG (mode))
