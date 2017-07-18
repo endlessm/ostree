@@ -37,6 +37,7 @@
     <keyword type="function" name="ostree_checksum_b64_inplace_to_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-b64-inplace-to-bytes"/>
     <keyword type="function" name="ostree_cmp_checksum_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-cmp-checksum-bytes"/>
     <keyword type="function" name="ostree_validate_rev ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-rev"/>
+    <keyword type="function" name="ostree_validate_remote_name ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-remote-name" since="2017.8"/>
     <keyword type="function" name="ostree_parse_refspec ()" link="ostree-Core-repository-independent-functions.html#ostree-parse-refspec"/>
     <keyword type="function" name="ostree_object_type_to_string ()" link="ostree-Core-repository-independent-functions.html#ostree-object-type-to-string"/>
     <keyword type="function" name="ostree_object_type_from_string ()" link="ostree-Core-repository-independent-functions.html#ostree-object-type-from-string"/>

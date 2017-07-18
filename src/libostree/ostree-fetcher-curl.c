@@ -99,7 +99,7 @@ struct FetcherRequest {
   OstreeFetcherRequestFlags flags;
   gboolean is_membuf;
   GError *caught_write_error;
-  OtTmpfile tmpf;
+  GLnxTmpfile tmpf;
   GString *output_buf;
 
   CURL *easy;
@@ -270,9 +270,9 @@ ensure_tmpfile (FetcherRequest *req, GError **error)
 {
   if (!req->tmpf.initialized)
     {
-      if (!ot_open_tmpfile_linkable_at (req->fetcher->tmpdir_dfd, ".",
-                                        O_WRONLY | O_CLOEXEC, &req->tmpf,
-                                        error))
+      if (!glnx_open_tmpfile_linkable_at (req->fetcher->tmpdir_dfd, ".",
+                                          O_WRONLY | O_CLOEXEC, &req->tmpf,
+                                          error))
         return FALSE;
     }
   return TRUE;
@@ -390,9 +390,9 @@ check_multi_info (OstreeFetcher *fetcher)
                   glnx_set_error_from_errno (error);
                   g_task_return_error (task, g_steal_pointer (&local_error));
                 }
-              else if (!ot_link_tmpfile_at (&req->tmpf, GLNX_LINK_TMPFILE_REPLACE,
-                                            fetcher->tmpdir_dfd, tmpfile_path,
-                                            error))
+              else if (!glnx_link_tmpfile_at (&req->tmpf, GLNX_LINK_TMPFILE_REPLACE,
+                                              fetcher->tmpdir_dfd, tmpfile_path,
+                                              error))
                 g_task_return_error (task, g_steal_pointer (&local_error));
               else
                 {
@@ -616,7 +616,7 @@ request_unref (FetcherRequest *req)
   g_ptr_array_unref (req->mirrorlist);
   g_free (req->filename);
   g_clear_error (&req->caught_write_error);
-  ot_tmpfile_clear (&req->tmpf);
+  glnx_tmpfile_clear (&req->tmpf);
   if (req->output_buf)
     g_string_free (req->output_buf, TRUE);
   curl_easy_cleanup (req->easy);
@@ -690,9 +690,6 @@ static void
 adopt_steal_mainctx (OstreeFetcher *self,
                      GMainContext *mainctx)
 {
-  GHashTableIter hiter;
-  gpointer key, value;
-
   g_assert (self->mainctx == NULL);
   self->mainctx = mainctx; /* Transfer */
 
@@ -706,12 +703,8 @@ adopt_steal_mainctx (OstreeFetcher *self,
       update_timeout_cb (self->multi, timeout_micros / 1000, self);
     }
 
-  g_hash_table_iter_init (&hiter, self->sockets);
-  while (g_hash_table_iter_next (&hiter, &key, &value))
-    {
-      SockInfo *fdp = key;
-      setsock (fdp, fdp->sockfd, fdp->action, self);
-    }
+  GLNX_HASH_TABLE_FOREACH (self->sockets, SockInfo*, fdp)
+    setsock (fdp, fdp->sockfd, fdp->action, self);
 }
 
 static void

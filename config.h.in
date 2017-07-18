@@ -3,6 +3,9 @@
 /* Define if we are enabling ostree trivial-httpd entrypoint */
 #undef BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE
 
+/* Define if doing a development build */
+#undef BUILDOPT_IS_DEVEL_BUILD
+
 /* Define if systemd and libmount */
 #undef BUILDOPT_LIBSYSTEMD_AND_LIBMOUNT
 
@@ -17,6 +20,9 @@
 
 /* Define to 1 if you have the `archive_read_support_filter_all' function. */
 #undef HAVE_ARCHIVE_READ_SUPPORT_FILTER_ALL
+
+/* Define if we have avahi-client.pc and avahi-glib.pc */
+#undef HAVE_AVAHI
 
 /* Define to 1 if you have the declaration of `', and to 0 if you don't. */
 #undef HAVE_DECL_

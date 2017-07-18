@@ -35,12 +35,14 @@ function verify_initial_contents() {
     assert_file_has_content baz/cow '^moo$'
 }
 
-echo "1..25"
+echo "1..26"
 
 # Try both syntaxes
 repo_init --no-gpg-verify
-${CMD_PREFIX} ostree --repo=repo pull origin main
-${CMD_PREFIX} ostree --repo=repo pull origin:main
+${CMD_PREFIX} ostree --repo=repo pull origin main >out.txt
+assert_file_has_content out.txt "[1-9][0-9]* metadata, [1-9][0-9]* content objects fetched"
+${CMD_PREFIX} ostree --repo=repo pull origin:main > out.txt
+assert_not_file_has_content out.txt "content objects fetched"
 ${CMD_PREFIX} ostree --repo=repo fsck
 echo "ok pull"
 
@@ -50,7 +52,7 @@ echo "ok pull contents"
 
 cd ${test_tmpdir}
 mkdir mirrorrepo
-ostree_repo_init mirrorrepo --mode=archive-z2
+ostree_repo_init mirrorrepo --mode=archive
 ${CMD_PREFIX} ostree --repo=mirrorrepo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
 ${CMD_PREFIX} ostree --repo=mirrorrepo pull --mirror origin main
 ${CMD_PREFIX} ostree --repo=mirrorrepo fsck
@@ -63,7 +65,7 @@ ${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo commit -b otherbranch --tree=di
 ${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo summary -u
 rm mirrorrepo -rf
 # All refs
-ostree_repo_init mirrorrepo --mode=archive-z2
+ostree_repo_init mirrorrepo --mode=archive
 ${CMD_PREFIX} ostree --repo=mirrorrepo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
 ${CMD_PREFIX} ostree --repo=mirrorrepo pull --mirror origin
 ${CMD_PREFIX} ostree --repo=mirrorrepo fsck
@@ -73,7 +75,7 @@ done
 echo "ok pull mirror (all refs)"
 
 rm mirrorrepo -rf
-ostree_repo_init mirrorrepo --mode=archive-z2
+ostree_repo_init mirrorrepo --mode=archive
 ${CMD_PREFIX} ostree --repo=mirrorrepo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
 # Generate a summary in the mirror
 ${CMD_PREFIX} ostree --repo=mirrorrepo summary -u
@@ -152,12 +154,32 @@ echo "ok pull commit metadata only (should not apply deltas)"
 
 cd ${test_tmpdir}
 mkdir mirrorrepo-local
-ostree_repo_init mirrorrepo-local --mode=archive-z2
+ostree_repo_init mirrorrepo-local --mode=archive
 ${CMD_PREFIX} ostree --repo=mirrorrepo-local remote add --set=gpg-verify=false origin file://$(pwd)/ostree-srv/gnomerepo
 ${CMD_PREFIX} ostree --repo=mirrorrepo-local pull --mirror origin main
 ${CMD_PREFIX} ostree --repo=mirrorrepo-local fsck
 $OSTREE show main >/dev/null
 echo "ok pull local mirror"
+
+cd ${test_tmpdir}
+# This is more of a known issue; test that we give a clean error right now
+rm otherrepo -rf
+ostree_repo_init otherrepo --mode=archive
+rm checkout-origin-main -rf
+${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo checkout main checkout-origin-main
+${CMD_PREFIX} ostree --repo=otherrepo commit -b localbranch --tree=dir=checkout-origin-main
+${CMD_PREFIX} ostree --repo=otherrepo remote add --set=gpg-verify=false origin file://$(pwd)/ostree-srv/gnomerepo
+${CMD_PREFIX} ostree --repo=otherrepo pull origin main
+rm mirrorrepo-local -rf
+ostree_repo_init mirrorrepo-local --mode=archive
+if ${CMD_PREFIX} ostree --repo=mirrorrepo-local pull-local otherrepo 2>err.txt; then
+    fatal "pull with mixed refs succeeded?"
+fi
+assert_file_has_content err.txt "error: Invalid ref name origin:main"
+${CMD_PREFIX} ostree --repo=mirrorrepo-local pull-local otherrepo localbranch
+${CMD_PREFIX} ostree --repo=mirrorrepo-local rev-parse localbranch
+${CMD_PREFIX} ostree --repo=mirrorrepo-local fsck
+echo "ok pull-local mirror errors with mixed refs"
 
 cd ${test_tmpdir}
 ${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo commit -b main -s "Metadata string" --add-detached-metadata-string=SIGNATURE=HANCOCK --tree=ref=main
@@ -170,7 +192,7 @@ echo "ok pull detached metadata"
 
 cd ${test_tmpdir}
 mkdir parentpullrepo
-ostree_repo_init parentpullrepo --mode=archive-z2
+ostree_repo_init parentpullrepo --mode=archive
 ${CMD_PREFIX} ostree --repo=parentpullrepo remote add --set=gpg-verify=false origin file://$(pwd)/ostree-srv/gnomerepo
 parent_rev=$(ostree --repo=ostree-srv/gnomerepo rev-parse main^)
 rev=$(ostree --repo=ostree-srv/gnomerepo rev-parse main)

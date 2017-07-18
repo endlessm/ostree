@@ -25,29 +25,31 @@
 
 G_BEGIN_DECLS
 
-/* This is a copy of https://github.com/GNOME/libglnx/pull/46 until we
- * can do a full port; see https://github.com/ostreedev/ostree/pull/861 */
+/* A little helper to call unlinkat() as a cleanup
+ * function.  Mostly only necessary to handle
+ * deletion of temporary symlinks.
+ */
 typedef struct {
-  gboolean initialized;
-  int src_dfd;
-  int fd;
+  int dfd;
   char *path;
-} OtTmpfile;
-void ot_tmpfile_clear (OtTmpfile *tmpf);
-G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(OtTmpfile, ot_tmpfile_clear);
+} OtCleanupUnlinkat;
 
-gboolean
-ot_open_tmpfile_linkable_at (int dfd,
-                             const char *subpath,
-                             int flags,
-                             OtTmpfile *out_tmpf,
-                             GError **error);
-gboolean
-ot_link_tmpfile_at (OtTmpfile *tmpf,
-                    GLnxLinkTmpfileReplaceMode flags,
-                    int target_dfd,
-                    const char *target,
-                    GError **error);
+static inline void
+ot_cleanup_unlinkat_clear (OtCleanupUnlinkat *cleanup)
+{
+  g_clear_pointer (&cleanup->path, g_free);
+}
+
+static inline void
+ot_cleanup_unlinkat (OtCleanupUnlinkat *cleanup)
+{
+  if (cleanup->path)
+    {
+      (void) unlinkat (cleanup->dfd, cleanup->path, 0);
+      ot_cleanup_unlinkat_clear (cleanup);
+    }
+}
+G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(OtCleanupUnlinkat, ot_cleanup_unlinkat);
 
 GFile * ot_fdrel_to_gfile (int dfd, const char *path);
 
@@ -83,6 +85,11 @@ gboolean ot_dfd_iter_init_allow_noent (int dfd,
                                        GLnxDirFdIterator *dfd_iter,
                                        gboolean *out_exists,
                                        GError **error);
+
+GBytes *
+ot_map_anonymous_tmpfile_from_content (GInputStream *instream,
+                                       GCancellable *cancellable,
+                                       GError      **error);
 
 GBytes *ot_file_mapat_bytes (int dfd,
                              const char *path,

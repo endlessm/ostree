@@ -2,7 +2,7 @@
 .\"     Title: ostree remote
 .\"    Author: Colin Walters <walters@verbum.org>
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 06/19/2017
+.\"      Date: 07/04/2017
 .\"    Manual: ostree remote
 .\"    Source: OSTree
 .\"  Language: English
@@ -85,6 +85,11 @@ Import one or more GPG keys from a file\&.
 .sp
 Equivalent to
 \fBostree remote gpg\-import \-\-keyring=FILE\fR\&.
+.RE
+.PP
+\fB\-\-collection\-id\fR=COLLECTION\-ID
+.RS 4
+Set the collection ID for the remote to a value provided by the repository owner, which allows refs from this remote to be shared peer to peer\&.
 .RE
 .SH "\*(AQLIST\*(AQ OPTIONS"
 .PP

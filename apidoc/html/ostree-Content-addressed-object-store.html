@@ -1130,6 +1130,22 @@ filesystem and write content, possibly multiple times.</p>
 <p>Once the <a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> is complete, write all of its metadata
 with <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-write-mtree" title="ostree_repo_write_mtree ()"><code class="function">ostree_repo_write_mtree()</code></a>, and finally create a commit with
 <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-write-commit" title="ostree_repo_write_commit ()"><code class="function">ostree_repo_write_commit()</code></a>.</p>
+<div class="refsect3">
+<a name="id-1.2.3.5.7"></a><h4>Collection IDs</h4>
+<p>A collection ID is a globally unique identifier which, if set, is used to
+identify refs from a repository which are mirrored elsewhere, such as in
+mirror repositories or peer to peer networks.</p>
+<p>This is separate from the <code class="literal">collection-id</code> configuration key for a remote, which
+is used to store the collection ID of the repository that remote points to.</p>
+<p>The collection ID should only be set on an <a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> if it is the canonical
+collection for some refs.</p>
+<p>A collection ID must be a reverse DNS name, where the domain name is under the
+control of the curator of the collection, so they can demonstrate ownership
+of the collection. The later elements in the reverse DNS name can be used to
+disambiguate between multiple collections from the same curator. For example,
+<code class="literal">org.exampleos.Main</code> and <code class="literal">org.exampleos.Apps</code>. For the complete format of
+collection IDs, see <code class="function">ostree_validate_collection_id()</code>.</p>
+</div>
 </div>
 <div class="refsect1">
 <a name="ostree-Content-addressed-object-store.functions_details"></a><h2>Functions</h2>
@@ -6325,6 +6341,9 @@ ostree_repo_pull_with_options (<em class="parameter"><code><a class="link" href=
 The following are currently defined:</p>
 <div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; ">
 <li class="listitem"><p>refs (as): Array of string refs</p></li>
+<li class="listitem"><p>collection-refs (a(sss)): Array of (collection ID, ref name, checksum) tuples to pull;
+mutually exclusive with <code class="literal">refs</code> and <code class="literal">override-commit-ids</code>. Checksums may be the empty
+string to pull the latest commit for that ref</p></li>
 <li class="listitem"><p>flags (i): An instance of <a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoPullFlags" title="enum OstreeRepoPullFlags"><span class="type">OstreeRepoPullFlags</span></a></p></li>
 <li class="listitem"><p>subdir (s): Pull just this subdirectory</p></li>
 <li class="listitem"><p>subdirs (as): Pull just these subdirectories</p></li>
@@ -6340,6 +6359,7 @@ The following are currently defined:</p>
 <li class="listitem"><p>inherit-transaction (b): Don't initiate, finish or abort a transaction, useful to do multiple pulls in one transaction.</p></li>
 <li class="listitem"><p>http-headers (a(ss)): Additional headers to add to all HTTP requests</p></li>
 <li class="listitem"><p>update-frequency (u): Frequency to call the async progress callback in milliseconds, if any; only values higher than 0 are valid</p></li>
+<li class="listitem"><p>localcache-repos (as): File paths for local repos to use as caches when doing remote fetches</p></li>
 </ul></div>
 <div class="refsect3">
 <a name="ostree-repo-pull-with-options.parameters"></a><h4>Parameters</h4>
@@ -6537,7 +6557,7 @@ ostree_repo_add_gpg_signature_summary (<em class="parameter"><code><a class="lin
                                        <em class="parameter"><code>const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *homedir</code></em>,
                                        <em class="parameter"><code><a href="https://developer.gnome.org/gio/unstable/GCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
                                        <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
-<p>Add a GPG signature to a static delta.</p>
+<p>Add a GPG signature to a summary file.</p>
 <div class="refsect3">
 <a name="ostree-repo-add-gpg-signature-summary.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -6911,6 +6931,12 @@ regular, setting the <code class="literal">ostree.summary.expires</code> key in 
 will aid clients in working out when to check for updates.</p>
 <p>It is regenerated automatically after a commit if
 <code class="literal">core/commit-update-summary</code> is set.</p>
+<p>If the <code class="literal">core/collection-id</code> key is set in the configuration, it will be
+included as <code class="literal">OSTREE_SUMMARY_COLLECTION_ID</code> in the summary file. Refs from the
+<code class="literal">refs/mirrors</code> directory will be included in the generated summary file,
+listed under the <code class="literal">OSTREE_SUMMARY_COLLECTION_MAP</code> key. Collection IDs and refs
+in <code class="literal">OSTREE_SUMMARY_COLLECTION_MAP</code> are guaranteed to be in lexicographic
+order.</p>
 <div class="refsect3">
 <a name="ostree-repo-regenerate-summary.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">

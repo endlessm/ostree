@@ -63,12 +63,10 @@ parse_fsync_cb (const char  *option_name,
                 GError     **error)
 {
   gboolean val;
-
   if (!ot_parse_boolean (value, &val, error))
     return FALSE;
-    
-  opt_disable_fsync = !val;
 
+  opt_disable_fsync = !val;
   return TRUE;
 }
 
@@ -109,16 +107,12 @@ parse_file_by_line (const char    *path,
                     GCancellable  *cancellable,
                     GError       **error)
 {
-  gboolean ret = FALSE;
-  g_autofree char *contents = NULL;
-  g_autoptr(GFile) file = NULL;
-  char **lines = NULL;
+  g_autofree char *contents =
+    glnx_file_get_contents_utf8_at (AT_FDCWD, path, NULL, cancellable, error);
+  if (!contents)
+    return FALSE;
 
-  file = g_file_new_for_path (path);
-  if (!g_file_load_contents (file, cancellable, &contents, NULL, NULL, error))
-    goto out;
-
-  lines = g_strsplit (contents, "\n", -1);
+  g_auto(GStrv) lines = g_strsplit (contents, "\n", -1);
   for (char **iter = lines; iter && *iter; iter++)
     {
       /* skip empty lines at least */
@@ -126,33 +120,41 @@ parse_file_by_line (const char    *path,
         continue;
 
       if (!cb (*iter, cbdata, error))
-        goto out;
+        return FALSE;
     }
 
-  ret = TRUE;
-out:
-  g_strfreev (lines);
-  return ret;
+  return TRUE;
 }
+
+struct CommitFilterData {
+  GHashTable *mode_adds;
+  GHashTable *mode_overrides;
+  GHashTable *skip_list;
+};
 
 static gboolean
 handle_statoverride_line (const char  *line,
                           void        *data,
                           GError     **error)
 {
-  GHashTable *files = data;
-  const char *spc;
-  guint mode_add;
-
-  spc = strchr (line, ' ');
+  struct CommitFilterData *cf = data;
+  const char *spc = strchr (line, ' ');
   if (spc == NULL)
-    {
-      return glnx_throw (error, "Malformed statoverride file (no space found)");
-    }
+    return glnx_throw (error, "Malformed statoverride file (no space found)");
+  const char *fn = spc + 1;
 
-  mode_add = (guint32)(gint32)g_ascii_strtod (line, NULL);
-  g_hash_table_insert (files, g_strdup (spc + 1),
-                       GUINT_TO_POINTER((gint32)mode_add));
+  if (g_str_has_prefix (line, "="))
+    {
+      guint mode_override = (guint32)(gint32)g_ascii_strtod (line+1, NULL);
+      g_hash_table_insert (cf->mode_overrides, g_strdup (fn),
+                           GUINT_TO_POINTER((gint32)mode_override));
+    }
+  else
+    {
+      guint mode_add = (guint32)(gint32)g_ascii_strtod (line, NULL);
+      g_hash_table_insert (cf->mode_adds, g_strdup (fn),
+                           GUINT_TO_POINTER((gint32)mode_add));
+    }
   return TRUE;
 }
 
@@ -166,11 +168,6 @@ handle_skiplist_line (const char  *line,
   return TRUE;
 }
 
-struct CommitFilterData {
-  GHashTable *mode_adds;
-  GHashTable *skip_list;
-};
-
 static OstreeRepoCommitFilterResult
 commit_filter (OstreeRepo         *self,
                const char         *path,
@@ -179,6 +176,7 @@ commit_filter (OstreeRepo         *self,
 {
   struct CommitFilterData *data = user_data;
   GHashTable *mode_adds = data->mode_adds;
+  GHashTable *mode_overrides = data->mode_overrides;
   GHashTable *skip_list = data->skip_list;
   gpointer value;
 
@@ -193,6 +191,14 @@ commit_filter (OstreeRepo         *self,
       guint mode_add = GPOINTER_TO_UINT (value);
       g_file_info_set_attribute_uint32 (file_info, "unix::mode",
                                         current_mode | mode_add);
+      g_hash_table_remove (mode_adds, path);
+    }
+  else if (mode_overrides && g_hash_table_lookup_extended (mode_overrides, path, NULL, &value))
+    {
+      guint current_fmt = g_file_info_get_attribute_uint32 (file_info, "unix::mode") & S_IFMT;
+      guint mode_override = GPOINTER_TO_UINT (value);
+      g_file_info_set_attribute_uint32 (file_info, "unix::mode",
+                                        current_fmt | mode_override);
       g_hash_table_remove (mode_adds, path);
     }
 
@@ -213,14 +219,7 @@ commit_editor (OstreeRepo     *repo,
                GCancellable   *cancellable,
                GError        **error)
 {
-  g_autofree char *input = NULL;
-  g_autofree char *output = NULL;
-  gboolean ret = FALSE;
-  g_autoptr(GString) bodybuf = NULL;
-  char **lines = NULL;
-  int i;
-
-  input = g_strdup_printf ("\n"
+  g_autofree char *input = g_strdup_printf ("\n"
       "# Please enter the commit message for your changes. The first line will\n"
       "# become the subject, and the remainder the body. Lines starting\n"
       "# with '#' will be ignored, and an empty message aborts the commit."
@@ -233,12 +232,13 @@ commit_editor (OstreeRepo     *repo,
   *subject = NULL;
   *body = NULL;
 
-  output = ot_editor_prompt (repo, input, cancellable, error);
+  g_autofree char *output = ot_editor_prompt (repo, input, cancellable, error);
   if (output == NULL)
-    goto out;
+    return FALSE;
 
-  lines = g_strsplit (output, "\n", -1);
-  for (i = 0; lines[i] != NULL; i++)
+  g_auto(GStrv) lines = g_strsplit (output, "\n", -1);
+  g_autoptr(GString) bodybuf = NULL;
+  for (guint i = 0; lines[i] != NULL; i++)
     {
       g_strchomp (lines[i]);
 
@@ -269,24 +269,15 @@ commit_editor (OstreeRepo     *repo,
     }
 
   if (!*subject)
-    {
-      g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                           "Aborting commit due to empty commit subject.");
-      goto out;
-    }
+    return glnx_throw (error, "Aborting commit due to empty commit subject.");
 
   if (bodybuf)
     {
-      *body = g_string_free (bodybuf, FALSE);
+      *body = g_string_free (g_steal_pointer (&bodybuf), FALSE);
       g_strchomp (*body);
-      bodybuf = NULL;
     }
 
-  ret = TRUE;
-
-out:
-  g_strfreev (lines);
-  return ret;
+  return TRUE;
 }
 
 static gboolean
@@ -294,38 +285,22 @@ parse_keyvalue_strings (char             **strings,
                         GVariant         **out_metadata,
                         GError           **error)
 {
-  gboolean ret = FALSE;
-  char **iter;
-  g_autoptr(GVariantBuilder) builder = NULL;
+  g_autoptr(GVariantBuilder) builder =
+    g_variant_builder_new (G_VARIANT_TYPE ("a{sv}"));
 
-  builder = g_variant_builder_new (G_VARIANT_TYPE ("a{sv}"));
-
-  for (iter = strings; *iter; iter++)
+  for (char ** iter = strings; *iter; iter++)
     {
-      const char *s;
-      const char *eq;
-      g_autofree char *key = NULL;
-
-      s = *iter;
-
-      eq = strchr (s, '=');
+      const char *s = *iter;
+      const char *eq = strchr (s, '=');
       if (!eq)
-        {
-          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                       "Missing '=' in KEY=VALUE metadata '%s'", s);
-          goto out;
-        }
-          
-      key = g_strndup (s, eq - s);
+        return glnx_throw (error, "Missing '=' in KEY=VALUE metadata '%s'", s);
+      g_autofree char *key = g_strndup (s, eq - s);
       g_variant_builder_add (builder, "{sv}", key,
                              g_variant_new_string (eq + 1));
     }
 
-  ret = TRUE;
-  *out_metadata = g_variant_builder_end (builder);
-  g_variant_ref_sink (*out_metadata);
- out:
-  return ret;
+  *out_metadata = g_variant_ref_sink (g_variant_builder_end (builder));
+  return TRUE;
 }
 
 gboolean
@@ -344,6 +319,7 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
   glnx_unref_object OstreeMutableTree *mtree = NULL;
   g_autofree char *tree_type = NULL;
   g_autoptr(GHashTable) mode_adds = NULL;
+  g_autoptr(GHashTable) mode_overrides = NULL;
   g_autoptr(GHashTable) skip_list = NULL;
   OstreeRepoCommitModifierFlags flags = 0;
   OstreeRepoCommitModifier *modifier = NULL;
@@ -361,9 +337,10 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
 
   if (opt_statoverride_file)
     {
-      mode_adds = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+      filter_data.mode_adds = mode_adds = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+      filter_data.mode_overrides = mode_overrides = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
       if (!parse_file_by_line (opt_statoverride_file, handle_statoverride_line,
-                               mode_adds, cancellable, error))
+                               &filter_data, cancellable, error))
         goto out;
     }
 
@@ -387,7 +364,7 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
                                    &detached_metadata, error))
         goto out;
     }
-      
+
   if (!(opt_branch || opt_orphan))
     {
       g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,

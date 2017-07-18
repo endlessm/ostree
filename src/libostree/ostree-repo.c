@@ -44,6 +44,7 @@
 #include <locale.h>
 #include <glib/gstdio.h>
 #include <sys/file.h>
+#include <sys/statvfs.h>
 
 /**
  * SECTION:ostree-repo
@@ -77,6 +78,25 @@
  * Once the #OstreeMutableTree is complete, write all of its metadata
  * with ostree_repo_write_mtree(), and finally create a commit with
  * ostree_repo_write_commit().
+ *
+ * ## Collection IDs
+ *
+ * A collection ID is a globally unique identifier which, if set, is used to
+ * identify refs from a repository which are mirrored elsewhere, such as in
+ * mirror repositories or peer to peer networks.
+ *
+ * This is separate from the `collection-id` configuration key for a remote, which
+ * is used to store the collection ID of the repository that remote points to.
+ *
+ * The collection ID should only be set on an #OstreeRepo if it is the canonical
+ * collection for some refs.
+ *
+ * A collection ID must be a reverse DNS name, where the domain name is under the
+ * control of the curator of the collection, so they can demonstrate ownership
+ * of the collection. The later elements in the reverse DNS name can be used to
+ * disambiguate between multiple collections from the same curator. For example,
+ * `org.exampleos.Main` and `org.exampleos.Apps`. For the complete format of
+ * collection IDs, see ostree_validate_collection_id().
  */
 typedef struct {
   GObjectClass parent_class;
@@ -162,7 +182,7 @@ _ostree_repo_add_remote (OstreeRepo   *self,
 
   g_mutex_lock (&self->remotes_lock);
 
-  already_existed = g_hash_table_replace (self->remotes, remote->name, ostree_remote_ref (remote));
+  already_existed = !g_hash_table_replace (self->remotes, remote->name, ostree_remote_ref (remote));
 
   g_mutex_unlock (&self->remotes_lock);
 
@@ -456,11 +476,13 @@ ostree_repo_finalize (GObject *object)
   if (self->config)
     g_key_file_free (self->config);
   g_clear_pointer (&self->txn_refs, g_hash_table_destroy);
+  g_clear_pointer (&self->txn_collection_refs, g_hash_table_destroy);
   g_clear_error (&self->writable_error);
   g_clear_pointer (&self->object_sizes, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&self->dirmeta_cache, (GDestroyNotify) g_hash_table_unref);
   g_mutex_clear (&self->cache_lock);
   g_mutex_clear (&self->txn_stats_lock);
+  g_free (self->collection_id);
 
   g_clear_pointer (&self->remotes, g_hash_table_destroy);
   g_mutex_clear (&self->remotes_lock);
@@ -876,8 +898,8 @@ impl_repo_remote_add (OstreeRepo     *self,
   g_return_val_if_fail (url != NULL, FALSE);
   g_return_val_if_fail (options == NULL || g_variant_is_of_type (options, G_VARIANT_TYPE ("a{sv}")), FALSE);
 
-  if (strchr (name, '/') != NULL)
-    return glnx_throw (error, "Invalid character '/' in remote name: %s", name);
+  if (!ostree_validate_remote_name (name, error))
+    return FALSE;
 
   g_autoptr(OstreeRemote) remote = _ostree_repo_get_remote (self, name, NULL);
   if (remote != NULL && if_not_exists)
@@ -1005,8 +1027,8 @@ impl_repo_remote_delete (OstreeRepo     *self,
 {
   g_return_val_if_fail (name != NULL, FALSE);
 
-  if (strchr (name, '/') != NULL)
-    return glnx_throw (error, "Invalid character '/' in remote name: %s", name);
+  if (!ostree_validate_remote_name (name, error))
+    return FALSE;
 
   g_autoptr(OstreeRemote) remote = NULL;
   if (if_exists)
@@ -1683,7 +1705,8 @@ ostree_repo_create (OstreeRepo     *self,
   glnx_fd_close int dfd = -1;
   struct stat stbuf;
   const char *state_dirs[] = { "objects", "tmp", "extensions", "state",
-                               "refs", "refs/heads", "refs/remotes" };
+                               "refs", "refs/heads", "refs/mirrors",
+                               "refs/remotes" };
 
   if (mkdir (repopath, 0755) != 0)
     {
@@ -1707,6 +1730,9 @@ ostree_repo_create (OstreeRepo     *self,
 
           g_string_append_printf (config_data, "mode=%s\n", mode_str);
 
+          if (self->collection_id != NULL)
+            g_string_append_printf (config_data, "collection-id=%s\n", self->collection_id);
+
           if (!glnx_file_replace_contents_at (dfd, "config",
                                               (guint8*)config_data->str, config_data->len,
                                               0, cancellable, error))
@@ -1725,6 +1751,21 @@ ostree_repo_create (OstreeRepo     *self,
             return glnx_throw_errno (error);
         }
     }
+
+  /* Test that the fs supports user xattrs now, so we get an error early rather
+   * than during an object write later.
+   */
+  if (mode == OSTREE_REPO_MODE_BARE_USER)
+    {
+      g_auto(GLnxTmpfile) tmpf = { 0, };
+
+      if (!glnx_open_tmpfile_linkable_at (dfd, ".", O_RDWR|O_CLOEXEC, &tmpf, error))
+        return FALSE;
+      if (fchmod (tmpf.fd, 0600) < 0)
+        return glnx_throw_errno_prefix (error, "fchmod");
+      if (!_ostree_write_bareuser_metadata (tmpf.fd, 0, 0, 644, NULL, error))
+        return FALSE;
+  }
 
   if (!ostree_repo_open (self, cancellable, error))
     return FALSE;
@@ -1937,6 +1978,27 @@ reload_core_config (OstreeRepo          *self,
       self->zlib_compression_level = MAX (1, MIN (9, g_ascii_strtoull (compression_level_str, NULL, 10)));
     else
       self->zlib_compression_level = OSTREE_ARCHIVE_DEFAULT_COMPRESSION_LEVEL;
+  }
+
+  { g_autofree char *min_free_space_percent_str = NULL;
+    /* If changing this, be sure to change the man page too */
+    const char *default_min_free_space = "3";
+
+    if (!ot_keyfile_get_value_with_default (self->config, "core", "min-free-space-percent",
+                                            default_min_free_space,
+                                            &min_free_space_percent_str, error))
+      return FALSE;
+
+    self->min_free_space_percent = g_ascii_strtoull (min_free_space_percent_str, NULL, 10);
+    if (self->min_free_space_percent > 99)
+      return glnx_throw (error, "Invalid min-free-space-percent '%s'", min_free_space_percent_str);
+  }
+
+  {
+    g_clear_pointer (&self->collection_id, g_free);
+    if (!ot_keyfile_get_value_with_default (self->config, "core", "collection-id",
+                                            NULL, &self->collection_id, NULL))
+      return FALSE;
   }
 
   if (!ot_keyfile_get_value_with_default (self->config, "core", "parent",
@@ -2502,115 +2564,211 @@ load_metadata_internal (OstreeRepo       *self,
   return TRUE;
 }
 
-/* Basically fstatat(), but also looks in both the committed and staging
- * directories, and returns *out_dfd for where we found the object.
- */
-static gboolean
-stat_bare_content_object (OstreeRepo      *self,
-                          const char      *loose_path_buf,
-                          int             *out_dfd,
-                          GFileInfo      **out_info,
-                          GCancellable    *cancellable,
-                          GError         **error)
-{
-  struct stat stbuf;
-  int res;
-  int dirfd;
-
-  dirfd = self->objects_dir_fd;
-  res = TEMP_FAILURE_RETRY (fstatat (dirfd, loose_path_buf, &stbuf, AT_SYMLINK_NOFOLLOW));
-  if (res < 0 && errno == ENOENT && self->commit_stagedir_fd != -1)
-    {
-      dirfd = self->commit_stagedir_fd;
-      res = TEMP_FAILURE_RETRY (fstatat (dirfd, loose_path_buf, &stbuf, AT_SYMLINK_NOFOLLOW));
-    }
-  if (res < 0)
-    {
-      if (errno == ENOENT)
-        {
-          *out_dfd = -1;
-          *out_info = NULL;
-          return TRUE;
-        }
-      return glnx_throw_errno (error);
-    }
-
-  g_autoptr(GFileInfo) ret_info = _ostree_header_gfile_info_new (stbuf.st_mode, stbuf.st_uid, stbuf.st_gid);
-
-  if (S_ISREG (stbuf.st_mode))
-    {
-      g_file_info_set_size (ret_info, stbuf.st_size);
-    }
-  else if (S_ISLNK (stbuf.st_mode))
-    {
-      if (!ot_readlinkat_gfile_info (dirfd, loose_path_buf,
-                                     ret_info, cancellable, error))
-        return FALSE;
-    }
-  else
-    return glnx_throw (error, "Not a regular file or symlink: %s", loose_path_buf);
-
-  *out_dfd = dirfd;
-  ot_transfer_out_value (out_info, &ret_info);
-  return TRUE;
-}
-
 static GVariant  *
-set_info_from_filemeta (GFileInfo  *info,
-                        GVariant   *metadata)
+filemeta_to_stat (struct stat *stbuf,
+                  GVariant   *metadata)
 {
   guint32 uid, gid, mode;
   GVariant *xattrs;
 
   g_variant_get (metadata, "(uuu@a(ayay))",
                  &uid, &gid, &mode, &xattrs);
-  uid = GUINT32_FROM_BE (uid);
-  gid = GUINT32_FROM_BE (gid);
-  mode = GUINT32_FROM_BE (mode);
-
-  g_file_info_set_attribute_uint32 (info, "unix::uid", uid);
-  g_file_info_set_attribute_uint32 (info, "unix::gid", gid);
-  g_file_info_set_attribute_uint32 (info, "unix::mode", mode);
+  stbuf->st_uid = GUINT32_FROM_BE (uid);
+  stbuf->st_gid = GUINT32_FROM_BE (gid);
+  stbuf->st_mode = GUINT32_FROM_BE (mode);
 
   return xattrs;
 }
 
-gboolean
-_ostree_repo_read_bare_fd (OstreeRepo           *self,
-                           const char           *checksum,
-                           int                  *out_fd,
-                           GCancellable        *cancellable,
-                           GError             **error)
+static gboolean
+repo_load_file_archive (OstreeRepo *self,
+                        const char         *checksum,
+                        GInputStream      **out_input,
+                        GFileInfo         **out_file_info,
+                        GVariant          **out_xattrs,
+                        GCancellable       *cancellable,
+                        GError            **error)
 {
+  struct stat stbuf;
   char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
-
-  g_assert (_ostree_repo_mode_is_bare (self->mode));
-
   _ostree_loose_path (loose_path_buf, checksum, OSTREE_OBJECT_TYPE_FILE, self->mode);
 
-  if (!ot_openat_ignore_enoent (self->objects_dir_fd, loose_path_buf, out_fd, error))
+  glnx_fd_close int fd = -1;
+  if (!ot_openat_ignore_enoent (self->objects_dir_fd, loose_path_buf, &fd,
+                                error))
     return FALSE;
 
-  if (*out_fd == -1 && self->commit_stagedir_fd != -1)
+  if (fd < 0 && self->commit_stagedir_fd != -1)
     {
-      if (!ot_openat_ignore_enoent (self->commit_stagedir_fd, loose_path_buf, out_fd, error))
+      if (!ot_openat_ignore_enoent (self->commit_stagedir_fd, loose_path_buf, &fd,
+                                    error))
         return FALSE;
     }
 
-  if (*out_fd == -1)
+  if (fd != -1)
     {
-      if (self->parent_repo)
-        return _ostree_repo_read_bare_fd (self->parent_repo,
-                                          checksum,
-                                          out_fd,
-                                          cancellable,
-                                          error);
+      if (!glnx_fstat (fd, &stbuf, error))
+        return FALSE;
 
+      g_autoptr(GInputStream) tmp_stream = g_unix_input_stream_new (glnx_steal_fd (&fd), TRUE);
+      /* Note return here */
+      return ostree_content_stream_parse (TRUE, tmp_stream, stbuf.st_size, TRUE,
+                                          out_input, out_file_info, out_xattrs,
+                                          cancellable, error);
+    }
+  else if (self->parent_repo)
+    {
+      return ostree_repo_load_file (self->parent_repo, checksum,
+                                    out_input, out_file_info, out_xattrs,
+                                    cancellable, error);
+    }
+  else
+    {
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
-                   "No such file object %s", checksum);
+                   "Couldn't find file object '%s'", checksum);
+      return FALSE;
+    }
+}
+
+gboolean
+_ostree_repo_load_file_bare (OstreeRepo         *self,
+                             const char         *checksum,
+                             int                *out_fd,
+                             struct stat        *out_stbuf,
+                             char              **out_symlink,
+                             GVariant          **out_xattrs,
+                             GCancellable       *cancellable,
+                             GError            **error)
+{
+  /* The bottom case recursing on the parent repo */
+  if (self == NULL)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                   "Couldn't find file object '%s'", checksum);
       return FALSE;
     }
 
+  struct stat stbuf;
+  glnx_fd_close int fd = -1;
+  g_autofree char *ret_symlink = NULL;
+  g_autoptr(GVariant) ret_xattrs = NULL;
+  char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
+  _ostree_loose_path (loose_path_buf, checksum, OSTREE_OBJECT_TYPE_FILE, self->mode);
+
+  /* Do a fstatat() and find the object directory that contains this object */
+  int objdir_fd = self->objects_dir_fd;
+  int res;
+  if ((res = TEMP_FAILURE_RETRY (fstatat (objdir_fd, loose_path_buf, &stbuf, AT_SYMLINK_NOFOLLOW))) < 0
+      && errno == ENOENT && self->commit_stagedir_fd != -1)
+    {
+      objdir_fd = self->commit_stagedir_fd;
+      res = TEMP_FAILURE_RETRY (fstatat (objdir_fd, loose_path_buf, &stbuf, AT_SYMLINK_NOFOLLOW));
+    }
+  if (res < 0 && errno != ENOENT)
+    return glnx_throw_errno_prefix (error, "fstat");
+  else if (res < 0)
+    {
+      g_assert (errno == ENOENT);
+      return _ostree_repo_load_file_bare (self->parent_repo, checksum, out_fd,
+                                          out_stbuf, out_symlink, out_xattrs,
+                                          cancellable, error);
+    }
+
+  const gboolean need_open =
+    (out_fd || out_xattrs || self->mode == OSTREE_REPO_MODE_BARE_USER);
+  /* If it's a regular file and we're requested to return the fd, do it now. As
+   * a special case in bare-user, we always do an open, since the stat() metadata
+   * lives there.
+   */
+  if (need_open && S_ISREG (stbuf.st_mode))
+    {
+      fd = openat (objdir_fd, loose_path_buf, O_CLOEXEC | O_RDONLY);
+      if (fd < 0)
+        return glnx_throw_errno_prefix (error, "openat");
+    }
+
+  if (!(S_ISREG (stbuf.st_mode) || S_ISLNK (stbuf.st_mode)))
+    return glnx_throw (error, "Not a regular file or symlink: %s", loose_path_buf);
+
+  /* In the non-bare-user case, gather symlink info if requested */
+  if (self->mode != OSTREE_REPO_MODE_BARE_USER
+      && S_ISLNK (stbuf.st_mode) && out_symlink)
+    {
+      ret_symlink = glnx_readlinkat_malloc (objdir_fd, loose_path_buf,
+                                            cancellable, error);
+      if (!ret_symlink)
+        return FALSE;
+    }
+
+  if (self->mode == OSTREE_REPO_MODE_BARE_USER)
+    {
+      g_autoptr(GBytes) bytes = glnx_fgetxattr_bytes (fd, "user.ostreemeta", error);
+      if (bytes == NULL)
+        return FALSE;
+
+      g_autoptr(GVariant) metadata = g_variant_ref_sink (g_variant_new_from_bytes (OSTREE_FILEMETA_GVARIANT_FORMAT,
+                                                                                   bytes, FALSE));
+      ret_xattrs = filemeta_to_stat (&stbuf, metadata);
+      if (S_ISLNK (stbuf.st_mode))
+        {
+          if (out_symlink)
+            {
+              char targetbuf[PATH_MAX+1];
+              gsize target_size;
+              g_autoptr(GInputStream) target_input = g_unix_input_stream_new (fd, FALSE);
+              if (!g_input_stream_read_all (target_input, targetbuf, sizeof (targetbuf),
+                                            &target_size, cancellable, error))
+                return FALSE;
+
+              ret_symlink = g_strndup (targetbuf, target_size);
+            }
+          /* In the symlink case, we don't want to return the bare-user fd */
+          (void) close (glnx_steal_fd (&fd));
+        }
+    }
+  else if (self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY)
+    {
+      /* Canonical info is: uid/gid is 0 and no xattrs, which
+         might be wrong and thus not validate correctly, but
+         at least we report something consistent. */
+      stbuf.st_uid = stbuf.st_gid = 0;
+
+      if (out_xattrs)
+        {
+          GVariantBuilder builder;
+          g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ayay)"));
+          ret_xattrs = g_variant_ref_sink (g_variant_builder_end (&builder));
+        }
+    }
+  else
+    {
+      g_assert (self->mode == OSTREE_REPO_MODE_BARE);
+
+      if (S_ISREG (stbuf.st_mode) && out_xattrs)
+        {
+          if (self->disable_xattrs)
+            ret_xattrs = g_variant_ref_sink (g_variant_new_array (G_VARIANT_TYPE ("(ayay)"), NULL, 0));
+          else if (!glnx_fd_get_all_xattrs (fd, &ret_xattrs,
+                                            cancellable, error))
+            return FALSE;
+        }
+      else if (S_ISLNK (stbuf.st_mode) && out_xattrs)
+        {
+          if (self->disable_xattrs)
+            ret_xattrs = g_variant_ref_sink (g_variant_new_array (G_VARIANT_TYPE ("(ayay)"), NULL, 0));
+          else if (!glnx_dfd_name_get_all_xattrs (objdir_fd, loose_path_buf,
+                                                  &ret_xattrs,
+                                                  cancellable, error))
+            return FALSE;
+        }
+    }
+
+  if (out_fd)
+    *out_fd = glnx_steal_fd (&fd);
+  if (out_stbuf)
+    *out_stbuf = stbuf;
+  ot_transfer_out_value (out_symlink, &ret_symlink);
+  ot_transfer_out_value (out_xattrs, &ret_xattrs);
   return TRUE;
 }
 
@@ -2636,209 +2794,43 @@ ostree_repo_load_file (OstreeRepo         *self,
                        GCancellable       *cancellable,
                        GError            **error)
 {
-  gboolean found = FALSE;
-  g_autoptr(GInputStream) ret_input = NULL;
-  g_autoptr(GFileInfo) ret_file_info = NULL;
-  g_autoptr(GVariant) ret_xattrs = NULL;
-
-  OstreeRepoMode repo_mode = ostree_repo_get_mode (self);
-
-  char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
-  _ostree_loose_path (loose_path_buf, checksum, OSTREE_OBJECT_TYPE_FILE, repo_mode);
-
-  if (repo_mode == OSTREE_REPO_MODE_ARCHIVE_Z2)
-    {
-      int fd = -1;
-      struct stat stbuf;
-      g_autoptr(GInputStream) tmp_stream = NULL;
-
-      if (!ot_openat_ignore_enoent (self->objects_dir_fd, loose_path_buf, &fd,
-                                    error))
-        return FALSE;
-
-      if (fd < 0 && self->commit_stagedir_fd != -1)
-        {
-          if (!ot_openat_ignore_enoent (self->commit_stagedir_fd, loose_path_buf, &fd,
-                                        error))
-            return FALSE;
-        }
-
-      if (fd != -1)
-        {
-          tmp_stream = g_unix_input_stream_new (fd, TRUE);
-          fd = -1; /* Transfer ownership */
-
-          if (!glnx_stream_fstat ((GFileDescriptorBased*) tmp_stream, &stbuf,
-                                  error))
-            return FALSE;
-
-          if (!ostree_content_stream_parse (TRUE, tmp_stream, stbuf.st_size, TRUE,
-                                            out_input ? &ret_input : NULL,
-                                            &ret_file_info, &ret_xattrs,
-                                            cancellable, error))
-            return FALSE;
-
-          found = TRUE;
-        }
-    }
+  if (self->mode == OSTREE_REPO_MODE_ARCHIVE_Z2)
+    return repo_load_file_archive (self, checksum, out_input, out_file_info, out_xattrs,
+                                   cancellable, error);
   else
     {
-      int objdir_fd; /* referenced */
-      if (!stat_bare_content_object (self, loose_path_buf,
-                                     &objdir_fd,
-                                     &ret_file_info,
-                                     cancellable, error))
+      glnx_fd_close int fd = -1;
+      struct stat stbuf;
+      g_autofree char *symlink_target = NULL;
+      g_autoptr(GVariant) ret_xattrs = NULL;
+      if (!_ostree_repo_load_file_bare (self, checksum,
+                                        out_input ? &fd : NULL,
+                                        out_file_info ? &stbuf : NULL,
+                                        out_file_info ? &symlink_target : NULL,
+                                        out_xattrs ? &ret_xattrs : NULL,
+                                        cancellable, error))
         return FALSE;
 
-      if (ret_file_info)
+      /* Convert fd → GInputStream and struct stat → GFileInfo */
+      if (out_input)
         {
-          found = TRUE;
-
-          if (repo_mode == OSTREE_REPO_MODE_BARE_USER)
-            {
-              guint32 mode;
-              g_autoptr(GVariant) metadata = NULL;
-              g_autoptr(GBytes) bytes = NULL;
-              glnx_fd_close int fd = -1;
-
-              /* In bare-user, symlinks are stored as regular files, so we just
-               * always do an open, then query the user.ostreemeta xattr for
-               * more information.
-               */
-              fd = openat (objdir_fd, loose_path_buf, O_RDONLY | O_CLOEXEC);
-              if (fd < 0)
-                return glnx_throw_errno (error);
-
-              bytes = glnx_fgetxattr_bytes (fd, "user.ostreemeta", error);
-              if (bytes == NULL)
-                return FALSE;
-
-              metadata = g_variant_new_from_bytes (OSTREE_FILEMETA_GVARIANT_FORMAT,
-                                                   bytes, FALSE);
-              g_variant_ref_sink (metadata);
-
-              ret_xattrs = set_info_from_filemeta (ret_file_info, metadata);
-
-              mode = g_file_info_get_attribute_uint32 (ret_file_info, "unix::mode");
-
-              if (S_ISREG (mode) && out_input)
-                {
-                  g_assert (fd != -1);
-                  ret_input = g_unix_input_stream_new (fd, TRUE);
-                  fd = -1; /* Transfer ownership */
-                }
-              else if (S_ISLNK (mode))
-                {
-                  g_autoptr(GInputStream) target_input = NULL;
-                  char targetbuf[PATH_MAX+1];
-                  gsize target_size;
-
-                  g_file_info_set_file_type (ret_file_info, G_FILE_TYPE_SYMBOLIC_LINK);
-                  g_file_info_set_size (ret_file_info, 0);
-
-                  target_input = g_unix_input_stream_new (fd, TRUE);
-                  fd = -1; /* Transfer ownership */
-
-                  if (!g_input_stream_read_all (target_input, targetbuf, sizeof (targetbuf),
-                                                &target_size, cancellable, error))
-                    return FALSE;
-
-                  g_file_info_set_symlink_target (ret_file_info, targetbuf);
-                }
-            }
-          else if (repo_mode == OSTREE_REPO_MODE_BARE_USER_ONLY)
-            {
-              glnx_fd_close int fd = -1;
-
-              /* Canonical info is: uid/gid is 0 and no xattrs, which
-                 might be wrong and thus not validate correctly, but
-                 at least we report something consistent. */
-              g_file_info_set_attribute_uint32 (ret_file_info, "unix::uid", 0);
-              g_file_info_set_attribute_uint32 (ret_file_info, "unix::gid", 0);
-
-              if (g_file_info_get_file_type (ret_file_info) == G_FILE_TYPE_REGULAR &&
-                  out_input)
-                {
-                  fd = openat (objdir_fd, loose_path_buf, O_RDONLY | O_CLOEXEC);
-                  if (fd < 0)
-                    return glnx_throw_errno (error);
-
-                  ret_input = g_unix_input_stream_new (fd, TRUE);
-                  fd = -1; /* Transfer ownership */
-                }
-
-              if (out_xattrs)
-                {
-                  GVariantBuilder builder;
-                  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ayay)"));
-                  ret_xattrs = g_variant_ref_sink (g_variant_builder_end (&builder));
-                }
-            }
+          if (fd != -1)
+            *out_input = g_unix_input_stream_new (glnx_steal_fd (&fd), TRUE);
           else
-            {
-              g_assert (repo_mode == OSTREE_REPO_MODE_BARE);
-
-              if (g_file_info_get_file_type (ret_file_info) == G_FILE_TYPE_REGULAR
-                  && (out_input || out_xattrs))
-                {
-                  glnx_fd_close int fd = -1;
-
-                  fd = openat (objdir_fd, loose_path_buf, O_RDONLY | O_CLOEXEC);
-                  if (fd < 0)
-                    return glnx_throw_errno (error);
-
-                  if (out_xattrs)
-                    {
-                      if (self->disable_xattrs)
-                        ret_xattrs = g_variant_ref_sink (g_variant_new_array (G_VARIANT_TYPE ("(ayay)"), NULL, 0));
-                      else if (!glnx_fd_get_all_xattrs (fd, &ret_xattrs,
-                                                        cancellable, error))
-                        return FALSE;
-                    }
-
-                  if (out_input)
-                    {
-                      ret_input = g_unix_input_stream_new (fd, TRUE);
-                      fd = -1; /* Transfer ownership */
-                    }
-                }
-              else if (g_file_info_get_file_type (ret_file_info) == G_FILE_TYPE_SYMBOLIC_LINK
-                       && out_xattrs)
-                {
-                  if (self->disable_xattrs)
-                    ret_xattrs = g_variant_ref_sink (g_variant_new_array (G_VARIANT_TYPE ("(ayay)"), NULL, 0));
-                  else if (!glnx_dfd_name_get_all_xattrs (objdir_fd, loose_path_buf,
-                                                          &ret_xattrs,
-                                                          cancellable, error))
-                    return FALSE;
-                }
-            }
+            *out_input = NULL;
         }
-    }
-
-  if (!found)
-    {
-      if (self->parent_repo)
+      if (out_file_info)
         {
-          if (!ostree_repo_load_file (self->parent_repo, checksum,
-                                      out_input ? &ret_input : NULL,
-                                      out_file_info ? &ret_file_info : NULL,
-                                      out_xattrs ? &ret_xattrs : NULL,
-                                      cancellable, error))
-            return FALSE;
+          *out_file_info = _ostree_stbuf_to_gfileinfo (&stbuf);
+          if (S_ISLNK (stbuf.st_mode))
+            g_file_info_set_symlink_target (*out_file_info, symlink_target);
+          else
+            g_assert (S_ISREG (stbuf.st_mode));
         }
-      else
-        {
-          g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
-                       "Couldn't find file object '%s'", checksum);
-          return FALSE;
-        }
-    }
 
-  ot_transfer_out_value (out_input, &ret_input);
-  ot_transfer_out_value (out_file_info, &ret_file_info);
-  ot_transfer_out_value (out_xattrs, &ret_xattrs);
-  return TRUE;
+      ot_transfer_out_value (out_xattrs, &ret_xattrs);
+      return TRUE;
+    }
 }
 
 /**
@@ -3105,25 +3097,24 @@ import_one_object_link (OstreeRepo    *self,
    */
   if (import_is_bareuser_only_conversion (source, self, objtype))
     {
-      g_autoptr(GFileInfo) finfo = NULL;
+      struct stat stbuf;
 
-      if (!ostree_repo_load_file (source, checksum, NULL, &finfo, NULL,
-                                  cancellable, error))
+      if (!_ostree_repo_load_file_bare (source, checksum, NULL, &stbuf,
+                                        NULL, NULL, cancellable, error))
         return FALSE;
 
-      switch (g_file_info_get_file_type (finfo))
+      if (S_ISREG (stbuf.st_mode))
         {
-        case G_FILE_TYPE_REGULAR:
           /* This is OK, we'll drop through and try a hardlink */
-          break;
-        case G_FILE_TYPE_SYMBOLIC_LINK:
+        }
+      else if (S_ISLNK (stbuf.st_mode))
+        {
           /* NOTE early return */
           *out_was_supported = FALSE;
           return TRUE;
-        default:
-          g_assert_not_reached ();
-          break;
         }
+      else
+        g_assert_not_reached ();
     }
 
   if (!_ostree_repo_ensure_loose_objdir_at (self->objects_dir_fd, loose_path_buf, cancellable, error))
@@ -3893,8 +3884,7 @@ sign_data (OstreeRepo     *self,
            GError        **error)
 {
   gboolean ret = FALSE;
-  glnx_fd_close int tmp_fd = -1;
-  g_autofree char *tmp_path = NULL;
+  g_auto(GLnxTmpfile) tmpf = { 0, };
   g_autoptr(GOutputStream) tmp_signature_output = NULL;
   gpgme_ctx_t context = NULL;
   g_autoptr(GBytes) ret_signature = NULL;
@@ -3905,9 +3895,9 @@ sign_data (OstreeRepo     *self,
   g_autoptr(GMappedFile) signature_file = NULL;
   
   if (!glnx_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_RDWR | O_CLOEXEC,
-                                      &tmp_fd, &tmp_path, error))
+                                      &tmpf, error))
     goto out;
-  tmp_signature_output = g_unix_output_stream_new (tmp_fd, FALSE);
+  tmp_signature_output = g_unix_output_stream_new (tmpf.fd, FALSE);
 
   context = ot_gpgme_new_ctx (homedir, error);
   if (!context)
@@ -3961,7 +3951,7 @@ sign_data (OstreeRepo     *self,
   if (!g_output_stream_close (tmp_signature_output, cancellable, error))
     goto out;
   
-  signature_file = g_mapped_file_new_from_fd (tmp_fd, FALSE, error);
+  signature_file = g_mapped_file_new_from_fd (tmpf.fd, FALSE, error);
   if (!signature_file)
     goto out;
   ret_signature = g_mapped_file_get_bytes (signature_file);
@@ -4095,7 +4085,7 @@ ostree_repo_sign_delta (OstreeRepo     *self,
  * @cancellable: A #GCancellable
  * @error: a #GError
  *
- * Add a GPG signature to a static delta.
+ * Add a GPG signature to a summary file.
  */
 gboolean
 ostree_repo_add_gpg_signature_summary (OstreeRepo     *self,
@@ -4540,6 +4530,51 @@ ostree_repo_verify_summary (OstreeRepo    *self,
                                                 error);
 }
 
+/* Add an entry for a @ref ↦ @checksum mapping to an `a(s(t@ay@a{sv}))`
+ * @refs_builder to go into a `summary` file. This includes building the
+ * standard additional metadata keys for the ref. */
+static gboolean
+summary_add_ref_entry (OstreeRepo       *self,
+                       const char       *ref,
+                       const char       *checksum,
+                       GVariantBuilder  *refs_builder,
+                       GError          **error)
+{
+  g_auto(GVariantDict) commit_metadata_builder = OT_VARIANT_BUILDER_INITIALIZER;
+
+  g_assert (ref);  g_assert (checksum);
+
+  g_autofree char *remotename = NULL;
+  if (!ostree_parse_refspec (ref, &remotename, NULL, NULL))
+    g_assert_not_reached ();
+
+  /* Don't put remote refs in the summary */
+  if (remotename != NULL)
+    return TRUE;
+
+  g_autoptr(GVariant) commit_obj = NULL;
+  if (!ostree_repo_load_variant (self, OSTREE_OBJECT_TYPE_COMMIT, checksum, &commit_obj, error))
+    return FALSE;
+
+  g_variant_dict_init (&commit_metadata_builder, NULL);
+
+  /* Forward the commit’s timestamp if it’s valid. */
+  guint64 commit_timestamp = ostree_commit_get_timestamp (commit_obj);
+  g_autoptr(GDateTime) dt = g_date_time_new_from_unix_utc (commit_timestamp);
+
+  if (dt != NULL)
+    g_variant_dict_insert_value (&commit_metadata_builder, OSTREE_COMMIT_TIMESTAMP,
+                                 g_variant_new_uint64 (GUINT64_TO_BE (commit_timestamp)));
+
+  g_variant_builder_add_value (refs_builder,
+                               g_variant_new ("(s(t@ay@a{sv}))", ref,
+                                              (guint64) g_variant_get_size (commit_obj),
+                                              ostree_checksum_to_bytes_v (checksum),
+                                              g_variant_dict_end (&commit_metadata_builder)));
+
+  return TRUE;
+}
+
 /**
  * ostree_repo_regenerate_summary:
  * @self: Repo
@@ -4556,6 +4591,13 @@ ostree_repo_verify_summary (OstreeRepo    *self,
  *
  * It is regenerated automatically after a commit if
  * `core/commit-update-summary` is set.
+ *
+ * If the `core/collection-id` key is set in the configuration, it will be
+ * included as %OSTREE_SUMMARY_COLLECTION_ID in the summary file. Refs from the
+ * `refs/mirrors` directory will be included in the generated summary file,
+ * listed under the %OSTREE_SUMMARY_COLLECTION_MAP key. Collection IDs and refs
+ * in %OSTREE_SUMMARY_COLLECTION_MAP are guaranteed to be in lexicographic
+ * order.
  */
 gboolean
 ostree_repo_regenerate_summary (OstreeRepo     *self,
@@ -4567,49 +4609,26 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
   g_variant_dict_init (&additional_metadata_builder, additional_metadata);
   g_autoptr(GVariantBuilder) refs_builder = g_variant_builder_new (G_VARIANT_TYPE ("a(s(taya{sv}))"));
 
+  const gchar *main_collection_id = ostree_repo_get_collection_id (self);
+
   {
-    g_autoptr(GHashTable) refs = NULL;
-    if (!ostree_repo_list_refs (self, NULL, &refs, cancellable, error))
-      return FALSE;
-
-    g_autoptr(GList) ordered_keys = g_hash_table_get_keys (refs);
-    ordered_keys = g_list_sort (ordered_keys, (GCompareFunc)strcmp);
-
-    for (GList *iter = ordered_keys; iter; iter = iter->next)
+    if (main_collection_id == NULL)
       {
-        const char *ref = iter->data;
-        const char *commit = g_hash_table_lookup (refs, ref);
-        g_auto(GVariantDict) commit_metadata_builder = OT_VARIANT_BUILDER_INITIALIZER;
-
-        g_assert (commit);
-
-        g_autofree char *remotename = NULL;
-        if (!ostree_parse_refspec (ref, &remotename, NULL, NULL))
-          g_assert_not_reached ();
-
-        /* Don't put remote refs in the summary */
-        if (remotename != NULL)
-          continue;
-
-        g_autoptr(GVariant) commit_obj = NULL;
-        if (!ostree_repo_load_variant (self, OSTREE_OBJECT_TYPE_COMMIT, commit, &commit_obj, error))
+        g_autoptr(GHashTable) refs = NULL;
+        if (!ostree_repo_list_refs (self, NULL, &refs, cancellable, error))
           return FALSE;
 
-        g_variant_dict_init (&commit_metadata_builder, NULL);
+        g_autoptr(GList) ordered_keys = g_hash_table_get_keys (refs);
+        ordered_keys = g_list_sort (ordered_keys, (GCompareFunc)strcmp);
 
-        /* Forward the commit’s timestamp if it’s valid. */
-        guint64 commit_timestamp = ostree_commit_get_timestamp (commit_obj);
-        g_autoptr(GDateTime) dt = g_date_time_new_from_unix_utc (commit_timestamp);
+        for (GList *iter = ordered_keys; iter; iter = iter->next)
+          {
+            const char *ref = iter->data;
+            const char *commit = g_hash_table_lookup (refs, ref);
 
-        if (dt != NULL)
-          g_variant_dict_insert_value (&commit_metadata_builder, OSTREE_COMMIT_TIMESTAMP,
-                                       g_variant_new_uint64 (GUINT64_TO_BE (commit_timestamp)));
-
-        g_variant_builder_add_value (refs_builder,
-                                     g_variant_new ("(s(t@ay@a{sv}))", ref,
-                                                    (guint64) g_variant_get_size (commit_obj),
-                                                    ostree_checksum_to_bytes_v (commit),
-                                                    g_variant_dict_end (&commit_metadata_builder)));
+            if (!summary_add_ref_entry (self, ref, commit, refs_builder, error))
+              return FALSE;
+          }
       }
   }
 
@@ -4654,6 +4673,88 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
   {
     g_variant_dict_insert_value (&additional_metadata_builder, OSTREE_SUMMARY_LAST_MODIFIED,
                                  g_variant_new_uint64 (GUINT64_TO_BE (g_get_real_time () / G_USEC_PER_SEC)));
+  }
+
+  /* Add refs which have a collection specified. ostree_repo_list_collection_refs()
+   * is guaranteed to only return refs which are in refs/mirrors, or those which
+   * are in refs/heads if the repository configuration specifies a collection ID
+   * (which we put in the main refs map, rather than the collection map, for
+   * backwards compatibility). */
+  {
+    g_autoptr(GHashTable) collection_refs = NULL;
+    if (!ostree_repo_list_collection_refs (self, NULL, &collection_refs, cancellable, error))
+      return FALSE;
+
+    gsize collection_map_size = 0;
+    GHashTableIter iter;
+    g_autoptr(GHashTable) collection_map = NULL;  /* (element-type utf8 GHashTable) */
+    g_hash_table_iter_init (&iter, collection_refs);
+    collection_map = g_hash_table_new_full (g_str_hash, g_str_equal, NULL,
+                                            (GDestroyNotify) g_hash_table_unref);
+
+    const OstreeCollectionRef *ref;
+    const char *checksum;
+    while (g_hash_table_iter_next (&iter, (gpointer *) &ref, (gpointer *) &checksum))
+      {
+        GHashTable *ref_map = g_hash_table_lookup (collection_map, ref->collection_id);
+
+        if (ref_map == NULL)
+          {
+            ref_map = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
+            g_hash_table_insert (collection_map, ref->collection_id, ref_map);
+          }
+
+        g_hash_table_insert (ref_map, ref->ref_name, (gpointer) checksum);
+      }
+
+    g_autoptr(GVariantBuilder) collection_refs_builder = g_variant_builder_new (G_VARIANT_TYPE ("a{sa(s(taya{sv}))}"));
+
+    g_autoptr(GList) ordered_collection_ids = g_hash_table_get_keys (collection_map);
+    ordered_collection_ids = g_list_sort (ordered_collection_ids, (GCompareFunc) strcmp);
+
+    for (GList *collection_iter = ordered_collection_ids; collection_iter; collection_iter = collection_iter->next)
+      {
+        const char *collection_id = collection_iter->data;
+        GHashTable *ref_map = g_hash_table_lookup (collection_map, collection_id);
+
+        gboolean is_main_collection_id = (main_collection_id != NULL && g_str_equal (collection_id, main_collection_id));
+
+        if (!is_main_collection_id)
+          {
+            g_variant_builder_open (collection_refs_builder, G_VARIANT_TYPE ("{sa(s(taya{sv}))}"));
+            g_variant_builder_add (collection_refs_builder, "s", collection_id);
+            g_variant_builder_open (collection_refs_builder, G_VARIANT_TYPE ("a(s(taya{sv}))"));
+          }
+
+        g_autoptr(GList) ordered_refs = g_hash_table_get_keys (ref_map);
+        ordered_refs = g_list_sort (ordered_refs, (GCompareFunc) strcmp);
+
+        for (GList *ref_iter = ordered_refs; ref_iter != NULL; ref_iter = ref_iter->next)
+          {
+            const char *ref = ref_iter->data;
+            const char *commit = g_hash_table_lookup (ref_map, ref);
+            GVariantBuilder *builder = is_main_collection_id ? refs_builder : collection_refs_builder;
+
+            if (!summary_add_ref_entry (self, ref, commit, builder, error))
+              return FALSE;
+
+            if (!is_main_collection_id)
+              collection_map_size++;
+          }
+
+        if (!is_main_collection_id)
+          {
+            g_variant_builder_close (collection_refs_builder);  /* array */
+            g_variant_builder_close (collection_refs_builder);  /* dict entry */
+          }
+      }
+
+    if (main_collection_id != NULL)
+      g_variant_dict_insert_value (&additional_metadata_builder, OSTREE_SUMMARY_COLLECTION_ID,
+                                   g_variant_new_string (main_collection_id));
+    if (collection_map_size > 0)
+      g_variant_dict_insert_value (&additional_metadata_builder, OSTREE_SUMMARY_COLLECTION_MAP,
+                                   g_variant_builder_end (collection_refs_builder));
   }
 
   g_autoptr(GVariant) summary = NULL;
@@ -4872,4 +4973,57 @@ _ostree_repo_memory_cache_ref_destroy (OstreeRepoMemoryCacheRef *state)
     g_clear_pointer (&repo->dirmeta_cache, (GDestroyNotify) g_hash_table_unref);
   g_mutex_unlock (lock);
   g_object_unref (repo);
+}
+
+/**
+ * ostree_repo_get_collection_id:
+ * @self: an #OstreeRepo
+ *
+ * Get the collection ID of this repository. See [collection IDs][collection-ids].
+ *
+ * Returns: (nullable): collection ID for the repository
+ * Since: 2017.8
+ */
+const gchar *
+ostree_repo_get_collection_id (OstreeRepo *self)
+{
+  g_return_val_if_fail (OSTREE_IS_REPO (self), NULL);
+
+  return self->collection_id;
+}
+
+/**
+ * ostree_repo_set_collection_id:
+ * @self: an #OstreeRepo
+ * @collection_id: (nullable): new collection ID, or %NULL to unset it
+ * @error: return location for a #GError, or %NULL
+ *
+ * Set or clear the collection ID of this repository. See [collection IDs][collection-ids].
+ * The update will be made in memory, but must be written out to the repository
+ * configuration on disk using ostree_repo_write_config().
+ *
+ * Returns: %TRUE on success, %FALSE otherwise
+ * Since: 2017.8
+ */
+gboolean
+ostree_repo_set_collection_id (OstreeRepo   *self,
+                               const gchar  *collection_id,
+                               GError      **error)
+{
+  if (collection_id != NULL && !ostree_validate_collection_id (collection_id, error))
+    return FALSE;
+
+  g_autofree gchar *new_collection_id = g_strdup (collection_id);
+  g_free (self->collection_id);
+  self->collection_id = g_steal_pointer (&new_collection_id);
+
+  if (self->config != NULL)
+    {
+      if (collection_id != NULL)
+        g_key_file_set_string (self->config, "core", "collection-id", collection_id);
+      else
+        return g_key_file_remove_key (self->config, "core", "collection-id", error);
+    }
+
+  return TRUE;
 }

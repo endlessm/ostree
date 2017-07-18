@@ -41,6 +41,7 @@ static char* opt_cache_dir;
 static int opt_depth = 0;
 static int opt_frequency = 0;
 static char* opt_url;
+static char** opt_localcache_repos;
 
 static GOptionEntry options[] = {
    { "commit-metadata-only", 0, 0, G_OPTION_ARG_NONE, &opt_commit_only, "Fetch only the commit metadata", NULL },
@@ -57,6 +58,7 @@ static GOptionEntry options[] = {
    { "url", 0, 0, G_OPTION_ARG_STRING, &opt_url, "Pull objects from this URL instead of the one from the remote config", NULL },
    { "http-header", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_http_headers, "Add NAME=VALUE as HTTP header to all requests", "NAME=VALUE" },
    { "update-frequency", 0, 0, G_OPTION_ARG_INT, &opt_frequency, "Sets the update frequency, in milliseconds (0=1000ms) (default: 0)", "FREQUENCY" },
+   { "localcache-repo", 'L', 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_localcache_repos, "Add REPO as local cache source for objects during this pull", "REPO" },
    { NULL }
  };
 
@@ -123,6 +125,13 @@ dry_run_console_progress_changed (OstreeAsyncProgress *progress,
                             formatted_usize);
   }
   g_print ("%s\n", buf->str);
+}
+
+static void
+noninteractive_console_progress_changed (OstreeAsyncProgress *progress,
+                                         gpointer             user_data)
+{
+  /* We do nothing here - we just want the final status */
 }
 
 gboolean
@@ -274,6 +283,9 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
     if (override_commit_ids)
       g_variant_builder_add (&builder, "{s@v}", "override-commit-ids",
                              g_variant_new_variant (g_variant_new_strv ((const char*const*)override_commit_ids->pdata, override_commit_ids->len)));
+    if (opt_localcache_repos)
+      g_variant_builder_add (&builder, "{s@v}", "localcache-repos",
+                             g_variant_new_variant (g_variant_new_strv ((const char*const*)opt_localcache_repos, -1)));
 
     if (opt_http_headers)
       {
@@ -302,6 +314,8 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
       {
         if (console.is_tty)
           progress = ostree_async_progress_new_and_connect (ostree_repo_pull_default_console_progress_changed, &console);
+        else
+          progress = ostree_async_progress_new_and_connect (noninteractive_console_progress_changed, &console);
       }
     else
       {
@@ -321,8 +335,15 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
                                         progress, cancellable, error))
       goto out;
 
-    if (progress)
-      ostree_async_progress_finish (progress);
+    if (!console.is_tty && !opt_dry_run)
+      {
+        g_assert (progress);
+        const char *status = ostree_async_progress_get_status (progress);
+        if (status)
+          g_print ("%s\n", status);
+      }
+
+    ostree_async_progress_finish (progress);
 
     if (opt_dry_run)
       g_assert (printed_console_progress);

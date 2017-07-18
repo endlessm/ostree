@@ -131,7 +131,12 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @ENABLE_EXPERIMENTAL_API_TRUE@am__append_1 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-ref.h \
 @ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-remote.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-avahi.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-config.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-mount.h \
 @ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
 
 subdir = apidoc
@@ -257,6 +262,8 @@ OBJEXT = @OBJEXT@
 OSTREE_FEATURES = @OSTREE_FEATURES@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
+OT_DEP_AVAHI_CFLAGS = @OT_DEP_AVAHI_CFLAGS@
+OT_DEP_AVAHI_LIBS = @OT_DEP_AVAHI_LIBS@
 OT_DEP_CURL_CFLAGS = @OT_DEP_CURL_CFLAGS@
 OT_DEP_CURL_LIBS = @OT_DEP_CURL_LIBS@
 OT_DEP_E2P_CFLAGS = @OT_DEP_E2P_CFLAGS@
