@@ -6,6 +6,8 @@ ostree (2017.8-1) UNRELEASED; urgency=medium
     download the summary and its signature when mirroring.
     libostree >= 2017.7 no longer does this. On affected flatpak versions,
     this breaks installation of new apps and runtimes system-wide.
+  * Add Build-Depends-Indep: libglib2.0-doc so gtk-doc can set up
+    cross-references
 
  -- Simon McVittie <smcv@debian.org>  Wed, 28 Jun 2017 13:54:26 +0100
 

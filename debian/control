@@ -41,6 +41,8 @@ Build-Depends:
  python-yaml <!nocheck>,
  xsltproc <!nodoc>,
  zlib1g-dev,
+Build-Depends-Indep:
+ libglib2.0-doc,
 Standards-Version: 4.0.0
 Homepage: https://github.com/ostreedev/ostree/
 Vcs-Git: https://anonscm.debian.org/git/collab-maint/ostree.git
