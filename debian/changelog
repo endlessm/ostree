@@ -1,5 +1,6 @@
-ostree (2017.7-2) UNRELEASED; urgency=medium
+ostree (2017.8-1) UNRELEASED; urgency=medium
 
+  * New upstream release
   * Add a Breaks on flatpak (<< 0.8.7-2~), which rely on libostree to
     download the summary and its signature when mirroring.
     libostree >= 2017.7 no longer does this. On affected flatpak versions,
