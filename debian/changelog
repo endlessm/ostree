@@ -1,6 +1,7 @@
 ostree (2017.8-1) UNRELEASED; urgency=medium
 
   * New upstream release
+    - Update symbols file
     - Remove patches that are no longer needed
   * Add a Breaks on flatpak (<< 0.8.7-2~), which rely on libostree to
     download the summary and its signature when mirroring.
