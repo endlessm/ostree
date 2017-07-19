@@ -3,6 +3,7 @@ ostree (2017.8-1) UNRELEASED; urgency=medium
   * New upstream release
     - Update symbols file
     - Remove patches that are no longer needed
+    - Add patch from upstream PR #1016 to fix a regression
   * Add a Breaks on flatpak (<< 0.8.7-2~), which rely on libostree to
     download the summary and its signature when mirroring.
     libostree >= 2017.7 no longer does this. On affected flatpak versions,
