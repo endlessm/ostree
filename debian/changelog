@@ -1,4 +1,4 @@
-ostree (2017.8-1) UNRELEASED; urgency=medium
+ostree (2017.8-1) unstable; urgency=medium
 
   * New upstream release
     - Update symbols file
@@ -11,7 +11,7 @@ ostree (2017.8-1) UNRELEASED; urgency=medium
   * Add Build-Depends-Indep: libglib2.0-doc so gtk-doc can set up
     cross-references
 
- -- Simon McVittie <smcv@debian.org>  Wed, 28 Jun 2017 13:54:26 +0100
+ -- Simon McVittie <smcv@debian.org>  Wed, 19 Jul 2017 22:18:20 +0100
 
 ostree (2017.7-1) unstable; urgency=medium
 
