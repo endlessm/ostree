@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-echo "1..$((69 + ${extra_basic_tests:-0}))"
+echo "1..$((70 + ${extra_basic_tests:-0}))"
 
 $CMD_PREFIX ostree --version > version.yaml
 python -c 'import yaml; yaml.safe_load(open("version.yaml"))'
@@ -112,6 +112,14 @@ ostree_repo_init test-repo --mode=bare-user
 rm test-repo -rf
 echo "ok repo-init on existing repo"
 
+rm test-repo -rf
+ostree_repo_init test-repo --mode=bare-user
+${CMD_PREFIX} ostree --repo=test-repo refs
+rm -rf test-repo/tmp
+${CMD_PREFIX} ostree --repo=test-repo refs
+assert_has_dir test-repo/tmp
+echo "ok autocreate tmp"
+
 rm checkout-test2 -rf
 $OSTREE checkout test2 checkout-test2
 cd checkout-test2
@@ -171,8 +179,10 @@ assert_streq $($OSTREE log test2-no-parent |grep '^commit' | wc -l) "1"
 echo "ok commit no parent"
 
 cd ${test_tmpdir}
-empty_rev=$($OSTREE commit ${COMMIT_ARGS} -b test2-no-subject -s '' --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
-omitted_rev=$($OSTREE commit ${COMMIT_ARGS} -b test2-no-subject-2 --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
+# Do the --bind-ref=<the other test branch>, so we store both branches sorted
+# in metadata and thus the checksums remain the same.
+empty_rev=$($OSTREE commit ${COMMIT_ARGS} -b test2-no-subject --bind-ref=test2-no-subject-2 -s '' --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
+omitted_rev=$($OSTREE commit ${COMMIT_ARGS} -b test2-no-subject-2 --bind-ref=test2-no-subject --timestamp="2005-10-29 12:43:29 +0000" $test_tmpdir/checkout-test2-4)
 assert_streq $empty_rev $omitted_rev
 echo "ok commit no subject"
 

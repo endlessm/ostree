@@ -343,7 +343,7 @@ libexec_PROGRAMS =
 pkglibexec_PROGRAMS = $(am__EXEEXT_18)
 noinst_PROGRAMS = $(am__EXEEXT_15) tests/test-rollsum-cli$(EXEEXT)
 ostree_boot_PROGRAMS = $(am__EXEEXT_16) $(am__EXEEXT_17)
-TESTS = $(am__EXEEXT_8) $(am__EXEEXT_22) \
+TESTS = $(am__EXEEXT_8) $(am__EXEEXT_25) \
 	$(dist_uninstalled_test_scripts) $(am__EXEEXT_12)
 installed_test_PROGRAMS = $(am__EXEEXT_14)
 check_PROGRAMS = $(am__EXEEXT_11) $(am__EXEEXT_12) $(am__EXEEXT_13)
@@ -476,47 +476,39 @@ check_PROGRAMS = $(am__EXEEXT_11) $(am__EXEEXT_12) $(am__EXEEXT_13)
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_60 = $(systemdsystemgenerator_PROGRAMS)
 @BUILDOPT_FUSE_TRUE@am__append_61 = rofiles-fuse
 @BUILDOPT_ASAN_TRUE@am__append_62 = OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
-@ENABLE_EXPERIMENTAL_API_TRUE@am__append_63 = \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-find-remotes.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-fsck-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-init-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-prune-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-refs-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-remote-add-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-summary-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
-
-@BUILDOPT_FUSE_TRUE@am__append_64 = tests/test-rofiles-fuse.sh
-@BUILDOPT_FUSE_FALSE@am__append_65 = tests/test-rofiles-fuse.sh
-@USE_LIBSOUP_TRUE@am__append_66 = tests/test-remote-cookies.sh
-@BUILDOPT_GJS_TRUE@am__append_67 = $(js_tests)
-@BUILDOPT_GJS_FALSE@am__append_68 = $(js_tests)
-@BUILDOPT_GJS_FALSE@am__append_69 = $(js_installed_tests)
-@ENABLE_INSTALLED_TESTS_FALSE@am__append_70 = -rpath $(abs_builddir)
-@ENABLE_EXPERIMENTAL_API_TRUE@am__append_71 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_63 = $(experimental_test_scripts)
+@ENABLE_EXPERIMENTAL_API_FALSE@am__append_64 = $(experimental_test_scripts)
+@BUILDOPT_FUSE_TRUE@am__append_65 = tests/test-rofiles-fuse.sh
+@BUILDOPT_FUSE_FALSE@am__append_66 = tests/test-rofiles-fuse.sh
+@USE_LIBSOUP_TRUE@am__append_67 = tests/test-remote-cookies.sh
+@BUILDOPT_GJS_TRUE@am__append_68 = $(js_tests) $(js_installed_tests)
+@BUILDOPT_GJS_FALSE@am__append_69 = $(js_tests)
+@BUILDOPT_GJS_FALSE@am__append_70 = $(js_installed_tests)
+@ENABLE_INSTALLED_TESTS_FALSE@am__append_71 = -rpath $(abs_builddir)
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_72 = \
 @ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-bloom \
 @ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-repo-finder-config \
 @ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-repo-finder-mount \
 @ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
 
-@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__append_72 = tests/test-repo-finder-avahi
-@USE_LIBARCHIVE_TRUE@am__append_73 = tests/test-libarchive-import
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_74 = $(_installed_or_uninstalled_test_scripts)
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_75 = $(_installed_or_uninstalled_test_programs)
-@ENABLE_INSTALLED_TESTS_TRUE@am__append_76 = install-installed-tests-extra
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__append_73 = tests/test-repo-finder-avahi
+@USE_LIBARCHIVE_TRUE@am__append_74 = tests/test-libarchive-import
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_75 = $(_installed_or_uninstalled_test_scripts)
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_76 = $(_installed_or_uninstalled_test_programs)
+@ENABLE_INSTALLED_TESTS_TRUE@am__append_77 = install-installed-tests-extra
 
 # Allow the distcheck install under $prefix test to pass
-@BUILDOPT_SYSTEMD_TRUE@am__append_77 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
+@BUILDOPT_SYSTEMD_TRUE@am__append_78 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
 
 # We're using the system grub2-mkconfig generator
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_78 = src/boot/grub2/grub2-15_ostree
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_79 = install-grub2-config-hook
-@BUILDOPT_TRIVIAL_HTTPD_TRUE@@ENABLE_MAN_TRUE@am__append_80 = ostree-trivial-httpd.1
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_79 = src/boot/grub2/grub2-15_ostree
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_80 = install-grub2-config-hook
+@BUILDOPT_TRIVIAL_HTTPD_TRUE@@ENABLE_MAN_TRUE@am__append_81 = ostree-trivial-httpd.1
 # We still want to distribute the source, even if we are not building it
-@BUILDOPT_TRIVIAL_HTTPD_FALSE@@ENABLE_MAN_TRUE@am__append_81 = man/ostree-trivial-httpd.xml
-@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_82 = rofiles-fuse.1
-@ENABLE_MAN_TRUE@am__append_83 = $(man1_MANS) $(man5_MANS) $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
-@ENABLE_MAN_TRUE@am__append_84 = \
+@BUILDOPT_TRIVIAL_HTTPD_FALSE@@ENABLE_MAN_TRUE@am__append_82 = man/ostree-trivial-httpd.xml
+@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_83 = rofiles-fuse.1
+@ENABLE_MAN_TRUE@am__append_84 = $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
+@ENABLE_MAN_TRUE@am__append_85 = \
 @ENABLE_MAN_TRUE@	$(man1_MANS) \
 @ENABLE_MAN_TRUE@	$(man5_MANS) \
 @ENABLE_MAN_TRUE@	$(NULL)
@@ -1616,24 +1608,26 @@ am__set_TESTS_bases = \
   bases=`for i in $$bases; do echo $$i; done | sed 's/\.log$$//'`; \
   bases=`echo $$bases`
 RECHECK_LOGS = $(TEST_LOGS)
-@ENABLE_EXPERIMENTAL_API_TRUE@am__EXEEXT_19 =  \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-find-remotes.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-fsck-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-init-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-prune-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-refs-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-remote-add-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-summary-collections.sh \
-@ENABLE_EXPERIMENTAL_API_TRUE@	$(am__EXEEXT_2)
-am__EXEEXT_20 = tests/test-basic.sh tests/test-basic-user.sh \
+am__EXEEXT_19 = tests/test-find-remotes.sh \
+	tests/test-fsck-collections.sh tests/test-init-collections.sh \
+	tests/test-prune-collections.sh tests/test-refs-collections.sh \
+	tests/test-remote-add-collections.sh \
+	tests/test-summary-collections.sh \
+	tests/test-pull-collections.sh $(am__EXEEXT_2)
+@ENABLE_EXPERIMENTAL_API_TRUE@am__EXEEXT_20 = $(am__EXEEXT_19)
+am__EXEEXT_21 = tests/test-core.js tests/test-sizes.js \
+	tests/test-sysroot.js $(am__EXEEXT_2)
+@BUILDOPT_GJS_TRUE@am__EXEEXT_22 = $(js_tests) $(am__EXEEXT_21)
+am__EXEEXT_23 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-basic-user-only.sh tests/test-basic-root.sh \
 	tests/test-pull-subpath.sh tests/test-archivez.sh \
 	tests/test-remote-add.sh tests/test-remote-headers.sh \
 	tests/test-remote-gpg-import.sh tests/test-commit-sign.sh \
 	tests/test-export.sh tests/test-help.sh \
 	tests/test-libarchive.sh tests/test-parent.sh \
-	tests/test-pull-archive.sh tests/test-pull-commit-only.sh \
-	tests/test-pull-depth.sh tests/test-pull-mirror-summary.sh \
+	tests/test-pull-bare.sh tests/test-pull-bareuser.sh \
+	tests/test-pull-commit-only.sh tests/test-pull-depth.sh \
+	tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
@@ -1660,11 +1654,11 @@ am__EXEEXT_20 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-refs.sh tests/test-demo-buildsystem.sh \
 	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
 	tests/test-pull-mirrorlist.sh tests/test-summary-update.sh \
-	tests/test-summary-view.sh $(am__EXEEXT_2) $(am__EXEEXT_19) \
-	$(am__append_64) $(am__append_66) $(am__append_67)
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_21 =  \
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_20)
-am__EXEEXT_22 = $(am__EXEEXT_2) $(am__EXEEXT_21)
+	tests/test-summary-view.sh $(am__EXEEXT_2) $(am__EXEEXT_20) \
+	$(am__append_65) $(am__append_67) $(am__EXEEXT_22)
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_24 =  \
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_23)
+am__EXEEXT_25 = $(am__EXEEXT_2) $(am__EXEEXT_24)
 TEST_SUITE_LOG = test-suite.log
 TEST_EXTENSIONS = @EXEEXT@ .test
 LOG_COMPILE = $(LOG_COMPILER) $(AM_LOG_FLAGS) $(LOG_FLAGS)
@@ -1953,7 +1947,7 @@ AM_CPPFLAGS = -DDATADIR='"$(datadir)"' -DLIBEXECDIR='"$(libexecdir)"' \
 	-DSOUP_VERSION_MAX_ALLOWED=SOUP_VERSION_2_48
 AM_CFLAGS = -std=gnu99 $(WARN_CFLAGS)
 AM_DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-man \
-	--disable-maintainer-mode $(NULL) $(am__append_77)
+	--disable-maintainer-mode $(NULL) $(am__append_78)
 SUBDIRS = . $(am__append_14)
 NULL = 
 BUILT_SOURCES = $(nodist_libostree_1_la_SOURCES)
@@ -1965,32 +1959,36 @@ CLEANFILES = $(am__append_13) $(BUILT_SOURCES) $(am__append_46) \
 	tests/ostree-remount-symlink-stamp \
 	tests/rofiles-fuse-symlink-stamp tests/ostree \
 	tests/ostree-prepare-root tests/ostree-remount \
-	tests/rofiles-fuse $(am__append_84)
+	tests/rofiles-fuse $(am__append_85)
 EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	COPYING README.md $(am__append_15) libglnx/README.md \
 	libglnx/COPYING libglnx/libglnx.m4 $(NULL) \
 	libglnx/Makefile-libglnx.am bsdiff/bsdiff.h bsdiff/bspatch.h \
 	bsdiff/LICENSE bsdiff/README.md bsdiff/Makefile-bsdiff.am \
-	$(am__append_17) $(symbol_files) src/libostree/README-gpg \
-	src/libostree/bupsplit.h \
+	$(am__append_17) \
+	$(top_srcdir)/src/libostree/libostree-devel.sym \
+	$(top_srcdir)/src/libostree/libostree-experimental.sym \
+	$(top_srcdir)/src/libostree/libostree-released.sym $(NULL) \
+	src/libostree/README-gpg src/libostree/bupsplit.h \
 	src/libostree/ostree-enumtypes.h.template \
 	src/libostree/ostree-enumtypes.c.template \
 	src/libostree/ostree-deployment-private.h \
 	src/libostree/ostree-repo-deprecated.h \
 	src/libostree/ostree-version.h src/ostree/parse-datetime.y \
 	buildutil/tap-driver.sh buildutil/tap-test tests/glib.supp \
-	tests/ostree.supp $(NULL) $(am__append_65) $(am__append_68) \
-	tests/libtest.sh $(am__append_69) tests/libostreetest.h \
-	tests/libtest.sh tests/gpg-verify-data/README.md $(NULL) \
+	tests/ostree.supp $(NULL) $(am__append_64) $(am__append_66) \
+	$(am__append_69) tests/libtest.sh $(am__append_70) \
+	tests/libostreetest.h tests/libtest.sh \
+	tests/gpg-verify-data/README.md $(NULL) \
 	src/boot/dracut/module-setup.sh src/boot/dracut/ostree.conf \
 	src/boot/mkinitcpio/ostree \
 	src/boot/ostree-prepare-root.service \
 	src/boot/ostree-remount.service src/boot/grub2/grub2-15_ostree \
-	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_81) \
-	$(am__append_83)
+	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_82) \
+	$(am__append_84)
 bin_SCRIPTS = 
 lib_LTLIBRARIES = libostree-1.la
-pkglibexec_SCRIPTS = $(am__append_78)
+pkglibexec_SCRIPTS = $(am__append_79)
 noinst_LTLIBRARIES = $(am__append_1) libglnx.la libbsdiff.la \
 	libotutil.la libostree-kernel-args.la $(am__append_18) \
 	libostreetest.la
@@ -2060,8 +2058,8 @@ all_test_ltlibs = $(test_ltlibraries) $(uninstalled_test_ltlibraries) $(installe
 # This initializes some more variables
 
 # This is a special facility to chain together hooks easily
-INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_76) \
-	$(am__append_79)
+INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_77) \
+	$(am__append_80)
 ALL_LOCAL_RULES = tests/libreaddir-rand.so
 shortened_sysconfdir = $$(echo "$(sysconfdir)" | sed -e 's|^$(prefix)||' -e 's|^/||')
 OSTREE_GITREV = $(shell cd $(srcdir) && if command -v git >/dev/null 2>&1 && test -d .git; then git describe --abbrev=42 --tags --always HEAD; fi)
@@ -2422,9 +2420,9 @@ dist_uninstalled_test_scripts = tests/test-symbols.sh tests/coccinelle.sh
 # tests *only* run installed, to avoid having to run them twice in CI.
 # This overrides the glib-tap.mk emphasis on doing both, if we'd
 # used e.g. `dist_test_scripts`.
-dist_test_scripts = $(NULL) $(am__append_74)
-test_programs = $(NULL) $(am__append_71) $(am__append_72) \
-	$(am__append_75)
+dist_test_scripts = $(NULL) $(am__append_75)
+test_programs = $(NULL) $(am__append_72) $(am__append_73) \
+	$(am__append_76)
 _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-basic-user.sh tests/test-basic-user-only.sh \
 	tests/test-basic-root.sh tests/test-pull-subpath.sh \
@@ -2432,9 +2430,9 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-remote-headers.sh tests/test-remote-gpg-import.sh \
 	tests/test-commit-sign.sh tests/test-export.sh \
 	tests/test-help.sh tests/test-libarchive.sh \
-	tests/test-parent.sh tests/test-pull-archive.sh \
-	tests/test-pull-commit-only.sh tests/test-pull-depth.sh \
-	tests/test-pull-mirror-summary.sh \
+	tests/test-parent.sh tests/test-pull-bare.sh \
+	tests/test-pull-bareuser.sh tests/test-pull-commit-only.sh \
+	tests/test-pull-depth.sh tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
 	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
@@ -2462,7 +2460,18 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
 	tests/test-pull-mirrorlist.sh tests/test-summary-update.sh \
 	tests/test-summary-view.sh $(NULL) $(am__append_63) \
-	$(am__append_64) $(am__append_66) $(am__append_67)
+	$(am__append_65) $(am__append_67) $(am__append_68)
+experimental_test_scripts = \
+	tests/test-find-remotes.sh \
+	tests/test-fsck-collections.sh \
+	tests/test-init-collections.sh \
+	tests/test-prune-collections.sh \
+	tests/test-refs-collections.sh \
+	tests/test-remote-add-collections.sh \
+	tests/test-summary-collections.sh \
+	tests/test-pull-collections.sh \
+	$(NULL)
+
 
 # These call into gjs scripts
 js_tests = tests/test-corruption.sh tests/test-pull-corruption.sh
@@ -2504,10 +2513,6 @@ js_installed_tests = \
 	tests/test-sysroot.js \
 	$(NULL)
 
-@BUILDOPT_GJS_TRUE@dist_installed_test_scripts = $(js_installed_tests)
-
-# See above comment on binding the tests to be either installed or not.
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_TRUE@dist_installed_test_scripts = $(_installed_or_uninstalled_test_scripts)
 test_ltlibraries = libreaddir-rand.la
 libreaddir_rand_la_SOURCES = tests/readdir-rand.c
 libreaddir_rand_la_CFLAGS = $(AM_CFLAGS) $(OT_INTERNAL_GIO_UNIX_CFLAGS)
@@ -2517,14 +2522,14 @@ libreaddir_rand_la_LIBADD = \
 	$(NULL)
 
 libreaddir_rand_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version \
-	$(am__append_70)
+	$(am__append_71)
 _installed_or_uninstalled_test_programs = tests/test-varint \
 	tests/test-ot-unix-utils tests/test-bsdiff \
 	tests/test-mutable-tree tests/test-keyfile-utils \
 	tests/test-ot-opt-utils tests/test-ot-tool-util \
 	tests/test-gpg-verify-result tests/test-checksum \
 	tests/test-lzma tests/test-rollsum tests/test-basic-c \
-	tests/test-sysroot-c tests/test-pull-c $(am__append_73)
+	tests/test-sysroot-c tests/test-pull-c $(am__append_74)
 common_tests_cflags = $(ostree_bin_shared_cflags) $(OT_INTERNAL_GIO_UNIX_CFLAGS) -I$(srcdir)/libglnx
 common_tests_ldadd = $(ostree_bin_shared_ldadd) $(OT_INTERNAL_GIO_UNIX_LIBS)
 libostreetest_la_SOURCES = tests/libostreetest.c tests/test-mock-gio.c tests/test-mock-gio.h
@@ -2588,6 +2593,9 @@ tests_test_gpg_verify_result_SOURCES = \
 
 tests_test_gpg_verify_result_CFLAGS = $(TESTS_CFLAGS) $(OT_INTERNAL_GPGME_CFLAGS)
 tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
+
+# See above comment on binding the tests to be either installed or not.
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_TRUE@dist_installed_test_scripts = $(_installed_or_uninstalled_test_scripts)
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_TRUE@installed_test_programs = $(_installed_or_uninstalled_test_programs)
 
 # Not using $(libdir) here is intentional, dracut modules go in prefix/lib
@@ -2620,8 +2628,8 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 @ENABLE_MAN_TRUE@	ostree-pull.1 ostree-refs.1 ostree-remote.1 \
 @ENABLE_MAN_TRUE@	ostree-reset.1 ostree-rev-parse.1 \
 @ENABLE_MAN_TRUE@	ostree-show.1 ostree-summary.1 \
-@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_80) \
-@ENABLE_MAN_TRUE@	$(am__append_82)
+@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_81) \
+@ENABLE_MAN_TRUE@	$(am__append_83)
 @ENABLE_MAN_TRUE@man5_files = ostree.repo.5 ostree.repo-config.5
 @ENABLE_MAN_TRUE@man1_MANS = $(addprefix man/,$(man1_files))
 @ENABLE_MAN_TRUE@man5_MANS = $(addprefix man/,$(man5_files))
@@ -7138,9 +7146,16 @@ tests/test-parent.sh.log: tests/test-parent.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-tests/test-pull-archive.sh.log: tests/test-pull-archive.sh
-	@p='tests/test-pull-archive.sh'; \
-	b='tests/test-pull-archive.sh'; \
+tests/test-pull-bare.sh.log: tests/test-pull-bare.sh
+	@p='tests/test-pull-bare.sh'; \
+	b='tests/test-pull-bare.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-pull-bareuser.sh.log: tests/test-pull-bareuser.sh
+	@p='tests/test-pull-bareuser.sh'; \
+	b='tests/test-pull-bareuser.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -7495,6 +7510,13 @@ tests/test-summary-collections.sh.log: tests/test-summary-collections.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-pull-collections.sh.log: tests/test-pull-collections.sh
+	@p='tests/test-pull-collections.sh'; \
+	b='tests/test-pull-collections.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/test-rofiles-fuse.sh.log: tests/test-rofiles-fuse.sh
 	@p='tests/test-rofiles-fuse.sh'; \
 	b='tests/test-rofiles-fuse.sh'; \
@@ -7519,6 +7541,27 @@ tests/test-corruption.sh.log: tests/test-corruption.sh
 tests/test-pull-corruption.sh.log: tests/test-pull-corruption.sh
 	@p='tests/test-pull-corruption.sh'; \
 	b='tests/test-pull-corruption.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-core.js.log: tests/test-core.js
+	@p='tests/test-core.js'; \
+	b='tests/test-core.js'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-sizes.js.log: tests/test-sizes.js
+	@p='tests/test-sizes.js'; \
+	b='tests/test-sizes.js'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-sysroot.js.log: tests/test-sysroot.js
+	@p='tests/test-sysroot.js'; \
+	b='tests/test-sysroot.js'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -8062,7 +8105,6 @@ src/libostree/ostree-enumtypes.h: src/libostree/ostree-enumtypes.h.template $(EN
 src/libostree/ostree-enumtypes.c: src/libostree/ostree-enumtypes.c.template $(ENUM_TYPES)
 	$(AM_V_GEN) $(GLIB_MKENUMS) \
 	--template $< \
-	--fhead "#include \"ostree-enumtypes.h\"" \
 	$(ENUM_TYPES) > $@.tmp && mv $@.tmp $@
 
 @BUILDOPT_INTROSPECTION_TRUE@OSTree-1.0.gir: libostree-1.la Makefile

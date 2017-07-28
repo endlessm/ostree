@@ -53,6 +53,15 @@
             sizeof(type) <= 4 ? 10 :                                    \
             sizeof(type) <= 8 ? 20 : sizeof(int[-2*(sizeof(type) > 8)])))
 
+gboolean
+glnx_stdio_file_flush (FILE *f, GError **error)
+{
+  if (fflush (f) != 0)
+    return glnx_throw_errno_prefix (error, "fflush");
+  if (ferror (f) != 0)
+    return glnx_throw_errno_prefix (error, "ferror");
+  return TRUE;
+}
 
 /* An implementation of renameat2(..., RENAME_NOREPLACE)
  * with fallback to a non-atomic version.
@@ -169,12 +178,11 @@ glnx_tmpfile_clear (GLnxTmpfile *tmpf)
   tmpf->initialized = FALSE;
 }
 
-/* Allocate a temporary file, using Linux O_TMPFILE if available.
+/* Allocate a temporary file, using Linux O_TMPFILE if available. The file mode
+ * will be 0600.
+ *
  * The result will be stored in @out_tmpf, which is caller allocated
  * so you can store it on the stack in common scenarios.
- *
- * Note that with O_TMPFILE, the file mode will be `000`; you likely
- * want to chmod it before calling glnx_link_tmpfile_at().
  *
  * The directory fd @dfd must live at least as long as the output @out_tmpf.
  */
@@ -185,6 +193,7 @@ glnx_open_tmpfile_linkable_at (int dfd,
                                GLnxTmpfile *out_tmpf,
                                GError **error)
 {
+  const guint mode = 0600;
   glnx_fd_close int fd = -1;
   int count;
 
@@ -200,11 +209,16 @@ glnx_open_tmpfile_linkable_at (int dfd,
    * link_tmpfile() below to rename the result after writing the file
    * in full. */
 #if defined(O_TMPFILE) && !defined(DISABLE_OTMPFILE) && !defined(ENABLE_WRPSEUDO_COMPAT)
-  fd = openat (dfd, subpath, O_TMPFILE|flags, 0600);
+  fd = openat (dfd, subpath, O_TMPFILE|flags, mode);
   if (fd == -1 && !(G_IN_SET(errno, ENOSYS, EISDIR, EOPNOTSUPP)))
     return glnx_throw_errno_prefix (error, "open(O_TMPFILE)");
   if (fd != -1)
     {
+      /* Workaround for https://sourceware.org/bugzilla/show_bug.cgi?id=17523
+       * See also https://github.com/ostreedev/ostree/issues/991
+       */
+      if (fchmod (fd, mode) < 0)
+        return glnx_throw_errno_prefix (error, "fchmod");
       out_tmpf->initialized = TRUE;
       out_tmpf->src_dfd = dfd; /* Copied; caller must keep open */
       out_tmpf->fd = glnx_steal_fd (&fd);
@@ -221,7 +235,7 @@ glnx_open_tmpfile_linkable_at (int dfd,
       {
         glnx_gen_temp_name (tmp);
 
-        fd = openat (dfd, tmp, O_CREAT|O_EXCL|O_NOFOLLOW|O_NOCTTY|flags, 0600);
+        fd = openat (dfd, tmp, O_CREAT|O_EXCL|O_NOFOLLOW|O_NOCTTY|flags, mode);
         if (fd < 0)
           {
             if (errno == EEXIST)
@@ -373,6 +387,35 @@ glnx_link_tmpfile_at (GLnxTmpfile *tmpf,
   return TRUE;
 }
 
+/**
+ * glnx_openat_rdonly:
+ * @dfd: File descriptor for origin directory
+ * @path: Pathname, relative to @dfd
+ * @follow: Whether or not to follow symbolic links in the final component
+ * @out_fd: (out): File descriptor
+ * @error: Error
+ *
+ * Use openat() to open a file, with flags `O_RDONLY | O_CLOEXEC | O_NOCTTY`.
+ * Like the other libglnx wrappers, will use `TEMP_FAILURE_RETRY` and
+ * also includes @path in @error in case of failure.
+ */
+gboolean
+glnx_openat_rdonly (int             dfd,
+                    const char     *path,
+                    gboolean        follow,
+                    int            *out_fd,
+                    GError        **error)
+{
+  int flags = O_RDONLY | O_CLOEXEC | O_NOCTTY;
+  if (!follow)
+    flags |= O_NOFOLLOW;
+  int fd = TEMP_FAILURE_RETRY (openat (dfd, path, flags));
+  if (fd == -1)
+    return glnx_throw_errno_prefix (error, "openat(%s)", path);
+  *out_fd = fd;
+  return TRUE;
+}
+
 static guint8*
 glnx_fd_readall_malloc (int               fd,
                         gsize            *out_len,
@@ -510,9 +553,9 @@ glnx_file_get_contents_utf8_at (int                   dfd,
 {
   dfd = glnx_dirfd_canonicalize (dfd);
 
-  glnx_fd_close int fd = TEMP_FAILURE_RETRY (openat (dfd, subpath, O_RDONLY | O_NOCTTY | O_CLOEXEC));
-  if (G_UNLIKELY (fd == -1))
-    return glnx_null_throw_errno_prefix (error, "open(%s)", subpath);
+  glnx_fd_close int fd = -1;
+  if (!glnx_openat_rdonly (dfd, subpath, TRUE, &fd, error))
+    return NULL;
 
   gsize len;
   g_autofree char *buf = glnx_fd_readall_utf8 (fd, &len, cancellable, error);
@@ -808,12 +851,8 @@ glnx_file_copy_at (int                   src_dfd,
       goto out;
     }
 
-  src_fd = TEMP_FAILURE_RETRY (openat (src_dfd, src_subpath, O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NOFOLLOW));
-  if (src_fd == -1)
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
+  if (!glnx_openat_rdonly (src_dfd, src_subpath, FALSE, &src_fd, error))
+    goto out;
 
   dest_open_flags = O_WRONLY | O_CREAT | O_CLOEXEC | O_NOCTTY;
   if (!(copyflags & GLNX_FILE_COPY_OVERWRITE))
@@ -1005,31 +1044,6 @@ glnx_file_replace_contents_with_perms_at (int                   dfd,
   if (!glnx_link_tmpfile_at (&tmpf, GLNX_LINK_TMPFILE_REPLACE,
                              dfd, subpath, error))
     return FALSE;
-
-  return TRUE;
-}
-
-/**
- * glnx_stream_fstat:
- * @stream: A stream containing a Unix file descriptor
- * @stbuf: Memory location to write stat buffer
- * @error:
- *
- * Some streams created via libgsystem are #GUnixInputStream; these do
- * not support e.g. g_file_input_stream_query_info().  This function
- * allows dropping to the raw unix fstat() call for these types of
- * streams, while still conveniently wrapped with the normal GLib
- * handling of @error.
- */
-gboolean
-glnx_stream_fstat (GFileDescriptorBased *stream,
-                   struct stat          *stbuf,
-                   GError              **error)
-{
-  int fd = g_file_descriptor_based_get_fd (stream);
-
-  if (fstat (fd, stbuf) == -1)
-    return glnx_throw_errno_prefix (error, "fstat");
 
   return TRUE;
 }

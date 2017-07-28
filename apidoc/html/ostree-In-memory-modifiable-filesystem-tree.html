@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>In-memory modifiable filesystem tree: OSTree API references</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<meta name="generator" content="DocBook XSL Stylesheets Vsnapshot">
 <link rel="home" href="index.html" title="OSTree API references">
 <link rel="up" href="reference.html" title="API Reference">
 <link rel="prev" href="ostree-Content-addressed-object-store.html" title="Content-addressed object store">
@@ -79,7 +79,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-replace-file" title="ostree_mutable_tree_replace_file ()">ostree_mutable_tree_replace_file</a> <span class="c_punctuation">()</span>
@@ -87,7 +87,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-ensure-dir" title="ostree_mutable_tree_ensure_dir ()">ostree_mutable_tree_ensure_dir</a> <span class="c_punctuation">()</span>
@@ -95,7 +95,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-lookup" title="ostree_mutable_tree_lookup ()">ostree_mutable_tree_lookup</a> <span class="c_punctuation">()</span>
@@ -103,7 +103,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-ensure-parent-dirs" title="ostree_mutable_tree_ensure_parent_dirs ()">ostree_mutable_tree_ensure_parent_dirs</a> <span class="c_punctuation">()</span>
@@ -111,7 +111,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-walk" title="ostree_mutable_tree_walk ()">ostree_mutable_tree_walk</a> <span class="c_punctuation">()</span>
@@ -119,7 +119,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Hash-Tables.html#GHashTable"><span class="returnvalue">GHashTable</span></a> *
+<span class="returnvalue">GHashTable</span> *
 </td>
 <td class="function_name">
 <a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-get-subdirs" title="ostree_mutable_tree_get_subdirs ()">ostree_mutable_tree_get_subdirs</a> <span class="c_punctuation">()</span>
@@ -127,7 +127,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Hash-Tables.html#GHashTable"><span class="returnvalue">GHashTable</span></a> *
+<span class="returnvalue">GHashTable</span> *
 </td>
 <td class="function_name">
 <a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-get-files" title="ostree_mutable_tree_get_files ()">ostree_mutable_tree_get_files</a> <span class="c_punctuation">()</span>
@@ -202,41 +202,41 @@ ostree_mutable_tree_get_contents_checksum
 <hr>
 <div class="refsect2">
 <a name="ostree-mutable-tree-replace-file"></a><h3>ostree_mutable_tree_replace_file ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_mutable_tree_replace_file (<em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> *self</code></em>,
                                   <em class="parameter"><code>const <span class="type">char</span> *name</code></em>,
                                   <em class="parameter"><code>const <span class="type">char</span> *checksum</code></em>,
-                                  <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+                                  <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-mutable-tree-ensure-dir"></a><h3>ostree_mutable_tree_ensure_dir ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_mutable_tree_ensure_dir (<em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> *self</code></em>,
                                 <em class="parameter"><code>const <span class="type">char</span> *name</code></em>,
                                 <em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> **out_subdir</code></em>,
-                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-mutable-tree-lookup"></a><h3>ostree_mutable_tree_lookup ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_mutable_tree_lookup (<em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> *self</code></em>,
                             <em class="parameter"><code>const <span class="type">char</span> *name</code></em>,
                             <em class="parameter"><code><span class="type">char</span> **out_file_checksum</code></em>,
                             <em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> **out_subdir</code></em>,
-                            <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+                            <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-mutable-tree-ensure-parent-dirs"></a><h3>ostree_mutable_tree_ensure_parent_dirs ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_mutable_tree_ensure_parent_dirs
                                (<em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> *self</code></em>,
-                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Pointer-Arrays.html#GPtrArray"><span class="type">GPtrArray</span></a> *split_path</code></em>,
+                                <em class="parameter"><code><span class="type">GPtrArray</span> *split_path</code></em>,
                                 <em class="parameter"><code>const <span class="type">char</span> *metadata_checksum</code></em>,
                                 <em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> **out_parent</code></em>,
-                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Create all parent trees necessary for the given <em class="parameter"><code>split_path</code></em>
  to
 exist.</p>
@@ -271,7 +271,7 @@ exist.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>error</p></td>
-<td class="parameter_description"><p>a <a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a></p></td>
+<td class="parameter_description"><p>a <span class="type">GError</span></p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 </tbody>
@@ -281,12 +281,12 @@ exist.</p>
 <hr>
 <div class="refsect2">
 <a name="ostree-mutable-tree-walk"></a><h3>ostree_mutable_tree_walk ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_mutable_tree_walk (<em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> *self</code></em>,
-                          <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Pointer-Arrays.html#GPtrArray"><span class="type">GPtrArray</span></a> *split_path</code></em>,
-                          <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="type">guint</span></a> start</code></em>,
+                          <em class="parameter"><code><span class="type">GPtrArray</span> *split_path</code></em>,
+                          <em class="parameter"><code><span class="type">guint</span> start</code></em>,
                           <em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> **out_subdir</code></em>,
-                          <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+                          <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Traverse <em class="parameter"><code>start</code></em>
  number of elements starting from <em class="parameter"><code>split_path</code></em>
 ; the
@@ -334,7 +334,7 @@ child will be returned in <em class="parameter"><code>out_subdir</code></em>
 <hr>
 <div class="refsect2">
 <a name="ostree-mutable-tree-get-subdirs"></a><h3>ostree_mutable_tree_get_subdirs ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Hash-Tables.html#GHashTable"><span class="returnvalue">GHashTable</span></a> *
+<pre class="programlisting"><span class="returnvalue">GHashTable</span> *
 ostree_mutable_tree_get_subdirs (<em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> *self</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-mutable-tree-get-subdirs.returns"></a><h4>Returns</h4>
@@ -345,7 +345,7 @@ ostree_mutable_tree_get_subdirs (<em class="parameter"><code><a class="link" hre
 <hr>
 <div class="refsect2">
 <a name="ostree-mutable-tree-get-files"></a><h3>ostree_mutable_tree_get_files ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Hash-Tables.html#GHashTable"><span class="returnvalue">GHashTable</span></a> *
+<pre class="programlisting"><span class="returnvalue">GHashTable</span> *
 ostree_mutable_tree_get_files (<em class="parameter"><code><a class="link" href="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree" title="OstreeMutableTree"><span class="type">OstreeMutableTree</span></a> *self</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-mutable-tree-get-files.returns"></a><h4>Returns</h4>

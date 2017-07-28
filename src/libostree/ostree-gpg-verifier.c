@@ -93,6 +93,7 @@ _ostree_gpg_verifier_check_signature (OstreeGpgVerifier  *self,
                                       GCancellable       *cancellable,
                                       GError            **error)
 {
+  GLNX_AUTO_PREFIX_ERROR("GPG", error);
   gpgme_error_t gpg_error = 0;
   ot_auto_gpgme_data gpgme_data_t data_buffer = NULL;
   ot_auto_gpgme_data gpgme_data_t signature_buffer = NULL;
@@ -166,12 +167,8 @@ _ostree_gpg_verifier_check_signature (OstreeGpgVerifier  *self,
           glnx_fd_close int fd = -1;
           ot_auto_gpgme_data gpgme_data_t kdata = NULL;
 
-          fd = openat (AT_FDCWD, path, O_RDONLY | O_CLOEXEC) ;
-          if (fd < 0)
-            {
-              glnx_set_prefix_error_from_errno (error, "Opening %s", path);
-              goto out;
-            }
+          if (!glnx_openat_rdonly (AT_FDCWD, path, TRUE, &fd, error))
+            goto out;
 
           gpg_error = gpgme_data_new_from_fd (&kdata, fd);
           if (gpg_error != GPG_ERR_NO_ERROR)
@@ -252,8 +249,6 @@ out:
       if (tmp_dir != NULL)
         (void) glnx_shutil_rm_rf_at (AT_FDCWD, tmp_dir, NULL, NULL);
     }
-
-  g_prefix_error (error, "GPG: ");
 
   return result;
 }

@@ -50,6 +50,23 @@ const char *glnx_basename (const char *path)
   return (basename) (path);
 }
 
+/* Utilities for standard FILE* */
+static inline void
+glnx_stdio_file_cleanup (void *filep)
+{
+  FILE *f = filep;
+  if (f)
+    fclose (f);
+}
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(FILE, glnx_stdio_file_cleanup)
+
+/**
+ * glnx_stdio_file_flush:
+ * Call fflush() and check ferror().
+ */
+gboolean
+glnx_stdio_file_flush (FILE *f, GError **error);
+
 typedef struct {
   gboolean initialized;
   gboolean anonymous;
@@ -84,6 +101,13 @@ glnx_link_tmpfile_at (GLnxTmpfile *tmpf,
                       int target_dfd,
                       const char *target,
                       GError **error);
+
+gboolean
+glnx_openat_rdonly (int             dfd,
+                    const char     *path,
+                    gboolean        follow,
+                    int            *out_fd,
+                    GError        **error);
 
 GBytes *
 glnx_fd_readall_bytes (int               fd,
@@ -164,11 +188,6 @@ glnx_file_copy_at (int                   src_dfd,
                    GCancellable         *cancellable,
                    GError              **error);
 
-gboolean
-glnx_stream_fstat (GFileDescriptorBased *stream,
-                   struct stat          *stbuf,
-                   GError              **error);
-
 int glnx_renameat2_noreplace (int olddirfd, const char *oldpath,
                               int newdirfd, const char *newpath);
 int glnx_renameat2_exchange (int olddirfd, const char *oldpath,
@@ -224,8 +243,29 @@ glnx_fstat (int           fd,
             GError      **error)
 {
   if (TEMP_FAILURE_RETRY (fstat (fd, buf)) != 0)
-    return glnx_throw_errno (error);
+    return glnx_throw_errno_prefix (error, "fstat");
+  return TRUE;
+}
 
+/**
+ * glnx_fchmod:
+ * @fd: FD
+ * @mode: Mode
+ * @error: Return location for a #GError, or %NULL
+ *
+ * Wrapper around fchmod() which adds #GError support and ensures that it
+ * retries on %EINTR.
+ *
+ * Returns: %TRUE on success, %FALSE otherwise
+ * Since: UNRELEASED
+ */
+static inline gboolean
+glnx_fchmod (int           fd,
+             mode_t        mode,
+             GError      **error)
+{
+  if (TEMP_FAILURE_RETRY (fchmod (fd, mode)) != 0)
+    return glnx_throw_errno_prefix (error, "fchmod");
   return TRUE;
 }
 
