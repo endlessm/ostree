@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gio/gfiledescriptorbased.h>
+#include <gio/gunixinputstream.h>
 #include "libglnx.h"
 #include "ostree.h"
 #include "ostree-core-private.h"
@@ -34,6 +35,40 @@
 
 #define ALIGN_VALUE(this, boundary) \
   (( ((unsigned long)(this)) + (((unsigned long)(boundary)) -1)) & (~(((unsigned long)(boundary))-1)))
+
+/* Return a copy of @input suitable for addition to
+ * a GError message; newlines are quashed, the value
+ * is forced to be UTF-8, is truncated to @maxlen (if maxlen != -1).
+ */
+static char *
+quash_string_for_error_message (const char *input,
+                                ssize_t     len,
+                                ssize_t     maxlen)
+{
+  if (len == -1)
+    len = strlen (input);
+  if (maxlen != -1 && maxlen < len)
+    len = maxlen;
+#if GLIB_CHECK_VERSION(2, 52, 0)
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+  char *buf = g_utf8_make_valid (input, len);
+  G_GNUC_END_IGNORE_DEPRECATIONS
+#else
+  char *buf = g_strndup (input, len);
+#endif
+  for (char *iter = buf; iter && *iter; iter++)
+    {
+      char c = *iter;
+      if (c == '\n')
+        *iter = ' ';
+#if !GLIB_CHECK_VERSION(2, 52, 0)
+      /* No g_utf8_make_valid()?  OK, let's just brute force this. */
+      if (!g_ascii_isprint (c))
+        *iter = ' ';
+#endif
+    }
+  return buf;
+}
 
 static gboolean
 file_header_parse (GVariant         *metadata,
@@ -740,14 +775,15 @@ ostree_content_file_parse_at (gboolean                compressed,
                               GCancellable           *cancellable,
                               GError                **error)
 {
-  g_autoptr(GInputStream) file_input = NULL;
-  if (!ot_openat_read_stream (parent_dfd, path, TRUE, &file_input,
-                              cancellable, error))
+  glnx_fd_close int fd = -1;
+  if (!glnx_openat_rdonly (parent_dfd, path, TRUE, &fd, error))
     return FALSE;
 
   struct stat stbuf;
-  if (!glnx_stream_fstat ((GFileDescriptorBased*)file_input, &stbuf, error))
+  if (!glnx_fstat (fd, &stbuf, error))
     return FALSE;
+
+  g_autoptr(GInputStream) file_input = g_unix_input_stream_new (glnx_steal_fd (&fd), TRUE);
 
   g_autoptr(GFileInfo) ret_file_info = NULL;
   g_autoptr(GVariant) ret_xattrs = NULL;
@@ -1823,7 +1859,15 @@ ostree_validate_structureof_checksum_string (const char *checksum,
   size_t len = strlen (checksum);
 
   if (len != OSTREE_SHA256_STRING_LEN)
-    return glnx_throw (error, "Invalid rev '%s'", checksum);
+    {
+      /* If we happen to get e.g. an Apache directory listing HTML, don't
+       * dump it all to the error.
+       * https://github.com/projectatomic/rpm-ostree/issues/885
+       */
+      g_autofree char *sanitized = quash_string_for_error_message (checksum, len,
+                                                                   OSTREE_SHA256_STRING_LEN);
+      return glnx_throw (error, "Invalid rev %s", sanitized);
+    }
 
   for (i = 0; i < len; i++)
     {

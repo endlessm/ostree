@@ -253,8 +253,8 @@ commit_loose_regfile_object (OstreeRepo        *self,
       if (S_ISREG (mode))
         {
           const mode_t content_mode = (mode & (S_IFREG | 0775)) | S_IRUSR;
-          if (fchmod (tmpf->fd, content_mode) < 0)
-            return glnx_throw_errno_prefix (error, "fchmod");
+          if (!glnx_fchmod (tmpf->fd, content_mode, error))
+            return FALSE;
         }
       else
         g_assert (S_ISLNK (mode));
@@ -266,8 +266,8 @@ commit_loose_regfile_object (OstreeRepo        *self,
         return glnx_throw (error, "Invalid mode 0%04o with bits 0%04o in bare-user-only repository",
                            mode, invalid_modebits);
 
-      if (fchmod (tmpf->fd, mode) < 0)
-        return glnx_throw_errno_prefix (error, "fchmod");
+      if (!glnx_fchmod (tmpf->fd, mode, error))
+        return FALSE;
     }
 
   if (_ostree_repo_mode_is_bare (self->mode))
@@ -299,13 +299,13 @@ commit_loose_regfile_object (OstreeRepo        *self,
 
 typedef struct
 {
-  gsize unpacked;
-  gsize archived;
+  goffset unpacked;
+  goffset archived;
 } OstreeContentSizeCacheEntry;
 
 static OstreeContentSizeCacheEntry *
-content_size_cache_entry_new (gsize unpacked,
-                              gsize archived)
+content_size_cache_entry_new (goffset unpacked,
+                              goffset archived)
 {
   OstreeContentSizeCacheEntry *entry = g_slice_new0 (OstreeContentSizeCacheEntry);
 
@@ -325,8 +325,8 @@ content_size_cache_entry_free (gpointer entry)
 static void
 repo_store_size_entry (OstreeRepo       *self,
                        const gchar      *checksum,
-                       gsize             unpacked,
-                       gsize             archived)
+                       goffset           unpacked,
+                       goffset           archived)
 {
   if (G_UNLIKELY (self->object_sizes == NULL))
     self->object_sizes = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -495,8 +495,8 @@ create_regular_tmpfile_linkable_with_content (OstreeRepo *self,
         }
     }
 
-  if (fchmod (tmpf.fd, 0644) < 0)
-    return glnx_throw_errno_prefix (error, "fchmod");
+  if (!glnx_fchmod (tmpf.fd, 0644, error))
+    return FALSE;
 
   *out_tmpf = tmpf; tmpf.initialized = FALSE;
   return TRUE;
@@ -594,7 +594,7 @@ write_content_object (OstreeRepo         *self,
    */
   g_auto(OtCleanupUnlinkat) tmp_unlinker = { self->tmp_dir_fd, NULL };
   g_auto(GLnxTmpfile) tmpf = { 0, };
-  gssize unpacked_size = 0;
+  goffset unpacked_size = 0;
   gboolean indexable = FALSE;
   /* Is it a symlink physically? */
   if (phys_object_is_symlink)
@@ -643,17 +643,18 @@ write_content_object (OstreeRepo         *self,
           /* Don't close the base; we'll do that later */
           g_filter_output_stream_set_close_base_stream ((GFilterOutputStream*)compressed_out_stream, FALSE);
 
-          unpacked_size = g_output_stream_splice (compressed_out_stream, file_input,
-                                                  0, cancellable, error);
-          if (unpacked_size < 0)
+          if (g_output_stream_splice (compressed_out_stream, file_input,
+                                      0, cancellable, error) < 0)
             return FALSE;
+
+          unpacked_size = g_file_info_get_size (file_info);
         }
 
       if (!g_output_stream_flush (temp_out, cancellable, error))
         return FALSE;
 
-      if (fchmod (tmpf.fd, 0644) < 0)
-        return glnx_throw_errno_prefix (error, "fchmod");
+      if (!glnx_fchmod (tmpf.fd, 0644, error))
+        return FALSE;
     }
 
   const char *actual_checksum = NULL;
@@ -733,6 +734,17 @@ write_content_object (OstreeRepo         *self,
     }
   else
     {
+      /* Update size metadata if configured */
+      if (indexable && object_file_type == G_FILE_TYPE_REGULAR)
+        {
+          struct stat stbuf;
+
+          if (!glnx_fstat (tmpf.fd, &stbuf, error))
+            return FALSE;
+
+          repo_store_size_entry (self, actual_checksum, unpacked_size, stbuf.st_size);
+        }
+
       /* This path is for regular files */
       if (!commit_loose_regfile_object (self, actual_checksum, &tmpf,
                                         uid, gid, mode,
@@ -740,17 +752,6 @@ write_content_object (OstreeRepo         *self,
                                         cancellable, error))
         return glnx_prefix_error (error, "Writing object %s.%s", actual_checksum,
                                   ostree_object_type_to_string (OSTREE_OBJECT_TYPE_FILE));
-    }
-
-  /* Update size metadata if configured */
-  if (indexable && object_file_type == G_FILE_TYPE_REGULAR)
-    {
-      struct stat stbuf;
-
-      if (!glnx_fstat (tmpf.fd, &stbuf, error))
-        return FALSE;
-
-      repo_store_size_entry (self, actual_checksum, unpacked_size, stbuf.st_size);
     }
 
   /* Update statistics */
@@ -851,8 +852,8 @@ write_metadata_object (OstreeRepo         *self,
     return FALSE;
   if (glnx_loop_write (tmpf.fd, bufp, len) < 0)
     return glnx_throw_errno_prefix (error, "write()");
-  if (fchmod (tmpf.fd, 0644) < 0)
-    return glnx_throw_errno_prefix (error, "fchmod");
+  if (!glnx_fchmod (tmpf.fd, 0644, error))
+    return FALSE;
 
   /* And commit it into place */
   if (!_ostree_repo_commit_tmpf_final (self, actual_checksum, objtype,
@@ -2823,18 +2824,16 @@ write_dfd_iter_to_mtree_internal (OstreeRepo                  *self,
   while (TRUE)
     {
       struct dirent *dent;
-      struct stat stbuf;
-      g_autoptr(GFileInfo) child_info = NULL;
-      const char *loose_checksum;
       if (!glnx_dirfd_iterator_next_dent (src_dfd_iter, &dent, cancellable, error))
         return FALSE;
       if (dent == NULL)
         break;
 
-      if (fstatat (src_dfd_iter->fd, dent->d_name, &stbuf, AT_SYMLINK_NOFOLLOW) == -1)
-        return glnx_throw_errno (error);
+      struct stat stbuf;
+      if (!glnx_fstatat (src_dfd_iter->fd, dent->d_name, &stbuf, AT_SYMLINK_NOFOLLOW, error))
+        return FALSE;
 
-      loose_checksum = devino_cache_lookup (self, modifier, stbuf.st_dev, stbuf.st_ino);
+      const char *loose_checksum = devino_cache_lookup (self, modifier, stbuf.st_dev, stbuf.st_ino);
       if (loose_checksum)
         {
           if (!ostree_mutable_tree_replace_file (mtree, dent->d_name, loose_checksum,
@@ -2844,7 +2843,7 @@ write_dfd_iter_to_mtree_internal (OstreeRepo                  *self,
           continue;
         }
 
-      child_info = _ostree_stbuf_to_gfileinfo (&stbuf);
+      g_autoptr(GFileInfo) child_info = _ostree_stbuf_to_gfileinfo (&stbuf);
       g_file_info_set_name (child_info, dent->d_name);
 
       if (S_ISREG (stbuf.st_mode))

@@ -67,7 +67,8 @@ _installed_or_uninstalled_test_scripts = \
 	tests/test-help.sh \
 	tests/test-libarchive.sh \
 	tests/test-parent.sh \
-	tests/test-pull-archive.sh \
+	tests/test-pull-bare.sh \
+	tests/test-pull-bareuser.sh \
 	tests/test-pull-commit-only.sh \
 	tests/test-pull-depth.sh \
 	tests/test-pull-mirror-summary.sh \
@@ -113,8 +114,7 @@ _installed_or_uninstalled_test_scripts = \
 	tests/test-summary-view.sh \
 	$(NULL)
 
-if ENABLE_EXPERIMENTAL_API
-_installed_or_uninstalled_test_scripts += \
+experimental_test_scripts = \
 	tests/test-find-remotes.sh \
 	tests/test-fsck-collections.sh \
 	tests/test-init-collections.sh \
@@ -122,7 +122,13 @@ _installed_or_uninstalled_test_scripts += \
 	tests/test-refs-collections.sh \
 	tests/test-remote-add-collections.sh \
 	tests/test-summary-collections.sh \
+	tests/test-pull-collections.sh \
 	$(NULL)
+
+if ENABLE_EXPERIMENTAL_API
+_installed_or_uninstalled_test_scripts += $(experimental_test_scripts)
+else
+EXTRA_DIST += $(experimental_test_scripts)
 endif
 
 if BUILDOPT_FUSE
@@ -185,7 +191,7 @@ js_installed_tests = \
 	$(NULL)
 
 if BUILDOPT_GJS
-dist_installed_test_scripts = $(js_installed_tests)
+_installed_or_uninstalled_test_scripts += $(js_installed_tests)
 else
 EXTRA_DIST += $(js_installed_tests)
 endif

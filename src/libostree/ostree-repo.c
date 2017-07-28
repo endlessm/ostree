@@ -32,6 +32,7 @@
 #include <glnx-console.h>
 
 #include "ostree-core-private.h"
+#include "ostree-sysroot-private.h"
 #include "ostree-remote-private.h"
 #include "ostree-repo-private.h"
 #include "ostree-repo-file.h"
@@ -124,6 +125,10 @@ static guint signals[LAST_SIGNAL] = { 0 };
 G_DEFINE_TYPE (OstreeRepo, ostree_repo, G_TYPE_OBJECT)
 
 #define SYSCONF_REMOTES SHORTENED_SYSCONFDIR "/ostree/remotes.d"
+
+static GFile *
+get_remotes_d_dir (OstreeRepo          *self,
+                   GFile               *sysroot);
 
 OstreeRemote *
 _ostree_repo_get_remote (OstreeRepo  *self,
@@ -467,6 +472,7 @@ ostree_repo_finalize (GObject *object)
   if (self->uncompressed_objects_dir_fd != -1)
     (void) close (self->uncompressed_objects_dir_fd);
   g_clear_object (&self->sysroot_dir);
+  g_weak_ref_clear (&self->sysroot);
   g_free (self->remotes_config_dir);
 
   if (self->loose_object_devino_hash)
@@ -546,10 +552,6 @@ ostree_repo_constructed (GObject *object)
   OstreeRepo *self = OSTREE_REPO (object);
 
   g_assert (self->repodir != NULL);
-
-  /* Ensure the "sysroot-path" property is set. */
-  if (self->sysroot_dir == NULL)
-    self->sysroot_dir = g_object_ref (_ostree_get_default_sysroot_path ());
 
   G_OBJECT_CLASS (ostree_repo_parent_class)->constructed (object);
 }
@@ -645,6 +647,7 @@ ostree_repo_init (OstreeRepo *self)
   self->objects_dir_fd = -1;
   self->uncompressed_objects_dir_fd = -1;
   self->commit_stagedir_lock = empty_lockfile;
+  self->sysroot_kind = OSTREE_REPO_SYSROOT_KIND_UNKNOWN;
 }
 
 /**
@@ -728,18 +731,20 @@ ostree_repo_new_default (void)
 gboolean
 ostree_repo_is_system (OstreeRepo   *repo)
 {
-  g_autoptr(GFile) default_repo_path = NULL;
-
   g_return_val_if_fail (OSTREE_IS_REPO (repo), FALSE);
 
   /* If we were created via ostree_sysroot_get_repo(), we know the answer is yes
    * without having to compare file paths.
    */
-  if (repo->is_system)
+  if (repo->sysroot_kind == OSTREE_REPO_SYSROOT_KIND_VIA_SYSROOT ||
+      repo->sysroot_kind == OSTREE_REPO_SYSROOT_KIND_IS_SYSROOT_OSTREE)
     return TRUE;
 
-  default_repo_path = get_default_repo_path (repo->sysroot_dir);
+  /* No sysroot_dir set?  Not a system repo then. */
+  if (!repo->sysroot_dir)
+    return FALSE;
 
+  g_autoptr(GFile) default_repo_path = get_default_repo_path (repo->sysroot_dir);
   return g_file_equal (repo->repodir, default_repo_path);
 }
 
@@ -916,24 +921,11 @@ impl_repo_remote_add (OstreeRepo     *self,
 
   remote = ostree_remote_new (name);
 
-  /* The OstreeRepo maintains its own internal system root path,
-   * so we need to not only check if a "sysroot" argument was given
-   * but also whether it's actually different from OstreeRepo's.
-   *
-   * XXX Having API regret about the "sysroot" argument now.
-   */
-  gboolean different_sysroot = FALSE;
-  if (sysroot != NULL)
-    different_sysroot = !g_file_equal (sysroot, self->sysroot_dir);
-
-  if (different_sysroot || ostree_repo_is_system (self))
+  g_autoptr(GFile) etc_ostree_remotes_d = get_remotes_d_dir (self, sysroot);
+  if (etc_ostree_remotes_d)
     {
       g_autoptr(GError) local_error = NULL;
 
-      if (sysroot == NULL)
-        sysroot = self->sysroot_dir;
-
-      g_autoptr(GFile) etc_ostree_remotes_d = g_file_resolve_relative_path (sysroot, SYSCONF_REMOTES);
       if (!g_file_make_directory_with_parents (etc_ostree_remotes_d,
                                                cancellable, &local_error))
         {
@@ -1761,8 +1753,6 @@ ostree_repo_create (OstreeRepo     *self,
 
       if (!glnx_open_tmpfile_linkable_at (dfd, ".", O_RDWR|O_CLOEXEC, &tmpf, error))
         return FALSE;
-      if (fchmod (tmpf.fd, 0600) < 0)
-        return glnx_throw_errno_prefix (error, "fchmod");
       if (!_ostree_write_bareuser_metadata (tmpf.fd, 0, 0, 644, NULL, error))
         return FALSE;
   }
@@ -1874,14 +1864,55 @@ append_one_remote_config (OstreeRepo      *self,
 }
 
 static GFile *
-get_remotes_d_dir (OstreeRepo          *self)
+get_remotes_d_dir (OstreeRepo          *self,
+                   GFile               *sysroot)
 {
-  if (self->remotes_config_dir != NULL)
+  /* Support explicit override */
+  if (self->sysroot_dir != NULL && self->remotes_config_dir != NULL)
     return g_file_resolve_relative_path (self->sysroot_dir, self->remotes_config_dir);
-  else if (ostree_repo_is_system (self))
-    return g_file_resolve_relative_path (self->sysroot_dir, SYSCONF_REMOTES);
 
-  return NULL;
+  g_autoptr(GFile) sysroot_owned = NULL;
+  /* Very complicated sysroot logic; this bit breaks the otherwise mostly clean
+   * layering between OstreeRepo and OstreeSysroot. First, If a sysroot was
+   * provided, use it. Otherwise, check to see whether we reference
+   * /ostree/repo, or if not that, see if we have a ref to a sysroot (and it's
+   * physical).
+   */
+  g_autoptr(OstreeSysroot) sysroot_ref = NULL;
+  if (sysroot == NULL)
+    {
+      /* No explicit sysroot?  Let's see if we have a kind */
+      switch (self->sysroot_kind)
+        {
+        case OSTREE_REPO_SYSROOT_KIND_UNKNOWN:
+          g_assert_not_reached ();
+          break;
+        case OSTREE_REPO_SYSROOT_KIND_NO:
+          break;
+        case OSTREE_REPO_SYSROOT_KIND_IS_SYSROOT_OSTREE:
+          sysroot = sysroot_owned = g_file_new_for_path ("/");
+          break;
+        case OSTREE_REPO_SYSROOT_KIND_VIA_SYSROOT:
+          sysroot_ref = (OstreeSysroot*)g_weak_ref_get (&self->sysroot);
+          /* Only write to /etc/ostree/remotes.d if we are pointed at a deployment */
+          if (sysroot_ref != NULL && !sysroot_ref->is_physical)
+            sysroot = ostree_sysroot_get_path (sysroot_ref);
+          break;
+        }
+    }
+  /* For backwards compat, also fall back to the sysroot-path variable, which we
+   * don't set anymore internally, and I hope no one else uses.
+   */
+  if (sysroot == NULL && sysroot_ref == NULL)
+    sysroot = self->sysroot_dir;
+
+  /* Did we find a sysroot? If not, NULL means use the repo config, otherwise
+   * return the path in /etc.
+   */
+  if (sysroot == NULL)
+    return NULL;
+  else
+    return g_file_resolve_relative_path (sysroot, SYSCONF_REMOTES);
 }
 
 static gboolean
@@ -2036,7 +2067,7 @@ reload_remote_config (OstreeRepo          *self,
   if (!add_remotes_from_keyfile (self, self->config, NULL, error))
     return FALSE;
 
-  g_autoptr(GFile) remotes_d = get_remotes_d_dir (self);
+  g_autoptr(GFile) remotes_d = get_remotes_d_dir (self, NULL);
   if (remotes_d == NULL)
     return TRUE;
 
@@ -2101,6 +2132,7 @@ ostree_repo_open (OstreeRepo    *self,
                   GCancellable  *cancellable,
                   GError       **error)
 {
+  struct stat self_stbuf;
   struct stat stbuf;
 
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
@@ -2137,6 +2169,9 @@ ostree_repo_open (OstreeRepo    *self,
       return FALSE;
     }
 
+  if (!glnx_fstat (self->repo_dir_fd, &self_stbuf, error))
+    return FALSE;
+
   if (!glnx_opendirat (self->repo_dir_fd, "objects", TRUE,
                        &self->objects_dir_fd, error))
     {
@@ -2166,6 +2201,20 @@ ostree_repo_open (OstreeRepo    *self,
       self->target_owner_uid = self->target_owner_gid = -1;
     }
 
+  if (self->writable)
+    {
+      /* Always try to recreate the tmpdir to be nice to people
+       * who are looking to free up space.
+       *
+       * https://github.com/ostreedev/ostree/issues/1018
+       */
+      if (mkdirat (self->repo_dir_fd, "tmp", 0755) == -1)
+        {
+          if (G_UNLIKELY (errno != EEXIST))
+            return glnx_throw_errno_prefix (error, "mkdir(tmp)");
+        }
+    }
+
   if (!glnx_opendirat (self->repo_dir_fd, "tmp", TRUE, &self->tmp_dir_fd, error))
     return FALSE;
 
@@ -2176,6 +2225,27 @@ ostree_repo_open (OstreeRepo    *self,
 
       if (!glnx_opendirat (self->tmp_dir_fd, _OSTREE_CACHE_DIR, TRUE, &self->cache_dir_fd, error))
         return FALSE;
+    }
+
+  /* If we weren't created via ostree_sysroot_get_repo(), for backwards
+   * compatibility we need to figure out now whether or not we refer to the
+   * system repo.  See also ostree-sysroot.c.
+   */
+  if (self->sysroot_kind == OSTREE_REPO_SYSROOT_KIND_UNKNOWN)
+    {
+      struct stat system_stbuf;
+      /* Ignore any errors if we can't access /ostree/repo */
+      if (fstatat (AT_FDCWD, "/ostree/repo", &system_stbuf, 0) == 0)
+        {
+          /* Are we the same as /ostree/repo? */
+          if (self_stbuf.st_dev == system_stbuf.st_dev &&
+              self_stbuf.st_ino == system_stbuf.st_ino)
+            self->sysroot_kind = OSTREE_REPO_SYSROOT_KIND_IS_SYSROOT_OSTREE;
+          else
+            self->sysroot_kind = OSTREE_REPO_SYSROOT_KIND_NO;
+        }
+      else
+        self->sysroot_kind = OSTREE_REPO_SYSROOT_KIND_NO;
     }
 
   if (!ostree_repo_reload_config (self, cancellable, error))
@@ -4144,7 +4214,7 @@ find_keyring (OstreeRepo          *self,
       return g_steal_pointer (&file);
     }
 
-  g_autoptr(GFile) remotes_d = get_remotes_d_dir (self);
+  g_autoptr(GFile) remotes_d = get_remotes_d_dir (self, NULL);
   if (remotes_d)
     {
       g_autoptr(GFile) file2 = g_file_get_child (remotes_d, remote->keyring);
@@ -4648,9 +4718,10 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
           return FALSE;
 
         g_autofree char *superblock = _ostree_get_relative_static_delta_superblock_path ((from && from[0]) ? from : NULL, to);
-        glnx_fd_close int superblock_file_fd = openat (self->repo_dir_fd, superblock, O_RDONLY | O_CLOEXEC);
-        if (superblock_file_fd == -1)
-          return glnx_throw_errno (error);
+        glnx_fd_close int superblock_file_fd = -1;
+
+        if (!glnx_openat_rdonly (self->repo_dir_fd, superblock, TRUE, &superblock_file_fd, error))
+          return FALSE;
 
         g_autoptr(GInputStream) in_stream = g_unix_input_stream_new (superblock_file_fd, FALSE);
         if (!in_stream)

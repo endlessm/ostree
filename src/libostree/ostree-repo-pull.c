@@ -155,6 +155,8 @@ typedef struct {
    * whether to fetch the primary object after fetching its
    * detached metadata (no need if it's already stored). */
   gboolean     object_is_stored;
+
+  OstreeCollectionRef *requested_ref;  /* (nullable) */
 } FetchObjectData;
 
 typedef struct {
@@ -172,31 +174,35 @@ typedef struct {
   char *path;
   OstreeObjectType objtype;
   guint recursion_depth; /* NB: not used anymore, though might be nice to print */
+  OstreeCollectionRef *requested_ref;  /* (nullable) */
 } ScanObjectQueueData;
 
 static void start_fetch (OtPullData *pull_data, FetchObjectData *fetch);
 static void start_fetch_deltapart (OtPullData *pull_data,
                                    FetchStaticDeltaData *fetch);
 static gboolean fetcher_queue_is_full (OtPullData *pull_data);
-static void queue_scan_one_metadata_object (OtPullData         *pull_data,
-                                            const char         *csum,
-                                            OstreeObjectType    objtype,
-                                            const char         *path,
-                                            guint               recursion_depth);
+static void queue_scan_one_metadata_object (OtPullData                *pull_data,
+                                            const char                *csum,
+                                            OstreeObjectType           objtype,
+                                            const char                *path,
+                                            guint                      recursion_depth,
+                                            const OstreeCollectionRef *ref);
 
-static void queue_scan_one_metadata_object_c (OtPullData         *pull_data,
-                                              const guchar       *csum,
-                                              OstreeObjectType    objtype,
-                                              const char         *path,
-                                              guint               recursion_depth);
+static void queue_scan_one_metadata_object_c (OtPullData                *pull_data,
+                                              const guchar              *csum,
+                                              OstreeObjectType           objtype,
+                                              const char                *path,
+                                              guint                      recursion_depth,
+                                              const OstreeCollectionRef *ref);
 
-static gboolean scan_one_metadata_object_c (OtPullData         *pull_data,
-                                            const guchar       *csum,
-                                            OstreeObjectType    objtype,
-                                            const char         *path,
-                                            guint               recursion_depth,
-                                            GCancellable       *cancellable,
-                                            GError            **error);
+static gboolean scan_one_metadata_object_c (OtPullData                 *pull_data,
+                                            const guchar               *csum,
+                                            OstreeObjectType            objtype,
+                                            const char                 *path,
+                                            guint                       recursion_depth,
+                                            const OstreeCollectionRef  *ref,
+                                            GCancellable               *cancellable,
+                                            GError                    **error);
 
 static gboolean
 update_progress (gpointer user_data)
@@ -422,11 +428,14 @@ idle_worker (gpointer user_data)
                               scan_data->objtype,
                               scan_data->path,
                               scan_data->recursion_depth,
+                              scan_data->requested_ref,
                               pull_data->cancellable,
                               &error);
   check_outstanding_requests_handle_error (pull_data, &error);
 
   g_free (scan_data->path);
+  if (scan_data->requested_ref != NULL)
+    ostree_collection_ref_free (scan_data->requested_ref);
   g_free (scan_data);
   return G_SOURCE_CONTINUE;
 }
@@ -461,7 +470,7 @@ fetch_mirrored_uri_contents_utf8_sync (OstreeFetcher  *fetcher,
 {
   g_autoptr(GBytes) bytes = NULL;
   if (!_ostree_fetcher_mirrored_request_to_membuf (fetcher, mirrorlist,
-                                                   filename, TRUE, FALSE,
+                                                   filename, OSTREE_FETCHER_REQUEST_NUL_TERMINATION,
                                                    &bytes,
                                                    OSTREE_MAX_METADATA_SIZE,
                                                    cancellable, error))
@@ -507,12 +516,13 @@ write_commitpartial_for (OtPullData *pull_data,
 }
 
 static void
-enqueue_one_object_request (OtPullData        *pull_data,
-                            const char        *checksum,
-                            OstreeObjectType   objtype,
-                            const char        *path,
-                            gboolean           is_detached_meta,
-                            gboolean           object_is_stored);
+enqueue_one_object_request (OtPullData                *pull_data,
+                            const char                *checksum,
+                            OstreeObjectType           objtype,
+                            const char                *path,
+                            gboolean                   is_detached_meta,
+                            gboolean                   object_is_stored,
+                            const OstreeCollectionRef *ref);
 
 static gboolean
 matches_pull_dir (const char *current_file,
@@ -604,18 +614,19 @@ validate_bareuseronly_mode (OtPullData *pull_data,
   return TRUE;
 }
 
-/* Import a single content object in the case where
- * we have pull_data->remote_repo_local.
+/* Synchronously import a single content object; this is used async for content,
+ * or synchronously for metadata. @src_repo is either
+ * pull_data->remote_repo_local or one of pull_data->localcache_repos.
  *
  * One important special case here is handling the
  * OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES flag.
  */
 static gboolean
-import_one_local_content_object (OtPullData *pull_data,
-                                 OstreeRepo *src_repo,
-                                 const char *checksum,
-                                 GCancellable *cancellable,
-                                 GError    **error)
+import_one_local_content_object_sync (OtPullData *pull_data,
+                                      OstreeRepo *src_repo,
+                                      const char *checksum,
+                                      GCancellable *cancellable,
+                                      GError    **error)
 {
   const gboolean trusted = !pull_data->is_untrusted;
   if (trusted && !pull_data->is_bareuseronly_files)
@@ -662,6 +673,83 @@ import_one_local_content_object (OtPullData *pull_data,
     }
 
   return TRUE;
+}
+
+typedef struct {
+  OtPullData *pull_data;
+  OstreeRepo *src_repo;
+  char checksum[OSTREE_SHA256_STRING_LEN+1];
+} ImportLocalAsyncData;
+
+static void
+async_import_in_thread (GTask *task,
+                        gpointer source,
+                        gpointer task_data,
+                        GCancellable *cancellable)
+{
+  ImportLocalAsyncData *iataskdata = task_data;
+  g_autoptr(GError) local_error = NULL;
+  if (!import_one_local_content_object_sync (iataskdata->pull_data,
+                                             iataskdata->src_repo,
+                                             iataskdata->checksum,
+                                             cancellable,
+                                             &local_error))
+    g_task_return_error (task, g_steal_pointer (&local_error));
+  else
+    g_task_return_boolean (task, TRUE);
+}
+
+/* Start an async import of a single object; currently used for content objects.
+ * @src_repo is from pull_data->remote_repo_local or
+ * pull_data->localcache_repos.
+ *
+ * One important special case here is handling the
+ * OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES flag.
+ */
+static void
+async_import_one_local_content_object (OtPullData *pull_data,
+                                       OstreeRepo *src_repo,
+                                       const char *checksum,
+                                       GCancellable *cancellable,
+                                       GAsyncReadyCallback callback,
+                                       gpointer user_data)
+{
+  ImportLocalAsyncData *iataskdata = g_new0 (ImportLocalAsyncData, 1);
+  iataskdata->pull_data = pull_data;
+  iataskdata->src_repo = src_repo;
+  memcpy (iataskdata->checksum, checksum, OSTREE_SHA256_STRING_LEN);
+  g_autoptr(GTask) task = g_task_new (pull_data->repo, cancellable, callback, user_data);
+  g_task_set_source_tag (task, async_import_one_local_content_object);
+  g_task_set_task_data (task, iataskdata, g_free);
+  pull_data->n_outstanding_content_write_requests++;
+  g_task_run_in_thread (task, async_import_in_thread);
+}
+
+static gboolean
+async_import_one_local_content_object_finish (OtPullData *pull_data,
+                                              GAsyncResult *result,
+                                              GError **error)
+{
+  g_return_val_if_fail (g_task_is_valid (result, pull_data->repo), FALSE);
+  return g_task_propagate_boolean ((GTask*)result, error);
+}
+
+static void
+on_local_object_imported (GObject        *object,
+                          GAsyncResult   *result,
+                          gpointer        user_data)
+{
+  OtPullData *pull_data = user_data;
+  g_autoptr(GError) local_error = NULL;
+  GError **error = &local_error;
+
+  if (!async_import_one_local_content_object_finish (pull_data, result, error))
+    goto out;
+
+ out:
+  g_assert_cmpint (pull_data->n_outstanding_content_write_requests, >, 0);
+  pull_data->n_outstanding_content_write_requests--;
+  check_outstanding_requests_handle_error (pull_data, &local_error);
 }
 
 static gboolean
@@ -714,10 +802,11 @@ scan_dirtree_object (OtPullData   *pull_data,
       /* Is this a local repo? */
       if (pull_data->remote_repo_local)
         {
-          if (!import_one_local_content_object (pull_data, pull_data->remote_repo_local,
-                                                file_checksum, cancellable, error))
-            return FALSE;
-
+          async_import_one_local_content_object (pull_data, pull_data->remote_repo_local,
+                                                 file_checksum, cancellable,
+                                                 on_local_object_imported,
+                                                 pull_data);
+          g_hash_table_add (pull_data->requested_content, g_steal_pointer (&file_checksum));
           /* Note early loop continue */
           continue;
         }
@@ -736,9 +825,9 @@ scan_dirtree_object (OtPullData   *pull_data,
                 return FALSE;
               if (!localcache_repo_has_obj)
                 continue;
-              if (!import_one_local_content_object (pull_data, localcache_repo, file_checksum,
-                                                    cancellable, error))
-                return FALSE;
+              async_import_one_local_content_object (pull_data, localcache_repo, file_checksum, cancellable,
+                                                     on_local_object_imported, pull_data);
+              g_hash_table_add (pull_data->requested_content, g_steal_pointer (&file_checksum));
               did_import_from_cache_repo = TRUE;
               pull_data->n_fetched_localcache_content++;
               break;
@@ -749,7 +838,7 @@ scan_dirtree_object (OtPullData   *pull_data,
 
       /* Not available locally, queue a HTTP request */
       g_hash_table_add (pull_data->requested_content, file_checksum);
-      enqueue_one_object_request (pull_data, file_checksum, OSTREE_OBJECT_TYPE_FILE, path, FALSE, FALSE);
+      enqueue_one_object_request (pull_data, file_checksum, OSTREE_OBJECT_TYPE_FILE, path, FALSE, FALSE, NULL);
       file_checksum = NULL;  /* Transfer ownership */
     }
 
@@ -779,14 +868,15 @@ scan_dirtree_object (OtPullData   *pull_data,
 
       g_autofree char *subpath = g_strconcat (path, dirname, "/", NULL);
       queue_scan_one_metadata_object_c (pull_data, tree_csum_bytes,
-                                        OSTREE_OBJECT_TYPE_DIR_TREE, subpath, recursion_depth + 1);
+                                        OSTREE_OBJECT_TYPE_DIR_TREE, subpath, recursion_depth + 1, NULL);
       queue_scan_one_metadata_object_c (pull_data, meta_csum_bytes,
-                                        OSTREE_OBJECT_TYPE_DIR_META, subpath, recursion_depth + 1);
+                                        OSTREE_OBJECT_TYPE_DIR_META, subpath, recursion_depth + 1, NULL);
     }
 
   return TRUE;
 }
 
+/* Given a @ref, fetch its contents (should be a SHA256 ASCII string) */
 static gboolean
 fetch_ref_contents (OtPullData                 *pull_data,
                     const char                 *main_collection_id,
@@ -812,7 +902,7 @@ fetch_ref_contents (OtPullData                 *pull_data,
   g_strchomp (ret_contents);
 
   if (!ostree_validate_checksum_string (ret_contents, error))
-    return FALSE;
+    return glnx_prefix_error (error, "Fetching %s", filename);
 
   ot_transfer_out_value (out_contents, &ret_contents);
   return TRUE;
@@ -883,6 +973,8 @@ fetch_object_data_free (FetchObjectData *fetch_data)
 {
   g_variant_unref (fetch_data->object);
   g_free (fetch_data->path);
+  if (fetch_data->requested_ref)
+    ostree_collection_ref_free (fetch_data->requested_ref);
   g_free (fetch_data);
 }
 
@@ -1062,7 +1154,7 @@ on_metadata_written (GObject           *object,
       goto out;
     }
 
-  queue_scan_one_metadata_object_c (pull_data, csum, objtype, fetch_data->path, 0);
+  queue_scan_one_metadata_object_c (pull_data, csum, objtype, fetch_data->path, 0, fetch_data->requested_ref);
 
  out:
   pull_data->n_outstanding_metadata_write_requests--;
@@ -1108,9 +1200,9 @@ meta_fetch_on_complete (GObject           *object,
               g_hash_table_add (pull_data->fetched_detached_metadata, g_strdup (checksum));
 
               if (!fetch_data->object_is_stored)
-                enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path, FALSE, FALSE);
+                enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path, FALSE, FALSE, fetch_data->requested_ref);
               else
-                queue_scan_one_metadata_object (pull_data, checksum, objtype, fetch_data->path, 0);
+                queue_scan_one_metadata_object (pull_data, checksum, objtype, fetch_data->path, 0, fetch_data->requested_ref);
             }
 
           /* When traversing parents, do not fail on a missing commit.
@@ -1125,7 +1217,7 @@ meta_fetch_on_complete (GObject           *object,
               if (pull_data->has_tombstone_commits)
                 {
                   enqueue_one_object_request (pull_data, checksum, OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT,
-                                              fetch_data->path, FALSE, FALSE);
+                                              fetch_data->path, FALSE, FALSE, NULL);
                 }
             }
         }
@@ -1137,12 +1229,8 @@ meta_fetch_on_complete (GObject           *object,
   if (objtype == OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT)
     goto out;
 
-  fd = openat (_ostree_fetcher_get_dfd (fetcher), tmp_unlinker.path, O_RDONLY | O_CLOEXEC);
-  if (fd == -1)
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
+  if (!glnx_openat_rdonly (_ostree_fetcher_get_dfd (fetcher), tmp_unlinker.path, TRUE, &fd, error))
+    goto out;
 
   /* Now delete it, keeping the fd open as the last reference; see comment in
    * corresponding content fetch path.
@@ -1162,9 +1250,9 @@ meta_fetch_on_complete (GObject           *object,
       g_hash_table_add (pull_data->fetched_detached_metadata, g_strdup (checksum));
 
       if (!fetch_data->object_is_stored)
-        enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path, FALSE, FALSE);
+        enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path, FALSE, FALSE, fetch_data->requested_ref);
       else
-        queue_scan_one_metadata_object (pull_data, checksum, objtype, fetch_data->path, 0);
+        queue_scan_one_metadata_object (pull_data, checksum, objtype, fetch_data->path, 0, fetch_data->requested_ref);
     }
   else
     {
@@ -1250,12 +1338,8 @@ static_deltapart_fetch_on_complete (GObject           *object,
   if (!_ostree_fetcher_request_to_tmpfile_finish (fetcher, result, &temp_path, error))
     goto out;
 
-  fd = openat (_ostree_fetcher_get_dfd (fetcher), temp_path, O_RDONLY | O_CLOEXEC);
-  if (fd == -1)
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
+  if (!glnx_openat_rdonly (_ostree_fetcher_get_dfd (fetcher), temp_path, TRUE, &fd, error))
+    goto out;
 
   /* From here on, if we fail to apply the delta, we'll re-fetch it */
   if (unlinkat (_ostree_fetcher_get_dfd (fetcher), temp_path, 0) < 0)
@@ -1295,11 +1379,10 @@ process_verify_result (OtPullData            *pull_data,
                        OstreeGpgVerifyResult *result,
                        GError               **error)
 {
+  const char *error_prefix = glnx_strjoina ("Commit ", checksum);
+  GLNX_AUTO_PREFIX_ERROR(error_prefix, error);
   if (result == NULL)
-    {
-      g_prefix_error (error, "Commit %s: ", checksum);
-      return FALSE;
-    }
+    return FALSE;
 
   /* Allow callers to output the results immediately. */
   g_signal_emit_by_name (pull_data->repo,
@@ -1307,10 +1390,8 @@ process_verify_result (OtPullData            *pull_data,
                          checksum, result);
 
   if (!ostree_gpg_verify_result_require_valid_signature (result, error))
-    {
-      g_prefix_error (error, "Commit %s: ", checksum);
-      return FALSE;
-    }
+    return FALSE;
+
   return TRUE;
 }
 
@@ -1357,12 +1438,151 @@ commitstate_is_partial (OtPullData   *pull_data,
     || (commitstate & OSTREE_REPO_COMMIT_STATE_PARTIAL) > 0;
 }
 
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+/* Reads the collection-id of a given remote from the repo
+ * configuration.
+ */
+static char *
+get_real_remote_repo_collection_id (OstreeRepo  *repo,
+                                    const gchar *remote_name)
+{
+  g_autofree gchar *remote_collection_id = NULL;
+  if (!ostree_repo_get_remote_option (repo, remote_name, "collection-id", NULL,
+                                      &remote_collection_id, NULL) ||
+      (remote_collection_id == NULL) ||
+      (remote_collection_id[0] == '\0'))
+    return NULL;
+
+  return g_steal_pointer (&remote_collection_id);
+}
+
+/* Reads the collection-id of the remote repo. Where it will be read
+ * from depends on whether we pull from the "local" remote repo (the
+ * "file://" URL) or "remote" remote repo (likely the "http(s)://"
+ * URL).
+ */
+static char *
+get_remote_repo_collection_id (OtPullData *pull_data)
+{
+  if (pull_data->remote_repo_local != NULL)
+    {
+      const char *remote_collection_id =
+        ostree_repo_get_collection_id (pull_data->remote_repo_local);
+      if ((remote_collection_id == NULL) ||
+          (remote_collection_id[0] == '\0'))
+        return NULL;
+      return g_strdup (remote_collection_id);
+    }
+
+  return get_real_remote_repo_collection_id (pull_data->repo,
+                                             pull_data->remote_name);
+}
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
+
+/* Verify the ref and collection bindings.
+ *
+ * The ref binding is verified only if it exists. But if we have the
+ * collection ID specified in the remote configuration then the ref
+ * binding must exist, otherwise the verification will fail. Parts of
+ * the verification can be skipped by passing NULL to the requested_ref
+ * parameter (in case we requested a checksum directly, without looking it up
+ * from a ref).
+ *
+ * The collection binding is verified only when we have collection ID
+ * specified in the remote configuration. If it is specified, then the
+ * binding must exist and must be equal to the remote repository
+ * collection ID.
+ */
 static gboolean
-scan_commit_object (OtPullData         *pull_data,
-                    const char         *checksum,
-                    guint               recursion_depth,
-                    GCancellable       *cancellable,
-                    GError            **error)
+verify_bindings (OtPullData                 *pull_data,
+                 GVariant                   *commit,
+                 const OstreeCollectionRef  *requested_ref,
+                 GError                    **error)
+{
+  g_autofree char *remote_collection_id = NULL;
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+  remote_collection_id = get_remote_repo_collection_id (pull_data);
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
+  g_autoptr(GVariant) metadata = g_variant_get_child_value (commit, 0);
+  g_autofree const char **refs = NULL;
+  if (!g_variant_lookup (metadata,
+                         OSTREE_COMMIT_META_KEY_REF_BINDING,
+                         "^a&s",
+                         &refs))
+    {
+      /* Early return here - if the remote collection ID is NULL, then
+       * we certainly will not verify the collection binding in the
+       * commit.
+       */
+      if (remote_collection_id == NULL)
+        return TRUE;
+
+      return glnx_throw (error,
+                         "expected commit metadata to have ref "
+                         "binding information, found none");
+    }
+
+  if (requested_ref != NULL)
+    {
+      if (!g_strv_contains ((const char *const *) refs, requested_ref->ref_name))
+        {
+          g_autoptr(GString) refs_dump = g_string_new (NULL);
+          const char *refs_str;
+
+          if (refs != NULL && (*refs) != NULL)
+            {
+              for (const char **iter = refs; *iter != NULL; ++iter)
+                {
+                  const char *ref = *iter;
+
+                  if (refs_dump->len > 0)
+                    g_string_append (refs_dump, ", ");
+                  g_string_append_printf (refs_dump, "‘%s’", ref);
+                }
+
+              refs_str = refs_dump->str;
+            }
+          else
+            {
+              refs_str = "no refs";
+            }
+
+          return glnx_throw (error, "commit has no requested ref ‘%s’ "
+                             "in ref binding metadata (%s)",
+                             requested_ref->ref_name, refs_str);
+        }
+    }
+
+  if (remote_collection_id != NULL)
+    {
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+      const char *collection_id;
+      if (!g_variant_lookup (metadata,
+                             OSTREE_COMMIT_META_KEY_COLLECTION_BINDING,
+                             "&s",
+                             &collection_id))
+        return glnx_throw (error,
+                           "expected commit metadata to have collection ID "
+                           "binding information, found none");
+      if (!g_str_equal (collection_id, remote_collection_id))
+        return glnx_throw (error,
+                           "commit has collection ID ‘%s’ in collection binding "
+                           "metadata, while the remote it came from has "
+                           "collection ID ‘%s’",
+                           collection_id, remote_collection_id);
+#endif
+    }
+
+  return TRUE;
+}
+
+static gboolean
+scan_commit_object (OtPullData                 *pull_data,
+                    const char                 *checksum,
+                    guint                       recursion_depth,
+                    const OstreeCollectionRef  *ref,
+                    GCancellable               *cancellable,
+                    GError                    **error)
 {
   gboolean ret = FALSE;
   /* If we found a legacy transaction flag, assume we have to scan.
@@ -1405,6 +1625,15 @@ scan_commit_object (OtPullData         *pull_data,
   if (!ostree_repo_load_commit (pull_data->repo, checksum, &commit, &commitstate, error))
     goto out;
 
+  /* If ref is non-NULL then the commit we fetched was requested through the
+   * branch, otherwise we requested a commit checksum without specifying a branch.
+   */
+  if (!verify_bindings (pull_data, commit, ref, error))
+    {
+      g_prefix_error (error, "Commit %s: ", checksum);
+      goto out;
+    }
+
   /* If we found a legacy transaction flag, assume all commits are partial */
   is_partial = commitstate_is_partial (pull_data, commitstate);
 
@@ -1421,7 +1650,7 @@ scan_commit_object (OtPullData         *pull_data,
     {
       queue_scan_one_metadata_object_c (pull_data, parent_csum_bytes,
                                         OSTREE_OBJECT_TYPE_COMMIT, NULL,
-                                        recursion_depth + 1);
+                                        recursion_depth + 1, NULL);
     }
   else if (parent_csum_bytes != NULL && depth > 0)
     {
@@ -1448,7 +1677,8 @@ scan_commit_object (OtPullData         *pull_data,
           queue_scan_one_metadata_object_c (pull_data, parent_csum_bytes,
                                             OSTREE_OBJECT_TYPE_COMMIT,
                                             NULL,
-                                            recursion_depth + 1);
+                                            recursion_depth + 1,
+                                            NULL);
         }
     }
 
@@ -1475,10 +1705,10 @@ scan_commit_object (OtPullData         *pull_data,
         goto out;
 
       queue_scan_one_metadata_object_c (pull_data, tree_contents_csum_bytes,
-                                        OSTREE_OBJECT_TYPE_DIR_TREE, "/", recursion_depth + 1);
+                                        OSTREE_OBJECT_TYPE_DIR_TREE, "/", recursion_depth + 1, NULL);
 
       queue_scan_one_metadata_object_c (pull_data, tree_meta_csum_bytes,
-                                        OSTREE_OBJECT_TYPE_DIR_META, NULL, recursion_depth + 1);
+                                        OSTREE_OBJECT_TYPE_DIR_META, NULL, recursion_depth + 1, NULL);
     }
 
   ret = TRUE;
@@ -1487,23 +1717,25 @@ scan_commit_object (OtPullData         *pull_data,
 }
 
 static void
-queue_scan_one_metadata_object (OtPullData         *pull_data,
-                                const char         *csum,
-                                OstreeObjectType    objtype,
-                                const char         *path,
-                                guint               recursion_depth)
+queue_scan_one_metadata_object (OtPullData                *pull_data,
+                                const char                *csum,
+                                OstreeObjectType           objtype,
+                                const char                *path,
+                                guint                      recursion_depth,
+                                const OstreeCollectionRef *ref)
 {
   guchar buf[OSTREE_SHA256_DIGEST_LEN];
   ostree_checksum_inplace_to_bytes (csum, buf);
-  queue_scan_one_metadata_object_c (pull_data, buf, objtype, path, recursion_depth);
+  queue_scan_one_metadata_object_c (pull_data, buf, objtype, path, recursion_depth, ref);
 }
 
 static void
-queue_scan_one_metadata_object_c (OtPullData         *pull_data,
-                                  const guchar         *csum,
-                                  OstreeObjectType    objtype,
-                                  const char         *path,
-                                  guint               recursion_depth)
+queue_scan_one_metadata_object_c (OtPullData                *pull_data,
+                                  const guchar              *csum,
+                                  OstreeObjectType           objtype,
+                                  const char                *path,
+                                  guint                      recursion_depth,
+                                  const OstreeCollectionRef *ref)
 {
   ScanObjectQueueData *scan_data = g_new0 (ScanObjectQueueData, 1);
 
@@ -1511,19 +1743,21 @@ queue_scan_one_metadata_object_c (OtPullData         *pull_data,
   scan_data->objtype = objtype;
   scan_data->path = g_strdup (path);
   scan_data->recursion_depth = recursion_depth;
+  scan_data->requested_ref = (ref != NULL) ? ostree_collection_ref_dup (ref) : NULL;
 
   g_queue_push_tail (&pull_data->scan_object_queue, scan_data);
   ensure_idle_queued (pull_data);
 }
 
 static gboolean
-scan_one_metadata_object_c (OtPullData         *pull_data,
-                            const guchar         *csum,
-                            OstreeObjectType    objtype,
-                            const char         *path,
-                            guint               recursion_depth,
-                            GCancellable       *cancellable,
-                            GError            **error)
+scan_one_metadata_object_c (OtPullData                 *pull_data,
+                            const guchar                 *csum,
+                            OstreeObjectType            objtype,
+                            const char                 *path,
+                            guint                       recursion_depth,
+                            const OstreeCollectionRef  *ref,
+                            GCancellable               *cancellable,
+                            GError                    **error)
 {
   g_autofree char *tmp_checksum = ostree_checksum_from_bytes (csum);
   g_autoptr(GVariant) object = ostree_object_name_serialize (tmp_checksum, objtype);
@@ -1594,7 +1828,7 @@ scan_one_metadata_object_c (OtPullData         *pull_data,
       g_hash_table_add (pull_data->requested_metadata, g_variant_ref (object));
 
       do_fetch_detached = (objtype == OSTREE_OBJECT_TYPE_COMMIT);
-      enqueue_one_object_request (pull_data, tmp_checksum, objtype, path, do_fetch_detached, FALSE);
+      enqueue_one_object_request (pull_data, tmp_checksum, objtype, path, do_fetch_detached, FALSE, ref);
     }
   else if (is_stored && objtype == OSTREE_OBJECT_TYPE_COMMIT)
     {
@@ -1602,10 +1836,10 @@ scan_one_metadata_object_c (OtPullData         *pull_data,
        * detached metadata before scanning it, in case new signatures appear.
        * https://github.com/projectatomic/rpm-ostree/issues/630 */
       if (!g_hash_table_contains (pull_data->fetched_detached_metadata, tmp_checksum))
-        enqueue_one_object_request (pull_data, tmp_checksum, objtype, path, TRUE, TRUE);
+        enqueue_one_object_request (pull_data, tmp_checksum, objtype, path, TRUE, TRUE, ref);
       else
         {
-          if (!scan_commit_object (pull_data, tmp_checksum, recursion_depth,
+          if (!scan_commit_object (pull_data, tmp_checksum, recursion_depth, ref,
                                    pull_data->cancellable, error))
             return FALSE;
 
@@ -1627,12 +1861,13 @@ scan_one_metadata_object_c (OtPullData         *pull_data,
 }
 
 static void
-enqueue_one_object_request (OtPullData        *pull_data,
-                            const char        *checksum,
-                            OstreeObjectType   objtype,
-                            const char        *path,
-                            gboolean           is_detached_meta,
-                            gboolean           object_is_stored)
+enqueue_one_object_request (OtPullData                *pull_data,
+                            const char                *checksum,
+                            OstreeObjectType           objtype,
+                            const char                *path,
+                            gboolean                   is_detached_meta,
+                            gboolean                   object_is_stored,
+                            const OstreeCollectionRef *ref)
 {
   gboolean is_meta;
   FetchObjectData *fetch_data;
@@ -1645,6 +1880,7 @@ enqueue_one_object_request (OtPullData        *pull_data,
   fetch_data->path = g_strdup (path);
   fetch_data->is_detached_meta = is_detached_meta;
   fetch_data->object_is_stored = object_is_stored;
+  fetch_data->requested_ref = (ref != NULL) ? ostree_collection_ref_dup (ref) : NULL;
 
   if (is_meta)
     pull_data->n_requested_metadata++;
@@ -1699,6 +1935,7 @@ start_fetch (OtPullData *pull_data,
   else
     pull_data->n_outstanding_content_fetches++;
 
+  OstreeFetcherRequestFlags flags = 0;
   /* Override the path if we're trying to fetch the .commitmeta file first */
   if (fetch->is_detached_meta)
     {
@@ -1706,6 +1943,7 @@ start_fetch (OtPullData *pull_data,
       _ostree_loose_path (buf, expected_checksum, OSTREE_OBJECT_TYPE_COMMIT_META, pull_data->remote_mode);
       obj_subpath = g_build_filename ("objects", buf, NULL);
       mirrorlist = pull_data->meta_mirrorlist;
+      flags |= OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT;
     }
   else
     {
@@ -1725,7 +1963,7 @@ start_fetch (OtPullData *pull_data,
     expected_max_size = 0;
 
   _ostree_fetcher_request_to_tmpfile (pull_data->fetcher, mirrorlist,
-                                      obj_subpath, expected_max_size,
+                                      obj_subpath, flags, expected_max_size,
                                       is_meta ? OSTREE_REPO_PULL_METADATA_PRIORITY
                                       : OSTREE_REPO_PULL_CONTENT_PRIORITY,
                                       pull_data->cancellable,
@@ -1749,7 +1987,7 @@ load_remote_repo_config (OtPullData    *pull_data,
   g_autoptr(GKeyFile) ret_keyfile = g_key_file_new ();
   if (!g_key_file_load_from_data (ret_keyfile, contents, strlen (contents),
                                   0, error))
-    return FALSE;
+    return glnx_prefix_error (error, "Parsing config");
 
   ot_transfer_out_value (out_keyfile, &ret_keyfile);
   return TRUE;
@@ -1812,7 +2050,7 @@ process_one_static_delta_fallback (OtPullData   *pull_data,
                * for it as logically part of the delta fetch.
                */
               g_hash_table_add (pull_data->requested_fallback_content, g_strdup (checksum));
-              enqueue_one_object_request (pull_data, checksum, OSTREE_OBJECT_TYPE_FILE, NULL, FALSE, FALSE);
+              enqueue_one_object_request (pull_data, checksum, OSTREE_OBJECT_TYPE_FILE, NULL, FALSE, FALSE, NULL);
               checksum = NULL;  /* We transferred ownership to the requested_content hash */
             }
         }
@@ -1830,7 +2068,7 @@ start_fetch_deltapart (OtPullData *pull_data,
   g_assert_cmpint (pull_data->n_outstanding_deltapart_fetches, <=, _OSTREE_MAX_OUTSTANDING_DELTAPART_REQUESTS);
   _ostree_fetcher_request_to_tmpfile (pull_data->fetcher,
                                       pull_data->content_mirrorlist,
-                                      deltapart_path, fetch->size,
+                                      deltapart_path, 0, fetch->size,
                                       OSTREE_FETCHER_DEFAULT_PRIORITY,
                                       pull_data->cancellable,
                                       static_deltapart_fetch_on_complete,
@@ -1838,12 +2076,13 @@ start_fetch_deltapart (OtPullData *pull_data,
 }
 
 static gboolean
-process_one_static_delta (OtPullData   *pull_data,
-                          const char   *from_revision,
-                          const char   *to_revision,
-                          GVariant     *delta_superblock,
-                          GCancellable *cancellable,
-                          GError      **error)
+process_one_static_delta (OtPullData                 *pull_data,
+                          const char                 *from_revision,
+                          const char                 *to_revision,
+                          GVariant                   *delta_superblock,
+                          const OstreeCollectionRef  *ref,
+                          GCancellable               *cancellable,
+                          GError                    **error)
 {
   gboolean ret = FALSE;
   gboolean delta_byteswap;
@@ -1918,6 +2157,7 @@ process_one_static_delta (OtPullData   *pull_data,
         fetch_data->object = ostree_object_name_serialize (to_checksum, OSTREE_OBJECT_TYPE_COMMIT);
         fetch_data->is_detached_meta = FALSE;
         fetch_data->object_is_stored = FALSE;
+        fetch_data->requested_ref = (ref != NULL) ? ostree_collection_ref_dup (ref) : NULL;
 
         ostree_repo_write_metadata_async (pull_data->repo, OSTREE_OBJECT_TYPE_COMMIT, to_checksum,
                                           to_commit,
@@ -2142,6 +2382,7 @@ typedef struct {
   OtPullData *pull_data;
   char *from_revision;
   char *to_revision;
+  OstreeCollectionRef *requested_ref;  /* (nullable) */
 } FetchDeltaSuperData;
 
 static void
@@ -2183,7 +2424,7 @@ on_superblock_fetched (GObject   *src,
           goto out;
         }
 
-      queue_scan_one_metadata_object (pull_data, to_revision, OSTREE_OBJECT_TYPE_COMMIT, NULL, 0);
+      queue_scan_one_metadata_object (pull_data, to_revision, OSTREE_OBJECT_TYPE_COMMIT, NULL, 0, fdata->requested_ref);
     }
   else
     {
@@ -2224,7 +2465,7 @@ on_superblock_fetched (GObject   *src,
                                                                        delta_superblock_data, FALSE));
 
       g_ptr_array_add (pull_data->static_delta_superblocks, g_variant_ref (delta_superblock));
-      if (!process_one_static_delta (pull_data, from_revision, to_revision, delta_superblock,
+      if (!process_one_static_delta (pull_data, from_revision, to_revision, delta_superblock, fdata->requested_ref,
                                      pull_data->cancellable, error))
         goto out;
     }
@@ -2232,6 +2473,8 @@ on_superblock_fetched (GObject   *src,
  out:
   g_free (fdata->from_revision);
   g_free (fdata->to_revision);
+  if (fdata->requested_ref)
+    ostree_collection_ref_free (fdata->requested_ref);
   g_free (fdata);
   g_assert (pull_data->n_outstanding_metadata_fetches > 0);
   pull_data->n_outstanding_metadata_fetches--;
@@ -2446,16 +2689,16 @@ _ostree_repo_remote_new_fetcher (OstreeRepo  *self,
   }
 
   {
-    g_autofree char *jar_path = NULL;
-    g_autofree char *cookie_file = g_strdup_printf ("%s.cookies.txt",
-                                                    remote_name);
+    g_autofree char *cookie_file = g_strdup_printf ("%s.cookies.txt", remote_name);
+    /* TODO; port away from this; a bit hard since both libsoup and libcurl
+     * expect a file. Doing ot_fdrel_to_gfile() works for now though.
+     */
+    GFile*repo_path = ostree_repo_get_path (self);
+    g_autofree char *jar_path =
+      g_build_filename (gs_file_get_path_cached (repo_path), cookie_file, NULL);
 
-    jar_path = g_build_filename (gs_file_get_path_cached (self->repodir), cookie_file,
-                                 NULL);
-
-    if (g_file_test(jar_path, G_FILE_TEST_IS_REGULAR))
+    if (g_file_test (jar_path, G_FILE_TEST_IS_REGULAR))
       _ostree_fetcher_set_cookie_jar (fetcher, jar_path);
-
   }
 
   success = TRUE;
@@ -2507,7 +2750,8 @@ _ostree_preload_metadata_file (OstreeRepo    *self,
   else
     {
       ret = _ostree_fetcher_mirrored_request_to_membuf (fetcher, mirrorlist,
-                                                        filename, FALSE, TRUE,
+                                                        filename,
+                                                        OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
                                                         out_bytes,
                                                         OSTREE_MAX_METADATA_SIZE,
                                                         cancellable, error);
@@ -2774,7 +3018,8 @@ reinitialize_fetcher (OtPullData *pull_data, const char *remote_name, GError **e
 static void
 initiate_delta_request (OtPullData *pull_data,
                         const char *from_revision,
-                        const char *to_revision)
+                        const char *to_revision,
+                        const OstreeCollectionRef *ref)
 {
   g_autofree char *delta_name =
     _ostree_get_relative_static_delta_superblock_path (from_revision, to_revision);
@@ -2782,6 +3027,7 @@ initiate_delta_request (OtPullData *pull_data,
   fdata->pull_data = pull_data;
   fdata->from_revision = g_strdup (from_revision);
   fdata->to_revision = g_strdup (to_revision);
+  fdata->requested_ref = (ref != NULL) ? ostree_collection_ref_dup (ref) : NULL;
 
   _ostree_fetcher_request_to_membuf (pull_data->fetcher,
                                      pull_data->content_mirrorlist,
@@ -2815,7 +3061,7 @@ initiate_request (OtPullData                 *pull_data,
   /* Are deltas disabled?  OK, just start an object fetch and be done */
   if (pull_data->disable_static_deltas)
     {
-      queue_scan_one_metadata_object (pull_data, to_revision, OSTREE_OBJECT_TYPE_COMMIT, NULL, 0);
+      queue_scan_one_metadata_object (pull_data, to_revision, OSTREE_OBJECT_TYPE_COMMIT, NULL, 0, ref);
       return TRUE;
     }
 
@@ -2831,16 +3077,16 @@ initiate_request (OtPullData                 *pull_data,
         return FALSE;
 
       if (delta_from_revision)   /* Did we find a delta FROM commit? */
-        initiate_delta_request (pull_data, delta_from_revision, to_revision);
+        initiate_delta_request (pull_data, delta_from_revision, to_revision, ref);
       else if (have_scratch_delta)    /* No delta FROM, do we have a scratch? */
-        initiate_delta_request (pull_data, NULL, to_revision);
+        initiate_delta_request (pull_data, NULL, to_revision, ref);
       else if (pull_data->require_static_deltas) /* No deltas found; are they required? */
         {
           set_required_deltas_error (error, (ref != NULL) ? ref->ref_name : "", to_revision);
           return FALSE;
         }
       else /* No deltas, fall back to object fetches. */
-        queue_scan_one_metadata_object (pull_data, to_revision, OSTREE_OBJECT_TYPE_COMMIT, NULL, 0);
+        queue_scan_one_metadata_object (pull_data, to_revision, OSTREE_OBJECT_TYPE_COMMIT, NULL, 0, ref);
     }
   else if (ref != NULL)
     {
@@ -2874,14 +3120,14 @@ initiate_request (OtPullData                 *pull_data,
       /* This is similar to the below, except we *might* use the previous
        * commit, or we might do a scratch delta first.
        */
-      initiate_delta_request (pull_data, delta_from_revision ?: NULL, to_revision);
+      initiate_delta_request (pull_data, delta_from_revision ?: NULL, to_revision, ref);
     }
   else
     {
       /* Legacy path without a summary file - let's try a scratch delta, if that
        * doesn't work, it'll drop down to object requests.
        */
-      initiate_delta_request (pull_data, NULL, to_revision);
+      initiate_delta_request (pull_data, NULL, to_revision, NULL);
     }
 
   return TRUE;
@@ -3342,7 +3588,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       {
         if (!_ostree_fetcher_mirrored_request_to_membuf (pull_data->fetcher,
                                                          pull_data->meta_mirrorlist,
-                                                         "summary.sig", FALSE, TRUE,
+                                                         "summary.sig", OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
                                                          &bytes_sig,
                                                          OSTREE_MAX_METADATA_SIZE,
                                                          cancellable, error))
@@ -3366,7 +3612,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       {
         if (!_ostree_fetcher_mirrored_request_to_membuf (pull_data->fetcher,
                                                          pull_data->meta_mirrorlist,
-                                                         "summary", FALSE, TRUE,
+                                                         "summary", OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
                                                          &bytes_summary,
                                                          OSTREE_MAX_METADATA_SIZE,
                                                          cancellable, error))
@@ -4604,8 +4850,7 @@ find_remotes_cb (GObject      *obj,
               if (!_ostree_fetcher_mirrored_request_to_membuf (fetcher,
                                                                mirrorlist,
                                                                commit_filename,
-                                                               FALSE,  /* don’t add trailing nul */
-                                                               TRUE,  /* return NULL on ENOENT */
+                                                               OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
                                                                &commit_bytes,
                                                                0,  /* no maximum size */
                                                                cancellable,
@@ -5097,9 +5342,8 @@ check_remote_matches_collection_id (OstreeRepo  *repo,
 {
   g_autofree gchar *remote_collection_id = NULL;
 
-  if (!ostree_repo_get_remote_option (repo, remote_name, "collection-id", NULL,
-                                      &remote_collection_id, NULL) ||
-      remote_collection_id == NULL)
+  remote_collection_id = get_real_remote_repo_collection_id (repo, remote_name);
+  if (remote_collection_id == NULL)
     return FALSE;
 
   return g_str_equal (remote_collection_id, collection_id);

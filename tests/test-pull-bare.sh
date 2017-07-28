@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2011,2014 Colin Walters <walters@verbum.org>
+# Copyright (C) 2011 Colin Walters <walters@verbum.org>
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -19,11 +19,9 @@
 
 set -euo pipefail
 
-echo "1..18"
-
 . $(dirname $0)/libtest.sh
 
-# Exports OSTREE_SYSROOT so --sysroot not needed.
-setup_os_repository "archive-z2" "syslinux"
+setup_fake_remote_repo1 "archive"
 
-. $(dirname $0)/admin-test.sh
+repo_mode=bare
+. ${test_srcdir}/pull-test.sh

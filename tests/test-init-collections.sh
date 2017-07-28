@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2011,2014 Colin Walters <walters@verbum.org>
+# Copyright © 2017 Endless Mobile, Inc.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -19,11 +19,15 @@
 
 set -euo pipefail
 
-echo "1..18"
-
 . $(dirname $0)/libtest.sh
 
-# Exports OSTREE_SYSROOT so --sysroot not needed.
-setup_os_repository "archive-z2" "syslinux"
+echo '1..1'
 
-. $(dirname $0)/admin-test.sh
+cd ${test_tmpdir}
+
+# Check that initialising a repository with a collection ID results in the ID being in the config.
+mkdir repo
+ostree_repo_init repo --collection-id org.example.Collection
+assert_file_has_content repo/config "^collection-id=org.example.Collection$"
+
+echo "ok init-collections"

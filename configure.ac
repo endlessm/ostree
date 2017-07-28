@@ -4,7 +4,7 @@ dnl update libostree-released.sym from libostree-devel.sym, and update the check
 dnl in test-symbols.sh, and also set is_release_build=yes below.  Then make
 dnl another post-release commit to bump the version, and set is_release_build=no.
 m4_define([year_version], [2017])
-m4_define([release_version], [8])
+m4_define([release_version], [9])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -28,6 +28,7 @@ AC_SUBST([YEAR_VERSION], [year_version])
 AC_SUBST([RELEASE_VERSION], [release_version])
 AC_SUBST([PACKAGE_VERSION], [package_version])
 
+AS_IF([echo "$CFLAGS" | grep -q -E -e '-Werror($| )'], [], [
 CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
         -pipe \
         -Wall \
@@ -46,7 +47,7 @@ CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
         -Werror=misleading-indentation \
 	-Werror=missing-include-dirs -Werror=aggregate-return \
   -Werror=unused-result \
-])
+])])
 AC_SUBST(WARN_CFLAGS)
 
 AC_MSG_CHECKING([for -fsanitize=address in CFLAGS])
