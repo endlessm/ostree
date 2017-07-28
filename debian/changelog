@@ -1,4 +1,4 @@
-ostree (2017.9-1) UNRELEASED; urgency=medium
+ostree (2017.9-1) unstable; urgency=medium
 
   * New upstream release
     - Drop backported patch
@@ -6,7 +6,7 @@ ostree (2017.9-1) UNRELEASED; urgency=medium
   * debian/rules: Adjust a comment to avoid Lintian thinking this is a
     dh_make template
 
- -- Simon McVittie <smcv@debian.org>  Fri, 28 Jul 2017 12:00:20 +0100
+ -- Simon McVittie <smcv@debian.org>  Fri, 28 Jul 2017 14:43:30 +0100
 
 ostree (2017.8-1) unstable; urgency=medium
 
