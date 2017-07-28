@@ -58,7 +58,7 @@ override_dh_install:
 	rm -f debian/tmp/usr/lib/*/*.la
 	rm -f debian/tmp/usr/lib/installed-tests/libostree/*.la
 	:
-	# FIXME: when someone documents how to test these (#824649) they
+	# TODO: when someone documents how to test these (#824649) they
 	# should be installed in a new ostree-boot package: see
 	# debian/ostree-boot.* and https://bugs.debian.org/824650
 	rm -f debian/tmp/etc/dracut.conf.d/ostree.conf

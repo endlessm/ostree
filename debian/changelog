@@ -3,6 +3,8 @@ ostree (2017.9-1) UNRELEASED; urgency=medium
   * New upstream release
     - Drop backported patch
     - Update symbols file
+  * debian/rules: Adjust a comment to avoid Lintian thinking this is a
+    dh_make template
 
  -- Simon McVittie <smcv@debian.org>  Fri, 28 Jul 2017 12:00:20 +0100
 
