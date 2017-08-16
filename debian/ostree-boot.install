@@ -1,9 +1,0 @@
-etc/dracut.conf.d/ostree.conf
-etc/grub.d/15_ostree
-lib/systemd/system-generators/ostree-system-generator
-lib/systemd/system/ostree-prepare-root.service
-lib/systemd/system/ostree-remount.service
-usr/lib/dracut/modules.d/98ostree
-usr/lib/libostree/grub2-15_ostree
-usr/lib/ostree/ostree-prepare-root
-usr/lib/ostree/ostree-remount
