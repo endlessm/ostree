@@ -1,0 +1,25 @@
+(This README is correct as of 2019-09-19.)
+
+The packaging in this branch is based on debian's git repo at
+https://salsa.debian.org/debian/ostree.git. When updating, changes
+should be based on the debian/<upstream>-<package> tag in that repo.
+
+The Endless OSTree package differs a little from upstream Debian OSTree,
+since we don't use the full OSTree grub integration. See
+https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=824650 for the Debian
+status of things.
+
+Ways in which the Endless package differs from Debian:
+ 1. We don’t use the full OSTree grub integration (etc/grub.d/15_ostree,
+    usr/libexec/libostree/grub2-15_ostree). (See T18848.)
+ 2. We carry some custom patches which change the repository format to
+    store extra data about commit sizes, which was used a long time ago in
+    the client update UI. (See T17367.)
+ 3. We re-enable gjs build dependency as we have a way to install/test it
+ 4. We bring back trivial-httpd subcommand
+
+#1, #3 and #4 can be fixed at some point in the future (especially #3 and #4
+if debian decides to re-add the support).
+However #2 cannot be entirely fixed, since we will always need some
+compatibility code for generating the additional metadata on the server side.
+However, it could potentially be moved out of the OSTree package (T17367).
