@@ -9,5 +9,5 @@ usr/bin/rofiles-fuse
 usr/lib/dracut/modules.d/98ostree		
 usr/lib/ostree/ostree-prepare-root		
 usr/lib/ostree/ostree-remount
-usr/share/man <!nodoc>
+usr/share/man
 usr/share/ostree/trusted.gpg.d
