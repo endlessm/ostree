@@ -1,0 +1,11 @@
+(This README is correct as of 2017-08-17.)
+
+The Endless OSTree package differs a little from upstream Debian OSTree, since Debian does not install the boot integration due to having no way to test it — but we do. See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=824650 for the Debian status of things.
+
+Ways in which the Endless package differs from Debian:
+ 0. We drop <!nodoc> profile usage, since our tooling does not currently support it. (See T18835.)
+ 1. The placeholder ostree-boot package has been merged into the ostree package, and ostree-boot.{install,control} have been deleted. (See T18848.)
+ 2. We don’t use the full OSTree grub integration (etc/grub.d/15_ostree, usr/lib/libostree/grub2-15_ostree). (See T18848.)
+ 3. We carry some custom patches which change the repository format to store extra data about commit sizes, which was used a long time ago in the client update UI. (See T17367.)
+
+#1 and #2 can be fixed at some point in the future. #3 cannot be entirely fixed, since we will always need some compatibility code for generating the additional metadata on the server side. However, it could potentially be moved out of the OSTree package.
