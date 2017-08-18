@@ -3884,7 +3884,6 @@ ostree_repo_delete_object (OstreeRepo           *self,
   if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
     {
       char meta_loose[_OSTREE_LOOSE_PATH_MAX];
-      char compat_files_loose[2][_OSTREE_LOOSE_PATH_MAX];
 
       _ostree_loose_path (meta_loose, sha256, OSTREE_OBJECT_TYPE_COMMIT_META, self->mode);
 
@@ -3892,14 +3891,22 @@ ostree_repo_delete_object (OstreeRepo           *self,
         return FALSE;
 
       /* Delete optional compat objects */
-      _ostree_loose_path_with_extension (compat_files_loose[0], sha256, "sig");
-      _ostree_loose_path_with_extension (compat_files_loose[1], sha256, "sizes2");
-
-      for (gsize i = 0; i < G_N_ELEMENTS (compat_files_loose); i++)
+      const char compat_files_exts[][7] = { "sig", "sizes2" };
+      for (gsize i = 0; i < G_N_ELEMENTS (compat_files_exts); i++)
         {
-          const char *compat_loose = compat_files_loose[i];
+          const char *ext = compat_files_exts[i];
+          char *buf = meta_loose;
 
-          if (!ot_ensure_unlinked_at (self->objects_dir_fd, compat_loose, error))
+          /* Write the compat object loose name manually since there's no
+           * loose path API that handles arbitrary file extensions
+           */
+          *buf = sha256[0];
+          buf++;
+          *buf = sha256[1];
+          buf++;
+          snprintf (buf, _OSTREE_LOOSE_PATH_MAX - 2, "/%s.%s", sha256 + 2, ext);
+
+          if (!ot_ensure_unlinked_at (self->objects_dir_fd, meta_loose, error))
             return FALSE;
         }
     }
