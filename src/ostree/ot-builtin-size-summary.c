@@ -30,9 +30,8 @@
 gboolean
 ostree_builtin_size_summary (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
-  gboolean ret = FALSE;
-  GOptionContext *context;
-  OstreeRepo *repo;
+  g_autoptr(GOptionContext) context = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   gsize entries = 0;
   const char *remote = NULL;
   const char *ref = NULL;
@@ -47,10 +46,10 @@ ostree_builtin_size_summary (int argc, char **argv, GCancellable *cancellable, G
   context = g_option_context_new ("[REMOTE] BRANCH - Display the summary for branch");
 
   if (!ostree_option_context_parse (context, NULL, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
-    goto out;
+    return FALSE;
 
   if (!ostree_repo_open (repo, cancellable, error))
-    goto out;
+    return FALSE;
 
   switch (argc)
     {
@@ -67,16 +66,16 @@ ostree_builtin_size_summary (int argc, char **argv, GCancellable *cancellable, G
 
     case 1:
       ot_util_usage_error (context, "BRANCH must be specified", error);
-      goto out;
+      return FALSE;
 
     default:
       ot_util_usage_error (context, "only one branch may be summarised", error);
-      goto out;
+      return FALSE;
     }
 
   /* if there's a remote, we might not have pulled the metadata yet */
   if (!ostree_repo_resolve_rev (repo, refspec, remote != NULL, &revision, error))
-    goto out;
+    return FALSE;
 
   /* nothing in the cache, but try and fetch it if it's a remote refspec */
   if (!revision && remote)
@@ -85,17 +84,17 @@ ostree_builtin_size_summary (int argc, char **argv, GCancellable *cancellable, G
       gchar *pullrefs[] = { (gchar *) ref, NULL };
 
       if (!ostree_repo_pull (repo, remote, pullrefs, flags, NULL, cancellable, error))
-        goto out;
+        return FALSE;
 
       if (!ostree_repo_resolve_rev (repo, refspec, FALSE, &revision, error))
-        goto out;
+        return FALSE;
     }
 
   if (!revision)
     {
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
                    "Refspec '%s' not found", refspec);
-      goto out;
+      return FALSE;
     }
 
   if (!ostree_repo_get_commit_sizes (repo, revision,
@@ -105,7 +104,7 @@ ostree_builtin_size_summary (int argc, char **argv, GCancellable *cancellable, G
                                      &archived, &unpacked,
                                      &entries,
                                      cancellable, error))
-    goto out;
+    return FALSE;
 
   g_print ("Summary for refspec %s:\n"
            "  files: %" G_GSIZE_FORMAT "/%" G_GSIZE_FORMAT " entries\n"
@@ -116,9 +115,5 @@ ostree_builtin_size_summary (int argc, char **argv, GCancellable *cancellable, G
            archived - new_archived, archived,
            unpacked - new_unpacked, unpacked);
 
-  ret = TRUE;
- out:
-  g_option_context_free (context);
-
-  return ret;
+  return TRUE;
 }
