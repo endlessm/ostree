@@ -5315,6 +5315,9 @@ ostree_repo_delete_compat_signature (OstreeRepo     *self,
                                                   error))
       return FALSE;
 
+  if (compat_sig == NULL)
+      return TRUE;
+
   if (g_bytes_equal (compat_sig, signature))
     {
       char compat_sig_loose[_OSTREE_LOOSE_PATH_MAX];
