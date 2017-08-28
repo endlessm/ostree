@@ -2147,8 +2147,8 @@ process_one_static_delta_fallback (OtPullData   *pull_data,
       /* The delta compiler never did this, there's no reason to support it */
       if (OSTREE_OBJECT_TYPE_IS_META (objtype))
         {
-        return glnx_throw (error, "Found metadata object as fallback: %s.%s", checksum,
-                           ostree_object_type_to_string (objtype));
+          return glnx_throw (error, "Found metadata object as fallback: %s.%s", checksum,
+                             ostree_object_type_to_string (objtype));
         }
       else
         {
