@@ -485,7 +485,6 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
                               GCancellable *cancellable,
                               GError **error)
 {
-  gboolean ret = FALSE;
   guint64 n_archived = 0;
   guint64 n_unpacked = 0;
   gsize n_files = 0;
@@ -502,17 +501,17 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
                                  &commit, error))
     {
       g_prefix_error (error, "Failed to read commit: ");
-      goto out;
+      return FALSE;
     }
 
   metadata = g_variant_get_child_value (commit, 0);
 
-  sizes = g_variant_lookup_value (metadata, "ostree.sizes", G_VARIANT_TYPE("aay"));
+  sizes = g_variant_lookup_value (metadata, "ostree.sizes", G_VARIANT_TYPE ("aay"));
   if (!sizes)
     {
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
                    "No metadata key ostree.sizes in commit %s", rev);
-      goto out;
+      return FALSE;
     }
 
   g_variant_iter_init (&obj_iter, sizes);
@@ -526,10 +525,9 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
         {
           g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                        "Invalid object size metadata");
-          goto out;
+          return FALSE;
         }
-      g_variant_unref (object);
-      object = NULL;
+      g_clear_pointer (&object, g_variant_unref);
 
       t_archived += entry.archived;
       t_unpacked += entry.unpacked;
@@ -539,7 +537,7 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
 
       if (!ostree_repo_has_object (self, entry.objtype,
                                    csum, &exists, cancellable, error))
-        goto out;
+        return FALSE;
 
       /* cache check completed, but file is not in cache */
       if (!exists)
@@ -551,15 +549,14 @@ ostree_repo_get_commit_sizes (OstreeRepo *self,
         }
     }
 
-  ret = TRUE;
   if (new_archived) *new_archived = n_archived;
   if (new_unpacked) *new_unpacked = n_unpacked;
   if (new_files) *new_files = n_files;
   if (archived) *archived = t_archived;
   if (unpacked) *unpacked = t_unpacked;
   if (files) *files = t_files;
-out:
-  return ret;
+
+  return TRUE;
 }
 
 /* Combines a check for whether or not we already have the object with
