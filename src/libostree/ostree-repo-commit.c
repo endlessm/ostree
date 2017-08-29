@@ -407,45 +407,42 @@ ostree_repo_commit_unpack_sizes (GVariant                    *entry,
                                  OstreeContentSizeCacheEntry *sizes,
                                  char                        *csum)
 {
-  gboolean ret = FALSE;
   const guchar *buffer;
   gsize bytes_read = 0;
   gsize object_size = g_variant_get_size (entry);
   guint64 archived, unpacked;
 
   if (object_size <= 32)
-    goto out;
+    return FALSE;
 
   buffer = g_variant_get_data (entry);
   if (!buffer)
-    goto out;
+    return FALSE;
 
   ostree_checksum_inplace_from_bytes (buffer, csum);
   buffer += 32;
   object_size -= 32;
 
   if (!_ostree_read_varuint64 (buffer, object_size, &archived, &bytes_read))
-    goto out;
+    return FALSE;
   sizes->archived = archived;
   buffer += bytes_read;
   object_size -= bytes_read;
 
   if (!_ostree_read_varuint64 (buffer, object_size, &unpacked, &bytes_read))
-    goto out;
+    return FALSE;
   sizes->unpacked = unpacked;
   buffer += bytes_read;
   object_size -= bytes_read;
 
   if (object_size < 1)
-    goto out;
+    return FALSE;
 
   if (*buffer < OSTREE_OBJECT_TYPE_FILE || *buffer > OSTREE_OBJECT_TYPE_LAST)
-    goto out;
+    return FALSE;
   sizes->objtype = (OstreeObjectType) *buffer;
 
-  ret = TRUE;
-out:
-  return ret;
+  return TRUE;
 }
 
 /**
