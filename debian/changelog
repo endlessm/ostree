@@ -4,6 +4,9 @@ ostree (2017.10-1) UNRELEASED; urgency=medium
     - Update symbols file
     - Install new bash completions
   * Use dh_missing --fail-missing instead of dh_install --fail-missing
+  * Only run tests when building architecture-dependent packages.
+    The tests aren't so interesting that we want to run them again
+    when splitting -arch/-indep builds.
 
  -- Simon McVittie <smcv@debian.org>  Tue, 29 Aug 2017 16:08:09 +0100
 

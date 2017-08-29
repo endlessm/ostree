@@ -38,10 +38,13 @@ endif
 override_dh_auto_configure:
 	dh_auto_configure -- $(configure_options)
 
-override_dh_auto_test:
+override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	debian/test.sh
 endif
+
+override_dh_auto_test-indep:
+	:
 
 override_dh_auto_install:
 	dh_auto_install
