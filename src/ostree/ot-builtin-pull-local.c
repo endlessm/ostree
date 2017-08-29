@@ -39,6 +39,11 @@ static gboolean opt_gpg_verify;
 static gboolean opt_gpg_verify_summary;
 static int opt_depth = 0;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-pull-local.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "remote", 0, 0, G_OPTION_ARG_STRING, &opt_remote, "Add REMOTE to refspec", "REMOTE" },
   { "disable-fsync", 0, 0, G_OPTION_ARG_NONE, &opt_disable_fsync, "Do not invoke fsync()", NULL },
@@ -56,11 +61,11 @@ ostree_builtin_pull_local (int argc, char **argv, GCancellable *cancellable, GEr
 {
   gboolean ret = FALSE;
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   int i;
   const char *src_repo_arg;
   g_autofree char *src_repo_uri = NULL;
-  glnx_unref_object OstreeAsyncProgress *progress = NULL;
+  g_autoptr(OstreeAsyncProgress) progress = NULL;
   g_autoptr(GPtrArray) refs_to_fetch = NULL;
   OstreeRepoPullFlags pullflags = 0;
 
@@ -103,7 +108,7 @@ ostree_builtin_pull_local (int argc, char **argv, GCancellable *cancellable, GEr
   if (argc == 2)
     {
       g_autoptr(GFile) src_repo_path = g_file_new_for_path (src_repo_arg);
-      glnx_unref_object OstreeRepo *src_repo = ostree_repo_new (src_repo_path);
+      g_autoptr(OstreeRepo) src_repo = ostree_repo_new (src_repo_path);
       g_autoptr(GHashTable) refs_to_clone = NULL;
 
       refs_to_fetch = g_ptr_array_new_with_free_func (g_free);

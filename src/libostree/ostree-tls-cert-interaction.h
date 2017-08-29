@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "otutil.h"
 #include <gio/gio.h>
 
 G_BEGIN_DECLS
@@ -31,6 +32,7 @@ G_BEGIN_DECLS
 
 typedef struct _OstreeTlsCertInteraction        OstreeTlsCertInteraction;
 typedef struct _OstreeTlsCertInteractionClass   OstreeTlsCertInteractionClass;
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(OstreeTlsCertInteraction, g_object_unref)
 
 GType                       _ostree_tls_cert_interaction_get_type    (void) G_GNUC_CONST;
 

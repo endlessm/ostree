@@ -31,6 +31,11 @@
 
 static char *opt_osname;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-config-diff.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "os", 0, 0, G_OPTION_ARG_STRING, &opt_osname, "Use a different operating system root than the current one", "OSNAME" },
   { NULL }
@@ -40,9 +45,9 @@ gboolean
 ot_admin_builtin_diff (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   gboolean ret = FALSE;
-  glnx_unref_object OstreeDeployment *deployment = NULL;
+  g_autoptr(OstreeDeployment) deployment = NULL;
   g_autoptr(GFile) deployment_dir = NULL;
   g_autoptr(GPtrArray) modified = NULL;
   g_autoptr(GPtrArray) removed = NULL;

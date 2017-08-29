@@ -64,6 +64,13 @@ gboolean      ostree_repo_open   (OstreeRepo     *self,
                                   GError        **error);
 
 _OSTREE_PUBLIC
+OstreeRepo*
+ostree_repo_open_at (int           dfd,
+                     const char   *path,
+                     GCancellable *cancellable,
+                     GError      **error);
+
+_OSTREE_PUBLIC
 void          ostree_repo_set_disable_fsync (OstreeRepo    *self,
                                              gboolean       disable_fsync);
 
@@ -89,6 +96,13 @@ gboolean      ostree_repo_create (OstreeRepo     *self,
                                   OstreeRepoMode  mode,
                                   GCancellable   *cancellable,
                                   GError        **error);
+_OSTREE_PUBLIC
+OstreeRepo *  ostree_repo_create_at (int             dfd,
+                                     const char     *path,
+                                     OstreeRepoMode  mode,
+                                     GVariant       *options,
+                                     GCancellable   *cancellable,
+                                     GError        **error);
 
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
 
@@ -327,6 +341,14 @@ gboolean      ostree_repo_set_ref_immediate (OstreeRepo *self,
                                              GCancellable  *cancellable,
                                              GError       **error);
 
+_OSTREE_PUBLIC
+gboolean      ostree_repo_set_alias_ref_immediate (OstreeRepo *self,
+                                                   const char *remote,
+                                                   const char *ref,
+                                                   const char *target,
+                                                   GCancellable  *cancellable,
+                                                   GError       **error);
+
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
 
 _OSTREE_PUBLIC
@@ -452,9 +474,11 @@ gboolean      ostree_repo_list_refs (OstreeRepo       *self,
 /**
  * OstreeRepoListRefsExtFlags:
  * @OSTREE_REPO_LIST_REFS_EXT_NONE: No flags.
+ * @OSTREE_REPO_LIST_REFS_EXT_ALIASES: Only list aliases.  Since: 2017.10
  */
 typedef enum {
   OSTREE_REPO_LIST_REFS_EXT_NONE = 0,
+  OSTREE_REPO_LIST_REFS_EXT_ALIASES = 1,
 } OstreeRepoListRefsExtFlags;
 
 _OSTREE_PUBLIC
@@ -471,6 +495,15 @@ gboolean ostree_repo_remote_list_refs (OstreeRepo       *self,
                                        GHashTable      **out_all_refs,
                                        GCancellable     *cancellable,
                                        GError          **error);
+
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+_OSTREE_PUBLIC
+gboolean ostree_repo_remote_list_collection_refs (OstreeRepo    *self,
+                                                  const char    *remote_name,
+                                                  GHashTable   **out_all_refs,
+                                                  GCancellable  *cancellable,
+                                                  GError       **error);
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
 _OSTREE_PUBLIC
 gboolean      ostree_repo_load_variant (OstreeRepo  *self,

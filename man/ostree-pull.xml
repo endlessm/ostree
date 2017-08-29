@@ -78,7 +78,7 @@ Boston, MA 02111-1307, USA.
 
               <listitem><para>
                 Like git's <literal>clone --reference</literal>.  Reuse the provided
-                OSTree repo as a local object cache of objects when doing HTTP fetches.
+                OSTree repo as a local object cache when doing HTTP fetches.
                 May be specified multiple times.
               </para></listitem>
             </varlistentry>
@@ -132,12 +132,15 @@ Boston, MA 02111-1307, USA.
 	  This command can retrieve just a specific commit, or go all
 	  the way to performing a full mirror of the remote
 	  repository.  If no <literal>BRANCH</literal> is specified,
-	  all branches are retrieved.
+	  all configured branches are retrieved.
         </para>
 
 	<para>
-	  A special syntax in the <literal>@</literal> character allows
-	  specifying a specific commit to retrieve from a branch.  This
+    A special syntax in the <literal>@</literal> character allows
+    specifying a specific commit to retrieve from a branch.  The
+    use cases for this are somewhat similar to pulling a specific
+    git tag; one could e.g. script a system upgrade to a known-good
+    version, rather than the latest from the content provider.
 	</para>
 
     </refsect1>

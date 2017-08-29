@@ -20,12 +20,12 @@
 
 #include "config.h"
 
+#include "otutil.h"
 #include "ot-main.h"
 #include "ot-builtins.h"
+#include "ostree-libarchive-private.h"
 #include "ostree.h"
 #include "ostree-repo-file.h"
-#include "ostree-libarchive-private.h"
-#include "otutil.h"
 
 #ifdef HAVE_LIBARCHIVE
 #include <archive.h>
@@ -36,6 +36,11 @@ static char *opt_output_path;
 static char *opt_subpath;
 static char *opt_prefix;
 static gboolean opt_no_xattrs;
+
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-export.xml) when changing the option list.
+ */
 
 static GOptionEntry options[] = {
   { "no-xattrs", 0, 0, G_OPTION_ARG_NONE, &opt_no_xattrs, "Skip output of extended attributes", NULL },
@@ -61,14 +66,16 @@ gboolean
 ostree_builtin_export (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   gboolean ret = FALSE;
   const char *rev;
   g_autoptr(GFile) root = NULL;
   g_autoptr(GFile) subtree = NULL;
   g_autofree char *commit = NULL;
   g_autoptr(GVariant) commit_data = NULL;
-  ot_cleanup_write_archive struct archive *a = NULL;
+#ifdef HAVE_LIBARCHIVE
+  g_autoptr(OtAutoArchiveWrite) a = NULL;
+#endif
   OstreeRepoExportArchiveOptions opts = { 0, };
 
   context = g_option_context_new ("COMMIT - Stream COMMIT to stdout in tar format");

@@ -39,6 +39,11 @@ static gboolean opt_kernel_proc_cmdline;
 static char *opt_osname;
 static char *opt_origin_path;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-deploy.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "os", 0, 0, G_OPTION_ARG_STRING, &opt_osname, "Use a different operating system root than the current one", "OSNAME" },
   { "origin-file", 0, 0, G_OPTION_ARG_FILENAME, &opt_origin_path, "Specify origin file", "FILENAME" },
@@ -55,11 +60,11 @@ ot_admin_builtin_deploy (int argc, char **argv, GCancellable *cancellable, GErro
   gboolean ret = FALSE;
   const char *refspec;
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   g_autoptr(GKeyFile) origin = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
-  glnx_unref_object OstreeDeployment *new_deployment = NULL;
-  glnx_unref_object OstreeDeployment *merge_deployment = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
+  g_autoptr(OstreeDeployment) new_deployment = NULL;
+  g_autoptr(OstreeDeployment) merge_deployment = NULL;
   g_autofree char *revision = NULL;
   __attribute__((cleanup(_ostree_kernel_args_cleanup))) OstreeKernelArgs *kargs = NULL;
 

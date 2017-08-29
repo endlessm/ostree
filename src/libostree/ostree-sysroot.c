@@ -25,6 +25,7 @@
 #include <sys/mount.h>
 #include <sys/wait.h>
 
+#include "ostree.h"
 #include "ostree-core-private.h"
 #include "ostree-repo-private.h"
 #include "ostree-sepolicy-private.h"
@@ -57,7 +58,17 @@ find_booted_deployment (OstreeSysroot       *self,
  */
 typedef struct {
   GObjectClass parent_class;
+
+  /* Signals */
+  void (*journal_msg) (OstreeSysroot *sysroot,
+                       const char    *msg);
 } OstreeSysrootClass;
+
+enum {
+  JOURNAL_MSG_SIGNAL,
+  LAST_SIGNAL,
+};
+static guint signals[LAST_SIGNAL] = { 0 };
 
 enum {
   PROP_0,
@@ -126,17 +137,10 @@ static void
 ostree_sysroot_constructed (GObject *object)
 {
   OstreeSysroot *self = OSTREE_SYSROOT (object);
-  g_autoptr(GFile) repo_path = NULL;
 
   /* Ensure the system root path is set. */
   if (self->path == NULL)
     self->path = g_object_ref (_ostree_get_default_sysroot_path ());
-
-  repo_path = g_file_resolve_relative_path (self->path, "ostree/repo");
-  self->repo = ostree_repo_new_for_sysroot_path (repo_path, self->path);
-  self->repo->sysroot_kind = OSTREE_REPO_SYSROOT_KIND_VIA_SYSROOT;
-  /* Hold a weak ref for the remote-add handling */
-  g_weak_ref_init (&self->repo->sysroot, object);
 
   G_OBJECT_CLASS (ostree_sysroot_parent_class)->constructed (object);
 }
@@ -158,6 +162,27 @@ ostree_sysroot_class_init (OstreeSysrootClass *klass)
                                                         "",
                                                         G_TYPE_FILE,
                                                         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+
+  /**
+   * OstreeSysroot::journal-msg:
+   * @self: Self
+   * @msg: Human-readable string (should not contain newlines)
+   *
+   * libostree will log to the journal various events, such as the /etc merge
+   * status, and transaction completion. Connect to this signal to also
+   * synchronously receive the text for those messages. This is intended to be
+   * used by command line tools which link to libostree as a library.
+   *
+   * Currently, the structured data is only available via the systemd journal.
+   *
+   * Since: 2017.10
+   */
+  signals[JOURNAL_MSG_SIGNAL] =
+    g_signal_new ("journal-msg",
+                  G_OBJECT_CLASS_TYPE (object_class),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (OstreeSysrootClass, journal_msg),
+                  NULL, NULL, NULL, G_TYPE_NONE, 1, G_TYPE_STRING);
 }
 
 static void
@@ -165,6 +190,7 @@ ostree_sysroot_init (OstreeSysroot *self)
 {
   const GDebugKey keys[] = {
     { "mutable-deployments", OSTREE_SYSROOT_DEBUG_MUTABLE_DEPLOYMENTS },
+    { "test-fifreeze", OSTREE_SYSROOT_DEBUG_TEST_FIFREEZE },
     { "no-xattrs", OSTREE_SYSROOT_DEBUG_NO_XATTRS },
   };
 
@@ -299,22 +325,20 @@ ostree_sysroot_ensure_initialized (OstreeSysroot  *self,
                                cancellable, error))
     return FALSE;
 
-  struct stat stbuf;
-  if (fstatat (self->sysroot_fd, "ostree/repo/objects", &stbuf, 0) != 0)
-    {
-      if (errno != ENOENT)
-        return glnx_throw_errno_prefix (error, "stat(ostree/repo/objects)");
-      else
-        {
-          g_autoptr(GFile) repo_dir = g_file_resolve_relative_path (self->path, "ostree/repo");
-          glnx_unref_object OstreeRepo *repo = ostree_repo_new (repo_dir);
-          if (!ostree_repo_create (repo, OSTREE_REPO_MODE_BARE,
-                                   cancellable, error))
-            return FALSE;
-        }
-    }
-
+  g_autoptr(OstreeRepo) repo =
+    ostree_repo_create_at (self->sysroot_fd, "ostree/repo",
+                           OSTREE_REPO_MODE_BARE, NULL,
+                           cancellable, error);
+  if (!repo)
+    return FALSE;
   return TRUE;
+}
+
+void
+_ostree_sysroot_emit_journal_msg (OstreeSysroot  *self,
+                                  const char     *msg)
+{
+  g_signal_emit (self, signals[JOURNAL_MSG_SIGNAL], 0, msg);
 }
 
 gboolean
@@ -454,7 +478,7 @@ _ostree_sysroot_read_boot_loader_configs (OstreeSysroot *self,
           g_str_has_suffix (dent->d_name, ".conf") &&
           S_ISREG (stbuf.st_mode))
         {
-          glnx_unref_object OstreeBootconfigParser *config = ostree_bootconfig_parser_new ();
+          g_autoptr(OstreeBootconfigParser) config = ostree_bootconfig_parser_new ();
 
           if (!ostree_bootconfig_parser_parse_at (config, dfd_iter.fd, dent->d_name, cancellable, error))
             return glnx_prefix_error (error, "Parsing %s", dent->d_name);
@@ -624,7 +648,7 @@ parse_deployment (OstreeSysroot       *self,
                      cancellable, error))
     return FALSE;
 
-  glnx_unref_object OstreeDeployment *ret_deployment
+  g_autoptr(OstreeDeployment) ret_deployment
     = ostree_deployment_new (-1, osname, treecsum, deployserial,
                              bootcsum, treebootserial);
   if (origin)
@@ -691,7 +715,7 @@ list_deployments_process_one_boot_entry (OstreeSysroot               *self,
   if (ostree_arg == NULL)
     return glnx_throw (error, "No ostree= kernel argument found");
 
-  glnx_unref_object OstreeDeployment *deployment = NULL;
+  g_autoptr(OstreeDeployment) deployment = NULL;
   if (!parse_deployment (self, ostree_arg, &deployment,
                          cancellable, error))
     return FALSE;
@@ -732,14 +756,22 @@ ostree_sysroot_load (OstreeSysroot  *self,
 }
 
 static gboolean
-ensure_repo_opened (OstreeSysroot  *self,
-                    GError        **error)
+ensure_repo (OstreeSysroot  *self,
+             GError        **error)
 {
-  if (self->repo_opened)
+  if (self->repo != NULL)
     return TRUE;
-  if (!ostree_repo_open (self->repo, NULL, error))
+  if (!ensure_sysroot_fd (self, error))
     return FALSE;
-  self->repo_opened = TRUE;
+  self->repo = ostree_repo_open_at (self->sysroot_fd, "ostree/repo", NULL, error);
+  if (!self->repo)
+    return FALSE;
+
+  /* Flag it as having been created via ostree_sysroot_get_repo(), and hold a
+   * weak ref for the remote-add handling.
+   */
+  g_weak_ref_init (&self->repo->sysroot, self);
+  self->repo->sysroot_kind = OSTREE_REPO_SYSROOT_KIND_VIA_SYSROOT;
   return TRUE;
 }
 
@@ -756,7 +788,7 @@ ostree_sysroot_load_if_changed (OstreeSysroot  *self,
    * previous to v2017.6, but we do now to support the error-free
    * ostree_sysroot_repo() API.
    */
-  if (!ensure_repo_opened (self, error))
+  if (!ensure_repo (self, error))
     return FALSE;
 
   int bootversion = 0;
@@ -959,9 +991,8 @@ ostree_sysroot_get_repo (OstreeSysroot         *self,
                          GCancellable  *cancellable,
                          GError       **error)
 {
-  if (!ensure_repo_opened (self, error))
+  if (!ensure_repo (self, error))
     return FALSE;
-
   if (out_repo != NULL)
     *out_repo = g_object_ref (self->repo);
   return TRUE;
@@ -999,7 +1030,7 @@ _ostree_sysroot_query_bootloader (OstreeSysroot     *sysroot,
                                   GError           **error)
 {
   gboolean is_active;
-  glnx_unref_object OstreeBootloader *ret_loader =
+  g_autoptr(OstreeBootloader) ret_loader =
     (OstreeBootloader*)_ostree_bootloader_syslinux_new (sysroot);
   if (!_ostree_bootloader_query (ret_loader, &is_active,
                                  cancellable, error))
@@ -1078,7 +1109,7 @@ find_booted_deployment (OstreeSysroot       *self,
 {
   struct stat root_stbuf;
   struct stat self_stbuf;
-  glnx_unref_object OstreeDeployment *ret_deployment = NULL;
+  g_autoptr(OstreeDeployment) ret_deployment = NULL;
 
   if (stat ("/", &root_stbuf) != 0)
     return glnx_throw_errno_prefix (error, "stat /");
@@ -1540,6 +1571,7 @@ ostree_sysroot_simple_write_deployment (OstreeSysroot      *sysroot,
   return ret;
 }
 
+/* Deploy a copy of @target_deployment */
 static gboolean
 clone_deployment (OstreeSysroot  *sysroot,
                   OstreeDeployment *target_deployment,
@@ -1547,38 +1579,26 @@ clone_deployment (OstreeSysroot  *sysroot,
                   GCancellable *cancellable,
                   GError **error)
 {
-  gboolean ret = FALSE;
-  __attribute__((cleanup(_ostree_kernel_args_cleanup))) OstreeKernelArgs *kargs = NULL;
-  glnx_unref_object OstreeDeployment *new_deployment = NULL;
-
   /* Ensure we have a clean slate */
   if (!ostree_sysroot_prepare_cleanup (sysroot, cancellable, error))
-    {
-      g_prefix_error (error, "Performing initial cleanup: ");
-      goto out;
-    }
+    return glnx_prefix_error (error, "Performing initial cleanup");
 
-  kargs = _ostree_kernel_args_new ();
+  /* Copy the bootloader config options */
+  OstreeBootconfigParser *bootconfig = ostree_deployment_get_bootconfig (merge_deployment);
+  g_auto(GStrv) previous_args = g_strsplit (ostree_bootconfig_parser_get (bootconfig, "options"), " ", -1);
+  __attribute__((cleanup(_ostree_kernel_args_cleanup))) OstreeKernelArgs *kargs = _ostree_kernel_args_new ();
+  _ostree_kernel_args_append_argv (kargs, previous_args);
 
-  { OstreeBootconfigParser *bootconfig = ostree_deployment_get_bootconfig (merge_deployment);
-    g_auto(GStrv) previous_args = g_strsplit (ostree_bootconfig_parser_get (bootconfig, "options"), " ", -1);
-    
-    _ostree_kernel_args_append_argv (kargs, previous_args);
-  }
-
-  {
-    g_auto(GStrv) kargs_strv = _ostree_kernel_args_to_strv (kargs);
-
-    if (!ostree_sysroot_deploy_tree (sysroot,
-                                     ostree_deployment_get_osname (target_deployment),
-                                     ostree_deployment_get_csum (target_deployment),
-                                     ostree_deployment_get_origin (target_deployment),
-                                     merge_deployment,
-                                     kargs_strv,
-                                     &new_deployment,
-                                     cancellable, error))
-      goto out;
-  }
+  /* Deploy the copy */
+  g_autoptr(OstreeDeployment) new_deployment = NULL;
+  g_auto(GStrv) kargs_strv = _ostree_kernel_args_to_strv (kargs);
+  if (!ostree_sysroot_deploy_tree (sysroot,
+                                   ostree_deployment_get_osname (target_deployment),
+                                   ostree_deployment_get_csum (target_deployment),
+                                   ostree_deployment_get_origin (target_deployment),
+                                   merge_deployment, kargs_strv, &new_deployment,
+                                   cancellable, error))
+    return FALSE;
 
   /* Hotfixes push the deployment as rollback target, so it shouldn't
    * be the default.
@@ -1587,11 +1607,9 @@ clone_deployment (OstreeSysroot  *sysroot,
                                                new_deployment, merge_deployment,
                                                OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NOT_DEFAULT,
                                                cancellable, error))
-    goto out;
-  
-  ret = TRUE;
- out:
-  return ret;
+    return FALSE;
+
+  return TRUE;
 }
 
 /**
@@ -1616,59 +1634,41 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
                                   GCancellable      *cancellable,
                                   GError           **error)
 {
-  gboolean ret = FALSE;
-  glnx_unref_object OstreeSePolicy *sepolicy = NULL;
-  OstreeDeploymentUnlockedState current_unlocked =
-    ostree_deployment_get_unlocked (deployment); 
-  glnx_unref_object OstreeDeployment *deployment_clone =
-    ostree_deployment_clone (deployment);
-  glnx_unref_object OstreeDeployment *merge_deployment = NULL;
-  GKeyFile *origin_clone = ostree_deployment_get_origin (deployment_clone);
-  const char hotfix_ovl_options[] = "lowerdir=usr,upperdir=.usr-ovl-upper,workdir=.usr-ovl-work";
-  const char *ovl_options = NULL;
-  g_autofree char *deployment_path = NULL;
-  glnx_fd_close int deployment_dfd = -1;
-  pid_t mount_child;
-
   /* This function cannot re-lock */
   g_return_val_if_fail (unlocked_state != OSTREE_DEPLOYMENT_UNLOCKED_NONE, FALSE);
 
+  OstreeDeploymentUnlockedState current_unlocked = ostree_deployment_get_unlocked (deployment);
   if (current_unlocked != OSTREE_DEPLOYMENT_UNLOCKED_NONE)
-    {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Deployment is already in unlocked state: %s",
-                   ostree_deployment_unlocked_state_to_string (current_unlocked));
-      goto out;
-    }
+    return glnx_throw (error, "Deployment is already in unlocked state: %s",
+                       ostree_deployment_unlocked_state_to_string (current_unlocked));
 
-  merge_deployment = ostree_sysroot_get_merge_deployment (self, ostree_deployment_get_osname (deployment));
+  g_autoptr(OstreeDeployment) merge_deployment =
+    ostree_sysroot_get_merge_deployment (self, ostree_deployment_get_osname (deployment));
   if (!merge_deployment)
-    {
-      g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED, "No previous deployment to duplicate");
-      goto out;
-    }
+    return glnx_throw (error, "No previous deployment to duplicate");
 
   /* For hotfixes, we push a rollback target */
   if (unlocked_state == OSTREE_DEPLOYMENT_UNLOCKED_HOTFIX)
     {
       if (!clone_deployment (self, deployment, merge_deployment, cancellable, error))
-        goto out;
+        return FALSE;
     }
 
   /* Crack it open */
   if (!ostree_sysroot_deployment_set_mutable (self, deployment, TRUE,
                                               cancellable, error))
-    goto out;
+    return FALSE;
 
-  deployment_path = ostree_sysroot_get_deployment_dirpath (self, deployment);
-
+  g_autofree char *deployment_path = ostree_sysroot_get_deployment_dirpath (self, deployment);
+  glnx_fd_close int deployment_dfd = -1;
   if (!glnx_opendirat (self->sysroot_fd, deployment_path, TRUE, &deployment_dfd, error))
-    goto out;
+    return FALSE;
 
-  sepolicy = ostree_sepolicy_new_at (deployment_dfd, cancellable, error);
+  g_autoptr(OstreeSePolicy) sepolicy = ostree_sepolicy_new_at (deployment_dfd, cancellable, error);
   if (!sepolicy)
-    goto out;
+    return FALSE;
 
+  const char *ovl_options = NULL;
   switch (unlocked_state)
     {
     case OSTREE_DEPLOYMENT_UNLOCKED_NONE:
@@ -1676,14 +1676,15 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
       break;
     case OSTREE_DEPLOYMENT_UNLOCKED_HOTFIX:
       {
+        const char hotfix_ovl_options[] = "lowerdir=usr,upperdir=.usr-ovl-upper,workdir=.usr-ovl-work";
         /* Create the overlayfs directories in the deployment root
          * directly for hotfixes.  The ostree-prepare-root.c helper
          * is also set up to detect and mount these.
          */
         if (!glnx_shutil_mkdir_p_at (deployment_dfd, ".usr-ovl-upper", 0755, cancellable, error))
-          goto out;
+          return FALSE;
         if (!glnx_shutil_mkdir_p_at (deployment_dfd, ".usr-ovl-work", 0755, cancellable, error))
-          goto out;
+          return FALSE;
         ovl_options = hotfix_ovl_options;
       }
       break;
@@ -1701,18 +1702,18 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
 
           if (!_ostree_sepolicy_preparefscreatecon (&con, sepolicy,
                                                     "/usr", 0755, error))
-            goto out;
+            return FALSE;
 
           if (!glnx_mkdtempat (AT_FDCWD, development_ovldir, 0755, error))
-            goto out;
+            return FALSE;
         }
 
         development_ovl_upper = glnx_strjoina (development_ovldir, "/upper");
         if (!glnx_shutil_mkdir_p_at (AT_FDCWD, development_ovl_upper, 0755, cancellable, error))
-          goto out;
+          return FALSE;
         development_ovl_work = glnx_strjoina (development_ovldir, "/work");
         if (!glnx_shutil_mkdir_p_at (AT_FDCWD, development_ovl_work, 0755, cancellable, error))
-          goto out;
+          return FALSE;
         ovl_options = glnx_strjoina ("lowerdir=usr,upperdir=", development_ovl_upper,
                                      ",workdir=", development_ovl_work);
       }
@@ -1728,12 +1729,9 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
    * threads, etc.
    */
   {
-    mount_child = fork ();
+    pid_t mount_child = fork ();
     if (mount_child < 0)
-      {
-        glnx_set_prefix_error_from_errno (error, "%s", "fork");
-        goto out;
-      }
+      return glnx_throw_errno_prefix (error, "fork");
     else if (mount_child == 0)
       {
         /* Child process.  Do NOT use any GLib API here. */
@@ -1749,17 +1747,14 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
         int estatus;
 
         if (TEMP_FAILURE_RETRY (waitpid (mount_child, &estatus, 0)) < 0)
-          {
-            glnx_set_prefix_error_from_errno (error, "%s", "waitpid() on mount helper");
-            goto out;
-          }
+          return glnx_throw_errno_prefix (error, "waitpid() on mount helper");
         if (!g_spawn_check_exit_status (estatus, error))
-          {
-            g_prefix_error (error, "overlayfs mount helper: "); 
-            goto out;
-          }
+          return glnx_throw_errno_prefix (error, "overlayfs mount helper");
       }
   }
+
+  g_autoptr(OstreeDeployment) deployment_clone = ostree_deployment_clone (deployment);
+  GKeyFile *origin_clone = ostree_deployment_get_origin (deployment_clone);
 
   /* Now, write out the flag saying what we did */
   switch (unlocked_state)
@@ -1772,7 +1767,7 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
                              ostree_deployment_unlocked_state_to_string (unlocked_state));
       if (!ostree_sysroot_write_origin_file (self, deployment, origin_clone,
                                              cancellable, error))
-        goto out;
+        return FALSE;
       break;
     case OSTREE_DEPLOYMENT_UNLOCKED_DEVELOPMENT:
       {
@@ -1780,10 +1775,10 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
         g_autofree char *devpath_parent = dirname (g_strdup (devpath));
 
         if (!glnx_shutil_mkdir_p_at (AT_FDCWD, devpath_parent, 0755, cancellable, error))
-          goto out;
-        
+          return FALSE;
+
         if (!g_file_set_contents (devpath, "", 0, error))
-          goto out;
+          return FALSE;
       }
     }
 
@@ -1793,9 +1788,7 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
    * regardless.
    */
   if (!_ostree_sysroot_bump_mtime (self, error))
-    goto out;
+    return FALSE;
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }

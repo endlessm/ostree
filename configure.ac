@@ -4,7 +4,7 @@ dnl update libostree-released.sym from libostree-devel.sym, and update the check
 dnl in test-symbols.sh, and also set is_release_build=yes below.  Then make
 dnl another post-release commit to bump the version, and set is_release_build=no.
 m4_define([year_version], [2017])
-m4_define([release_version], [9])
+m4_define([release_version], [10])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -58,6 +58,19 @@ else
   AC_MSG_RESULT([no])
 fi
 AM_CONDITIONAL(BUILDOPT_ASAN, [test x$using_asan = xyes])
+AM_COND_IF([BUILDOPT_ASAN],
+  [AC_DEFINE([BUILDOPT_ASAN], 1, [Define if we are building with -fsanitize=address])])
+
+AC_MSG_CHECKING([for -fsanitize=thread in CFLAGS])
+if echo $CFLAGS | grep -q -e -fsanitize=thread; then
+  AC_MSG_RESULT([yes])
+  using_tsan=yes
+else
+  AC_MSG_RESULT([no])
+fi
+AM_CONDITIONAL(BUILDOPT_TSAN, [test x$using_tsan = xyes])
+AM_COND_IF([BUILDOPT_TSAN],
+  [AC_DEFINE([BUILDOPT_TSAN], 1, [Define if we are building with -fsanitize=thread])])
 
 # Initialize libtool
 LT_PREREQ([2.2.4])
@@ -74,6 +87,17 @@ AC_CHECK_HEADER([sys/xattr.h],,[AC_MSG_ERROR([You must have sys/xattr.h from gli
 AS_IF([test "$YACC" != "bison -y"], [AC_MSG_ERROR([bison not found but required])])
 
 PKG_PROG_PKG_CONFIG
+
+# PKG_CHECK_VAR added to pkg-config 0.28
+m4_define_default(
+    [PKG_CHECK_VAR],
+    [AC_ARG_VAR([$1], [value of $3 for $2, overriding pkg-config])
+     AS_IF([test -z "$$1"], [$1=`$PKG_CONFIG --variable="$3" "$2"`])
+     AS_IF([test -n "$$1"], [$4], [$5])])
+
+PKG_CHECK_VAR(BASH_COMPLETIONSDIR, [bash-completion], [completionsdir], ,
+  BASH_COMPLETIONSDIR="${datadir}/bash-completion/completions")
+AC_SUBST(BASH_COMPLETIONSDIR)
 
 AM_PATH_GLIB_2_0(,,AC_MSG_ERROR([GLib not found]))
 

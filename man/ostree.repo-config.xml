@@ -114,6 +114,14 @@ Boston, MA 02111-1307, USA.
 	</para>
 	</listitem>
       </varlistentry>
+
+      <varlistentry>
+        <term><varname>min-free-space-percent</varname></term>
+        <listitem><para>Integer percentage value (0-99) that specifies a minimum
+        percentage of total space (in blocks) in the underlying filesystem to
+        keep free. The default value is 3.</para></listitem>
+      </varlistentry>
+
     </variablelist>
   </refsect1>
 
@@ -137,6 +145,13 @@ Boston, MA 02111-1307, USA.
         <listitem><para>Declares URL for accessing content (filez, static delta
         parts). When specified, <literal>url</literal> is used just for
         metadata: summary, static delta "superblocks".</para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>branches</varname></term>
+        <listitem><para>A list of strings. Represents the default configured
+        branches to fetch from the remote when no specific branches are
+        requested during a pull operation.</para></listitem>
       </varlistentry>
 
       <varlistentry>
@@ -189,13 +204,6 @@ Boston, MA 02111-1307, USA.
       <varlistentry>
         <term><varname>unconfigured-state</varname></term>
         <listitem><para>If set, pulls from this remote will fail with the configured text.  This is intended for OS vendors which have a subscription process to access content.</para></listitem>
-      </varlistentry>
-
-      <varlistentry>
-        <term><varname>min-free-space-percent</varname></term>
-        <listitem><para>Integer percentage value (0-99) that specifies a minimum
-        percentage of total space (in blocks) in the underlying filesystem to
-        keep free. The default value is 3.</para></listitem>
       </varlistentry>
 
     </variablelist>

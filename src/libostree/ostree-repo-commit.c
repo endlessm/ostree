@@ -27,16 +27,16 @@
 #include <gio/gfiledescriptorbased.h>
 #include <gio/gunixinputstream.h>
 #include <gio/gunixoutputstream.h>
-#include "otutil.h"
+#include <sys/xattr.h>
+#include <glib/gprintf.h>
 
+#include "otutil.h"
+#include "ostree.h"
 #include "ostree-core-private.h"
 #include "ostree-repo-private.h"
 #include "ostree-repo-file-enumerator.h"
 #include "ostree-checksum-input-stream.h"
-#include "ostree-mutable-tree.h"
 #include "ostree-varint.h"
-#include <sys/xattr.h>
-#include <glib/gprintf.h>
 
 gboolean
 _ostree_repo_ensure_loose_objdir_at (int             dfd,
@@ -467,7 +467,7 @@ create_regular_tmpfile_linkable_with_content (OstreeRepo *self,
   if (G_IS_FILE_DESCRIPTOR_BASED (input))
     {
       int infd = g_file_descriptor_based_get_fd ((GFileDescriptorBased*) input);
-      if (glnx_regfile_copy_bytes (infd, tmpf.fd, (off_t)length, TRUE) < 0)
+      if (glnx_regfile_copy_bytes (infd, tmpf.fd, (off_t)length) < 0)
         return glnx_throw_errno_prefix (error, "regfile copy");
     }
   else
@@ -485,10 +485,8 @@ create_regular_tmpfile_linkable_with_content (OstreeRepo *self,
             g_input_stream_read (input, buf, MIN (remaining, sizeof (buf)), cancellable, error);
           if (bytes_read < 0)
             return FALSE;
-          else if (G_UNLIKELY (bytes_read == 0 && remaining > 0))
-            return glnx_throw (error, "Unexpected EOF with %" G_GUINT64_FORMAT "/%" G_GUINT64_FORMAT " bytes remaining", remaining, length);
           else if (bytes_read == 0)
-            break;
+            return glnx_throw (error, "Unexpected EOF with %" G_GUINT64_FORMAT "/%" G_GUINT64_FORMAT " bytes remaining", remaining, length);
           if (glnx_loop_write (tmpf.fd, buf, bytes_read) < 0)
             return glnx_throw_errno_prefix (error, "write");
           remaining -= bytes_read;
@@ -1448,7 +1446,31 @@ ostree_repo_set_ref_immediate (OstreeRepo *self,
                                GError       **error)
 {
   const OstreeCollectionRef _ref = { NULL, (gchar *) ref };
-  return _ostree_repo_write_ref (self, remote, &_ref, checksum,
+  return _ostree_repo_write_ref (self, remote, &_ref, checksum, NULL,
+                                 cancellable, error);
+}
+
+/**
+ * ostree_repo_set_alias_ref_immediate:
+ * @self: An #OstreeRepo
+ * @remote: (allow-none): A remote for the ref
+ * @ref: The ref to write
+ * @target: (allow-none): The ref target to point it to, or %NULL to unset
+ * @cancellable: GCancellable
+ * @error: GError
+ *
+ * Like ostree_repo_set_ref_immediate(), but creates an alias.
+ */
+gboolean
+ostree_repo_set_alias_ref_immediate (OstreeRepo *self,
+                                     const char *remote,
+                                     const char *ref,
+                                     const char *target,
+                                     GCancellable  *cancellable,
+                                     GError       **error)
+{
+  const OstreeCollectionRef _ref = { NULL, (gchar *) ref };
+  return _ostree_repo_write_ref (self, remote, &_ref, NULL, target,
                                  cancellable, error);
 }
 
@@ -1480,7 +1502,7 @@ ostree_repo_set_collection_ref_immediate (OstreeRepo                 *self,
   g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), FALSE);
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
-  return _ostree_repo_write_ref (self, NULL, ref, checksum,
+  return _ostree_repo_write_ref (self, NULL, ref, checksum, NULL,
                                  cancellable, error);
 }
 
@@ -2528,7 +2550,7 @@ write_directory_content_to_mtree_internal (OstreeRepo                  *self,
 {
   g_autoptr(GFile) child = NULL;
   g_autoptr(GFileInfo) modified_info = NULL;
-  glnx_unref_object OstreeMutableTree *child_mtree = NULL;
+  g_autoptr(OstreeMutableTree) child_mtree = NULL;
   g_autofree char *child_relpath = NULL;
   const char *name;
   GFileType file_type;

@@ -33,6 +33,11 @@
 
 static gboolean opt_hotfix;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-unlock.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "hotfix", 0, 0, G_OPTION_ARG_NONE, &opt_hotfix, "Retain changes across reboots", NULL },
   { NULL }
@@ -43,7 +48,7 @@ ot_admin_builtin_unlock (int argc, char **argv, GCancellable *cancellable, GErro
 {
   gboolean ret = FALSE;
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   OstreeDeployment *booted_deployment = NULL;
   OstreeDeploymentUnlockedState target_state;
 

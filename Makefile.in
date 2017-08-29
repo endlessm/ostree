@@ -259,6 +259,25 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
+# Makefile for bash/
+#
+# Copyright (C) 2017 Red Hat Inc.
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the
+# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+# Boston, MA 02111-1307, USA.
+
 
 
 
@@ -528,7 +547,8 @@ am__aclocal_m4_deps = $(top_srcdir)/buildutil/attributes.m4 \
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
-	$(am__configure_deps) $(am__dist_gpginsttest_DATA_DIST) \
+	$(am__configure_deps) $(dist_completions_DATA) \
+	$(am__dist_gpginsttest_DATA_DIST) \
 	$(am__dist_gpginsttest_trusted_DATA_DIST) \
 	$(am__dist_gpgvinsttest_DATA_DIST) \
 	$(am__libostreeinclude_HEADERS_DIST) $(am__DIST_COMMON)
@@ -576,7 +596,7 @@ am__installdirs = "$(DESTDIR)$(installed_testdir)" \
 	"$(DESTDIR)$(mkinitcpioinstalldir)" \
 	"$(DESTDIR)$(ostree_bootdir)" "$(DESTDIR)$(pkglibexecdir)" \
 	"$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man5dir)" \
-	"$(DESTDIR)$(gpginsttestdir)" \
+	"$(DESTDIR)$(completionsdir)" "$(DESTDIR)$(gpginsttestdir)" \
 	"$(DESTDIR)$(gpginsttest_trusteddir)" \
 	"$(DESTDIR)$(gpgvinsttestdir)" "$(DESTDIR)$(dracutconfdir)" \
 	"$(DESTDIR)$(girdir)" "$(DESTDIR)$(gpgreadmedir)" \
@@ -846,7 +866,6 @@ am_libotutil_la_OBJECTS =  \
 	src/libotutil/libotutil_la-ot-unix-utils.lo \
 	src/libotutil/libotutil_la-ot-variant-utils.lo \
 	src/libotutil/libotutil_la-ot-gio-utils.lo \
-	src/libotutil/libotutil_la-ot-log-utils.lo \
 	src/libotutil/libotutil_la-ot-gpg-utils.lo \
 	src/libotutil/libotutil_la-otutil.lo \
 	src/libotutil/libotutil_la-ot-tool-util.lo $(am__objects_1)
@@ -1396,12 +1415,13 @@ am__dist_gpginsttest_trusted_DATA_DIST =  \
 	tests/gpghome/trusted/pubring.gpg
 am__dist_gpgvinsttest_DATA_DIST = $(addprefix tests/gpg-verify-data/, \
 	gpg.conf lgpl2 lgpl2.sig pubring.gpg secring.gpg trustdb.gpg)
-DATA = $(dist_gpginsttest_DATA) $(dist_gpginsttest_trusted_DATA) \
-	$(dist_gpgvinsttest_DATA) $(dracutconf_DATA) $(gir_DATA) \
-	$(gpgreadme_DATA) $(installed_test_DATA) \
-	$(installed_test_meta_DATA) $(mkinitcpioconf_DATA) \
-	$(nobase_installed_test_DATA) $(noinst_DATA) $(pkgconfig_DATA) \
-	$(systemdsystemunit_DATA) $(typelib_DATA)
+DATA = $(dist_completions_DATA) $(dist_gpginsttest_DATA) \
+	$(dist_gpginsttest_trusted_DATA) $(dist_gpgvinsttest_DATA) \
+	$(dracutconf_DATA) $(gir_DATA) $(gpgreadme_DATA) \
+	$(installed_test_DATA) $(installed_test_meta_DATA) \
+	$(mkinitcpioconf_DATA) $(nobase_installed_test_DATA) \
+	$(noinst_DATA) $(pkgconfig_DATA) $(systemdsystemunit_DATA) \
+	$(typelib_DATA)
 am__libostreeinclude_HEADERS_DIST = src/libostree/ostree.h \
 	src/libostree/ostree-async-progress.h \
 	src/libostree/ostree-autocleanups.h \
@@ -1679,8 +1699,8 @@ TEST_LOG_DRIVER = $(SHELL) $(top_srcdir)/build-aux/test-driver
 TEST_LOG_COMPILE = $(TEST_LOG_COMPILER) $(AM_TEST_LOG_FLAGS) \
 	$(TEST_LOG_FLAGS)
 DIST_SUBDIRS = . apidoc
-am__DIST_COMMON = $(srcdir)/Makefile-boot.am \
-	$(srcdir)/Makefile-decls.am \
+am__DIST_COMMON = $(srcdir)/Makefile-bash.am \
+	$(srcdir)/Makefile-boot.am $(srcdir)/Makefile-decls.am \
 	$(srcdir)/Makefile-libostree-defines.am \
 	$(srcdir)/Makefile-libostree.am $(srcdir)/Makefile-man.am \
 	$(srcdir)/Makefile-ostree.am $(srcdir)/Makefile-otutil.am \
@@ -1753,6 +1773,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BASH_COMPLETIONSDIR = @BASH_COMPLETIONSDIR@
 BUILDOPT_FUSE_CFLAGS = @BUILDOPT_FUSE_CFLAGS@
 BUILDOPT_FUSE_LIBS = @BUILDOPT_FUSE_LIBS@
 CC = @CC@
@@ -2152,8 +2173,6 @@ libotutil_la_SOURCES = \
 	src/libotutil/ot-variant-utils.h \
 	src/libotutil/ot-gio-utils.c \
 	src/libotutil/ot-gio-utils.h \
-	src/libotutil/ot-log-utils.c \
-	src/libotutil/ot-log-utils.h \
 	src/libotutil/ot-gpg-utils.c \
 	src/libotutil/ot-gpg-utils.h \
 	src/libotutil/otutil.c \
@@ -2643,6 +2662,8 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 @ENABLE_MAN_TRUE@        --stringparam man.copyright.section.enabled 0
 
 @ENABLE_MAN_TRUE@XSLTPROC_MAN = $(XSLTPROC) $(XSLTPROC_FLAGS)
+completionsdir = @BASH_COMPLETIONSDIR@
+dist_completions_DATA = bash/ostree
 embed_dependency = tar -C $(srcdir) --append --exclude='.git/*' --transform="s,^embedded-dependencies/,ostree-embeddeps-$${GITVERSION}/embedded-dependencies/," --file=$${TARFILE_TMP}
 git_version_rpm = $$(cd $(srcdir) && git describe | sed -e 's,-,\.,g' -e 's,^v,,')
 all: $(BUILT_SOURCES) config.h
@@ -2652,7 +2673,7 @@ all: $(BUILT_SOURCES) config.h
 .SUFFIXES: .c .lo .log .o .obj .test .test$(EXEEXT) .trs
 am--refresh: Makefile
 	@:
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(srcdir)/Makefile-decls.am $(top_srcdir)/buildutil/glib-tap.mk $(srcdir)/libglnx/Makefile-libglnx.am.inc $(srcdir)/bsdiff/Makefile-bsdiff.am.inc $(srcdir)/Makefile-otutil.am $(srcdir)/Makefile-libostree.am $(srcdir)/Makefile-libostree-defines.am $(srcdir)/Makefile-ostree.am $(srcdir)/Makefile-switchroot.am $(srcdir)/src/rofiles-fuse/Makefile-inc.am $(srcdir)/Makefile-tests.am $(srcdir)/Makefile-boot.am $(srcdir)/Makefile-man.am $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(srcdir)/Makefile-decls.am $(top_srcdir)/buildutil/glib-tap.mk $(srcdir)/libglnx/Makefile-libglnx.am.inc $(srcdir)/bsdiff/Makefile-bsdiff.am.inc $(srcdir)/Makefile-otutil.am $(srcdir)/Makefile-libostree.am $(srcdir)/Makefile-libostree-defines.am $(srcdir)/Makefile-ostree.am $(srcdir)/Makefile-switchroot.am $(srcdir)/src/rofiles-fuse/Makefile-inc.am $(srcdir)/Makefile-tests.am $(srcdir)/Makefile-boot.am $(srcdir)/Makefile-man.am $(srcdir)/Makefile-bash.am $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -2674,7 +2695,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe)'; \
 	    cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe);; \
 	esac;
-$(srcdir)/Makefile-decls.am $(top_srcdir)/buildutil/glib-tap.mk $(srcdir)/libglnx/Makefile-libglnx.am.inc $(srcdir)/bsdiff/Makefile-bsdiff.am.inc $(srcdir)/Makefile-otutil.am $(srcdir)/Makefile-libostree.am $(srcdir)/Makefile-libostree-defines.am $(srcdir)/Makefile-ostree.am $(srcdir)/Makefile-switchroot.am $(srcdir)/src/rofiles-fuse/Makefile-inc.am $(srcdir)/Makefile-tests.am $(srcdir)/Makefile-boot.am $(srcdir)/Makefile-man.am $(am__empty):
+$(srcdir)/Makefile-decls.am $(top_srcdir)/buildutil/glib-tap.mk $(srcdir)/libglnx/Makefile-libglnx.am.inc $(srcdir)/bsdiff/Makefile-bsdiff.am.inc $(srcdir)/Makefile-otutil.am $(srcdir)/Makefile-libostree.am $(srcdir)/Makefile-libostree-defines.am $(srcdir)/Makefile-ostree.am $(srcdir)/Makefile-switchroot.am $(srcdir)/src/rofiles-fuse/Makefile-inc.am $(srcdir)/Makefile-tests.am $(srcdir)/Makefile-boot.am $(srcdir)/Makefile-man.am $(srcdir)/Makefile-bash.am $(am__empty):
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	$(SHELL) ./config.status --recheck
@@ -3111,9 +3132,6 @@ src/libotutil/libotutil_la-ot-variant-utils.lo:  \
 	src/libotutil/$(am__dirstamp) \
 	src/libotutil/$(DEPDIR)/$(am__dirstamp)
 src/libotutil/libotutil_la-ot-gio-utils.lo:  \
-	src/libotutil/$(am__dirstamp) \
-	src/libotutil/$(DEPDIR)/$(am__dirstamp)
-src/libotutil/libotutil_la-ot-log-utils.lo:  \
 	src/libotutil/$(am__dirstamp) \
 	src/libotutil/$(DEPDIR)/$(am__dirstamp)
 src/libotutil/libotutil_la-ot-gpg-utils.lo:  \
@@ -4220,7 +4238,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-gio-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-gpg-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-keyfile-utils.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-log-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-opt-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-tool-util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/libotutil/$(DEPDIR)/libotutil_la-ot-unix-utils.Plo@am__quote@
@@ -4909,13 +4926,6 @@ src/libotutil/libotutil_la-ot-gio-utils.lo: src/libotutil/ot-gio-utils.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libotutil/ot-gio-utils.c' object='src/libotutil/libotutil_la-ot-gio-utils.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -c -o src/libotutil/libotutil_la-ot-gio-utils.lo `test -f 'src/libotutil/ot-gio-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-gio-utils.c
-
-src/libotutil/libotutil_la-ot-log-utils.lo: src/libotutil/ot-log-utils.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -MT src/libotutil/libotutil_la-ot-log-utils.lo -MD -MP -MF src/libotutil/$(DEPDIR)/libotutil_la-ot-log-utils.Tpo -c -o src/libotutil/libotutil_la-ot-log-utils.lo `test -f 'src/libotutil/ot-log-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-log-utils.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libotutil/$(DEPDIR)/libotutil_la-ot-log-utils.Tpo src/libotutil/$(DEPDIR)/libotutil_la-ot-log-utils.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libotutil/ot-log-utils.c' object='src/libotutil/libotutil_la-ot-log-utils.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -c -o src/libotutil/libotutil_la-ot-log-utils.lo `test -f 'src/libotutil/ot-log-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-log-utils.c
 
 src/libotutil/libotutil_la-ot-gpg-utils.lo: src/libotutil/ot-gpg-utils.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libotutil_la_CFLAGS) $(CFLAGS) -MT src/libotutil/libotutil_la-ot-gpg-utils.lo -MD -MP -MF src/libotutil/$(DEPDIR)/libotutil_la-ot-gpg-utils.Tpo -c -o src/libotutil/libotutil_la-ot-gpg-utils.lo `test -f 'src/libotutil/ot-gpg-utils.c' || echo '$(srcdir)/'`src/libotutil/ot-gpg-utils.c
@@ -6370,6 +6380,27 @@ uninstall-man5:
 	} | sed -e 's,.*/,,;h;s,.*\.,,;s,^[^5][0-9a-z]*$$,5,;x' \
 	      -e 's,\.[0-9a-z]*$$,,;$(transform);G;s,\n,.,'`; \
 	dir='$(DESTDIR)$(man5dir)'; $(am__uninstall_files_from_dir)
+install-dist_completionsDATA: $(dist_completions_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_completions_DATA)'; test -n "$(completionsdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(completionsdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(completionsdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(completionsdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(completionsdir)" || exit $$?; \
+	done
+
+uninstall-dist_completionsDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_completions_DATA)'; test -n "$(completionsdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(completionsdir)'; $(am__uninstall_files_from_dir)
 install-dist_gpginsttestDATA: $(dist_gpginsttest_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(dist_gpginsttest_DATA)'; test -n "$(gpginsttestdir)" || list=; \
@@ -7827,7 +7858,7 @@ install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(privlibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(libexecdir)" "$(DESTDIR)$(ostree_bootdir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(systemdsystemgeneratordir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(dracutmoddir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(mkinitcpioinstalldir)" "$(DESTDIR)$(ostree_bootdir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(gpginsttestdir)" "$(DESTDIR)$(gpginsttest_trusteddir)" "$(DESTDIR)$(gpgvinsttestdir)" "$(DESTDIR)$(dracutconfdir)" "$(DESTDIR)$(girdir)" "$(DESTDIR)$(gpgreadmedir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(installed_test_metadir)" "$(DESTDIR)$(mkinitcpioconfdir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(systemdsystemunitdir)" "$(DESTDIR)$(typelibdir)" "$(DESTDIR)$(libostreeincludedir)"; do \
+	for dir in "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(privlibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(libexecdir)" "$(DESTDIR)$(ostree_bootdir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(systemdsystemgeneratordir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(dracutmoddir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(mkinitcpioinstalldir)" "$(DESTDIR)$(ostree_bootdir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(completionsdir)" "$(DESTDIR)$(gpginsttestdir)" "$(DESTDIR)$(gpginsttest_trusteddir)" "$(DESTDIR)$(gpgvinsttestdir)" "$(DESTDIR)$(dracutconfdir)" "$(DESTDIR)$(girdir)" "$(DESTDIR)$(gpgreadmedir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(installed_test_metadir)" "$(DESTDIR)$(mkinitcpioconfdir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(systemdsystemunitdir)" "$(DESTDIR)$(typelibdir)" "$(DESTDIR)$(libostreeincludedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -7915,7 +7946,8 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-dist_gpginsttestDATA \
+install-data-am: install-dist_completionsDATA \
+	install-dist_gpginsttestDATA \
 	install-dist_gpginsttest_trustedDATA \
 	install-dist_gpgvinsttestDATA install-dracutconfDATA \
 	install-dracutmodSCRIPTS install-girDATA install-gpgreadmeDATA \
@@ -7981,7 +8013,7 @@ ps: ps-recursive
 ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
-	uninstall-dist_gpginsttestDATA \
+	uninstall-dist_completionsDATA uninstall-dist_gpginsttestDATA \
 	uninstall-dist_gpginsttest_trustedDATA \
 	uninstall-dist_gpgvinsttestDATA uninstall-dracutconfDATA \
 	uninstall-dracutmodSCRIPTS uninstall-girDATA \
@@ -8023,7 +8055,7 @@ uninstall-man: uninstall-man1 uninstall-man5
 	distuninstallcheck dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-binSCRIPTS \
 	install-data install-data-am install-data-hook \
-	install-dist_gpginsttestDATA \
+	install-dist_completionsDATA install-dist_gpginsttestDATA \
 	install-dist_gpginsttest_trustedDATA \
 	install-dist_gpgvinsttestDATA install-dracutconfDATA \
 	install-dracutmodSCRIPTS install-dvi install-dvi-am \
@@ -8048,7 +8080,7 @@ uninstall-man: uninstall-man1 uninstall-man5
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	recheck tags tags-am uninstall uninstall-am \
 	uninstall-binPROGRAMS uninstall-binSCRIPTS \
-	uninstall-dist_gpginsttestDATA \
+	uninstall-dist_completionsDATA uninstall-dist_gpginsttestDATA \
 	uninstall-dist_gpginsttest_trustedDATA \
 	uninstall-dist_gpgvinsttestDATA uninstall-dracutconfDATA \
 	uninstall-dracutmodSCRIPTS uninstall-girDATA \

@@ -52,6 +52,14 @@
 <a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="returnvalue">OstreeRepo</span></a> *
 </td>
 <td class="function_name">
+<a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-open-at" title="ostree_repo_open_at ()">ostree_repo_open_at</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="returnvalue">OstreeRepo</span></a> *
+</td>
+<td class="function_name">
 <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-new" title="ostree_repo_new ()">ostree_repo_new</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
@@ -109,6 +117,14 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-is-writable" title="ostree_repo_is_writable ()">ostree_repo_is_writable</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="returnvalue">OstreeRepo</span></a> *
+</td>
+<td class="function_name">
+<a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-create-at" title="ostree_repo_create_at ()">ostree_repo_create_at</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -341,6 +357,14 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-set-ref-immediate" title="ostree_repo_set_ref_immediate ()">ostree_repo_set_ref_immediate</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-set-alias-ref-immediate" title="ostree_repo_set_alias_ref_immediate ()">ostree_repo_set_alias_ref_immediate</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -1158,6 +1182,47 @@ ostree_repo_mode_from_string (<em class="parameter"><code>const <span class="typ
 </div>
 <hr>
 <div class="refsect2">
+<a name="ostree-repo-open-at"></a><h3>ostree_repo_open_at ()</h3>
+<pre class="programlisting"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="returnvalue">OstreeRepo</span></a> *
+ostree_repo_open_at (<em class="parameter"><code><span class="type">int</span> dfd</code></em>,
+                     <em class="parameter"><code>const <span class="type">char</span> *path</code></em>,
+                     <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                     <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>This combines <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-new" title="ostree_repo_new ()"><code class="function">ostree_repo_new()</code></a> (but using fd-relative access) with
+<a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-open" title="ostree_repo_open ()"><code class="function">ostree_repo_open()</code></a>.  Use this when you know you should be operating on an
+already extant repository.  If you want to create one, use <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-create-at" title="ostree_repo_create_at ()"><code class="function">ostree_repo_create_at()</code></a>.</p>
+<div class="refsect3">
+<a name="ostree-repo-open-at.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>dfd</p></td>
+<td class="parameter_description"><p>Directory fd</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>path</p></td>
+<td class="parameter_description"><p>Path</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-open-at.returns"></a><h4>Returns</h4>
+<p> An accessor object for an OSTree repository located at <em class="parameter"><code>dfd</code></em>
++ <em class="parameter"><code>path</code></em>
+. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
+</div>
+</div>
+<hr>
+<div class="refsect2">
 <a name="ostree-repo-new"></a><h3>ostree_repo_new ()</h3>
 <pre class="programlisting"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="returnvalue">OstreeRepo</span></a> *
 ostree_repo_new (<em class="parameter"><code><span class="type">GFile</span> *path</code></em>);</pre>
@@ -1366,6 +1431,76 @@ If the repository is not writable, the <em class="parameter"><code>error</code><
 </div>
 <hr>
 <div class="refsect2">
+<a name="ostree-repo-create-at"></a><h3>ostree_repo_create_at ()</h3>
+<pre class="programlisting"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="returnvalue">OstreeRepo</span></a> *
+ostree_repo_create_at (<em class="parameter"><code><span class="type">int</span> dfd</code></em>,
+                       <em class="parameter"><code>const <span class="type">char</span> *path</code></em>,
+                       <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoMode" title="enum OstreeRepoMode"><span class="type">OstreeRepoMode</span></a> mode</code></em>,
+                       <em class="parameter"><code><span class="type">GVariant</span> *options</code></em>,
+                       <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                       <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>This is a file-descriptor relative version of <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-create" title="ostree_repo_create ()"><code class="function">ostree_repo_create()</code></a>.
+Create the underlying structure on disk for the repository, and call
+<a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-open-at" title="ostree_repo_open_at ()"><code class="function">ostree_repo_open_at()</code></a> on the result, preparing it for use.</p>
+<p>If a repository already exists at <em class="parameter"><code>dfd</code></em>
+ + <em class="parameter"><code>path</code></em>
+ (defined by an <code class="literal">objects/</code>
+subdirectory existing), then this function will simply call
+<a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-open-at" title="ostree_repo_open_at ()"><code class="function">ostree_repo_open_at()</code></a>.  In other words, this function cannot be used to change
+the mode or configuration (<code class="literal">repo/config</code>) of an existing repo.</p>
+<p>The <em class="parameter"><code>options</code></em>
+ dict may contain:</p>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>collection-id: s: Set as collection ID in repo/config (Since 2017.9)</p></li></ul></div>
+<div class="refsect3">
+<a name="ostree-repo-create-at.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>dfd</p></td>
+<td class="parameter_description"><p>Directory fd</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>path</p></td>
+<td class="parameter_description"><p>Path</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>mode</p></td>
+<td class="parameter_description"><p>The mode to store the repository in</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>options</p></td>
+<td class="parameter_description"><p>a{sv}: See below for accepted keys</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-create-at.returns"></a><h4>Returns</h4>
+<p> A new OSTree repository reference. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
+</div>
+</div>
+<hr>
+<div class="refsect2">
 <a name="ostree-repo-create"></a><h3>ostree_repo_create ()</h3>
 <pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_repo_create (<em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
@@ -1379,6 +1514,10 @@ repository, and finish creating any necessary files in a partially
 created repository.  However, this function cannot change the mode
 of an existing repository, and will silently ignore an attempt to
 do so.</p>
+<p>Since 2017.9, "existing repository" is defined by the existence of an
+<code class="literal">objects</code> subdirectory.</p>
+<p>This function predates <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-create-at" title="ostree_repo_create_at ()"><code class="function">ostree_repo_create_at()</code></a>. It is an error to call
+this function on a repository initialized via <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-open-at" title="ostree_repo_open_at ()"><code class="function">ostree_repo_open_at()</code></a>.</p>
 <div class="refsect3">
 <a name="ostree-repo-create.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -1417,6 +1556,24 @@ do so.</p>
 <a name="ostree-repo-get-path"></a><h3>ostree_repo_get_path ()</h3>
 <pre class="programlisting"><span class="returnvalue">GFile</span> *
 ostree_repo_get_path (<em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>);</pre>
+<p>Note that since the introduction of <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-open-at" title="ostree_repo_open_at ()"><code class="function">ostree_repo_open_at()</code></a>, this function may
+return a process-specific path in <code class="literal">/proc</code> if the repository was created using
+that API. In general, you should avoid use of this API.</p>
+<div class="refsect3">
+<a name="ostree-repo-get-path.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
 <div class="refsect3">
 <a name="ostree-repo-get-path.returns"></a><h4>Returns</h4>
 <p> Path to repo. </p>
@@ -2644,6 +2801,60 @@ case where we're creating or overwriting an existing ref.</p>
 <tr>
 <td class="parameter_name"><p>checksum</p></td>
 <td class="parameter_description"><p> The checksum to point it to, or <code class="literal">NULL</code> to unset. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>GCancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>GError</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-set-alias-ref-immediate"></a><h3>ostree_repo_set_alias_ref_immediate ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_set_alias_ref_immediate (<em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                     <em class="parameter"><code>const <span class="type">char</span> *remote</code></em>,
+                                     <em class="parameter"><code>const <span class="type">char</span> *ref</code></em>,
+                                     <em class="parameter"><code>const <span class="type">char</span> *target</code></em>,
+                                     <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                     <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Like <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-set-ref-immediate" title="ostree_repo_set_ref_immediate ()"><code class="function">ostree_repo_set_ref_immediate()</code></a>, but creates an alias.</p>
+<div class="refsect3">
+<a name="ostree-repo-set-alias-ref-immediate.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>An <a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>remote</p></td>
+<td class="parameter_description"><p> A remote for the ref. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>ref</p></td>
+<td class="parameter_description"><p>The ref to write</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>target</p></td>
+<td class="parameter_description"><p> The ref target to point it to, or <code class="literal">NULL</code> to unset. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -7182,13 +7393,22 @@ in bytes, counting only content objects.</p></td>
 <col class="enum_members_description">
 <col width="200px" class="enum_members_annotations">
 </colgroup>
-<tbody><tr>
+<tbody>
+<tr>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-LIST-REFS-EXT-NONE:CAPS"></a>OSTREE_REPO_LIST_REFS_EXT_NONE</p></td>
 <td class="enum_member_description">
 <p>No flags.</p>
 </td>
 <td class="enum_member_annotations"> </td>
-</tr></tbody>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-LIST-REFS-EXT-ALIASES:CAPS"></a>OSTREE_REPO_LIST_REFS_EXT_ALIASES</p></td>
+<td class="enum_member_description">
+<p>Only list aliases.  Since: 2017.10</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+</tbody>
 </table></div>
 </div>
 </div>

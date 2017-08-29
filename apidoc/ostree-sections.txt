@@ -194,6 +194,7 @@ ostree_diff_item_get_type
 
 <SECTION>
 <FILE>ostree-gpg-verify-result</FILE>
+OstreeGpgError
 OstreeGpgVerifyResult
 OstreeGpgSignatureAttr
 ostree_gpg_verify_result_count_all
@@ -210,6 +211,8 @@ OSTREE_GPG_VERIFY_RESULT
 OSTREE_IS_GPG_VERIFY_RESULT
 OSTREE_TYPE_GPG_VERIFY_RESULT
 ostree_gpg_verify_result_get_type
+OSTREE_GPG_ERROR
+ostree_gpg_error_quark
 </SECTION>
 
 <FILE>ostree-lzma-compressor</FILE>
@@ -268,6 +271,7 @@ ostree_mutable_tree_get_type
 OstreeRepo
 OstreeRepoMode
 ostree_repo_mode_from_string
+ostree_repo_open_at
 ostree_repo_new
 ostree_repo_new_for_sysroot_path
 ostree_repo_new_default
@@ -276,6 +280,7 @@ ostree_repo_set_disable_fsync
 ostree_repo_get_disable_fsync
 ostree_repo_is_system
 ostree_repo_is_writable
+ostree_repo_create_at
 ostree_repo_create
 ostree_repo_get_path
 ostree_repo_get_mode
@@ -307,6 +312,7 @@ ostree_repo_abort_transaction
 ostree_repo_transaction_set_refspec
 ostree_repo_transaction_set_ref
 ostree_repo_set_ref_immediate
+ostree_repo_set_alias_ref_immediate
 ostree_repo_set_cache_dir
 ostree_repo_sign_delta
 ostree_repo_has_object

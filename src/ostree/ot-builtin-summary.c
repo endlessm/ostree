@@ -32,6 +32,11 @@ static char **opt_key_ids;
 static char *opt_gpg_homedir;
 static char **opt_metadata;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-summary.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "update", 'u', 0, G_OPTION_ARG_NONE, &opt_update, "Update the summary", NULL },
   { "view", 'v', 0, G_OPTION_ARG_NONE, &opt_view, "View the local summary file", NULL },
@@ -81,7 +86,7 @@ ostree_builtin_summary (int argc, char **argv, GCancellable *cancellable, GError
 {
   gboolean ret = FALSE;
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   OstreeDumpFlags flags = OSTREE_DUMP_NONE;
 
   context = g_option_context_new ("Manage summary metadata");

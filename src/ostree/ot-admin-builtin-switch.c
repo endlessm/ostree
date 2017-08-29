@@ -33,6 +33,11 @@
 static gboolean opt_reboot;
 static char *opt_osname;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-switch.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "reboot", 'r', 0, G_OPTION_ARG_NONE, &opt_reboot, "Reboot after switching trees", NULL },
   { "os", 0, 0, G_OPTION_ARG_STRING, &opt_osname, "Use a different operating system root than the current one", "OSNAME" },
@@ -44,9 +49,9 @@ ot_admin_builtin_switch (int argc, char **argv, GCancellable *cancellable, GErro
 {
   gboolean ret = FALSE;
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   const char *new_provided_refspec = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   g_autofree char *origin_refspec = NULL;
   g_autofree char *origin_remote = NULL;
   g_autofree char *origin_ref = NULL;
@@ -54,8 +59,8 @@ ot_admin_builtin_switch (int argc, char **argv, GCancellable *cancellable, GErro
   g_autofree char *new_ref = NULL;
   g_autofree char *new_refspec = NULL;
   const char* remote;
-  glnx_unref_object OstreeSysrootUpgrader *upgrader = NULL;
-  glnx_unref_object OstreeAsyncProgress *progress = NULL;
+  g_autoptr(OstreeSysrootUpgrader) upgrader = NULL;
+  g_autoptr(OstreeAsyncProgress) progress = NULL;
   gboolean changed;
   GKeyFile *old_origin;
   g_autoptr(GKeyFile) new_origin = NULL;

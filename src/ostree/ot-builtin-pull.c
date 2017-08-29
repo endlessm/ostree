@@ -43,6 +43,11 @@ static int opt_frequency = 0;
 static char* opt_url;
 static char** opt_localcache_repos;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-pull.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
    { "commit-metadata-only", 0, 0, G_OPTION_ARG_NONE, &opt_commit_only, "Fetch only the commit metadata", NULL },
    { "cache-dir", 0, 0, G_OPTION_ARG_FILENAME, &opt_cache_dir, "Use custom cache dir", NULL },
@@ -138,13 +143,13 @@ gboolean
 ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   gboolean ret = FALSE;
   g_autofree char *remote = NULL;
   OstreeRepoPullFlags pullflags = 0;
   g_autoptr(GPtrArray) refs_to_fetch = NULL;
   g_autoptr(GPtrArray) override_commit_ids = NULL;
-  glnx_unref_object OstreeAsyncProgress *progress = NULL;
+  g_autoptr(OstreeAsyncProgress) progress = NULL;
   gulong signal_handler_id = 0;
 
   context = g_option_context_new ("REMOTE [BRANCH...] - Download data from remote repository");
@@ -209,11 +214,13 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
                     goto out;
 
                   if (!override_commit_ids)
-                    override_commit_ids = g_ptr_array_new_with_free_func (g_free);
+                    {
+                      override_commit_ids = g_ptr_array_new_with_free_func (g_free);
 
-                  /* Backfill */
-                  for (j = 2; j < i; i++)
-                    g_ptr_array_add (override_commit_ids, g_strdup (""));
+                      /* Backfill */
+                      for (j = 2; j < i; j++)
+                        g_ptr_array_add (override_commit_ids, g_strdup (""));
+                    }
 
                   g_ptr_array_add (override_commit_ids, g_strdup (override_commit_id));
                   g_ptr_array_add (refs_to_fetch, g_strndup (argv[i], at - argv[i]));
@@ -221,6 +228,8 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
               else
                 {
                   g_ptr_array_add (refs_to_fetch, g_strdup (argv[i]));
+                  if (override_commit_ids)
+                    g_ptr_array_add (override_commit_ids, g_strdup (""));
                 }
             }
 

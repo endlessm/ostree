@@ -21,10 +21,10 @@
 #pragma once
 
 #include <sys/statvfs.h>
+#include "otutil.h"
 #include "ostree-ref.h"
 #include "ostree-repo.h"
 #include "ostree-remote-private.h"
-#include "otutil.h"
 
 G_BEGIN_DECLS
 
@@ -96,7 +96,11 @@ struct OstreeRepo {
   char *commit_stagedir_name;
   GLnxLockFile commit_stagedir_lock;
 
-  GFile *repodir;
+  /* A cached fd-relative version, distinct from the case where we may have a
+   * user-provided absolute path.
+   */
+  GFile *repodir_fdrel;
+  GFile *repodir; /* May be %NULL if we were opened via ostree_repo_open_at() */
   int    repo_dir_fd;
   int    tmp_dir_fd;
   int    cache_dir_fd;
@@ -132,10 +136,13 @@ struct OstreeRepo {
   GHashTable *updated_uncompressed_dirs;
   GHashTable *object_sizes;
 
-  uid_t owner_uid;
-  uid_t target_owner_uid;
+  /* Cache the repo's device/inode to use for comparisons elsewhere */
+  dev_t device;
+  ino_t inode;
+  uid_t owner_uid; /* Cache of repo's owner uid */
+  uid_t target_owner_uid; /* Ensure files are chowned to this uid/gid */
   gid_t target_owner_gid;
-  guint min_free_space_percent;
+  guint min_free_space_percent; /* See the min-free-space-percent config option */
 
   guint test_error_flags; /* OstreeRepoTestErrorFlags */
 
@@ -173,7 +180,7 @@ _ostree_repo_memory_cache_ref_init (OstreeRepoMemoryCacheRef *state,
 
 void
 _ostree_repo_memory_cache_ref_destroy (OstreeRepoMemoryCacheRef *state);
-G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(OstreeRepoMemoryCacheRef, _ostree_repo_memory_cache_ref_destroy);
+G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(OstreeRepoMemoryCacheRef, _ostree_repo_memory_cache_ref_destroy)
 
 #define OSTREE_REPO_TMPDIR_STAGING "staging-"
 #define OSTREE_REPO_TMPDIR_FETCHER "fetcher-"
@@ -265,6 +272,7 @@ _ostree_repo_write_ref (OstreeRepo                 *self,
                         const char                 *remote,
                         const OstreeCollectionRef  *ref,
                         const char                 *rev,
+                        const char                 *alias,
                         GCancellable               *cancellable,
                         GError                    **error);
 

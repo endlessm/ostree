@@ -22,10 +22,10 @@
 
 #include "config.h"
 
+#include "otutil.h"
+#include "ostree.h"
 #include "ostree-core-private.h"
 #include "ostree-repo-private.h"
-#include "ostree-repo-file.h"
-#include "ostree-mutable-tree.h"
 
 #ifdef HAVE_LIBARCHIVE
 #include <archive.h>
@@ -185,7 +185,7 @@ mtree_ensure_dir_with_meta (OstreeRepo          *repo,
                             GCancellable        *cancellable,
                             GError             **error)
 {
-  glnx_unref_object OstreeMutableTree *dir = NULL;
+  g_autoptr(OstreeMutableTree) dir = NULL;
   g_autofree guchar *csum_raw = NULL;
   g_autofree char *csum = NULL;
 
@@ -374,7 +374,7 @@ aic_create_parent_dirs (OstreeRepoArchiveImportContext *ctx,
                         GError             **error)
 {
   g_autofree char *fullpath = NULL;
-  glnx_unref_object OstreeMutableTree *dir = NULL;
+  g_autoptr(OstreeMutableTree) dir = NULL;
 
   /* start with the root itself */
   if (!aic_ensure_parent_dir (ctx, ctx->root, "/", &dir, cancellable, error))
@@ -643,7 +643,7 @@ aic_import_entry (OstreeRepoArchiveImportContext *ctx,
                   GError       **error)
 {
   g_autoptr(GFileInfo) fi = NULL;
-  glnx_unref_object OstreeMutableTree *parent = NULL;
+  g_autoptr(OstreeMutableTree) parent = NULL;
   g_autofree char *path = aic_get_final_entry_pathname (ctx, error);
 
   if (path == NULL)
@@ -669,7 +669,7 @@ aic_import_from_hardlink (OstreeRepoArchiveImportContext *ctx,
   const char *name = glnx_basename (target);
   const char *name_dh = glnx_basename (dh->path);
   g_autoptr(GPtrArray) components = NULL;
-  glnx_unref_object OstreeMutableTree *parent = NULL;
+  g_autoptr(OstreeMutableTree) parent = NULL;
 
   if (!ostree_mutable_tree_lookup (dh->parent, name_dh, &csum, NULL, error))
     return FALSE;
@@ -696,8 +696,8 @@ aic_lookup_file_csum (OstreeRepoArchiveImportContext *ctx,
 {
   g_autofree char *csum = NULL;
   const char *name = glnx_basename (target);
-  glnx_unref_object OstreeMutableTree *parent = NULL;
-  glnx_unref_object OstreeMutableTree *subdir = NULL;
+  g_autoptr(OstreeMutableTree) parent = NULL;
+  g_autoptr(OstreeMutableTree) subdir = NULL;
   g_autoptr(GPtrArray) components = NULL;
 
   if (!ot_util_path_split_validate (target, &components, error))
@@ -900,7 +900,7 @@ ostree_repo_write_archive_to_mtree (OstreeRepo                *self,
 {
 #ifdef HAVE_LIBARCHIVE
   gboolean ret = FALSE;
-  ot_cleanup_read_archive struct archive *a = archive_read_new ();
+  g_autoptr(OtAutoArchiveRead) a = archive_read_new ();
   OstreeRepoImportArchiveOptions opts = { 0, };
 
 #ifdef HAVE_ARCHIVE_READ_SUPPORT_FILTER_ALL

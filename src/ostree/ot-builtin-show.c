@@ -36,6 +36,11 @@ static gboolean opt_raw;
 static char *opt_gpg_homedir;
 static char *opt_gpg_verify_remote;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-show.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "print-related", 0, 0, G_OPTION_ARG_NONE, &opt_print_related, "Show the \"related\" commits", NULL },
   { "print-variant-type", 0, 0, G_OPTION_ARG_STRING, &opt_print_variant_type, "Memory map OBJECT (in this case a filename) to the GVariant type string", "TYPE" },
@@ -147,7 +152,7 @@ print_object (OstreeRepo          *repo,
 
   if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
     {
-      glnx_unref_object OstreeGpgVerifyResult *result = NULL;
+      g_autoptr(OstreeGpgVerifyResult) result = NULL;
       g_autoptr(GError) local_error = NULL;
       g_autoptr(GFile) gpg_homedir = opt_gpg_homedir ? g_file_new_for_path (opt_gpg_homedir) : NULL;
 
@@ -163,7 +168,7 @@ print_object (OstreeRepo          *repo,
                                                   &local_error);
         }
 
-      if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+      if (g_error_matches (local_error, OSTREE_GPG_ERROR, OSTREE_GPG_ERROR_NO_SIGNATURE))
         {
           /* Ignore */
         }
@@ -223,7 +228,7 @@ ostree_builtin_show (int argc, char **argv, GCancellable *cancellable, GError **
 {
   g_autoptr(GOptionContext) context = g_option_context_new ("OBJECT - Output a metadata object");
 
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
     return FALSE;
 
