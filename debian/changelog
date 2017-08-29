@@ -1,3 +1,10 @@
+ostree (2017.10-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+    - Update symbols file
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 29 Aug 2017 16:08:09 +0100
+
 ostree (2017.9-1) unstable; urgency=medium
 
   * New upstream release
