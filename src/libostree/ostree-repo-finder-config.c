@@ -111,9 +111,10 @@ ostree_repo_finder_config_resolve_async (OstreeRepoFinder                  *find
   for (i = 0; i < n_remotes; i++)
     {
       g_autoptr(GError) local_error = NULL;
-      g_autoptr(GHashTable) remote_refs = NULL;  /* (element-type utf8 utf8) */
+      g_autoptr(GHashTable) remote_refs = NULL;  /* (element-type OstreeCollectionRef utf8) */
       const gchar *checksum;
       g_autofree gchar *remote_collection_id = NULL;
+      gboolean resolved_a_ref = FALSE;
 
       remote_name = remotes[i];
 
@@ -127,8 +128,9 @@ ostree_repo_finder_config_resolve_async (OstreeRepoFinder                  *find
           continue;
         }
 
-      if (!ostree_repo_remote_list_refs (parent_repo, remote_name, &remote_refs,
-                                         cancellable, &local_error))
+      if (!ostree_repo_remote_list_collection_refs (parent_repo, remote_name,
+                                                    &remote_refs, cancellable,
+                                                    &local_error))
         {
           g_debug ("Ignoring remote ‘%s’ due to error loading its refs: %s",
                    remote_name, local_error->message);
@@ -139,13 +141,14 @@ ostree_repo_finder_config_resolve_async (OstreeRepoFinder                  *find
       for (j = 0; refs[j] != NULL; j++)
         {
           if (g_strcmp0 (refs[j]->collection_id, remote_collection_id) == 0 &&
-              g_hash_table_lookup_extended (remote_refs, refs[j]->ref_name, NULL, (gpointer *) &checksum))
+              g_hash_table_lookup_extended (remote_refs, refs[j], NULL, (gpointer *) &checksum))
             {
               /* The requested ref is listed in the refs for this remote. Add
                * the remote to the results, and the ref to its
                * @supported_ref_to_checksum. */
               g_debug ("Resolved ref (%s, %s) to remote ‘%s’.",
                        refs[j]->collection_id, refs[j]->ref_name, remote_name);
+              resolved_a_ref = TRUE;
 
               supported_ref_to_checksum = g_hash_table_lookup (repo_name_to_refs, remote_name);
 
@@ -161,6 +164,9 @@ ostree_repo_finder_config_resolve_async (OstreeRepoFinder                  *find
                                    (gpointer) refs[j], g_strdup (checksum));
             }
         }
+
+      if (!resolved_a_ref)
+        g_debug ("Ignoring remote ‘%s’ due to it not advertising any of the requested refs.", remote_name);
     }
 
   /* Aggregate the results. */

@@ -174,6 +174,11 @@ selinux_relabel_dir (OstreeSePolicy                *sepolicy,
   return ret;
 }
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-instutil.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { NULL }
 };
@@ -185,11 +190,11 @@ ot_admin_instutil_builtin_selinux_ensure_labeled (int argc, char **argv, GCancel
   const char *policy_name;
   g_autoptr(GFile) subpath = NULL;
   const char *prefix = NULL;
-  glnx_unref_object OstreeSePolicy *sepolicy = NULL;
+  g_autoptr(OstreeSePolicy) sepolicy = NULL;
   g_autoptr(GPtrArray) deployments = NULL;
   OstreeDeployment *first_deployment;
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   g_autoptr(GFile) deployment_path = NULL;
 
   context = g_option_context_new ("[SUBPATH PREFIX] - relabel all or part of a deployment");

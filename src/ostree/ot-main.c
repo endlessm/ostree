@@ -117,6 +117,9 @@ ostree_run (int    argc,
   OstreeCommand *command;
   GError *error = NULL;
   GCancellable *cancellable = NULL;
+#ifndef BUILDOPT_TSAN
+  g_autofree char *prgname = NULL;
+#endif
   const char *command_name = NULL;
   gboolean success = FALSE;
   int in, out;
@@ -191,6 +194,11 @@ ostree_run (int    argc,
 
       goto out;
     }
+
+#ifndef BUILDOPT_TSAN
+  prgname = g_strdup_printf ("%s %s", g_get_prgname (), command_name);
+  g_set_prgname (prgname);
+#endif
 
   if (!command->fn (argc, argv, cancellable, &error))
     goto out;
@@ -350,6 +358,14 @@ ostree_option_context_parse (GOptionContext *context,
   return TRUE;
 }
 
+static void
+on_sysroot_journal_msg (OstreeSysroot *sysroot,
+                        const char    *msg,
+                        void          *dummy)
+{
+  g_print ("%s\n", msg);
+}
+
 gboolean
 ostree_admin_option_context_parse (GOptionContext *context,
                                    const GOptionEntry *main_entries,
@@ -372,7 +388,8 @@ ostree_admin_option_context_parse (GOptionContext *context,
   if (opt_sysroot != NULL)
     sysroot_path = g_file_new_for_path (opt_sysroot);
 
-  glnx_unref_object OstreeSysroot *sysroot = ostree_sysroot_new (sysroot_path);
+  g_autoptr(OstreeSysroot) sysroot = ostree_sysroot_new (sysroot_path);
+  g_signal_connect (sysroot, "journal-msg", G_CALLBACK (on_sysroot_journal_msg), NULL);
 
   if (flags & OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER)
     {

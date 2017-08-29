@@ -46,7 +46,7 @@ checkout_state_clear (CheckoutState *state)
   if (state->selabel_path_buf)
     g_string_free (state->selabel_path_buf, TRUE);
 }
-G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(CheckoutState, checkout_state_clear);
+G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(CheckoutState, checkout_state_clear)
 
 static gboolean
 checkout_object_for_uncompressed_cache (OstreeRepo      *self,
@@ -122,7 +122,7 @@ write_regular_file_content (OstreeRepo            *self,
       int infd = g_file_descriptor_based_get_fd ((GFileDescriptorBased*) input);
       guint64 len = g_file_info_get_size (file_info);
 
-      if (glnx_regfile_copy_bytes (infd, outfd, (off_t)len, TRUE) < 0)
+      if (glnx_regfile_copy_bytes (infd, outfd, (off_t)len) < 0)
         return glnx_throw_errno_prefix (error, "regfile copy");
     }
   else

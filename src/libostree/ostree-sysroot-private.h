@@ -33,7 +33,8 @@ typedef enum {
   OSTREE_SYSROOT_DEBUG_MUTABLE_DEPLOYMENTS = 1 << 0,
   /* See https://github.com/ostreedev/ostree/pull/759 */
   OSTREE_SYSROOT_DEBUG_NO_XATTRS = 1 << 1,
-
+  /* https://github.com/ostreedev/ostree/pull/1049 */
+  OSTREE_SYSROOT_DEBUG_TEST_FIFREEZE = 1 << 2,
 } OstreeSysrootDebugFlags;
 
 /**
@@ -56,9 +57,8 @@ struct OstreeSysroot {
   OstreeDeployment *booted_deployment;
   struct timespec loaded_ts;
 
-  /* Only access through ostree_sysroot_get_repo() */
+  /* Only access through ostree_sysroot_[_get]repo() */
   OstreeRepo *repo;
-  gboolean repo_opened;
 
   OstreeSysrootDebugFlags debug_flags;
 };
@@ -67,6 +67,10 @@ struct OstreeSysroot {
 /* We keep some transient state in /run */
 #define _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_DIR "/run/ostree/deployment-state/"
 #define _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_FLAG_DEVELOPMENT "unlocked-development"
+
+void
+_ostree_sysroot_emit_journal_msg (OstreeSysroot  *self,
+                                  const char     *msg);
 
 gboolean
 _ostree_sysroot_read_boot_loader_configs (OstreeSysroot *self,

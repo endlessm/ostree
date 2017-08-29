@@ -20,8 +20,9 @@
 
 #include "config.h"
 
+#include "otutil.h"
+#include "ostree.h"
 #include "ostree-deployment-private.h"
-#include "libglnx.h"
 
 typedef GObjectClass OstreeDeploymentClass;
 
@@ -138,7 +139,7 @@ _ostree_deployment_set_bootcsum (OstreeDeployment *self,
 OstreeDeployment *
 ostree_deployment_clone (OstreeDeployment *self)
 {
-  glnx_unref_object OstreeBootconfigParser *new_bootconfig = NULL;
+  g_autoptr(OstreeBootconfigParser) new_bootconfig = NULL;
   OstreeDeployment *ret = ostree_deployment_new (self->index, self->osname, self->csum,
                                                  self->deployserial,
                                                  self->bootcsum, self->bootserial);
@@ -159,7 +160,7 @@ ostree_deployment_clone (OstreeDeployment *self)
       new_origin = g_key_file_new ();
       success = g_key_file_load_from_data (new_origin, data, len, 0, NULL);
       g_assert (success);
-      
+
       ostree_deployment_set_origin (ret, new_origin);
     }
   return ret;
@@ -186,8 +187,8 @@ ostree_deployment_equal (gconstpointer ap, gconstpointer bp)
 {
   OstreeDeployment *a = (OstreeDeployment*)ap;
   OstreeDeployment *b = (OstreeDeployment*)bp;
-  
-  if (a == NULL && b == NULL)
+
+  if (a == b)
     return TRUE;
   else if (a != NULL && b != NULL)
     return g_str_equal (ostree_deployment_get_osname (a),
@@ -195,7 +196,7 @@ ostree_deployment_equal (gconstpointer ap, gconstpointer bp)
       g_str_equal (ostree_deployment_get_csum (a),
                    ostree_deployment_get_csum (b)) &&
       ostree_deployment_get_deployserial (a) == ostree_deployment_get_deployserial (b);
-  else 
+  else
     return FALSE;
 }
 
@@ -235,7 +236,7 @@ ostree_deployment_new (int    index,
                    int    bootserial)
 {
   OstreeDeployment *self;
-  
+
   /* index may be -1 */
   g_return_val_if_fail (osname != NULL, NULL);
   g_return_val_if_fail (csum != NULL, NULL);

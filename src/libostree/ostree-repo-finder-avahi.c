@@ -556,7 +556,8 @@ get_refs_and_checksums_from_summary (GBytes      *summary_bytes,
 }
 
 /* Download the summary file from @remote, and return the bytes of the file in
- * @out_summary_bytes. */
+ * @out_summary_bytes. This will return %TRUE and set @out_summary_bytes to %NULL
+ * if the summary file does not exist. */
 static gboolean
 fetch_summary_from_remote (OstreeRepo    *repo,
                            OstreeRemote  *remote,
@@ -647,6 +648,13 @@ get_checksums (OstreeRepoFinderAvahi  *finder,
                                   finder->avahi_cancellable,
                                   error))
     return FALSE;
+
+  if (summary_bytes == NULL)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                   "No summary file found on server");
+      return FALSE;
+    }
 
   return get_refs_and_checksums_from_summary (summary_bytes, supported_ref_to_checksum, error);
 }
@@ -816,9 +824,10 @@ ostree_avahi_service_build_repo_finder_result (OstreeAvahiService               
       g_clear_pointer (&remote->keyring, g_free);
       remote->keyring = g_strdup (repo->keyring);
 
+      /* gpg-verify-summary is false since we use the unsigned summary file support. */
       g_key_file_set_string (remote->options, remote->group, "url", repo->uri);
       g_key_file_set_boolean (remote->options, remote->group, "gpg-verify", TRUE);
-      g_key_file_set_boolean (remote->options, remote->group, "gpg-verify-summary", TRUE);
+      g_key_file_set_boolean (remote->options, remote->group, "gpg-verify-summary", FALSE);
 
       get_checksums (finder, parent_repo, remote, supported_ref_to_checksum, &error);
       if (error != NULL)
@@ -830,7 +839,7 @@ ostree_avahi_service_build_repo_finder_result (OstreeAvahiService               
 
       g_ptr_array_add (results, ostree_repo_finder_result_new (remote, OSTREE_REPO_FINDER (finder),
                                                                priority, supported_ref_to_checksum,
-                                                               (summary_timestamp != NULL) ? GUINT64_FROM_BE (g_variant_get_uint64 (summary_timestamp)) : 0));
+                                                               GUINT64_FROM_BE (g_variant_get_uint64 (summary_timestamp))));
     }
 }
 

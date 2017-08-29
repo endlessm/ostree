@@ -82,6 +82,7 @@
     <keyword type="macro" name="OSTREE_SUMMARY_GVARIANT_STRING" link="ostree-Core-repository-independent-functions.html#OSTREE-SUMMARY-GVARIANT-STRING:CAPS"/>
     <keyword type="macro" name="OSTREE_SUMMARY_GVARIANT_FORMAT" link="ostree-Core-repository-independent-functions.html#OSTREE-SUMMARY-GVARIANT-FORMAT:CAPS"/>
     <keyword type="function" name="ostree_repo_mode_from_string ()" link="ostree-Content-addressed-object-store.html#ostree-repo-mode-from-string"/>
+    <keyword type="function" name="ostree_repo_open_at ()" link="ostree-Content-addressed-object-store.html#ostree-repo-open-at"/>
     <keyword type="function" name="ostree_repo_new ()" link="ostree-Content-addressed-object-store.html#ostree-repo-new"/>
     <keyword type="function" name="ostree_repo_new_for_sysroot_path ()" link="ostree-Content-addressed-object-store.html#ostree-repo-new-for-sysroot-path"/>
     <keyword type="function" name="ostree_repo_new_default ()" link="ostree-Content-addressed-object-store.html#ostree-repo-new-default"/>
@@ -90,6 +91,7 @@
     <keyword type="function" name="ostree_repo_get_disable_fsync ()" link="ostree-Content-addressed-object-store.html#ostree-repo-get-disable-fsync"/>
     <keyword type="function" name="ostree_repo_is_system ()" link="ostree-Content-addressed-object-store.html#ostree-repo-is-system"/>
     <keyword type="function" name="ostree_repo_is_writable ()" link="ostree-Content-addressed-object-store.html#ostree-repo-is-writable"/>
+    <keyword type="function" name="ostree_repo_create_at ()" link="ostree-Content-addressed-object-store.html#ostree-repo-create-at"/>
     <keyword type="function" name="ostree_repo_create ()" link="ostree-Content-addressed-object-store.html#ostree-repo-create"/>
     <keyword type="function" name="ostree_repo_get_path ()" link="ostree-Content-addressed-object-store.html#ostree-repo-get-path"/>
     <keyword type="function" name="ostree_repo_get_mode ()" link="ostree-Content-addressed-object-store.html#ostree-repo-get-mode"/>
@@ -119,6 +121,7 @@
     <keyword type="function" name="ostree_repo_transaction_set_refspec ()" link="ostree-Content-addressed-object-store.html#ostree-repo-transaction-set-refspec"/>
     <keyword type="function" name="ostree_repo_transaction_set_ref ()" link="ostree-Content-addressed-object-store.html#ostree-repo-transaction-set-ref"/>
     <keyword type="function" name="ostree_repo_set_ref_immediate ()" link="ostree-Content-addressed-object-store.html#ostree-repo-set-ref-immediate"/>
+    <keyword type="function" name="ostree_repo_set_alias_ref_immediate ()" link="ostree-Content-addressed-object-store.html#ostree-repo-set-alias-ref-immediate"/>
     <keyword type="function" name="ostree_repo_set_cache_dir ()" link="ostree-Content-addressed-object-store.html#ostree-repo-set-cache-dir"/>
     <keyword type="function" name="ostree_repo_sign_delta ()" link="ostree-Content-addressed-object-store.html#ostree-repo-sign-delta"/>
     <keyword type="function" name="ostree_repo_has_object ()" link="ostree-Content-addressed-object-store.html#ostree-repo-has-object"/>
@@ -320,6 +323,7 @@
     <keyword type="function" name="ostree_gpg_verify_result_describe ()" link="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-describe"/>
     <keyword type="function" name="ostree_gpg_verify_result_describe_variant ()" link="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-describe-variant"/>
     <keyword type="function" name="ostree_gpg_verify_result_require_valid_signature ()" link="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-require-valid-signature"/>
+    <keyword type="enum" name="enum OstreeGpgError" link="ostree-GPG-signature-verification-results.html#OstreeGpgError" since="2017.10"/>
     <keyword type="typedef" name="OstreeGpgVerifyResult" link="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult"/>
     <keyword type="enum" name="enum OstreeGpgSignatureAttr" link="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureAttr"/>
     <keyword type="enum" name="enum OstreeGpgSignatureFormatFlags" link="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureFormatFlags"/>
@@ -392,6 +396,7 @@
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_DELETE_IF_EXISTS" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-REMOTE-CHANGE-DELETE-IF-EXISTS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_RESOLVE_REV_EXT_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-RESOLVE-REV-EXT-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_NONE" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-LIST-REFS-EXT-NONE:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_ALIASES" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-LIST-REFS-EXT-ALIASES:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_PARTIAL" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-STATE-PARTIAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_ALLOW" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-FILTER-ALLOW:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_SKIP" link="ostree-Content-addressed-object-store.html#OSTREE-REPO-COMMIT-FILTER-SKIP:CAPS"/>
@@ -436,6 +441,9 @@
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_NONE" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-PULL-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_ALLOW_OLDER" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-PULL-FLAGS-ALLOW-OLDER:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_SYNTHETIC" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-PULL-FLAGS-SYNTHETIC:CAPS"/>
+    <keyword type="constant" name="OSTREE_GPG_ERROR_NO_SIGNATURE" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-ERROR-NO-SIGNATURE:CAPS"/>
+    <keyword type="constant" name="OSTREE_GPG_ERROR_INVALID_SIGNATURE" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-ERROR-INVALID-SIGNATURE:CAPS"/>
+    <keyword type="constant" name="OSTREE_GPG_ERROR_MISSING_KEY" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-ERROR-MISSING-KEY:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_VALID" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-VALID:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_SIG_EXPIRED" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-SIG-EXPIRED:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_KEY_EXPIRED" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-KEY-EXPIRED:CAPS"/>

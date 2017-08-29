@@ -28,6 +28,11 @@
 #include "ostree.h"
 #include "otutil.h"
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-undeploy.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { NULL }
 };
@@ -36,11 +41,11 @@ gboolean
 ot_admin_builtin_undeploy (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   const char *deploy_index_str;
   int deploy_index;
   g_autoptr(GPtrArray) current_deployments = NULL;
-  glnx_unref_object OstreeDeployment *target_deployment = NULL;
+  g_autoptr(OstreeDeployment) target_deployment = NULL;
 
   context = g_option_context_new ("INDEX - Delete deployment INDEX");
 
