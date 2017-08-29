@@ -1,0 +1,5 @@
+test-libarchive-import-Skip-if-extended-attributes-are-un.patch
+test-pull-bareuser.sh-This-test-uses-bare-user-hence-need.patch
+libtest-Allow-skipping-single-checks-without-user-xattrs.patch
+basic-test-Skip-explicit-uses-of-bare-user-if-no-user-xat.patch
+test-basic-user-only-Skip-final-step-if-no-user-xattrs.patch

@@ -7,6 +7,8 @@ ostree (2017.10-1) UNRELEASED; urgency=medium
   * Only run tests when building architecture-dependent packages.
     The tests aren't so interesting that we want to run them again
     when splitting -arch/-indep builds.
+  * Add patches to make the tests pass again when /var/tmp is on tmpfs,
+    which does not support user xattrs
 
  -- Simon McVittie <smcv@debian.org>  Tue, 29 Aug 2017 16:08:09 +0100
 

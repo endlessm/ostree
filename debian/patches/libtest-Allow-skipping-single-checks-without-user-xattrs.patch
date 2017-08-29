@@ -1,0 +1,31 @@
+From: Simon McVittie <smcv@collabora.com>
+Date: Tue, 29 Aug 2017 17:02:18 +0100
+Subject: libtest: Allow skipping single checks without user xattrs
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ tests/libtest.sh | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/tests/libtest.sh b/tests/libtest.sh
+index ff09650..7f334c0 100755
+--- a/tests/libtest.sh
++++ b/tests/libtest.sh
+@@ -489,6 +489,17 @@ os_repository_new_commit ()
+     cd ${test_tmpdir}
+ }
+ 
++# Usage: if ! skip_one_without_user_xattrs; then ... more tests ...; fi
++skip_one_without_user_xattrs () {
++    touch test-xattrs
++    if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
++        echo "ok # SKIP - this test requires xattr support"
++        return 0
++    else
++        return 1
++    fi
++}
++
+ skip_without_user_xattrs () {
+     touch test-xattrs
+     setfattr -n user.testvalue -v somevalue test-xattrs || \
