@@ -8,6 +8,8 @@ need to skip this last stage, which explicitly uses a bare-user
 repository.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/1120
+Applied-upstream: 2017.11, commit:3fcd81df86b66c5abb61118d2ef3822304cb5da3
 ---
  tests/test-basic-user-only.sh | 36 +++++++++++++++++++-----------------
  1 file changed, 19 insertions(+), 17 deletions(-)

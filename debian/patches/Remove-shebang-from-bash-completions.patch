@@ -6,6 +6,8 @@ bash completions are to be sourced. It makes little sense to
 execute them.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/1119
+Applied-upstream: 2017.11, commit:355e8516b04801caf50b0b8a218fc8f6321d8d05
 ---
  bash/ostree | 2 --
  1 file changed, 2 deletions(-)

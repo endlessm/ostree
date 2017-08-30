@@ -5,6 +5,8 @@ Subject: test-libarchive-import: Skip if extended attributes are unsupported
 This is the case at build-time on some (all?) Debian autobuilders.
 
 Signed-off-by: Simon McVittie <smcv@collabora.com>
+Forwarded: https://github.com/ostreedev/ostree/pull/1120
+Applied-upstream: 2017.11, commit:760ff2f66ec5058b0ddf82fc7dbdd9ffbae44c6b
 ---
  tests/test-libarchive-import.c | 57 +++++++++++++++++++++++++++++++++++++++++-
  1 file changed, 56 insertions(+), 1 deletion(-)

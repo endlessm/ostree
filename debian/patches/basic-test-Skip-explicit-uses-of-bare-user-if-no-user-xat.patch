@@ -3,6 +3,8 @@ Date: Tue, 29 Aug 2017 17:02:43 +0100
 Subject: basic-test: Skip explicit uses of bare-user if no user xattrs
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/1120
+Applied-upstream: 2017.11, commit:41e6871e514dda1392354f642edb3484cf79af47
 ---
  tests/basic-test.sh | 138 +++++++++++++++++++++++++++++-----------------------
  1 file changed, 77 insertions(+), 61 deletions(-)

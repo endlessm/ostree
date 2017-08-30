@@ -3,6 +3,8 @@ Date: Tue, 29 Aug 2017 17:02:18 +0100
 Subject: libtest: Allow skipping single checks without user xattrs
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/1120
+Applied-upstream: 2017.11, commit:a7686a0c400524afeb3fad14e04c65105eaf7cdf
 ---
  tests/libtest.sh | 11 +++++++++++
  1 file changed, 11 insertions(+)

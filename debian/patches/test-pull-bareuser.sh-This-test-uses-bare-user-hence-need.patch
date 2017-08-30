@@ -3,6 +3,8 @@ Date: Tue, 29 Aug 2017 17:01:41 +0100
 Subject: test-pull-bareuser.sh: This test uses bare-user, hence needs xattrs
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/1120
+Applied-upstream: 2017.11, commit:1d755977c89c9bd360c61e988b9d445d1d5a4d43
 ---
  tests/test-pull-bareuser.sh | 1 +
  1 file changed, 1 insertion(+)
