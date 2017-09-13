@@ -20,7 +20,7 @@
 
 set -euo pipefail
 
-echo "1..20"
+echo "1..21"
 
 . $(dirname $0)/libtest.sh
 

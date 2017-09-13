@@ -957,8 +957,12 @@ impl_repo_remote_add (OstreeRepo     *self,
 
   remote = ostree_remote_new (name);
 
+  /* Only add repos in remotes.d if the repo option
+   * add-remotes-config-dir is true. This is the default for system
+   * repos.
+   */
   g_autoptr(GFile) etc_ostree_remotes_d = get_remotes_d_dir (self, sysroot);
-  if (etc_ostree_remotes_d)
+  if (etc_ostree_remotes_d && self->add_remotes_config_dir)
     {
       g_autoptr(GError) local_error = NULL;
 
@@ -1994,10 +1998,6 @@ static GFile *
 get_remotes_d_dir (OstreeRepo          *self,
                    GFile               *sysroot)
 {
-  /* Support explicit override */
-  if (self->sysroot_dir != NULL && self->remotes_config_dir != NULL)
-    return g_file_resolve_relative_path (self->sysroot_dir, self->remotes_config_dir);
-
   g_autoptr(GFile) sysroot_owned = NULL;
   /* Very complicated sysroot logic; this bit breaks the otherwise mostly clean
    * layering between OstreeRepo and OstreeSysroot. First, If a sysroot was
@@ -2033,10 +2033,18 @@ get_remotes_d_dir (OstreeRepo          *self,
   if (sysroot == NULL && sysroot_ref == NULL)
     sysroot = self->sysroot_dir;
 
-  /* Did we find a sysroot? If not, NULL means use the repo config, otherwise
-   * return the path in /etc.
+  /* Was the config directory specified? If so, use that with the
+   * optional sysroot prepended. If not, return the path in /etc if the
+   * sysroot was found and NULL otherwise to use the repo config.
    */
-  if (sysroot == NULL)
+  if (self->remotes_config_dir != NULL)
+    {
+      if (sysroot == NULL)
+        return g_file_new_for_path (self->remotes_config_dir);
+      else
+        return g_file_resolve_relative_path (sysroot, self->remotes_config_dir);
+    }
+  else if (sysroot == NULL)
     return NULL;
   else
     return g_file_resolve_relative_path (sysroot, SYSCONF_REMOTES);
@@ -2177,6 +2185,17 @@ reload_core_config (OstreeRepo          *self,
           return FALSE;
         }
     }
+
+  /* By default, only add remotes in a remotes config directory for
+   * system repos. This is to preserve legacy behavior for non-system
+   * repos that specify a remotes config dir (flatpak).
+   */
+  { gboolean is_system = ostree_repo_is_system (self);
+
+    if (!ot_keyfile_get_boolean_with_default (self->config, "core", "add-remotes-config-dir",
+                                              is_system, &self->add_remotes_config_dir, error))
+      return FALSE;
+  }
 
   return TRUE;
 }
