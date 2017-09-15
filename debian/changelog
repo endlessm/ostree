@@ -1,4 +1,4 @@
-ostree (2017.11-1) UNRELEASED; urgency=medium
+ostree (2017.11-1) unstable; urgency=medium
 
   * New upstream release
     - Drop all current patches, applied upstream
@@ -15,7 +15,7 @@ ostree (2017.11-1) UNRELEASED; urgency=medium
     default behaviour. flatpak used to use it in its tests, but
     the version in stable no longer does.
 
- -- Simon McVittie <smcv@debian.org>  Wed, 30 Aug 2017 10:09:26 +0100
+ -- Simon McVittie <smcv@debian.org>  Fri, 15 Sep 2017 16:58:15 +0100
 
 ostree (2017.10-1) unstable; urgency=medium
 
