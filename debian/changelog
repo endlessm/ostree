@@ -5,6 +5,8 @@ ostree (2017.11-1) UNRELEASED; urgency=medium
   * Adjust Description and Upstream-Name to emphasize libostree
   * Classify new ostree-tmpfiles.conf as part of ostree-boot, and so
     don't install it yet
+  * Stop copying an old ostree-trivial-httpd.xml from debian/dist/
+    into source tree. Upstream distributes it again.
 
  -- Simon McVittie <smcv@debian.org>  Wed, 30 Aug 2017 10:09:26 +0100
 
