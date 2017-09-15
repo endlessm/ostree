@@ -73,6 +73,7 @@ override_dh_install:
 	rm -f debian/tmp/usr/lib/libostree/grub2-15_ostree
 	rm -f debian/tmp/usr/lib/ostree/ostree-prepare-root
 	rm -f debian/tmp/usr/lib/ostree/ostree-remount
+	rm -f debian/tmp/usr/lib/tmpfiles.d/ostree-tmpfiles.conf
 	:
 	dh_install
 
