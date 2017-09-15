@@ -7,7 +7,8 @@ ostree (2017.11-1) UNRELEASED; urgency=medium
   * Classify new ostree-tmpfiles.conf as part of ostree-boot, and so
     don't install it yet
   * Stop copying an old ostree-trivial-httpd.xml from debian/dist/
-    into source tree. Upstream distributes it again.
+    into source tree. Upstream distributes it again, and has since
+    2017.8.
   * Add a patch to fix the new test-help.sh when ostree trivial-httpd
     is enabled. At the moment we still build that tool.
   * Add a patch to fix JavaScript tests with gjs 1.50.0, which is
