@@ -1,0 +1,42 @@
+From: Simon McVittie <smcv@collabora.com>
+Date: Fri, 15 Sep 2017 15:32:55 +0100
+Subject: Fix JavaScript tests with gjs 1.50.0
+
+In recent gjs, you can't declare a variable with "let" multiple times.
+
+Signed-off-by: Simon McVittie <smcv@collabora.com>
+---
+ tests/corrupt-repo-ref.js | 2 +-
+ tests/test-sysroot.js     | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/tests/corrupt-repo-ref.js b/tests/corrupt-repo-ref.js
+index c5f2806..a2085f3 100755
+--- a/tests/corrupt-repo-ref.js
++++ b/tests/corrupt-repo-ref.js
+@@ -47,7 +47,7 @@ function listObjectChecksumsRecurse(dir, allObjects) {
+     e.close(null);
+ } 
+ 
+-let [,commit] = repo.resolve_rev(refToCorrupt, false);
++repo.resolve_rev(refToCorrupt, false);
+ let [,root,commit] = repo.read_commit(refToCorrupt, null);
+ let allObjects = {};
+ allObjects[commit + '.commit'] = true;
+diff --git a/tests/test-sysroot.js b/tests/test-sysroot.js
+index 40397fe..e7250a8 100755
+--- a/tests/test-sysroot.js
++++ b/tests/test-sysroot.js
+@@ -97,9 +97,9 @@ assertEquals(deploymentPath.query_exists(null), false);
+ 
+ //// Ok, redeploy, then add a new revision upstream and pull it
+ 
+-let [,deployment] = sysroot.deploy_tree('testos', rev, origin,
+-					mergeDeployment, null,
+-					null);
++[,deployment] = sysroot.deploy_tree('testos', rev, origin,
++				 mergeDeployment, null,
++				 null);
+ newDeployments = deployments;
+ deployments = null;
+ newDeployments.unshift(deployment);

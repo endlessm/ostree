@@ -9,6 +9,8 @@ ostree (2017.11-1) UNRELEASED; urgency=medium
     into source tree. Upstream distributes it again.
   * Add a patch to fix the new test-help.sh when ostree trivial-httpd
     is enabled. At the moment we still build that tool.
+  * Add a patch to fix JavaScript tests with gjs 1.50.0, which is
+    more strict about 'let'
 
  -- Simon McVittie <smcv@debian.org>  Wed, 30 Aug 2017 10:09:26 +0100
 
