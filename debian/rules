@@ -13,7 +13,6 @@ override_dh_autoreconf:
 
 configure_options = \
 	--enable-installed-tests \
-	--enable-trivial-httpd-cmdline \
 	--libexecdir='$${prefix}/lib' \
 	--with-dracut \
 	--with-grub2 \

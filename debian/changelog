@@ -9,10 +9,11 @@ ostree (2017.11-1) UNRELEASED; urgency=medium
   * Stop copying an old ostree-trivial-httpd.xml from debian/dist/
     into source tree. Upstream distributes it again, and has since
     2017.8.
-  * Add a patch to fix the new test-help.sh when ostree trivial-httpd
-    is enabled. At the moment we still build that tool.
   * Add a patch to fix JavaScript tests with gjs 1.50.0, which is
     more strict about 'let'
+  * Stop providing "ostree trivial-httpd" CLI, following upstream
+    default behaviour. flatpak used to use it in its tests, but
+    the version in stable no longer does.
 
  -- Simon McVittie <smcv@debian.org>  Wed, 30 Aug 2017 10:09:26 +0100
 
