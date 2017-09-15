@@ -2,6 +2,7 @@ ostree (2017.11-1) UNRELEASED; urgency=medium
 
   * New upstream release
     - Drop all current patches, applied upstream
+  * Adjust Description and Upstream-Name to emphasize libostree
 
  -- Simon McVittie <smcv@debian.org>  Wed, 30 Aug 2017 10:09:26 +0100
 
