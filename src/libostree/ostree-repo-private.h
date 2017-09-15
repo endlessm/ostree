@@ -154,9 +154,31 @@ struct OstreeRepo {
   gboolean generate_sizes;
   guint64 tmp_expiry_seconds;
   gchar *collection_id;
+  gboolean add_remotes_config_dir; /* Add new remotes in remotes.d dir */
 
   OstreeRepo *parent_repo;
 };
+
+/* Taken from flatpak; may be made into public API later */
+typedef OstreeRepo _OstreeRepoAutoTransaction;
+static inline void
+_ostree_repo_auto_transaction_cleanup (void *p)
+{
+  OstreeRepo *repo = p;
+  if (repo)
+    (void) ostree_repo_abort_transaction (repo, NULL, NULL);
+}
+
+static inline _OstreeRepoAutoTransaction *
+_ostree_repo_auto_transaction_start (OstreeRepo     *repo,
+                                     GCancellable   *cancellable,
+                                     GError        **error)
+{
+  if (!ostree_repo_prepare_transaction (repo, NULL, cancellable, error))
+    return NULL;
+  return (_OstreeRepoAutoTransaction *)repo;
+}
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (_OstreeRepoAutoTransaction, _ostree_repo_auto_transaction_cleanup)
 
 typedef struct {
   dev_t dev;
@@ -396,11 +418,12 @@ gboolean      ostree_repo_set_collection_id (OstreeRepo   *self,
                                              const gchar  *collection_id,
                                              GError      **error);
 
-gboolean      ostree_repo_list_collection_refs (OstreeRepo    *self,
-                                                const char    *match_collection_id,
-                                                GHashTable   **out_all_refs,
-                                                GCancellable  *cancellable,
-                                                GError       **error);
+gboolean      ostree_repo_list_collection_refs (OstreeRepo                  *self,
+                                                const char                  *match_collection_id,
+                                                GHashTable                 **out_all_refs,
+                                                OstreeRepoListRefsExtFlags   flags,
+                                                GCancellable                *cancellable,
+                                                GError                     **error);
 
 void          ostree_repo_transaction_set_collection_ref (OstreeRepo                *self,
                                                           const OstreeCollectionRef *ref,

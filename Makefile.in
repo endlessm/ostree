@@ -493,41 +493,44 @@ check_PROGRAMS = $(am__EXEEXT_11) $(am__EXEEXT_12) $(am__EXEEXT_13)
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_59 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@systemdsystemgenerator_PROGRAMS = ostree-system-generator$(EXEEXT)
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_60 = $(systemdsystemgenerator_PROGRAMS)
-@BUILDOPT_FUSE_TRUE@am__append_61 = rofiles-fuse
-@BUILDOPT_ASAN_TRUE@am__append_62 = OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
-@ENABLE_EXPERIMENTAL_API_TRUE@am__append_63 = $(experimental_test_scripts)
-@ENABLE_EXPERIMENTAL_API_FALSE@am__append_64 = $(experimental_test_scripts)
-@BUILDOPT_FUSE_TRUE@am__append_65 = tests/test-rofiles-fuse.sh
-@BUILDOPT_FUSE_FALSE@am__append_66 = tests/test-rofiles-fuse.sh
-@USE_LIBSOUP_TRUE@am__append_67 = tests/test-remote-cookies.sh
-@BUILDOPT_GJS_TRUE@am__append_68 = $(js_tests) $(js_installed_tests)
-@BUILDOPT_GJS_FALSE@am__append_69 = $(js_tests)
-@BUILDOPT_GJS_FALSE@am__append_70 = $(js_installed_tests)
-@ENABLE_INSTALLED_TESTS_FALSE@am__append_71 = -rpath $(abs_builddir)
-@ENABLE_EXPERIMENTAL_API_TRUE@am__append_72 = \
+
+# Allow the distcheck install under $prefix test to pass
+@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_61 = --with-systemdsystemgeneratordir='$${libdir}/systemd/system-generators'
+@BUILDOPT_FUSE_TRUE@am__append_62 = rofiles-fuse
+@BUILDOPT_ASAN_TRUE@am__append_63 = OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_64 = $(experimental_test_scripts)
+@ENABLE_EXPERIMENTAL_API_FALSE@am__append_65 = $(experimental_test_scripts)
+@BUILDOPT_FUSE_TRUE@am__append_66 = tests/test-rofiles-fuse.sh
+@BUILDOPT_FUSE_FALSE@am__append_67 = tests/test-rofiles-fuse.sh
+@USE_LIBSOUP_TRUE@am__append_68 = tests/test-remote-cookies.sh
+@BUILDOPT_GJS_TRUE@am__append_69 = $(js_tests) $(js_installed_tests)
+@BUILDOPT_GJS_FALSE@am__append_70 = $(js_tests)
+@BUILDOPT_GJS_FALSE@am__append_71 = $(js_installed_tests)
+@ENABLE_INSTALLED_TESTS_FALSE@am__append_72 = -rpath $(abs_builddir)
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_73 = \
 @ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-bloom \
 @ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-repo-finder-config \
 @ENABLE_EXPERIMENTAL_API_TRUE@	tests/test-repo-finder-mount \
 @ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
 
-@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__append_73 = tests/test-repo-finder-avahi
-@USE_LIBARCHIVE_TRUE@am__append_74 = tests/test-libarchive-import
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_75 = $(_installed_or_uninstalled_test_scripts)
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_76 = $(_installed_or_uninstalled_test_programs)
-@ENABLE_INSTALLED_TESTS_TRUE@am__append_77 = install-installed-tests-extra
+@ENABLE_EXPERIMENTAL_API_TRUE@@USE_AVAHI_TRUE@am__append_74 = tests/test-repo-finder-avahi
+@USE_LIBARCHIVE_TRUE@am__append_75 = tests/test-libarchive-import
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_76 = $(_installed_or_uninstalled_test_scripts)
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_77 = $(_installed_or_uninstalled_test_programs)
+@ENABLE_INSTALLED_TESTS_TRUE@am__append_78 = install-installed-tests-extra
 
 # Allow the distcheck install under $prefix test to pass
-@BUILDOPT_SYSTEMD_TRUE@am__append_78 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
+@BUILDOPT_SYSTEMD_TRUE@am__append_79 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
 
 # We're using the system grub2-mkconfig generator
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_79 = src/boot/grub2/grub2-15_ostree
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_80 = install-grub2-config-hook
-@BUILDOPT_TRIVIAL_HTTPD_TRUE@@ENABLE_MAN_TRUE@am__append_81 = ostree-trivial-httpd.1
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_80 = src/boot/grub2/grub2-15_ostree
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_81 = install-grub2-config-hook
+@BUILDOPT_TRIVIAL_HTTPD_TRUE@@ENABLE_MAN_TRUE@am__append_82 = ostree-trivial-httpd.1
 # We still want to distribute the source, even if we are not building it
-@BUILDOPT_TRIVIAL_HTTPD_FALSE@@ENABLE_MAN_TRUE@am__append_82 = man/ostree-trivial-httpd.xml
-@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_83 = rofiles-fuse.1
-@ENABLE_MAN_TRUE@am__append_84 = $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
-@ENABLE_MAN_TRUE@am__append_85 = \
+@BUILDOPT_TRIVIAL_HTTPD_FALSE@@ENABLE_MAN_TRUE@am__append_83 = man/ostree-trivial-httpd.xml
+@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_84 = rofiles-fuse.1
+@ENABLE_MAN_TRUE@am__append_85 = $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
+@ENABLE_MAN_TRUE@am__append_86 = \
 @ENABLE_MAN_TRUE@	$(man1_MANS) \
 @ENABLE_MAN_TRUE@	$(man5_MANS) \
 @ENABLE_MAN_TRUE@	$(NULL)
@@ -551,6 +554,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
 	$(am__dist_gpginsttest_DATA_DIST) \
 	$(am__dist_gpginsttest_trusted_DATA_DIST) \
 	$(am__dist_gpgvinsttest_DATA_DIST) \
+	$(am__dist_systemdtmpfiles_DATA_DIST) \
 	$(am__libostreeinclude_HEADERS_DIST) $(am__DIST_COMMON)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
@@ -598,7 +602,8 @@ am__installdirs = "$(DESTDIR)$(installed_testdir)" \
 	"$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man5dir)" \
 	"$(DESTDIR)$(completionsdir)" "$(DESTDIR)$(gpginsttestdir)" \
 	"$(DESTDIR)$(gpginsttest_trusteddir)" \
-	"$(DESTDIR)$(gpgvinsttestdir)" "$(DESTDIR)$(dracutconfdir)" \
+	"$(DESTDIR)$(gpgvinsttestdir)" \
+	"$(DESTDIR)$(systemdtmpfilesdir)" "$(DESTDIR)$(dracutconfdir)" \
 	"$(DESTDIR)$(girdir)" "$(DESTDIR)$(gpgreadmedir)" \
 	"$(DESTDIR)$(installed_testdir)" \
 	"$(DESTDIR)$(installed_test_metadir)" \
@@ -1415,13 +1420,14 @@ am__dist_gpginsttest_trusted_DATA_DIST =  \
 	tests/gpghome/trusted/pubring.gpg
 am__dist_gpgvinsttest_DATA_DIST = $(addprefix tests/gpg-verify-data/, \
 	gpg.conf lgpl2 lgpl2.sig pubring.gpg secring.gpg trustdb.gpg)
+am__dist_systemdtmpfiles_DATA_DIST = src/boot/ostree-tmpfiles.conf
 DATA = $(dist_completions_DATA) $(dist_gpginsttest_DATA) \
 	$(dist_gpginsttest_trusted_DATA) $(dist_gpgvinsttest_DATA) \
-	$(dracutconf_DATA) $(gir_DATA) $(gpgreadme_DATA) \
-	$(installed_test_DATA) $(installed_test_meta_DATA) \
-	$(mkinitcpioconf_DATA) $(nobase_installed_test_DATA) \
-	$(noinst_DATA) $(pkgconfig_DATA) $(systemdsystemunit_DATA) \
-	$(typelib_DATA)
+	$(dist_systemdtmpfiles_DATA) $(dracutconf_DATA) $(gir_DATA) \
+	$(gpgreadme_DATA) $(installed_test_DATA) \
+	$(installed_test_meta_DATA) $(mkinitcpioconf_DATA) \
+	$(nobase_installed_test_DATA) $(noinst_DATA) $(pkgconfig_DATA) \
+	$(systemdsystemunit_DATA) $(typelib_DATA)
 am__libostreeinclude_HEADERS_DIST = src/libostree/ostree.h \
 	src/libostree/ostree-async-progress.h \
 	src/libostree/ostree-autocleanups.h \
@@ -1635,8 +1641,8 @@ am__EXEEXT_19 = tests/test-find-remotes.sh \
 	tests/test-summary-collections.sh \
 	tests/test-pull-collections.sh $(am__EXEEXT_2)
 @ENABLE_EXPERIMENTAL_API_TRUE@am__EXEEXT_20 = $(am__EXEEXT_19)
-am__EXEEXT_21 = tests/test-core.js tests/test-sizes.js \
-	tests/test-sysroot.js $(am__EXEEXT_2)
+am__EXEEXT_21 = tests/test-core.js tests/test-remotes-config-dir.js \
+	tests/test-sizes.js tests/test-sysroot.js $(am__EXEEXT_2)
 @BUILDOPT_GJS_TRUE@am__EXEEXT_22 = $(js_tests) $(am__EXEEXT_21)
 am__EXEEXT_23 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-basic-user-only.sh tests/test-basic-root.sh \
@@ -1675,7 +1681,7 @@ am__EXEEXT_23 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
 	tests/test-pull-mirrorlist.sh tests/test-summary-update.sh \
 	tests/test-summary-view.sh $(am__EXEEXT_2) $(am__EXEEXT_20) \
-	$(am__append_65) $(am__append_67) $(am__EXEEXT_22)
+	$(am__append_66) $(am__append_68) $(am__EXEEXT_22)
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_24 =  \
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_23)
 am__EXEEXT_25 = $(am__EXEEXT_2) $(am__EXEEXT_24)
@@ -1967,8 +1973,12 @@ AM_CPPFLAGS = -DDATADIR='"$(datadir)"' -DLIBEXECDIR='"$(libexecdir)"' \
 	-DSOUP_VERSION_MIN_REQUIRED=SOUP_VERSION_2_40 \
 	-DSOUP_VERSION_MAX_ALLOWED=SOUP_VERSION_2_48
 AM_CFLAGS = -std=gnu99 $(WARN_CFLAGS)
+
+# Allow the distcheck install under $prefix test to pass
 AM_DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-man \
-	--disable-maintainer-mode $(NULL) $(am__append_78)
+	--disable-maintainer-mode $(NULL) $(am__append_61) \
+	$(am__append_79) \
+	BASH_COMPLETIONSDIR='$${datadir}/bash-completion/completions'
 SUBDIRS = . $(am__append_14)
 NULL = 
 BUILT_SOURCES = $(nodist_libostree_1_la_SOURCES)
@@ -1980,7 +1990,7 @@ CLEANFILES = $(am__append_13) $(BUILT_SOURCES) $(am__append_46) \
 	tests/ostree-remount-symlink-stamp \
 	tests/rofiles-fuse-symlink-stamp tests/ostree \
 	tests/ostree-prepare-root tests/ostree-remount \
-	tests/rofiles-fuse $(am__append_85)
+	tests/rofiles-fuse $(am__append_86)
 EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	COPYING README.md $(am__append_15) libglnx/README.md \
 	libglnx/COPYING libglnx/libglnx.m4 $(NULL) \
@@ -1997,19 +2007,19 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/libostree/ostree-repo-deprecated.h \
 	src/libostree/ostree-version.h src/ostree/parse-datetime.y \
 	buildutil/tap-driver.sh buildutil/tap-test tests/glib.supp \
-	tests/ostree.supp $(NULL) $(am__append_64) $(am__append_66) \
-	$(am__append_69) tests/libtest.sh $(am__append_70) \
+	tests/ostree.supp $(NULL) $(am__append_65) $(am__append_67) \
+	$(am__append_70) tests/libtest.sh $(am__append_71) \
 	tests/libostreetest.h tests/libtest.sh \
 	tests/gpg-verify-data/README.md $(NULL) \
 	src/boot/dracut/module-setup.sh src/boot/dracut/ostree.conf \
 	src/boot/mkinitcpio/ostree \
 	src/boot/ostree-prepare-root.service \
 	src/boot/ostree-remount.service src/boot/grub2/grub2-15_ostree \
-	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_82) \
-	$(am__append_84)
+	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_83) \
+	$(am__append_85)
 bin_SCRIPTS = 
 lib_LTLIBRARIES = libostree-1.la
-pkglibexec_SCRIPTS = $(am__append_79)
+pkglibexec_SCRIPTS = $(am__append_80)
 noinst_LTLIBRARIES = $(am__append_1) libglnx.la libbsdiff.la \
 	libotutil.la libostree-kernel-args.la $(am__append_18) \
 	libostreetest.la
@@ -2039,7 +2049,7 @@ AM_TESTS_ENVIRONMENT = G_TEST_SRCDIR="$(abs_srcdir)" \
 	LD_LIBRARY_PATH=$$(cd $(top_builddir)/.libs && \
 	pwd)$${LD_LIBRARY_PATH:+:$${LD_LIBRARY_PATH}} PATH=$$(cd \
 	$(top_builddir)/tests && pwd):$${PATH} \
-	OSTREE_FEATURES="$(OSTREE_FEATURES)" $(NULL) $(am__append_62)
+	OSTREE_FEATURES="$(OSTREE_FEATURES)" $(NULL) $(am__append_63)
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/buildutil/tap-driver.sh
 LOG_COMPILER = $(top_srcdir)/buildutil/tap-test
 installed_test_LTLIBRARIES = $(am__append_12)
@@ -2079,8 +2089,8 @@ all_test_ltlibs = $(test_ltlibraries) $(uninstalled_test_ltlibraries) $(installe
 # This initializes some more variables
 
 # This is a special facility to chain together hooks easily
-INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_77) \
-	$(am__append_80)
+INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_78) \
+	$(am__append_81)
 ALL_LOCAL_RULES = tests/libreaddir-rand.so
 shortened_sysconfdir = $$(echo "$(sysconfdir)" | sed -e 's|^$(prefix)||' -e 's|^/||')
 OSTREE_GITREV = $(shell cd $(srcdir) && if command -v git >/dev/null 2>&1 && test -d .git; then git describe --abbrev=42 --tags --always HEAD; fi)
@@ -2439,9 +2449,9 @@ dist_uninstalled_test_scripts = tests/test-symbols.sh tests/coccinelle.sh
 # tests *only* run installed, to avoid having to run them twice in CI.
 # This overrides the glib-tap.mk emphasis on doing both, if we'd
 # used e.g. `dist_test_scripts`.
-dist_test_scripts = $(NULL) $(am__append_75)
-test_programs = $(NULL) $(am__append_72) $(am__append_73) \
-	$(am__append_76)
+dist_test_scripts = $(NULL) $(am__append_76)
+test_programs = $(NULL) $(am__append_73) $(am__append_74) \
+	$(am__append_77)
 _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-basic-user.sh tests/test-basic-user-only.sh \
 	tests/test-basic-root.sh tests/test-pull-subpath.sh \
@@ -2478,8 +2488,8 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-refs.sh tests/test-demo-buildsystem.sh \
 	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
 	tests/test-pull-mirrorlist.sh tests/test-summary-update.sh \
-	tests/test-summary-view.sh $(NULL) $(am__append_63) \
-	$(am__append_65) $(am__append_67) $(am__append_68)
+	tests/test-summary-view.sh $(NULL) $(am__append_64) \
+	$(am__append_66) $(am__append_68) $(am__append_69)
 experimental_test_scripts = \
 	tests/test-find-remotes.sh \
 	tests/test-fsck-collections.sh \
@@ -2528,6 +2538,7 @@ dist_test_extra_scripts = \
 
 js_installed_tests = \
 	tests/test-core.js \
+	tests/test-remotes-config-dir.js \
 	tests/test-sizes.js \
 	tests/test-sysroot.js \
 	$(NULL)
@@ -2541,14 +2552,14 @@ libreaddir_rand_la_LIBADD = \
 	$(NULL)
 
 libreaddir_rand_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version \
-	$(am__append_71)
+	$(am__append_72)
 _installed_or_uninstalled_test_programs = tests/test-varint \
 	tests/test-ot-unix-utils tests/test-bsdiff \
 	tests/test-mutable-tree tests/test-keyfile-utils \
 	tests/test-ot-opt-utils tests/test-ot-tool-util \
 	tests/test-gpg-verify-result tests/test-checksum \
 	tests/test-lzma tests/test-rollsum tests/test-basic-c \
-	tests/test-sysroot-c tests/test-pull-c $(am__append_74)
+	tests/test-sysroot-c tests/test-pull-c $(am__append_75)
 common_tests_cflags = $(ostree_bin_shared_cflags) $(OT_INTERNAL_GIO_UNIX_CFLAGS) -I$(srcdir)/libglnx
 common_tests_ldadd = $(ostree_bin_shared_ldadd) $(OT_INTERNAL_GIO_UNIX_LIBS)
 libostreetest_la_SOURCES = tests/libostreetest.c tests/test-mock-gio.c tests/test-mock-gio.h
@@ -2629,6 +2640,8 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 @BUILDOPT_SYSTEMD_TRUE@systemdsystemunit_DATA = src/boot/ostree-prepare-root.service \
 @BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-remount.service
 
+@BUILDOPT_SYSTEMD_TRUE@systemdtmpfilesdir = $(prefix)/lib/tmpfiles.d
+@BUILDOPT_SYSTEMD_TRUE@dist_systemdtmpfiles_DATA = src/boot/ostree-tmpfiles.conf
 @BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@grub2configdir = $(sysconfdir)/grub.d
 @ENABLE_MAN_TRUE@man1_files = ostree.1 ostree-admin-cleanup.1 \
 @ENABLE_MAN_TRUE@	ostree-admin-config-diff.1 \
@@ -2647,8 +2660,8 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 @ENABLE_MAN_TRUE@	ostree-pull.1 ostree-refs.1 ostree-remote.1 \
 @ENABLE_MAN_TRUE@	ostree-reset.1 ostree-rev-parse.1 \
 @ENABLE_MAN_TRUE@	ostree-show.1 ostree-summary.1 \
-@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_81) \
-@ENABLE_MAN_TRUE@	$(am__append_83)
+@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_82) \
+@ENABLE_MAN_TRUE@	$(am__append_84)
 @ENABLE_MAN_TRUE@man5_files = ostree.repo.5 ostree.repo-config.5
 @ENABLE_MAN_TRUE@man1_MANS = $(addprefix man/,$(man1_files))
 @ENABLE_MAN_TRUE@man5_MANS = $(addprefix man/,$(man5_files))
@@ -6464,6 +6477,27 @@ uninstall-dist_gpgvinsttestDATA:
 	@list='$(dist_gpgvinsttest_DATA)'; test -n "$(gpgvinsttestdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(gpgvinsttestdir)'; $(am__uninstall_files_from_dir)
+install-dist_systemdtmpfilesDATA: $(dist_systemdtmpfiles_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_systemdtmpfiles_DATA)'; test -n "$(systemdtmpfilesdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(systemdtmpfilesdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(systemdtmpfilesdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(systemdtmpfilesdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(systemdtmpfilesdir)" || exit $$?; \
+	done
+
+uninstall-dist_systemdtmpfilesDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_systemdtmpfiles_DATA)'; test -n "$(systemdtmpfilesdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(systemdtmpfilesdir)'; $(am__uninstall_files_from_dir)
 install-dracutconfDATA: $(dracutconf_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(dracutconf_DATA)'; test -n "$(dracutconfdir)" || list=; \
@@ -7583,6 +7617,13 @@ tests/test-core.js.log: tests/test-core.js
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-remotes-config-dir.js.log: tests/test-remotes-config-dir.js
+	@p='tests/test-remotes-config-dir.js'; \
+	b='tests/test-remotes-config-dir.js'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/test-sizes.js.log: tests/test-sizes.js
 	@p='tests/test-sizes.js'; \
 	b='tests/test-sizes.js'; \
@@ -7858,7 +7899,7 @@ install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(privlibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(libexecdir)" "$(DESTDIR)$(ostree_bootdir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(systemdsystemgeneratordir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(dracutmoddir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(mkinitcpioinstalldir)" "$(DESTDIR)$(ostree_bootdir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(completionsdir)" "$(DESTDIR)$(gpginsttestdir)" "$(DESTDIR)$(gpginsttest_trusteddir)" "$(DESTDIR)$(gpgvinsttestdir)" "$(DESTDIR)$(dracutconfdir)" "$(DESTDIR)$(girdir)" "$(DESTDIR)$(gpgreadmedir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(installed_test_metadir)" "$(DESTDIR)$(mkinitcpioconfdir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(systemdsystemunitdir)" "$(DESTDIR)$(typelibdir)" "$(DESTDIR)$(libostreeincludedir)"; do \
+	for dir in "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(privlibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(libexecdir)" "$(DESTDIR)$(ostree_bootdir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(systemdsystemgeneratordir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(dracutmoddir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(mkinitcpioinstalldir)" "$(DESTDIR)$(ostree_bootdir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(completionsdir)" "$(DESTDIR)$(gpginsttestdir)" "$(DESTDIR)$(gpginsttest_trusteddir)" "$(DESTDIR)$(gpgvinsttestdir)" "$(DESTDIR)$(systemdtmpfilesdir)" "$(DESTDIR)$(dracutconfdir)" "$(DESTDIR)$(girdir)" "$(DESTDIR)$(gpgreadmedir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(installed_test_metadir)" "$(DESTDIR)$(mkinitcpioconfdir)" "$(DESTDIR)$(installed_testdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(systemdsystemunitdir)" "$(DESTDIR)$(typelibdir)" "$(DESTDIR)$(libostreeincludedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -7949,8 +7990,9 @@ info-am:
 install-data-am: install-dist_completionsDATA \
 	install-dist_gpginsttestDATA \
 	install-dist_gpginsttest_trustedDATA \
-	install-dist_gpgvinsttestDATA install-dracutconfDATA \
-	install-dracutmodSCRIPTS install-girDATA install-gpgreadmeDATA \
+	install-dist_gpgvinsttestDATA install-dist_systemdtmpfilesDATA \
+	install-dracutconfDATA install-dracutmodSCRIPTS \
+	install-girDATA install-gpgreadmeDATA \
 	install-installed_testDATA install-installed_testLTLIBRARIES \
 	install-installed_testPROGRAMS install-installed_testSCRIPTS \
 	install-installed_test_metaDATA \
@@ -8015,7 +8057,8 @@ ps-am:
 uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	uninstall-dist_completionsDATA uninstall-dist_gpginsttestDATA \
 	uninstall-dist_gpginsttest_trustedDATA \
-	uninstall-dist_gpgvinsttestDATA uninstall-dracutconfDATA \
+	uninstall-dist_gpgvinsttestDATA \
+	uninstall-dist_systemdtmpfilesDATA uninstall-dracutconfDATA \
 	uninstall-dracutmodSCRIPTS uninstall-girDATA \
 	uninstall-gpgreadmeDATA uninstall-installed_testDATA \
 	uninstall-installed_testLTLIBRARIES \
@@ -8057,9 +8100,9 @@ uninstall-man: uninstall-man1 uninstall-man5
 	install-data install-data-am install-data-hook \
 	install-dist_completionsDATA install-dist_gpginsttestDATA \
 	install-dist_gpginsttest_trustedDATA \
-	install-dist_gpgvinsttestDATA install-dracutconfDATA \
-	install-dracutmodSCRIPTS install-dvi install-dvi-am \
-	install-exec install-exec-am install-girDATA \
+	install-dist_gpgvinsttestDATA install-dist_systemdtmpfilesDATA \
+	install-dracutconfDATA install-dracutmodSCRIPTS install-dvi \
+	install-dvi-am install-exec install-exec-am install-girDATA \
 	install-gpgreadmeDATA install-html install-html-am \
 	install-info install-info-am install-installed_testDATA \
 	install-installed_testLTLIBRARIES \
@@ -8082,7 +8125,8 @@ uninstall-man: uninstall-man1 uninstall-man5
 	uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	uninstall-dist_completionsDATA uninstall-dist_gpginsttestDATA \
 	uninstall-dist_gpginsttest_trustedDATA \
-	uninstall-dist_gpgvinsttestDATA uninstall-dracutconfDATA \
+	uninstall-dist_gpgvinsttestDATA \
+	uninstall-dist_systemdtmpfilesDATA uninstall-dracutconfDATA \
 	uninstall-dracutmodSCRIPTS uninstall-girDATA \
 	uninstall-gpgreadmeDATA uninstall-installed_testDATA \
 	uninstall-installed_testLTLIBRARIES \

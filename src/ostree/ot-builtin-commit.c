@@ -30,6 +30,7 @@
 #include "ot-tool-util.h"
 #include "parse-datetime.h"
 #include "ostree-repo-private.h"
+#include "ostree-libarchive-private.h"
 
 static char *opt_subject;
 static char *opt_body;
@@ -46,7 +47,9 @@ static char **opt_detached_metadata_strings;
 static gboolean opt_link_checkout_speedup;
 static gboolean opt_skip_if_unchanged;
 static gboolean opt_tar_autocreate_parents;
+static char *opt_tar_pathname_filter;
 static gboolean opt_no_xattrs;
+static char *opt_selinux_policy;
 static gboolean opt_canonical_permissions;
 static char **opt_trees;
 static gint opt_owner_uid = -1;
@@ -93,8 +96,10 @@ static GOptionEntry options[] = {
   { "owner-gid", 0, 0, G_OPTION_ARG_INT, &opt_owner_gid, "Set file ownership group id", "GID" },
   { "canonical-permissions", 0, 0, G_OPTION_ARG_NONE, &opt_canonical_permissions, "Canonicalize permissions in the same way bare-user does for hardlinked files", NULL },
   { "no-xattrs", 0, 0, G_OPTION_ARG_NONE, &opt_no_xattrs, "Do not import extended attributes", NULL },
+  { "selinux-policy", 0, 0, G_OPTION_ARG_FILENAME, &opt_selinux_policy, "Set SELinux labels based on policy in root filesystem PATH (may be /)", "PATH" },
   { "link-checkout-speedup", 0, 0, G_OPTION_ARG_NONE, &opt_link_checkout_speedup, "Optimize for commits of trees composed of hardlinks into the repository", NULL },
   { "tar-autocreate-parents", 0, 0, G_OPTION_ARG_NONE, &opt_tar_autocreate_parents, "When loading tar archives, automatically create parent directories as needed", NULL },
+  { "tar-pathname-filter", 0, 0, G_OPTION_ARG_STRING, &opt_tar_pathname_filter, "When loading tar archives, use REGEX,REPLACEMENT against path names", "REGEX,REPLACEMENT" },
   { "skip-if-unchanged", 0, 0, G_OPTION_ARG_NONE, &opt_skip_if_unchanged, "If the contents are unchanged from previous commit, do nothing", NULL },
   { "statoverride", 0, 0, G_OPTION_ARG_FILENAME, &opt_statoverride_file, "File containing list of modifications to make to permissions", "PATH" },
   { "skip-list", 0, 0, G_OPTION_ARG_FILENAME, &opt_skiplist_file, "File containing list of files to skip", "PATH" },
@@ -217,6 +222,28 @@ commit_filter (OstreeRepo         *self,
     }
 
   return OSTREE_REPO_COMMIT_FILTER_ALLOW;
+}
+
+typedef struct {
+  GRegex *regex;
+  const char *replacement;
+} TranslatePathnameData;
+
+/* Implement --tar-pathname-filter */
+static char *
+handle_translate_pathname (OstreeRepo *repo,
+                           const struct stat *stbuf,
+                           const char *path,
+                           gpointer user_data)
+{
+  TranslatePathnameData *tpdata = user_data;
+  g_autoptr(GError) tmp_error = NULL;
+  char *ret =
+    g_regex_replace (tpdata->regex, path, -1, 0,
+                     tpdata->replacement, 0, &tmp_error);
+  g_assert_no_error (tmp_error);
+  g_assert (ret);
+  return ret;
 }
 
 static gboolean
@@ -395,6 +422,7 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
   g_autoptr(GHashTable) mode_overrides = NULL;
   g_autoptr(GHashTable) skip_list = NULL;
   OstreeRepoCommitModifierFlags flags = 0;
+  g_autoptr(OstreeSePolicy) policy = NULL;
   OstreeRepoCommitModifier *modifier = NULL;
   OstreeRepoTransactionStats stats;
   struct CommitFilterData filter_data = { 0, };
@@ -459,12 +487,26 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
       || opt_owner_gid >= 0
       || opt_statoverride_file != NULL
       || opt_skiplist_file != NULL
-      || opt_no_xattrs)
+      || opt_no_xattrs
+      || opt_selinux_policy)
     {
       filter_data.mode_adds = mode_adds;
       filter_data.skip_list = skip_list;
       modifier = ostree_repo_commit_modifier_new (flags, commit_filter,
                                                   &filter_data, NULL);
+      if (opt_selinux_policy)
+        {
+          glnx_fd_close int rootfs_dfd = -1;
+          if (!glnx_opendirat (AT_FDCWD, opt_selinux_policy, TRUE, &rootfs_dfd, error))
+            {
+              g_prefix_error (error, "selinux-policy: ");
+              goto out;
+            }
+          policy = ostree_sepolicy_new_at (rootfs_dfd, cancellable, error);
+          if (!policy)
+            goto out;
+          ostree_repo_commit_modifier_set_sepolicy (modifier, policy);
+        }
     }
 
   if (opt_parent)
@@ -551,11 +593,50 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
             }
           else if (strcmp (tree_type, "tar") == 0)
             {
-              object_to_commit = g_file_new_for_path (tree);
-              if (!ostree_repo_write_archive_to_mtree (repo, object_to_commit, mtree, modifier,
-                                                       opt_tar_autocreate_parents,
-                                                       cancellable, error))
-                goto out;
+              if (!opt_tar_pathname_filter)
+                {
+                  object_to_commit = g_file_new_for_path (tree);
+                  if (!ostree_repo_write_archive_to_mtree (repo, object_to_commit, mtree, modifier,
+                                                           opt_tar_autocreate_parents,
+                                                           cancellable, error))
+                    goto out;
+                }
+              else
+                {
+#ifdef HAVE_LIBARCHIVE
+                  const char *comma = strchr (opt_tar_pathname_filter, ',');
+                  if (!comma)
+                    {
+                      g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                                           "Missing ',' in --tar-pathname-filter");
+                      goto out;
+                    }
+                  const char *replacement = comma + 1;
+                  g_autofree char *regexp_text = g_strndup (opt_tar_pathname_filter, comma - opt_tar_pathname_filter);
+                  /* Use new API if we have a pathname filter */
+                  OstreeRepoImportArchiveOptions opts = { 0, };
+                  opts.autocreate_parents = opt_tar_autocreate_parents;
+                  opts.translate_pathname = handle_translate_pathname;
+                  g_autoptr(GRegex) regexp = g_regex_new (regexp_text, 0, 0, error);
+                  TranslatePathnameData tpdata = { regexp, replacement };
+                  if (!regexp)
+                    {
+                      g_prefix_error (error, "--tar-pathname-filter: ");
+                      goto out;
+                    }
+                  opts.translate_pathname_user_data = &tpdata;
+                  g_autoptr(OtAutoArchiveRead) archive = ot_open_archive_read (tree, error);
+                  if (!archive)
+                    goto out;
+                  if (!ostree_repo_import_archive_to_mtree (repo, &opts, archive, mtree,
+                                                            modifier, cancellable, error))
+                    goto out;
+                }
+#else
+              g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+                           "This version of ostree is not compiled with libarchive support");
+              return FALSE;
+#endif
             }
           else if (strcmp (tree_type, "ref") == 0)
             {
@@ -699,7 +780,7 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
       if (!ostree_repo_commit_transaction (repo, &stats, cancellable, error))
         goto out;
 
-      /* The default for this option is FALSE, even for archive-z2 repos,
+      /* The default for this option is FALSE, even for archive repos,
        * because ostree supports multiple processes committing to the same
        * repo (but different refs) concurrently, and in fact gnome-continuous
        * actually does this.  In that context it's best to update the summary

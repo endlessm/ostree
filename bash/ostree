@@ -1,5 +1,3 @@
-#!/bin/bash
-#
 # bash completion file for ostree commands
 #
 # This script provides completion of:
@@ -253,6 +251,9 @@ _ostree_admin_deploy() {
     local boolean_options="
         $main_boolean_options
         --retain
+        --retain-pending
+        --retain-rollback
+        --not-as-default
         --karg-proc-cmdline
     "
 
@@ -695,6 +696,7 @@ _ostree_checkout() {
         --require-hardlinks -H
         --union
         --union-add
+        --union-identical
         --user-mode -U
         --whiteouts
     "

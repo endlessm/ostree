@@ -187,14 +187,14 @@ _ostree_gpg_verifier_check_signature (OstreeGpgVerifier  *self,
           gpg_error = gpgme_data_new_from_fd (&kdata, fd);
           if (gpg_error != GPG_ERR_NO_ERROR)
             {
-              ot_gpgme_error_to_gio_error (gpg_error, error);
+              ot_gpgme_throw (gpg_error, error, "Loading data from fd %i", fd);
               goto out;
             }
 
           gpg_error = gpgme_op_import (result->context, kdata);
           if (gpg_error != GPG_ERR_NO_ERROR)
             {
-              ot_gpgme_error_to_gio_error (gpg_error, error);
+              ot_gpgme_throw (gpg_error, error, "Failed to import key");
               goto out;
             }
         }
@@ -212,8 +212,7 @@ _ostree_gpg_verifier_check_signature (OstreeGpgVerifier  *self,
                                        0 /* do not copy */);
   if (gpg_error != GPG_ERR_NO_ERROR)
     {
-      ot_gpgme_error_to_gio_error (gpg_error, error);
-      g_prefix_error (error, "Unable to read signed data: ");
+      ot_gpgme_throw (gpg_error, error, "Unable to read signed data");
       goto out;
     }
 
@@ -223,16 +222,14 @@ _ostree_gpg_verifier_check_signature (OstreeGpgVerifier  *self,
                                        0 /* do not copy */);
   if (gpg_error != GPG_ERR_NO_ERROR)
     {
-      ot_gpgme_error_to_gio_error (gpg_error, error);
-      g_prefix_error (error, "Unable to read signature: ");
+      ot_gpgme_throw (gpg_error, error, "Unable to read signature");
       goto out;
     }
 
   gpg_error = gpgme_op_verify (result->context, signature_buffer, data_buffer, NULL);
   if (gpg_error != GPG_ERR_NO_ERROR)
     {
-      ot_gpgme_error_to_gio_error (gpg_error, error);
-      g_prefix_error (error, "Unable to complete signature verification: ");
+      ot_gpgme_throw (gpg_error, error, "Unable to complete signature verification");
       goto out;
     }
 
@@ -368,31 +365,22 @@ _ostree_gpg_verifier_add_global_keyring_dir (OstreeGpgVerifier  *self,
                                              GCancellable       *cancellable,
                                              GError            **error)
 {
-  const char *global_keyring_path = g_getenv ("OSTREE_GPG_HOME");
-  g_autoptr(GFile) global_keyring_dir = NULL;
-  gboolean ret = FALSE;
-
   g_return_val_if_fail (OSTREE_IS_GPG_VERIFIER (self), FALSE);
 
+  const char *global_keyring_path = g_getenv ("OSTREE_GPG_HOME");
   if (global_keyring_path == NULL)
     global_keyring_path = DATADIR "/ostree/trusted.gpg.d/";
 
   if (g_file_test (global_keyring_path, G_FILE_TEST_IS_DIR))
     {
-      global_keyring_dir = g_file_new_for_path (global_keyring_path);
+      g_autoptr(GFile) global_keyring_dir = g_file_new_for_path (global_keyring_path);
       if (!_ostree_gpg_verifier_add_keyring_dir (self, global_keyring_dir,
                                                  cancellable, error))
-        {
-          g_prefix_error (error, "Reading keyring directory '%s'",
-                          gs_file_get_path_cached (global_keyring_dir));
-          goto out;
-        }
+        return glnx_prefix_error (error, "Reading keyring directory '%s'",
+                                  gs_file_get_path_cached (global_keyring_dir));
     }
 
-  ret = TRUE;
-
-out:
-  return ret;
+  return TRUE;
 }
 
 OstreeGpgVerifier*

@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <sys/stat.h>
+
 #include "ostree-core.h"
 #include "ostree-types.h"
 #include "ostree-async-progress.h"
@@ -475,10 +477,12 @@ gboolean      ostree_repo_list_refs (OstreeRepo       *self,
  * OstreeRepoListRefsExtFlags:
  * @OSTREE_REPO_LIST_REFS_EXT_NONE: No flags.
  * @OSTREE_REPO_LIST_REFS_EXT_ALIASES: Only list aliases.  Since: 2017.10
+ * @OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES: Exclude remote refs.  Since: 2017.11
  */
 typedef enum {
   OSTREE_REPO_LIST_REFS_EXT_NONE = 0,
-  OSTREE_REPO_LIST_REFS_EXT_ALIASES = 1,
+  OSTREE_REPO_LIST_REFS_EXT_ALIASES = (1 << 0),
+  OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES = (1 << 1),
 } OstreeRepoListRefsExtFlags;
 
 _OSTREE_PUBLIC
@@ -687,6 +691,31 @@ gboolean      ostree_repo_write_archive_to_mtree (OstreeRepo                   *
                                                   GError                      **error);
 
 /**
+ * OstreeRepoImportArchiveTranslatePathname:
+ * @repo: Repo
+ * @stbuf: Stat buffer
+ * @src_path: Path in the archive
+ * @user_data: User data
+ *
+ * Possibly change a pathname while importing an archive. If %NULL is returned,
+ * then @src_path will be used unchanged.  Otherwise, return a new pathname which
+ * will be freed via `g_free()`.
+ *
+ * This pathname translation will be performed *before* any processing from an
+ * active `OstreeRepoCommitModifier`. Will be invoked for all directory and file
+ * types, first with outer directories, then their sub-files and directories.
+ *
+ * Note that enabling pathname translation will always override the setting for
+ * `use_ostree_convention`.
+ *
+ * Since: 2017.11
+ */
+typedef char *(*OstreeRepoImportArchiveTranslatePathname) (OstreeRepo     *repo,
+                                                           const struct stat *stbuf,
+                                                           const char     *src_path,
+                                                           gpointer        user_data);
+
+/**
  * OstreeRepoImportArchiveOptions: (skip)
  *
  * An extensible options structure controlling archive import.  Ensure that
@@ -701,7 +730,9 @@ typedef struct {
   guint reserved : 28;
 
   guint unused_uint[8];
-  gpointer unused_ptrs[8];
+  OstreeRepoImportArchiveTranslatePathname translate_pathname;
+  gpointer translate_pathname_user_data;
+  gpointer unused_ptrs[6];
 } OstreeRepoImportArchiveOptions;
 
 _OSTREE_PUBLIC
@@ -724,6 +755,7 @@ typedef struct {
   guint disable_xattrs : 1;
   guint reserved : 31;
 
+  /* 4 byte hole on 64 bit arches */
   guint64 timestamp_secs;
 
   guint unused_uint[8];
@@ -800,11 +832,13 @@ typedef enum {
  * @OSTREE_REPO_CHECKOUT_OVERWRITE_NONE: No special options
  * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES: When layering checkouts, unlink() and replace existing files, but do not modify existing directories
  * @OSTREE_REPO_CHECKOUT_OVERWRITE_ADD_FILES: Only add new files/directories
+ * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_IDENTICAL: Like UNION_FILES, but error if files are not identical (requires hardlink checkouts)
  */
 typedef enum {
   OSTREE_REPO_CHECKOUT_OVERWRITE_NONE = 0,
   OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES = 1,
   OSTREE_REPO_CHECKOUT_OVERWRITE_ADD_FILES = 2, /* Since: 2017.3 */
+  OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_IDENTICAL = 3, /* Since: 2017.11 */
 } OstreeRepoCheckoutOverwriteMode;
 
 _OSTREE_PUBLIC
@@ -838,6 +872,7 @@ typedef struct {
   gboolean force_copy; /* Since: 2017.6 */
   gboolean bareuseronly_dirs; /* Since: 2017.7 */
   gboolean unused_bools[5];
+  /* 4 byte hole on 64 bit */
 
   const char *subpath;
 
@@ -972,6 +1007,7 @@ gboolean ostree_repo_traverse_commit_union (OstreeRepo         *repo,
 
 struct _OstreeRepoCommitTraverseIter {
   gboolean initialized;
+  /* 4 byte hole on 64 bit */
   gpointer dummy[10];
   char dummy_checksum_data[(OSTREE_SHA256_STRING_LEN+1)*2];
 };
@@ -1060,6 +1096,8 @@ gboolean ostree_repo_prune (OstreeRepo        *self,
 struct _OstreeRepoPruneOptions {
   OstreeRepoPruneFlags flags;
 
+  /* 4 byte hole on 64 bit */
+
   GHashTable *reachable; /* Set<GVariant> (object names) */
 
   gboolean unused_bools[6];
@@ -1081,7 +1119,7 @@ gboolean ostree_repo_prune_from_reachable (OstreeRepo             *self,
 /**
  * OstreeRepoPullFlags:
  * @OSTREE_REPO_PULL_FLAGS_NONE: No special options for pull
- * @OSTREE_REPO_PULL_FLAGS_MIRROR: Write out refs suitable for mirrors
+ * @OSTREE_REPO_PULL_FLAGS_MIRROR: Write out refs suitable for mirrors and fetch all refs if none requested
  * @OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY: Fetch only the commit metadata
  * @OSTREE_REPO_PULL_FLAGS_UNTRUSTED: Don't trust local remote
  * @OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES: Since 2017.7.  Reject writes of content objects with modes outside of 0775.
@@ -1185,11 +1223,12 @@ gchar *ostree_repo_resolve_keyring_for_collection (OstreeRepo    *self,
                                                    GError       **error);
 
 _OSTREE_PUBLIC
-gboolean ostree_repo_list_collection_refs (OstreeRepo    *self,
-                                           const char    *match_collection_id,
-                                           GHashTable   **out_all_refs,
-                                           GCancellable  *cancellable,
-                                           GError       **error);
+gboolean ostree_repo_list_collection_refs (OstreeRepo                 *self,
+                                           const char                 *match_collection_id,
+                                           GHashTable                 **out_all_refs,
+                                           OstreeRepoListRefsExtFlags flags,
+                                           GCancellable               *cancellable,
+                                           GError                     **error);
 
 #endif /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
