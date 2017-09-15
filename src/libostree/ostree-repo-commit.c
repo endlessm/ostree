@@ -34,6 +34,7 @@
 #include "ostree.h"
 #include "ostree-core-private.h"
 #include "ostree-repo-private.h"
+#include "ostree-sepolicy-private.h"
 #include "ostree-repo-file-enumerator.h"
 #include "ostree-checksum-input-stream.h"
 #include "ostree-varint.h"
@@ -1028,35 +1029,33 @@ devino_cache_lookup (OstreeRepo           *self,
  * @cancellable: Cancellable
  * @error: Error
  *
- * When ostree builds a mutable tree from directory like in
- * ostree_repo_write_directory_to_mtree(), it has to scan all files that you
- * pass in and compute their checksums. If your commit contains hardlinks from
- * ostree's existing repo, ostree can build a mapping of device numbers and
- * inodes to their checksum.
+ * This function is deprecated in favor of using ostree_repo_devino_cache_new(),
+ * which allows a precise mapping to be built up between hardlink checkout files
+ * and their checksums between `ostree_repo_checkout_at()` and
+ * `ostree_repo_write_directory_to_mtree()`.
+ *
+ * When invoking ostree_repo_write_directory_to_mtree(), it has to compute the
+ * checksum of all files. If your commit contains hardlinks from a checkout,
+ * this functions builds a mapping of device numbers and inodes to their
+ * checksum.
  *
  * There is an upfront cost to creating this mapping, as this will scan the
  * entire objects directory. If your commit is composed of mostly hardlinks to
  * existing ostree objects, then this will speed up considerably, so call it
- * before you call ostree_write_directory_to_mtree() or similar.
+ * before you call ostree_write_directory_to_mtree() or similar.  However,
+ * ostree_repo_devino_cache_new() is better as it avoids scanning all objects.
  */
 gboolean
 ostree_repo_scan_hardlinks (OstreeRepo    *self,
                             GCancellable  *cancellable,
                             GError       **error)
 {
-  gboolean ret = FALSE;
-
   g_return_val_if_fail (self->in_transaction == TRUE, FALSE);
 
   if (!self->loose_object_devino_hash)
     self->loose_object_devino_hash = (GHashTable*)ostree_repo_devino_cache_new ();
   g_hash_table_remove_all (self->loose_object_devino_hash);
-  if (!scan_loose_devino (self, self->loose_object_devino_hash, cancellable, error))
-    goto out;
-
-  ret = TRUE;
- out:
-  return ret;
+  return scan_loose_devino (self, self->loose_object_devino_hash, cancellable, error);
 }
 
 /**
@@ -1132,6 +1131,7 @@ rename_pending_loose_objects (OstreeRepo        *self,
                               GCancellable      *cancellable,
                               GError           **error)
 {
+  GLNX_AUTO_PREFIX_ERROR ("rename pending", error);
   g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
 
   if (!glnx_dirfd_iterator_init_at (self->commit_stagedir_fd, ".", FALSE, &dfd_iter, error))
@@ -1224,11 +1224,10 @@ cleanup_tmpdir (OstreeRepo        *self,
                 GCancellable      *cancellable,
                 GError           **error)
 {
+  GLNX_AUTO_PREFIX_ERROR ("tmpdir cleanup", error);
+  const guint64 curtime_secs = g_get_real_time () / 1000000;
+
   g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
-  guint64 curtime_secs;
-
-  curtime_secs = g_get_real_time () / 1000000;
-
   if (!glnx_dirfd_iterator_init_at (self->tmp_dir_fd, ".", TRUE, &dfd_iter, error))
     return FALSE;
 
@@ -1256,7 +1255,7 @@ cleanup_tmpdir (OstreeRepo        *self,
         {
           if (errno == ENOENT) /* Did another cleanup win? */
             continue;
-          return glnx_throw_errno (error);
+          return glnx_throw_errno_prefix (error, "fstatat(%s)", dent->d_name);
         }
 
       /* First, if it's a directory which needs locking, but it's
@@ -1283,7 +1282,7 @@ cleanup_tmpdir (OstreeRepo        *self,
            * from *other* boots
            */
           if (!glnx_shutil_rm_rf_at (dfd_iter.fd, dent->d_name, cancellable, error))
-            return FALSE;
+            return glnx_prefix_error (error, "Removing %s", dent->d_name);
         }
       /* FIXME - move OSTREE_REPO_TMPDIR_FETCHER underneath the
        * staging/boot-id scheme as well, since all of the "did it get
@@ -1308,7 +1307,7 @@ cleanup_tmpdir (OstreeRepo        *self,
           if (delta > self->tmp_expiry_seconds)
             {
               if (!glnx_shutil_rm_rf_at (dfd_iter.fd, dent->d_name, cancellable, error))
-                return FALSE;
+                return glnx_prefix_error (error, "Removing %s", dent->d_name);
             }
         }
     }
@@ -1535,7 +1534,7 @@ ostree_repo_commit_transaction (OstreeRepo                  *self,
   if (g_getenv ("OSTREE_SUPPRESS_SYNCFS") == NULL)
     {
       if (syncfs (self->tmp_dir_fd) < 0)
-        return glnx_throw_errno (error);
+        return glnx_throw_errno_prefix (error, "syncfs");
     }
 
   if (!rename_pending_loose_objects (self, cancellable, error))
@@ -2335,6 +2334,10 @@ create_tree_variant_from_hashes (GHashTable            *file_checksums,
   return serialized_tree;
 }
 
+/* If any filtering is set up, perform it, and return modified file info in
+ * @out_modified_info. Note that if no filtering is applied, @out_modified_info
+ * will simply be another reference (with incremented refcount) to @file_info.
+ */
 OstreeRepoCommitFilterResult
 _ostree_repo_commit_modifier_apply (OstreeRepo               *self,
                                     OstreeRepoCommitModifier *modifier,
@@ -2411,24 +2414,6 @@ ptrarray_path_join (GPtrArray  *path)
 }
 
 static gboolean
-apply_commit_filter (OstreeRepo               *self,
-                     OstreeRepoCommitModifier *modifier,
-                     const char               *relpath,
-                     GFileInfo                *file_info,
-                     GFileInfo               **out_modified_info)
-{
-  if (modifier == NULL ||
-      (modifier->filter == NULL &&
-       (modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS) == 0))
-    {
-      *out_modified_info = g_object_ref (file_info);
-      return OSTREE_REPO_COMMIT_FILTER_ALLOW;
-    }
-
-  return _ostree_repo_commit_modifier_apply (self, modifier, relpath, file_info, out_modified_info);
-}
-
-static gboolean
 get_modified_xattrs (OstreeRepo                       *self,
                      OstreeRepoCommitModifier         *modifier,
                      const char                       *relpath,
@@ -2498,6 +2483,16 @@ get_modified_xattrs (OstreeRepo                       *self,
         {
           g_autoptr(GVariantBuilder) builder = NULL;
 
+          if (ret_xattrs)
+            {
+              /* drop out any existing SELinux policy from the set, so we don't end up
+               * counting it twice in the checksum */
+              g_autoptr(GVariant) new_ret_xattrs = NULL;
+              new_ret_xattrs = _ostree_filter_selinux_xattr (ret_xattrs);
+              g_variant_unref (ret_xattrs);
+              ret_xattrs = g_steal_pointer (&new_ret_xattrs);
+            }
+
           /* ret_xattrs may be NULL */
           builder = ot_util_variant_builder_from_variant (ret_xattrs,
                                                           G_VARIANT_TYPE ("a(ayay)"));
@@ -2564,7 +2559,7 @@ write_directory_content_to_mtree_internal (OstreeRepo                  *self,
   if (modifier != NULL)
     child_relpath = ptrarray_path_join (path);
 
-  filter_result = apply_commit_filter (self, modifier, child_relpath, child_info, &modified_info);
+  filter_result = _ostree_repo_commit_modifier_apply (self, modifier, child_relpath, child_info, &modified_info);
 
   if (filter_result != OSTREE_REPO_COMMIT_FILTER_ALLOW)
     {
@@ -2733,7 +2728,7 @@ write_directory_to_mtree_internal (OstreeRepo                  *self,
         relpath = ptrarray_path_join (path);
 
       g_autoptr(GFileInfo) modified_info = NULL;
-      filter_result = apply_commit_filter (self, modifier, relpath, child_info, &modified_info);
+      filter_result = _ostree_repo_commit_modifier_apply (self, modifier, relpath, child_info, &modified_info);
 
       if (filter_result == OSTREE_REPO_COMMIT_FILTER_ALLOW)
         {
@@ -2803,8 +2798,8 @@ write_dfd_iter_to_mtree_internal (OstreeRepo                  *self,
   OstreeRepoCommitFilterResult filter_result;
   struct stat dir_stbuf;
 
-  if (fstat (src_dfd_iter->fd, &dir_stbuf) != 0)
-    return glnx_throw_errno (error);
+  if (!glnx_fstat (src_dfd_iter->fd, &dir_stbuf, error))
+    return FALSE;
 
   child_info = _ostree_stbuf_to_gfileinfo (&dir_stbuf);
 
@@ -2812,7 +2807,7 @@ write_dfd_iter_to_mtree_internal (OstreeRepo                  *self,
     {
       relpath = ptrarray_path_join (path);
 
-      filter_result = apply_commit_filter (self, modifier, relpath, child_info, &modified_info);
+      filter_result = _ostree_repo_commit_modifier_apply (self, modifier, relpath, child_info, &modified_info);
     }
   else
     {

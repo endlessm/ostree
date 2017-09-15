@@ -104,6 +104,7 @@ typedef struct {
   GBytes           *summary_data_sig;
   GVariant         *summary;
   GHashTable       *summary_deltas_checksums;
+  GHashTable       *ref_original_commits; /* Maps checksum to commit, used by timestamp checks */
   GPtrArray        *static_delta_superblocks;
   GHashTable       *expected_commit_sizes; /* Maps commit checksum to known size */
   GHashTable       *commit_to_depth; /* Maps commit checksum maximum depth */
@@ -136,6 +137,7 @@ typedef struct {
   guint             n_fetched_localcache_metadata;
   guint             n_fetched_localcache_content;
 
+  gboolean          timestamp_check; /* Verify commit timestamps */
   int               maxdepth;
   guint64           start_time;
 
@@ -1355,11 +1357,8 @@ static_deltapart_fetch_on_complete (GObject           *object,
     goto out;
 
   /* From here on, if we fail to apply the delta, we'll re-fetch it */
-  if (unlinkat (_ostree_fetcher_get_dfd (fetcher), temp_path, 0) < 0)
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
+  if (!glnx_unlinkat (_ostree_fetcher_get_dfd (fetcher), temp_path, 0, error))
+    goto out;
 
   in = g_unix_input_stream_new (fd, FALSE);
 
@@ -1589,6 +1588,9 @@ verify_bindings (OtPullData                 *pull_data,
   return TRUE;
 }
 
+/* Look at a commit object, and determine whether there are
+ * more things to fetch.
+ */
 static gboolean
 scan_commit_object (OtPullData                 *pull_data,
                     const char                 *checksum,
@@ -1597,19 +1599,8 @@ scan_commit_object (OtPullData                 *pull_data,
                     GCancellable               *cancellable,
                     GError                    **error)
 {
-  gboolean ret = FALSE;
-  /* If we found a legacy transaction flag, assume we have to scan.
-   * We always do a scan of dirtree objects; see
-   * https://github.com/ostreedev/ostree/issues/543
-   */
-  OstreeRepoCommitState commitstate;
-  g_autoptr(GVariant) commit = NULL;
-  g_autoptr(GVariant) parent_csum = NULL;
-  const guchar *parent_csum_bytes = NULL;
   gpointer depthp;
   gint depth;
-  gboolean is_partial;
-
   if (g_hash_table_lookup_extended (pull_data->commit_to_depth, checksum,
                                     NULL, &depthp))
     {
@@ -1632,31 +1623,60 @@ scan_commit_object (OtPullData                 *pull_data,
                                                      cancellable,
                                                      error);
       if (!process_verify_result (pull_data, checksum, result, error))
-        goto out;
+        return FALSE;
     }
 
+  /* If we found a legacy transaction flag, assume we have to scan.
+   * We always do a scan of dirtree objects; see
+   * https://github.com/ostreedev/ostree/issues/543
+   */
+  OstreeRepoCommitState commitstate;
+  g_autoptr(GVariant) commit = NULL;
   if (!ostree_repo_load_commit (pull_data->repo, checksum, &commit, &commitstate, error))
-    goto out;
+    return FALSE;
 
   /* If ref is non-NULL then the commit we fetched was requested through the
    * branch, otherwise we requested a commit checksum without specifying a branch.
    */
   if (!verify_bindings (pull_data, commit, ref, error))
+    return glnx_prefix_error (error, "Commit %s", checksum);
+
+  if (pull_data->timestamp_check)
     {
-      g_prefix_error (error, "Commit %s: ", checksum);
-      goto out;
+      /* We don't support timestamp checking while recursing right now */
+      g_assert (ref);
+      g_assert_cmpint (recursion_depth, ==, 0);
+      const char *orig_rev = NULL;
+      if (!g_hash_table_lookup_extended (pull_data->ref_original_commits,
+                                         ref, NULL, (void**)&orig_rev))
+        g_assert_not_reached ();
+
+      g_autoptr(GVariant) orig_commit = NULL;
+      if (orig_rev)
+        {
+          if (!ostree_repo_load_commit (pull_data->repo, orig_rev,
+                                        &orig_commit, NULL, error))
+            return glnx_prefix_error (error, "Reading %s for timestamp-check", ref->ref_name);
+
+          guint64 orig_ts = ostree_commit_get_timestamp (orig_commit);
+          guint64 new_ts = ostree_commit_get_timestamp (commit);
+          if (!_ostree_compare_timestamps (orig_rev, orig_ts, checksum, new_ts, error))
+            return FALSE;
+        }
     }
 
   /* If we found a legacy transaction flag, assume all commits are partial */
-  is_partial = commitstate_is_partial (pull_data, commitstate);
+  gboolean is_partial = commitstate_is_partial (pull_data, commitstate);
 
   /* PARSE OSTREE_SERIALIZED_COMMIT_VARIANT */
+  g_autoptr(GVariant) parent_csum = NULL;
+  const guchar *parent_csum_bytes = NULL;
   g_variant_get_child (commit, 1, "@ay", &parent_csum);
   if (g_variant_n_children (parent_csum) > 0)
     {
       parent_csum_bytes = ostree_checksum_bytes_peek_validate (parent_csum, error);
       if (parent_csum_bytes == NULL)
-        goto out;
+        return FALSE;
     }
 
   if (parent_csum_bytes != NULL && pull_data->maxdepth == -1)
@@ -1672,7 +1692,7 @@ scan_commit_object (OtPullData                 *pull_data,
       int parent_depth;
 
       ostree_checksum_inplace_from_bytes (parent_csum_bytes, parent_checksum);
-  
+
       if (g_hash_table_lookup_extended (pull_data->commit_to_depth, parent_checksum,
                                         NULL, &parent_depthp))
         {
@@ -1711,11 +1731,11 @@ scan_commit_object (OtPullData                 *pull_data,
 
       tree_contents_csum_bytes = ostree_checksum_bytes_peek_validate (tree_contents_csum, error);
       if (tree_contents_csum_bytes == NULL)
-        goto out;
+        return FALSE;
 
       tree_meta_csum_bytes = ostree_checksum_bytes_peek_validate (tree_meta_csum, error);
       if (tree_meta_csum_bytes == NULL)
-        goto out;
+        return FALSE;
 
       queue_scan_one_metadata_object_c (pull_data, tree_contents_csum_bytes,
                                         OSTREE_OBJECT_TYPE_DIR_TREE, "/", recursion_depth + 1, NULL);
@@ -1724,9 +1744,7 @@ scan_commit_object (OtPullData                 *pull_data,
                                         OSTREE_OBJECT_TYPE_DIR_META, NULL, recursion_depth + 1, NULL);
     }
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 static void
@@ -2506,22 +2524,11 @@ static gboolean
 validate_variant_is_csum (GVariant       *csum,
                           GError        **error)
 {
-  gboolean ret = FALSE;
-
   if (!g_variant_is_of_type (csum, G_VARIANT_TYPE ("ay")))
-    {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Invalid checksum variant of type '%s', expected 'ay'",
-                   g_variant_get_type_string (csum));
-      goto out;
-    }
+    return glnx_throw (error, "Invalid checksum variant of type '%s', expected 'ay'",
+                       g_variant_get_type_string (csum));
 
-  if (!ostree_validate_structureof_csum_v (csum, error))
-    goto out;
-  
-  ret = TRUE;
- out:
-  return ret;
+  return ostree_validate_structureof_csum_v (csum, error);
 }
 
 /* Load the summary from the cache if the provided .sig file is the same as the
@@ -2534,27 +2541,19 @@ _ostree_repo_load_cache_summary_if_same_sig (OstreeRepo        *self,
                                              GCancellable      *cancellable,
                                              GError           **error)
 {
-  gboolean ret = FALSE;
-  const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote, ".sig");
-
-  glnx_fd_close int prev_fd = -1;
-  g_autoptr(GBytes) old_sig_contents = NULL;
-
   if (self->cache_dir_fd == -1)
     return TRUE;
 
+  const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote, ".sig");
+  glnx_fd_close int prev_fd = -1;
   if (!ot_openat_ignore_enoent (self->cache_dir_fd, summary_cache_sig_file, &prev_fd, error))
-    goto out;
-
+    return FALSE;
   if (prev_fd < 0)
-    {
-      ret = TRUE;
-      goto out;
-    }
+    return TRUE; /* Note early return */
 
-  old_sig_contents = glnx_fd_readall_bytes (prev_fd, cancellable, error);
+  g_autoptr(GBytes) old_sig_contents = glnx_fd_readall_bytes (prev_fd, cancellable, error);
   if (!old_sig_contents)
-    goto out;
+    return FALSE;
 
   if (g_bytes_compare (old_sig_contents, summary_sig) == 0)
     {
@@ -2569,25 +2568,21 @@ _ostree_repo_load_cache_summary_if_same_sig (OstreeRepo        *self,
           if (errno == ENOENT)
             {
               (void) unlinkat (self->cache_dir_fd, summary_cache_sig_file, 0);
-              ret = TRUE;
-              goto out;
+              return TRUE; /* Note early return */
             }
 
-          glnx_set_error_from_errno (error);
-          goto out;
+          return glnx_throw_errno_prefix (error, "openat(%s)", summary_cache_file);
         }
 
       summary_data = glnx_fd_readall_bytes (summary_fd, cancellable, error);
       if (!summary_data)
-        goto out;
+        return FALSE;
       *summary = summary_data;
     }
-  ret = TRUE;
-
- out:
-  return ret;
+  return TRUE;
 }
 
+/* Replace the current summary+signature with new versions */
 static gboolean
 _ostree_repo_cache_summary (OstreeRepo        *self,
                             const char        *remote,
@@ -2596,36 +2591,31 @@ _ostree_repo_cache_summary (OstreeRepo        *self,
                             GCancellable      *cancellable,
                             GError           **error)
 {
-  gboolean ret = FALSE;
-  const char *summary_cache_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote);
-  const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote, ".sig");
-
   if (self->cache_dir_fd == -1)
     return TRUE;
 
   if (!glnx_shutil_mkdir_p_at (self->cache_dir_fd, _OSTREE_SUMMARY_CACHE_DIR, 0775, cancellable, error))
-    goto out;
+    return FALSE;
 
+  const char *summary_cache_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote);
   if (!glnx_file_replace_contents_at (self->cache_dir_fd,
                                       summary_cache_file,
                                       g_bytes_get_data (summary, NULL),
                                       g_bytes_get_size (summary),
                                       self->disable_fsync ? GLNX_FILE_REPLACE_NODATASYNC : GLNX_FILE_REPLACE_DATASYNC_NEW,
                                       cancellable, error))
-    goto out;
+    return FALSE;
 
+  const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote, ".sig");
   if (!glnx_file_replace_contents_at (self->cache_dir_fd,
                                       summary_cache_sig_file,
                                       g_bytes_get_data (summary_sig, NULL),
                                       g_bytes_get_size (summary_sig),
                                       self->disable_fsync ? GLNX_FILE_REPLACE_NODATASYNC : GLNX_FILE_REPLACE_DATASYNC_NEW,
                                       cancellable, error))
-    goto out;
+    return FALSE;
 
-  ret = TRUE;
- out:
-  return ret;
-
+  return TRUE;
 }
 
 static OstreeFetcher *
@@ -2717,18 +2707,19 @@ _ostree_repo_remote_new_fetcher (OstreeRepo  *self,
       _ostree_fetcher_set_proxy (fetcher, http_proxy);
   }
 
-  {
-    g_autofree char *cookie_file = g_strdup_printf ("%s.cookies.txt", remote_name);
-    /* TODO; port away from this; a bit hard since both libsoup and libcurl
-     * expect a file. Doing ot_fdrel_to_gfile() works for now though.
-     */
-    GFile*repo_path = ostree_repo_get_path (self);
-    g_autofree char *jar_path =
-      g_build_filename (gs_file_get_path_cached (repo_path), cookie_file, NULL);
+  if (!_ostree_repo_remote_name_is_file (remote_name))
+    {
+      g_autofree char *cookie_file = g_strdup_printf ("%s.cookies.txt", remote_name);
+      /* TODO; port away from this; a bit hard since both libsoup and libcurl
+       * expect a file. Doing ot_fdrel_to_gfile() works for now though.
+       */
+      GFile*repo_path = ostree_repo_get_path (self);
+      g_autofree char *jar_path =
+        g_build_filename (gs_file_get_path_cached (repo_path), cookie_file, NULL);
 
-    if (g_file_test (jar_path, G_FILE_TEST_IS_REGULAR))
-      _ostree_fetcher_set_cookie_jar (fetcher, jar_path);
-  }
+      if (g_file_test (jar_path, G_FILE_TEST_IS_REGULAR))
+        _ostree_fetcher_set_cookie_jar (fetcher, jar_path);
+    }
 
   success = TRUE;
 
@@ -3199,6 +3190,7 @@ initiate_request (OtPullData                 *pull_data,
  *   * disable-static-deltas (b): Do not use static deltas
  *   * require-static-deltas (b): Require static deltas
  *   * override-commit-ids (as): Array of specific commit IDs to fetch for refs
+ *   * timestamp-check (b): Verify commit timestamps are newer than current (when pulling via ref); Since: 2017.11
  *   * dry-run (b): Only print information on what will be downloaded (requires static deltas)
  *   * override-url (s): Fetch objects from this URL if remote specifies no metalink in options
  *   * inherit-transaction (b): Don't initiate, finish or abort a transaction, useful to do multiple pulls in one transaction.
@@ -3275,10 +3267,12 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       (void) g_variant_lookup (options, "http-headers", "@a(ss)", &pull_data->extra_headers);
       (void) g_variant_lookup (options, "update-frequency", "u", &update_frequency);
       (void) g_variant_lookup (options, "localcache-repos", "^a&s", &opt_localcache_repos);
+      (void) g_variant_lookup (options, "timestamp-check", "b", &pull_data->timestamp_check);
     }
 
   g_return_val_if_fail (OSTREE_IS_REPO (self), FALSE);
   g_return_val_if_fail (pull_data->maxdepth >= -1, FALSE);
+  g_return_val_if_fail (!pull_data->timestamp_check || pull_data->maxdepth == 0, FALSE);
   g_return_val_if_fail (!opt_collection_refs_set ||
                         (refs_to_fetch == NULL && override_commit_ids == NULL), FALSE);
   if (refs_to_fetch && override_commit_ids)
@@ -3322,6 +3316,9 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   pull_data->summary_deltas_checksums = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                                (GDestroyNotify)g_free,
                                                                (GDestroyNotify)g_free);
+  pull_data->ref_original_commits = g_hash_table_new_full (ostree_collection_ref_hash, ostree_collection_ref_equal,
+                                                           (GDestroyNotify)NULL,
+                                                           (GDestroyNotify)g_variant_unref);
   pull_data->scanned_metadata = g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
                                                        (GDestroyNotify)g_variant_unref, NULL);
   pull_data->fetched_detached_metadata = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -3596,7 +3593,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
     }
 
-  /* We can't use static deltas if pulling into an archive-z2 repo. */
+  /* We can't use static deltas if pulling into an archive repo. */
   if (self->mode == OSTREE_REPO_MODE_ARCHIVE_Z2)
     {
       if (pull_data->require_static_deltas)
@@ -3923,6 +3920,24 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
               ref_with_collection = ostree_collection_ref_dup (ref);
             }
 
+          /* If we have timestamp checking enabled, find the current value of
+           * the ref, and store its timestamp in the hash map, to check later.
+           */
+          if (pull_data->timestamp_check)
+            {
+              g_autofree char *from_rev = NULL;
+              if (!ostree_repo_resolve_rev (pull_data->repo, ref_with_collection->ref_name, TRUE,
+                                            &from_rev, error))
+                goto out;
+              /* Explicitly store NULL if there's no previous revision. We do
+               * this so we can assert() if we somehow didn't find a ref in the
+               * hash at all.  Note we don't copy the collection-ref, so the
+               * lifetime of this hash must be equal to `requested_refs_to_fetch`.
+               */
+              g_hash_table_insert (pull_data->ref_original_commits, ref_with_collection,
+                                   g_steal_pointer (&from_rev));
+            }
+
           g_hash_table_replace (updated_requested_refs_to_fetch,
                                 g_steal_pointer (&ref_with_collection),
                                 g_steal_pointer (&contents));
@@ -4223,6 +4238,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   g_clear_pointer (&pull_data->scanned_metadata, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->fetched_detached_metadata, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->summary_deltas_checksums, (GDestroyNotify) g_hash_table_unref);
+  g_clear_pointer (&pull_data->ref_original_commits, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_content, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_fallback_content, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_metadata, (GDestroyNotify) g_hash_table_unref);

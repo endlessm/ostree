@@ -136,7 +136,7 @@
 <div class="refsect1">
 <a name="ostree-GPG-signature-verification-results.description"></a><h2>Description</h2>
 <p><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a> contains verification details for GPG signatures
-read from a detached <a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> metadata object.</p>
+read from a detached <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> metadata object.</p>
 <p>Use <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-count-all" title="ostree_gpg_verify_result_count_all ()"><code class="function">ostree_gpg_verify_result_count_all()</code></a> and
 <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-count-valid" title="ostree_gpg_verify_result_count_valid ()"><code class="function">ostree_gpg_verify_result_count_valid()</code></a> to quickly check overall signature
 validity.</p>
@@ -482,7 +482,7 @@ ostree_gpg_verify_result_require_valid_signature
                                 <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Checks if the result contains at least one signature from the
 trusted keyring.  You can call this function immediately after
-<a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-verify-summary" title="ostree_repo_verify_summary ()"><code class="function">ostree_repo_verify_summary()</code></a> or <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-verify-commit-ext" title="ostree_repo_verify_commit_ext ()"><code class="function">ostree_repo_verify_commit_ext()</code></a> -
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-verify-summary" title="ostree_repo_verify_summary ()"><code class="function">ostree_repo_verify_summary()</code></a> or <a class="link" href="ostree-OstreeRepo.html#ostree-repo-verify-commit-ext" title="ostree_repo_verify_commit_ext ()"><code class="function">ostree_repo_verify_commit_ext()</code></a> -
 it will handle the <code class="literal">NULL</code> <em class="parameter"><code>result</code></em>
  and filled <em class="parameter"><code>error</code></em>
  too.</p>
@@ -663,6 +663,16 @@ The attribute's <span class="type">GVariantType</span> is shown in brackets.</p>
 <td class="enum_member_description">
 <p>  [<span class="type">G_VARIANT_TYPE_STRING</span>] The email address of the signing key's primary
   user</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-FINGERPRINT-PRIMARY:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT_PRIMARY</p></td>
+<td class="enum_member_description">
+<p>  [<span class="type">G_VARIANT_TYPE_STRING</span>] Fingerprint of the signing key's primary key
+  (will be the same as OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT if the
+  the signature is already from the primary key rather than a subkey,
+  and will be the empty string if the key is missing.)</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>

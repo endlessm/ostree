@@ -217,7 +217,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="returnvalue">OstreeRepo</span></a> *
+<a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="returnvalue">OstreeRepo</span></a> *
 </td>
 <td class="function_name">
 <a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-repo" title="ostree_sysroot_repo ()">ostree_sysroot_repo</a> <span class="c_punctuation">()</span>
@@ -353,7 +353,7 @@
 <a name="ostree-Root-partition-mount-point.description"></a><h2>Description</h2>
 <p>A <a class="link" href="ostree-Root-partition-mount-point.html#OstreeSysroot" title="OstreeSysroot"><span class="type">OstreeSysroot</span></a> object represents a physical root filesystem,
 which in particular should contain a toplevel /ostree directory.
-Inside this directory is an <a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> in /ostree/repo, plus a set
+Inside this directory is an <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> in /ostree/repo, plus a set
 of deployments in /ostree/deploy.</p>
 <p>This class is not by default safe against concurrent use by threads
 or external processes.  You can use <a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-lock" title="ostree_sysroot_lock ()"><code class="function">ostree_sysroot_lock()</code></a> to
@@ -971,7 +971,7 @@ and old boot versions, but does NOT prune the repository.</p>
 <hr>
 <div class="refsect2">
 <a name="ostree-sysroot-repo"></a><h3>ostree_sysroot_repo ()</h3>
-<pre class="programlisting"><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="returnvalue">OstreeRepo</span></a> *
+<pre class="programlisting"><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="returnvalue">OstreeRepo</span></a> *
 ostree_sysroot_repo (<em class="parameter"><code><a class="link" href="ostree-Root-partition-mount-point.html#OstreeSysroot" title="OstreeSysroot"><span class="type">OstreeSysroot</span></a> *self</code></em>);</pre>
 <p>This function is a variant of <a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-get-repo" title="ostree_sysroot_get_repo ()"><code class="function">ostree_sysroot_get_repo()</code></a> that cannot fail, and
 returns a cached repository. Can only be called after <a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-load" title="ostree_sysroot_load ()"><code class="function">ostree_sysroot_load()</code></a>
@@ -1003,7 +1003,7 @@ has been invoked successfully.</p>
 <a name="ostree-sysroot-get-repo"></a><h3>ostree_sysroot_get_repo ()</h3>
 <pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_sysroot_get_repo (<em class="parameter"><code><a class="link" href="ostree-Root-partition-mount-point.html#OstreeSysroot" title="OstreeSysroot"><span class="type">OstreeSysroot</span></a> *self</code></em>,
-                         <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> **out_repo</code></em>,
+                         <em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> **out_repo</code></em>,
                          <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
                          <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Retrieve the OSTree repository in sysroot <em class="parameter"><code>self</code></em>
@@ -1611,6 +1611,10 @@ except the merge deployment and the booted deployment will be
 garbage collected.</p>
 <p>If <a class="link" href="ostree-Root-partition-mount-point.html#OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-RETAIN:CAPS"><code class="literal">OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN</code></a> is
 specified, then all current deployments will be kept.</p>
+<p>If <a class="link" href="ostree-Root-partition-mount-point.html#OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-RETAIN-PENDING:CAPS"><code class="literal">OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN_PENDING</code></a> is
+specified, then pending deployments will be kept.</p>
+<p>If <a class="link" href="ostree-Root-partition-mount-point.html#OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-RETAIN-ROLLBACK:CAPS"><code class="literal">OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN_ROLLBACK</code></a> is
+specified, then rollback deployments will be kept.</p>
 <p>If <a class="link" href="ostree-Root-partition-mount-point.html#OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-NOT-DEFAULT:CAPS"><code class="literal">OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NOT_DEFAULT</code></a> is
 specified, then instead of prepending, the new deployment will be
 added right after the booted or merge deployment, instead of first.</p>
@@ -1703,6 +1707,16 @@ later, instead.</p>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-NO-CLEAN:CAPS"></a>OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NO_CLEAN</p></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-RETAIN-PENDING:CAPS"></a>OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN_PENDING</p></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-RETAIN-ROLLBACK:CAPS"></a>OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN_ROLLBACK</p></td>
 <td> </td>
 <td> </td>
 </tr>

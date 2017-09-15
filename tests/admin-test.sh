@@ -19,6 +19,8 @@
 
 set -euo pipefail
 
+echo "1..$((22 + ${extra_admin_tests:-0}))"
+
 function validate_bootloader() {
     cd ${test_tmpdir};
     bootloader=""
@@ -31,6 +33,13 @@ function validate_bootloader() {
         $(dirname $0)/bootloader-entries-crosscheck.py sysroot ${bootloader}
     fi
     cd -
+}
+
+# Test generate_deployment_refs()
+assert_ostree_deployment_refs() {
+    ${CMD_PREFIX} ostree --repo=sysroot/ostree/repo refs ostree | sort > ostree-refs.txt
+    (for v in "$@"; do echo $v; done) | sort > ostree-refs-expected.txt
+    diff -u ostree-refs{-expected,}.txt
 }
 
 orig_mtime=$(stat -c '%.Y' sysroot/ostree/deploy)
@@ -53,6 +62,7 @@ assert_file_has_content curdir ^`pwd`/sysroot/ostree/deploy/testos/deploy/${rev}
 
 echo "ok --print-current-dir"
 
+# Test layout of bootloader config and refs
 assert_not_has_dir sysroot/boot/loader.0
 assert_has_dir sysroot/boot/loader.1
 assert_has_dir sysroot/ostree/boot.1.1
@@ -62,9 +72,8 @@ assert_file_has_content sysroot/boot/loader/entries/ostree-testos-0.conf 'option
 assert_file_has_content sysroot/boot/ostree/testos-${bootcsum}/vmlinuz-3.6.0 'a kernel'
 assert_file_has_content sysroot/ostree/deploy/testos/deploy/${rev}.0/etc/os-release 'NAME=TestOS'
 assert_file_has_content sysroot/ostree/boot.1/testos/${bootcsum}/0/etc/os-release 'NAME=TestOS'
+assert_ostree_deployment_refs 1/1/0
 ${CMD_PREFIX} ostree admin status
-
-
 echo "ok layout"
 
 orig_mtime=$(stat -c '%.Y' sysroot/ostree/deploy)
@@ -82,6 +91,7 @@ assert_not_has_dir sysroot/ostree/boot.1.1
 assert_file_has_content sysroot/boot/loader/entries/ostree-testos-0.conf 'options.* root=LABEL=MOO'
 assert_file_has_content sysroot/ostree/deploy/testos/deploy/${rev}.1/etc/os-release 'NAME=TestOS'
 assert_file_has_content sysroot/ostree/boot.0/testos/${bootcsum}/0/etc/os-release 'NAME=TestOS'
+assert_ostree_deployment_refs 0/1/{0,1}
 ${CMD_PREFIX} ostree admin status
 validate_bootloader
 
@@ -94,6 +104,7 @@ assert_not_has_dir sysroot/boot/loader.1
 # But swap subbootversion
 assert_has_dir sysroot/ostree/boot.0.0
 assert_not_has_dir sysroot/ostree/boot.0.1
+assert_ostree_deployment_refs 0/0/{0,1}
 ${CMD_PREFIX} ostree admin status
 validate_bootloader
 
@@ -108,6 +119,7 @@ assert_has_file sysroot/boot/loader/entries/ostree-testos-1.conf
 assert_has_file sysroot/boot/loader/entries/ostree-otheros-0.conf
 assert_file_has_content sysroot/ostree/deploy/testos/deploy/${rev}.1/etc/os-release 'NAME=TestOS'
 assert_file_has_content sysroot/ostree/deploy/otheros/deploy/${rev}.0/etc/os-release 'NAME=TestOS'
+assert_ostree_deployment_refs 1/1/{0,1,2}
 ${CMD_PREFIX} ostree admin status
 validate_bootloader
 
@@ -121,6 +133,7 @@ assert_file_has_content sysroot/ostree/deploy/testos/deploy/${rev}.2/etc/os-rele
 assert_has_file sysroot/boot/loader/entries/ostree-testos-2.conf
 assert_file_has_content sysroot/ostree/deploy/testos/deploy/${rev}.3/etc/os-release 'NAME=TestOS'
 ${CMD_PREFIX} ostree admin status
+assert_ostree_deployment_refs 0/1/{0,1,2,3}
 validate_bootloader
 
 echo "ok fourth deploy (retain)"
@@ -130,6 +143,8 @@ rm -r  sysroot/ostree/deploy/testos/deploy/${rev}.3/etc/testdirectory
 rm sysroot/ostree/deploy/testos/deploy/${rev}.3/etc/aconfigfile
 ln -s /ENOENT sysroot/ostree/deploy/testos/deploy/${rev}.3/etc/a-new-broken-symlink
 ${CMD_PREFIX} ostree admin deploy --retain --os=testos testos:testos/buildmaster/x86_64-runtime
+assert_not_has_dir sysroot/boot/loader.0
+assert_has_dir sysroot/boot/loader.1
 linktarget=$(readlink sysroot/ostree/deploy/testos/deploy/${rev}.4/etc/a-new-broken-symlink)
 test "${linktarget}" = /ENOENT
 assert_file_has_content sysroot/ostree/deploy/testos/deploy/${rev}.3/etc/os-release 'NAME=TestOS'
@@ -138,8 +153,35 @@ assert_file_has_content sysroot/ostree/deploy/testos/deploy/${rev}.4/etc/a-new-c
 assert_not_has_file sysroot/ostree/deploy/testos/deploy/${rev}.4/etc/aconfigfile
 ${CMD_PREFIX} ostree admin status
 validate_bootloader
-
 echo "ok deploy with modified /etc"
+
+# we now have 5 deployments, let's bring that back down to 1
+for i in $(seq 4); do
+  ${CMD_PREFIX} ostree admin undeploy 0
+done
+assert_has_file sysroot/boot/loader/entries/ostree-testos-0.conf
+assert_not_has_file sysroot/boot/loader/entries/ostree-testos-1.conf
+assert_not_has_file sysroot/boot/loader/entries/ostree-otheros-1.conf
+${CMD_PREFIX} ostree admin deploy --not-as-default --os=otheros testos:testos/buildmaster/x86_64-runtime
+assert_has_dir sysroot/boot/loader.0
+assert_not_has_dir sysroot/boot/loader.1
+assert_has_file sysroot/boot/loader/entries/ostree-testos-0.conf
+assert_has_file sysroot/boot/loader/entries/ostree-otheros-1.conf
+${CMD_PREFIX} ostree admin status
+validate_bootloader
+
+echo "ok deploy --not-as-default"
+
+${CMD_PREFIX} ostree admin deploy --retain-rollback --os=otheros testos:testos/buildmaster/x86_64-runtime
+assert_not_has_dir sysroot/boot/loader.0
+assert_has_dir sysroot/boot/loader.1
+assert_has_file sysroot/boot/loader/entries/ostree-otheros-0.conf
+assert_has_file sysroot/boot/loader/entries/ostree-testos-1.conf
+assert_has_file sysroot/boot/loader/entries/ostree-otheros-2.conf
+${CMD_PREFIX} ostree admin status
+validate_bootloader
+
+echo "ok deploy --retain-rollback"
 
 os_repository_new_commit
 ${CMD_PREFIX} ostree --repo=sysroot/ostree/repo pull-local --remote=testos testos-repo testos/buildmaster/x86_64-runtime
@@ -153,7 +195,7 @@ assert_file_has_content sysroot/ostree/deploy/testos/deploy/${newrev}.0/etc/os-r
 assert_file_has_content sysroot/ostree/deploy/testos/deploy/${newrev}.0/etc/a-new-default-config-file "a new default config file"
 assert_file_has_content sysroot/ostree/deploy/testos/deploy/${newrev}.0/etc/new-default-dir/moo "a new default dir and file"
 # And persist /etc changes from before
-assert_not_has_file sysroot/ostree/deploy/testos/deploy/${rev}.3/etc/aconfigfile
+assert_not_has_file sysroot/ostree/deploy/testos/deploy/${rev}.4/etc/aconfigfile
 ${CMD_PREFIX} ostree admin status
 validate_bootloader
 
@@ -249,6 +291,15 @@ ${CMD_PREFIX} ostree --sysroot=${deployment} remote add --set=gpg-verify=false r
 assert_not_file_has_content sysroot/ostree/repo/config remote-test-nonphysical
 assert_file_has_content ${deployment}/etc/ostree/remotes.d/remote-test-nonphysical.conf testos-repo
 echo "ok remote add nonphysical sysroot"
+
+# Test that setting add-remotes-config-dir to false adds a remote in the
+# config file rather than the remotes config dir even though this is a
+# "system" repo.
+${CMD_PREFIX} ostree --repo=sysroot/ostree/repo config set core.add-remotes-config-dir false
+${CMD_PREFIX} ostree --sysroot=${deployment} remote add --set=gpg-verify=false remote-test-config-dir file://$(pwd)/testos-repo
+assert_not_has_file ${deployment}/etc/ostree/remotes.d/remote-test-config-dir.conf testos-repo
+assert_file_has_content sysroot/ostree/repo/config remote-test-config-dir
+echo "ok remote add nonphysical sysroot add-remotes-config-dir false"
 
 if env OSTREE_SYSROOT_DEBUG="${OSTREE_SYSROOT_DEBUG},test-fifreeze" \
        ${CMD_PREFIX} ostree admin deploy --os=testos testos:testos/buildmaster/x86_64-runtime 2>err.txt; then

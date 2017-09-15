@@ -424,7 +424,7 @@ ostree_sysroot_upgrader_get_origin_description
 <a name="ostree-sysroot-upgrader-check-timestamps"></a><h3>ostree_sysroot_upgrader_check_timestamps ()</h3>
 <pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_sysroot_upgrader_check_timestamps
-                               (<em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *repo</code></em>,
+                               (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *repo</code></em>,
                                 <em class="parameter"><code>const <span class="type">char</span> *from_rev</code></em>,
                                 <em class="parameter"><code>const <span class="type">char</span> *to_rev</code></em>,
                                 <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
@@ -471,7 +471,7 @@ attackers which provide a client with an older commit.</p>
 <a name="ostree-sysroot-upgrader-pull"></a><h3>ostree_sysroot_upgrader_pull ()</h3>
 <pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_sysroot_upgrader_pull (<em class="parameter"><code><a class="link" href="ostree-Simple-upgrade-class.html#OstreeSysrootUpgrader" title="OstreeSysrootUpgrader"><span class="type">OstreeSysrootUpgrader</span></a> *self</code></em>,
-                              <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoPullFlags" title="enum OstreeRepoPullFlags"><span class="type">OstreeRepoPullFlags</span></a> flags</code></em>,
+                              <em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepoPullFlags" title="enum OstreeRepoPullFlags"><span class="type">OstreeRepoPullFlags</span></a> flags</code></em>,
                               <em class="parameter"><code><a class="link" href="ostree-Simple-upgrade-class.html#OstreeSysrootUpgraderPullFlags" title="enum OstreeSysrootUpgraderPullFlags"><span class="type">OstreeSysrootUpgraderPullFlags</span></a> upgrader_flags</code></em>,
                               <em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *progress</code></em>,
                               <em class="parameter"><code><span class="type">gboolean</span> *out_changed</code></em>,
@@ -538,7 +538,7 @@ ref locally.  Then <em class="parameter"><code>out_changed</code></em>
 <pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_sysroot_upgrader_pull_one_dir (<em class="parameter"><code><a class="link" href="ostree-Simple-upgrade-class.html#OstreeSysrootUpgrader" title="OstreeSysrootUpgrader"><span class="type">OstreeSysrootUpgrader</span></a> *self</code></em>,
                                       <em class="parameter"><code>const <span class="type">char</span> *dir_to_pull</code></em>,
-                                      <em class="parameter"><code><a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepoPullFlags" title="enum OstreeRepoPullFlags"><span class="type">OstreeRepoPullFlags</span></a> flags</code></em>,
+                                      <em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepoPullFlags" title="enum OstreeRepoPullFlags"><span class="type">OstreeRepoPullFlags</span></a> flags</code></em>,
                                       <em class="parameter"><code><a class="link" href="ostree-Simple-upgrade-class.html#OstreeSysrootUpgraderPullFlags" title="enum OstreeSysrootUpgraderPullFlags"><span class="type">OstreeSysrootUpgraderPullFlags</span></a> upgrader_flags</code></em>,
                                       <em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *progress</code></em>,
                                       <em class="parameter"><code><span class="type">gboolean</span> *out_changed</code></em>,

@@ -4,7 +4,7 @@ dnl update libostree-released.sym from libostree-devel.sym, and update the check
 dnl in test-symbols.sh, and also set is_release_build=yes below.  Then make
 dnl another post-release commit to bump the version, and set is_release_build=no.
 m4_define([year_version], [2017])
-m4_define([release_version], [10])
+m4_define([release_version], [11])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -40,6 +40,7 @@ CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
 	-Werror=pointer-arith -Werror=init-self \
         -Werror=missing-declarations \
         -Werror=return-type \
+        -Werror=switch \
         -Werror=overflow \
         -Werror=int-conversion \
         -Werror=parenthesis \
@@ -525,7 +526,7 @@ src/libostree/ostree-version.h
 AC_OUTPUT
 
 echo "
-    libOSTree $VERSION ($release_build_type)
+    libostree $VERSION ($release_build_type)
     ===============
 
 

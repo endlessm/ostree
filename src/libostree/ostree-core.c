@@ -312,7 +312,7 @@ _ostree_file_header_new (GFileInfo         *file_info,
  * @file_info: a #GFileInfo
  * @xattrs: (allow-none): Optional extended attribute array
  *
- * Returns: (transfer full): A new #GVariant containing file header for an archive-z2 repository
+ * Returns: (transfer full): A new #GVariant containing file header for an archive repository
  */
 GVariant *
 _ostree_zlib_file_header_new (GFileInfo         *file_info,
@@ -2085,6 +2085,38 @@ ostree_commit_get_timestamp (GVariant  *commit_variant)
   g_variant_get_child (commit_variant, 5, "t", &ret);
   return GUINT64_FROM_BE (ret);
 }
+
+/* Used in pull/deploy to validate we're not being downgraded */
+gboolean
+_ostree_compare_timestamps (const char   *current_rev,
+                            guint64       current_ts,
+                            const char   *new_rev,
+                            guint64       new_ts,
+                            GError      **error)
+{
+  /* Newer timestamp is OK */
+  if (new_ts > current_ts)
+    return TRUE;
+  /* If they're equal, ensure they're the same rev */
+  if (new_ts == current_ts || strcmp (current_rev, new_rev) == 0)
+    return TRUE;
+
+  /* Looks like a downgrade, format an error message */
+  g_autoptr(GDateTime) current_dt = g_date_time_new_from_unix_utc (current_ts);
+  g_autoptr(GDateTime) new_dt = g_date_time_new_from_unix_utc (new_ts);
+
+  if (current_dt == NULL || new_dt == NULL)
+    return glnx_throw (error, "Upgrade target revision '%s' timestamp (%" G_GINT64_FORMAT ") or current revision '%s' timestamp (%" G_GINT64_FORMAT ") is invalid",
+                       new_rev, new_ts,
+                       current_rev, current_ts);
+
+  g_autofree char *current_ts_str = g_date_time_format (current_dt, "%c");
+  g_autofree char *new_ts_str = g_date_time_format (new_dt, "%c");
+
+  return glnx_throw (error, "Upgrade target revision '%s' with timestamp '%s' is chronologically older than current revision '%s' with timestamp '%s'",
+                     new_rev, new_ts_str, current_rev, current_ts_str);
+}
+
 
 GVariant *
 _ostree_detached_metadata_append_gpg_sig (GVariant   *existing_metadata,

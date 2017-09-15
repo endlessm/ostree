@@ -47,9 +47,36 @@
 #include <sys/file.h>
 #include <sys/statvfs.h>
 
+/* ABI Size checks for ostree-repo.h, only for LP64 systems;
+ * https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models
+ */
+#if __SIZEOF_POINTER__ == 8 && __SIZEOF_LONG__ == 8 && __SIZEOF_INT__ == 4
+G_STATIC_ASSERT(sizeof(OstreeRepoTransactionStats) == sizeof(int) * 4 + 8 * 5);
+G_STATIC_ASSERT(sizeof(OstreeRepoImportArchiveOptions) == sizeof(int) * 9 + 4 + sizeof(void*) * 8);
+G_STATIC_ASSERT(sizeof(OstreeRepoExportArchiveOptions) == sizeof(int) * 9 + 4 + 8 + sizeof(void*) * 8);
+G_STATIC_ASSERT(sizeof(OstreeRepoCheckoutAtOptions) ==
+                sizeof(OstreeRepoCheckoutMode) + sizeof(OstreeRepoCheckoutOverwriteMode) +
+                sizeof(int)*6 +
+                sizeof(int)*5 +
+                sizeof(int) +
+                sizeof(void*)*2 +
+                sizeof(int)*6 +
+                sizeof(void*)*7);
+G_STATIC_ASSERT(sizeof(OstreeRepoCommitTraverseIter) ==
+                sizeof(int) + sizeof(int) +
+                sizeof(void*) * 10 +
+                130 + 6);  /* 6 byte hole */
+G_STATIC_ASSERT(sizeof(OstreeRepoPruneOptions) ==
+                sizeof(OstreeRepoPruneFlags) +
+                4 +
+                sizeof(void*) +
+                sizeof(int) * 12 +
+                sizeof(void*) * 7);
+#endif
+
 /**
  * SECTION:ostree-repo
- * @title: Content-addressed object store
+ * @title: OstreeRepo: Content-addressed object store
  * @short_description: A git-like storage system for operating system binaries
  *
  * The #OstreeRepo is like git, a content-addressed object store.
@@ -556,14 +583,32 @@ ostree_repo_class_init (OstreeRepoClass *klass)
   object_class->set_property = ostree_repo_set_property;
   object_class->finalize = ostree_repo_finalize;
 
+  /**
+   * OstreeRepo:path:
+   *
+   * Path to repository.  Note that if this repository was created
+   * via `ostree_repo_new_at()`, this value will refer to a value in
+   * the Linux kernel's `/proc/self/fd` directory.  Generally, you
+   * should avoid using this property at all; you can gain a reference
+   * to the repository's directory fd via `ostree_repo_get_dfd()` and
+   * use file-descriptor relative operations.
+   */
   g_object_class_install_property (object_class,
                                    PROP_PATH,
-                                   g_param_spec_object ("path",
-                                                        "",
-                                                        "",
+                                   g_param_spec_object ("path", "Path", "Path",
                                                         G_TYPE_FILE,
                                                         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
-
+  /**
+   * OstreeRepo:sysroot-path:
+   *
+   * A system using libostree for the host has a "system" repository; this
+   * property will be set for repositories referenced via
+   * `ostree_sysroot_repo()` for example.
+   *
+   * You should avoid using this property; if your code is operating
+   * on a system repository, use `OstreeSysroot` and access the repository
+   * object via `ostree_sysroot_repo()`.
+   */
   g_object_class_install_property (object_class,
                                    PROP_SYSROOT_PATH,
                                    g_param_spec_object ("sysroot-path",
@@ -571,7 +616,15 @@ ostree_repo_class_init (OstreeRepoClass *klass)
                                                         "",
                                                         G_TYPE_FILE,
                                                         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
-
+  /**
+   * OstreeRepo:remotes-config-dir:
+   *
+   * Path to directory containing remote definitions.  The default is `NULL`.
+   * If a `sysroot-path` property is defined, this value will default to
+   * `${sysroot_path}/etc/ostree/remotes.d`.
+   *
+   * This value will only be used for system repositories.
+   */
   g_object_class_install_property (object_class,
                                    PROP_REMOTES_CONFIG_DIR,
                                    g_param_spec_string ("remotes-config-dir",
@@ -880,6 +933,40 @@ ostree_repo_write_config (OstreeRepo *self,
 {
   g_return_val_if_fail (self->inited, FALSE);
 
+  /* Ensure that any remotes in the new config aren't defined in a
+   * separate config file.
+   */
+  gsize num_groups;
+  g_auto(GStrv) groups = g_key_file_get_groups (new_config, &num_groups);
+  for (gsize i = 0; i < num_groups; i++)
+    {
+      g_autoptr(OstreeRemote) new_remote = ostree_remote_new_from_keyfile (new_config, groups[i]);
+      if (new_remote != NULL)
+        {
+          g_autoptr(GError) local_error = NULL;
+
+          g_autoptr(OstreeRemote) cur_remote =
+            _ostree_repo_get_remote (self, new_remote->name, &local_error);
+          if (cur_remote == NULL)
+            {
+              if (!g_error_matches (local_error, G_IO_ERROR,
+                                    G_IO_ERROR_NOT_FOUND))
+                {
+                  g_propagate_error (error, g_steal_pointer (&local_error));
+                  return FALSE;
+                }
+            }
+          else if (cur_remote->file != NULL)
+            {
+              g_set_error (error, G_IO_ERROR, G_IO_ERROR_EXISTS,
+                           "Remote \"%s\" already defined in %s",
+                           new_remote->name,
+                           gs_file_get_path_cached (cur_remote->file));
+              return FALSE;
+            }
+        }
+    }
+
   gsize len;
   g_autofree char *data = g_key_file_to_data (new_config, &len, error);
   if (!glnx_file_replace_contents_at (self->repo_dir_fd, "config",
@@ -957,8 +1044,12 @@ impl_repo_remote_add (OstreeRepo     *self,
 
   remote = ostree_remote_new (name);
 
+  /* Only add repos in remotes.d if the repo option
+   * add-remotes-config-dir is true. This is the default for system
+   * repos.
+   */
   g_autoptr(GFile) etc_ostree_remotes_d = get_remotes_d_dir (self, sysroot);
-  if (etc_ostree_remotes_d)
+  if (etc_ostree_remotes_d && self->add_remotes_config_dir)
     {
       g_autoptr(GError) local_error = NULL;
 
@@ -1076,8 +1167,8 @@ impl_repo_remote_delete (OstreeRepo     *self,
 
   if (remote->file != NULL)
     {
-      if (unlink (gs_file_get_path_cached (remote->file)) != 0)
-        return glnx_throw_errno (error);
+      if (!glnx_unlinkat (AT_FDCWD, gs_file_get_path_cached (remote->file), 0, error))
+        return FALSE;
     }
   else
     {
@@ -1412,8 +1503,7 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
       gpg_error = gpgme_op_import (source_context, data_buffer);
       if (gpg_error != GPG_ERR_NO_ERROR)
         {
-          ot_gpgme_error_to_gio_error (gpg_error, error);
-          g_prefix_error (error, "Unable to import keys: ");
+          ot_gpgme_throw (gpg_error, error, "Unable to import keys");
           goto out;
         }
 
@@ -1438,8 +1528,7 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
           gpg_error = gpgme_get_key (source_context, key_ids[ii], &key, 0);
           if (gpg_error != GPG_ERR_NO_ERROR)
             {
-              ot_gpgme_error_to_gio_error (gpg_error, error);
-              g_prefix_error (error, "Unable to find key \"%s\": ", key_ids[ii]);
+              ot_gpgme_throw (gpg_error, error, "Unable to find key \"%s\"", key_ids[ii]);
               goto out;
             }
 
@@ -1466,8 +1555,7 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
 
       if (gpgme_err_code (gpg_error) != GPG_ERR_EOF)
         {
-          ot_gpgme_error_to_gio_error (gpg_error, error);
-          g_prefix_error (error, "Unable to list keys: ");
+          ot_gpgme_throw (gpg_error, error, "Unable to list keys");
           goto out;
         }
     }
@@ -1539,8 +1627,7 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
   gpg_error = gpgme_data_new (&data_buffer);
   if (gpg_error != GPG_ERR_NO_ERROR)
     {
-      ot_gpgme_error_to_gio_error (gpg_error, error);
-      g_prefix_error (error, "Unable to create data buffer: ");
+      ot_gpgme_throw (gpg_error, error, "Unable to create data buffer");
       goto out;
     }
 
@@ -1549,8 +1636,7 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
                                     data_buffer);
   if (gpg_error != GPG_ERR_NO_ERROR)
     {
-      ot_gpgme_error_to_gio_error (gpg_error, error);
-      g_prefix_error (error, "Unable to export keys: ");
+      ot_gpgme_throw (gpg_error, error, "Unable to export keys");
       goto out;
     }
 
@@ -1559,8 +1645,7 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
   gpg_error = gpgme_op_import (target_context, data_buffer);
   if (gpg_error != GPG_ERR_NO_ERROR)
     {
-      ot_gpgme_error_to_gio_error (gpg_error, error);
-      g_prefix_error (error, "Unable to import keys: ");
+      ot_gpgme_throw (gpg_error, error, "Unable to import keys");
       goto out;
     }
 
@@ -1575,8 +1660,7 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
     {
       if (import_status->result != GPG_ERR_NO_ERROR)
         {
-          ot_gpgme_error_to_gio_error (gpg_error, error);
-          g_prefix_error (error, "Unable to import key \"%s\": ",
+          ot_gpgme_throw (gpg_error, error, "Unable to import key \"%s\"",
                           import_status->fpr);
           goto out;
         }
@@ -1994,10 +2078,6 @@ static GFile *
 get_remotes_d_dir (OstreeRepo          *self,
                    GFile               *sysroot)
 {
-  /* Support explicit override */
-  if (self->sysroot_dir != NULL && self->remotes_config_dir != NULL)
-    return g_file_resolve_relative_path (self->sysroot_dir, self->remotes_config_dir);
-
   g_autoptr(GFile) sysroot_owned = NULL;
   /* Very complicated sysroot logic; this bit breaks the otherwise mostly clean
    * layering between OstreeRepo and OstreeSysroot. First, If a sysroot was
@@ -2033,10 +2113,18 @@ get_remotes_d_dir (OstreeRepo          *self,
   if (sysroot == NULL && sysroot_ref == NULL)
     sysroot = self->sysroot_dir;
 
-  /* Did we find a sysroot? If not, NULL means use the repo config, otherwise
-   * return the path in /etc.
+  /* Was the config directory specified? If so, use that with the
+   * optional sysroot prepended. If not, return the path in /etc if the
+   * sysroot was found and NULL otherwise to use the repo config.
    */
-  if (sysroot == NULL)
+  if (self->remotes_config_dir != NULL)
+    {
+      if (sysroot == NULL)
+        return g_file_new_for_path (self->remotes_config_dir);
+      else
+        return g_file_resolve_relative_path (sysroot, self->remotes_config_dir);
+    }
+  else if (sysroot == NULL)
     return NULL;
   else
     return g_file_resolve_relative_path (sysroot, SYSCONF_REMOTES);
@@ -2178,6 +2266,17 @@ reload_core_config (OstreeRepo          *self,
         }
     }
 
+  /* By default, only add remotes in a remotes config directory for
+   * system repos. This is to preserve legacy behavior for non-system
+   * repos that specify a remotes config dir (flatpak).
+   */
+  { gboolean is_system = ostree_repo_is_system (self);
+
+    if (!ot_keyfile_get_boolean_with_default (self->config, "core", "add-remotes-config-dir",
+                                              is_system, &self->add_remotes_config_dir, error))
+      return FALSE;
+  }
+
   return TRUE;
 }
 
@@ -2316,8 +2415,8 @@ ostree_repo_open (OstreeRepo    *self,
       /* Note - we don't return this error yet! */
     }
 
-  if (fstat (self->objects_dir_fd, &stbuf) != 0)
-    return glnx_throw_errno (error);
+  if (!glnx_fstat (self->objects_dir_fd, &stbuf, error))
+    return FALSE;
   self->owner_uid = stbuf.st_uid;
 
   if (stbuf.st_uid != getuid () || stbuf.st_gid != getgid ())
@@ -2703,8 +2802,8 @@ load_metadata_internal (OstreeRepo       *self,
 
   if (fd != -1)
     {
-      if (fstat (fd, &stbuf) < 0)
-        return glnx_throw_errno (error);
+      if (!glnx_fstat (fd, &stbuf, error))
+        return FALSE;
 
       if (out_variant)
         {
@@ -3127,7 +3226,7 @@ _ostree_repo_has_loose_object (OstreeRepo           *self,
           if (errno == ENOENT)
             ; /* Next dfd */
           else
-            return glnx_throw_errno (error);
+            return glnx_throw_errno_prefix (error, "fstatat(%s)", loose_path_buf);
         }
       else
         {
@@ -3210,15 +3309,12 @@ ostree_repo_delete_object (OstreeRepo           *self,
 
       _ostree_loose_path (meta_loose, sha256, OSTREE_OBJECT_TYPE_COMMIT_META, self->mode);
 
-      if (TEMP_FAILURE_RETRY (unlinkat (self->objects_dir_fd, meta_loose, 0)) < 0)
-        {
-          if (G_UNLIKELY (errno != ENOENT))
-            return glnx_throw_errno_prefix (error, "unlinkat(%s)", meta_loose);
-        }
+      if (!ot_ensure_unlinked_at (self->objects_dir_fd, meta_loose, error))
+        return FALSE;
     }
 
-  if (TEMP_FAILURE_RETRY (unlinkat (self->objects_dir_fd, loose_path, 0)) < 0)
-    return glnx_throw_errno_prefix (error, "Deleting object %s.%s", sha256, ostree_object_type_to_string (objtype));
+  if (!glnx_unlinkat (self->objects_dir_fd, loose_path, 0, error))
+    return glnx_prefix_error (error, "Deleting object %s.%s", sha256, ostree_object_type_to_string (objtype));
 
   /* If the repository is configured to use tombstone commits, create one when deleting a commit.  */
   if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
@@ -3297,6 +3393,9 @@ import_one_object_link (OstreeRepo    *self,
                         GCancellable  *cancellable,
                         GError        **error)
 {
+  const char *errprefix = glnx_strjoina ("Importing ", checksum, ".",
+                                         ostree_object_type_to_string (objtype));
+  GLNX_AUTO_PREFIX_ERROR (errprefix, error);
   char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
   _ostree_loose_path (loose_path_buf, checksum, objtype, self->mode);
 
@@ -3343,7 +3442,7 @@ import_one_object_link (OstreeRepo    *self,
           return TRUE;
         }
       else
-        return glnx_throw_errno (error);
+        return glnx_throw_errno_prefix (error, "linkat");
     }
 
   if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
@@ -3650,7 +3749,7 @@ ostree_repo_load_commit (OstreeRepo            *self,
         }
       else if (errno != ENOENT)
         {
-          return glnx_throw_errno (error);
+          return glnx_throw_errno_prefix (error, "fstatat(%s)", commitpartial_path);
         }
     }
 
@@ -4123,26 +4222,23 @@ sign_data (OstreeRepo     *self,
     }
   else if (err != GPG_ERR_NO_ERROR)
     {
-      ot_gpgme_error_to_gio_error (err, error);
-      g_prefix_error (error, "Unable to lookup key ID %s: ", key_id);
+      ot_gpgme_throw (err, error, "Unable to lookup key ID %s", key_id);
       goto out;
     }
 
   /* Add the key to the context as a signer */
   if ((err = gpgme_signers_add (context, key)) != GPG_ERR_NO_ERROR)
     {
-      ot_gpgme_error_to_gio_error (err, error);
-      g_prefix_error (error, "Error signing commit: ");
+      ot_gpgme_throw (err, error, "Error signing commit");
       goto out;
     }
-  
+
   {
     gsize len;
     const char *buf = g_bytes_get_data (input_data, &len);
     if ((err = gpgme_data_new_from_mem (&commit_buffer, buf, len, FALSE)) != GPG_ERR_NO_ERROR)
       {
-        ot_gpgme_error_to_gio_error (err, error);
-        g_prefix_error (error, "Failed to create buffer from commit file: ");
+        ot_gpgme_throw (err, error, "Failed to create buffer from commit file");
         goto out;
       }
   }
@@ -4152,8 +4248,7 @@ sign_data (OstreeRepo     *self,
   if ((err = gpgme_op_sign (context, commit_buffer, signature_buffer, GPGME_SIG_MODE_DETACH))
       != GPG_ERR_NO_ERROR)
     {
-      ot_gpgme_error_to_gio_error (err, error);
-      g_prefix_error (error, "Failure signing commit file: ");
+      ot_gpgme_throw (err, error, "Failure signing commit file");
       goto out;
     }
   
@@ -4219,11 +4314,14 @@ ostree_repo_sign_commit (OstreeRepo     *self,
 
   /* The verify operation is merely to parse any existing signatures to
    * check if the commit has already been signed with the given key ID.
-   * We want to avoid storing duplicate signatures in the metadata. */
+   * We want to avoid storing duplicate signatures in the metadata. We
+   * pass the homedir so that the signing key can be imported, allowing
+   * subkey signatures to be recognised. */
   g_autoptr(GError) local_error = NULL;
+  g_autoptr(GFile) verify_keydir = g_file_new_for_path (homedir);
   g_autoptr(OstreeGpgVerifyResult) result
     =_ostree_repo_gpg_verify_with_metadata (self, commit_data, old_metadata,
-                                            NULL, NULL, NULL,
+                                            NULL, verify_keydir, NULL,
                                             cancellable, &local_error);
   if (!result)
     {
@@ -4534,32 +4632,23 @@ _ostree_repo_verify_commit_internal (OstreeRepo    *self,
                                      GCancellable  *cancellable,
                                      GError       **error)
 {
-  OstreeGpgVerifyResult *result = NULL;
   g_autoptr(GVariant) commit_variant = NULL;
-  g_autoptr(GVariant) metadata = NULL;
-  g_autoptr(GBytes) signed_data = NULL;
-
   /* Load the commit */
   if (!ostree_repo_load_variant (self, OSTREE_OBJECT_TYPE_COMMIT,
                                  commit_checksum, &commit_variant,
                                  error))
-    {
-      g_prefix_error (error, "Failed to read commit: ");
-      goto out;
-    }
+    return glnx_prefix_error_null (error, "Failed to read commit");
 
   /* Load the metadata */
+  g_autoptr(GVariant) metadata = NULL;
   if (!ostree_repo_read_commit_detached_metadata (self,
                                                   commit_checksum,
                                                   &metadata,
                                                   cancellable,
                                                   error))
-    {
-      g_prefix_error (error, "Failed to read detached metadata: ");
-      goto out;
-    }
+    return glnx_prefix_error_null (error, "Failed to read detached metadata");
 
-  signed_data = g_variant_get_data_as_bytes (commit_variant);
+  g_autoptr(GBytes) signed_data = g_variant_get_data_as_bytes (commit_variant);
 
   /* XXX This is a hackish way to indicate to use ALL remote-specific
    *     keyrings in the signature verification.  We want this when
@@ -4567,17 +4656,10 @@ _ostree_repo_verify_commit_internal (OstreeRepo    *self,
   if (remote_name == NULL)
     remote_name = OSTREE_ALL_REMOTES;
 
-  result = _ostree_repo_gpg_verify_with_metadata (self,
-                                                  signed_data,
-                                                  metadata,
-                                                  remote_name,
-                                                  keyringdir,
-                                                  extra_keyring,
-                                                  cancellable,
-                                                  error);
-
-out:
-  return result;
+  return _ostree_repo_gpg_verify_with_metadata (self, signed_data,
+                                                metadata, remote_name,
+                                                keyringdir, extra_keyring,
+                                                cancellable, error);
 }
 
 /**
@@ -4609,10 +4691,7 @@ ostree_repo_verify_commit (OstreeRepo   *self,
                                           cancellable, error);
 
   if (!ostree_gpg_verify_result_require_valid_signature (result, error))
-    {
-      g_prefix_error (error, "Commit %s: ", commit_checksum);
-      return FALSE;
-    }
+    return glnx_prefix_error (error, "Commit %s", commit_checksum);
   return TRUE;
 }
 
@@ -4907,14 +4986,12 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
                                  g_variant_new_uint64 (GUINT64_TO_BE (g_get_real_time () / G_USEC_PER_SEC)));
   }
 
-  /* Add refs which have a collection specified. ostree_repo_list_collection_refs()
-   * is guaranteed to only return refs which are in refs/mirrors, or those which
-   * are in refs/heads if the repository configuration specifies a collection ID
-   * (which we put in the main refs map, rather than the collection map, for
-   * backwards compatibility). */
+  /* Add refs which have a collection specified, which could be in refs/mirrors,
+   * refs/heads, and/or refs/remotes. */
   {
     g_autoptr(GHashTable) collection_refs = NULL;
-    if (!ostree_repo_list_collection_refs (self, NULL, &collection_refs, cancellable, error))
+    if (!ostree_repo_list_collection_refs (self, NULL, &collection_refs,
+                                           OSTREE_REPO_LIST_REFS_EXT_NONE, cancellable, error))
       return FALSE;
 
     gsize collection_map_size = 0;
@@ -4949,6 +5026,8 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
         const char *collection_id = collection_iter->data;
         GHashTable *ref_map = g_hash_table_lookup (collection_map, collection_id);
 
+        /* We put the local repo's collection ID in the main refs map, rather
+         * than the collection map, for backwards compatibility. */
         gboolean is_main_collection_id = (main_collection_id != NULL && g_str_equal (collection_id, main_collection_id));
 
         if (!is_main_collection_id)
@@ -5009,11 +5088,8 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
                                            error))
     return FALSE;
 
-  if (unlinkat (self->repo_dir_fd, "summary.sig", 0) < 0)
-    {
-      if (errno != ENOENT)
-        return glnx_throw_errno_prefix (error, "unlinkat");
-    }
+  if (!ot_ensure_unlinked_at (self->repo_dir_fd, "summary.sig", error))
+    return FALSE;
 
   return TRUE;
 }
@@ -5072,19 +5148,17 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
                               GCancellable *cancellable,
                               GError **error)
 {
-  gboolean ret = FALSE;
-  gboolean reusing_dir = FALSE;
-  gboolean did_lock;
-  g_autofree char *tmpdir_name = NULL;
-  glnx_fd_close int tmpdir_fd = -1;
-  g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
-
   g_return_val_if_fail (_ostree_repo_is_locked_tmpdir (tmpdir_prefix), FALSE);
 
   /* Look for existing tmpdir (with same prefix) to reuse */
+  g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
   if (!glnx_dirfd_iterator_init_at (tmpdir_dfd, ".", FALSE, &dfd_iter, error))
-    goto out;
+    return FALSE;
 
+  gboolean reusing_dir = FALSE;
+  gboolean did_lock = FALSE;
+  g_autofree char *tmpdir_name = NULL;
+  glnx_fd_close int tmpdir_fd = -1;
   while (tmpdir_name == NULL)
     {
       struct dirent *dent;
@@ -5092,7 +5166,7 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
       g_autoptr(GError) local_error = NULL;
 
       if (!glnx_dirfd_iterator_next_dent (&dfd_iter, &dent, cancellable, error))
-        goto out;
+        return FALSE;
 
       if (dent == NULL)
         break;
@@ -5113,7 +5187,7 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
           else
             {
               g_propagate_error (error, g_steal_pointer (&local_error));
-              goto out;
+              return FALSE;
             }
         }
 
@@ -5122,12 +5196,12 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
       if (!_ostree_repo_try_lock_tmpdir (tmpdir_dfd, dent->d_name,
                                          file_lock_out, &did_lock,
                                          error))
-        goto out;
+        return FALSE;
       if (!did_lock)
         continue;
 
       /* Touch the reused directory so that we don't accidentally
-       *   remove it due to being old when cleaning up the tmpdir
+       * remove it due to being old when cleaning up the tmpdir.
        */
       (void)futimens (existing_tmpdir_fd, NULL);
 
@@ -5139,24 +5213,22 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
 
   while (tmpdir_name == NULL)
     {
-      g_autofree char *tmpdir_name_template = g_strconcat (tmpdir_prefix, "XXXXXX", NULL);
-      glnx_fd_close int new_tmpdir_fd = -1;
-
       /* No existing tmpdir found, create a new */
-
+      g_autofree char *tmpdir_name_template = g_strconcat (tmpdir_prefix, "XXXXXX", NULL);
       if (!glnx_mkdtempat (tmpdir_dfd, tmpdir_name_template, 0777, error))
-        goto out;
+        return FALSE;
 
+      glnx_fd_close int new_tmpdir_fd = -1;
       if (!glnx_opendirat (tmpdir_dfd, tmpdir_name_template, FALSE,
                            &new_tmpdir_fd, error))
-        goto out;
+        return FALSE;
 
       /* Note, at this point we can race with another process that picks up this
        * new directory. If that happens we need to retry, making a new directory. */
       if (!_ostree_repo_try_lock_tmpdir (tmpdir_dfd, tmpdir_name_template,
                                          file_lock_out, &did_lock,
                                          error))
-        goto out;
+        return FALSE;
       if (!did_lock)
         continue;
 
@@ -5166,16 +5238,11 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
 
   if (tmpdir_name_out)
     *tmpdir_name_out = g_steal_pointer (&tmpdir_name);
-
   if (tmpdir_fd_out)
     *tmpdir_fd_out = glnx_steal_fd (&tmpdir_fd);
-
   if (reusing_dir_out)
     *reusing_dir_out = reusing_dir;
-
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /* See ostree-repo-private.h for more information about this */
