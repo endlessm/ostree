@@ -2,6 +2,7 @@ ostree (2017.11-1) UNRELEASED; urgency=medium
 
   * New upstream release
     - Drop all current patches, applied upstream
+    - Update symbols file
   * Adjust Description and Upstream-Name to emphasize libostree
   * Classify new ostree-tmpfiles.conf as part of ostree-boot, and so
     don't install it yet
