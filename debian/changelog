@@ -7,6 +7,8 @@ ostree (2017.11-1) UNRELEASED; urgency=medium
     don't install it yet
   * Stop copying an old ostree-trivial-httpd.xml from debian/dist/
     into source tree. Upstream distributes it again.
+  * Add a patch to fix the new test-help.sh when ostree trivial-httpd
+    is enabled. At the moment we still build that tool.
 
  -- Simon McVittie <smcv@debian.org>  Wed, 30 Aug 2017 10:09:26 +0100
 
