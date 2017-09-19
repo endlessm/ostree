@@ -1,0 +1,31 @@
+From: Simon McVittie <smcv@collabora.com>
+Date: Tue, 19 Sep 2017 14:41:18 +0100
+Subject: tests: Explicitly unset LANGUAGE after setting LC_ALL
+
+As a GNU extension, LANGUAGE takes precedence over LC_ALL for
+gettext(3) whenever the locale is not C, causing tests that grep for
+specific English strings to fail when run in non-English locales.
+The upstream glibc proposal for C.UTF-8 would give C.UTF-8 the same
+special case as C here, but the implementation in Debian does not
+currently have this, so we have to unset LANGUAGE too.
+
+Signed-off-by: Simon McVittie <smcv@collabora.com>
+Forwarded: https://github.com/ostreedev/ostree/pull/1188
+Applied-upstream: 2017.12, commit:223c940b46a4bb335665df7436566b73cdf0effd
+---
+ tests/libtest-core.sh | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/tests/libtest-core.sh b/tests/libtest-core.sh
+index d0b7d37..ce0e4bb 100644
+--- a/tests/libtest-core.sh
++++ b/tests/libtest-core.sh
+@@ -40,6 +40,8 @@ if locale -a | grep C.UTF-8 >/dev/null; then
+ else
+     export LC_ALL=C
+ fi
++# A GNU extension, used whenever LC_ALL is not C
++unset LANGUAGE
+ 
+ # This should really be the default IMO
+ export G_DEBUG=fatal-warnings
