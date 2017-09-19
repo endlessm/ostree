@@ -1,25 +1,28 @@
 From: Simon McVittie <smcv@collabora.com>
 Date: Fri, 15 Sep 2017 15:32:55 +0100
-Subject: Fix JavaScript tests with gjs 1.50.0
+Subject: tests: Fix JavaScript tests with gjs 1.50.0
 
 In recent gjs, you can't declare a variable with "let" multiple times.
 
 Signed-off-by: Simon McVittie <smcv@collabora.com>
+Closes: #1178
+Approved by: cgwalters
+Forwarded: https://github.com/ostreedev/ostree/pull/1178
+Applied-upstream: 2017.12, commit:1b430a776486d68be2d16a0ec53ad5512c604988
 ---
- tests/corrupt-repo-ref.js | 2 +-
+ tests/corrupt-repo-ref.js | 1 -
  tests/test-sysroot.js     | 6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
 diff --git a/tests/corrupt-repo-ref.js b/tests/corrupt-repo-ref.js
-index c5f2806..a2085f3 100755
+index c5f2806..bcde86b 100755
 --- a/tests/corrupt-repo-ref.js
 +++ b/tests/corrupt-repo-ref.js
-@@ -47,7 +47,7 @@ function listObjectChecksumsRecurse(dir, allObjects) {
+@@ -47,7 +47,6 @@ function listObjectChecksumsRecurse(dir, allObjects) {
      e.close(null);
  } 
  
 -let [,commit] = repo.resolve_rev(refToCorrupt, false);
-+repo.resolve_rev(refToCorrupt, false);
  let [,root,commit] = repo.read_commit(refToCorrupt, null);
  let allObjects = {};
  allObjects[commit + '.commit'] = true;
