@@ -1,2 +1,3 @@
 2017.12/tests-Fix-JavaScript-tests-with-gjs-1.50.0.patch
 2017.12/tests-Explicitly-unset-LANGUAGE-after-setting-LC_ALL.patch
+2017.12/tests-Reset-umask-to-022-while-creating-test-repository.patch

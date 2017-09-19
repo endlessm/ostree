@@ -1,0 +1,75 @@
+From: Simon McVittie <smcv@collabora.com>
+Date: Tue, 19 Sep 2017 18:37:58 +0100
+Subject: tests: Reset umask to 022 while creating test repository
+
+In test-basic-root.sh we make assertions about the permissions
+of files like baz/cow, which were created without an explicit chmod.
+We can't do that unless we control the permissions.
+
+For some reason the "debomatic" autobuilder used to do some Debian
+archive rebuilds does the entire build including build-time tests
+as uid 0 with umask 002, which broke those assertions. This seems
+a weird thing to do, and I've opened a bug, but it also seems
+reasonable to fix this test.
+
+This also lets us remove a couple of existing workarounds for the
+same issue.
+
+Bug-Debian: https://bugs.debian.org/876138
+Signed-off-by: Simon McVittie <smcv@collabora.com>
+Closes: #1192
+Approved by: cgwalters
+Forwarded: https://github.com/ostreedev/ostree/pull/1192
+Applied-upstream: 2017.12, commit:e3c3ec5dd91492e82c79223052443d038c60f41c
+---
+ tests/libtest.sh         | 3 +++
+ tests/test-basic-user.sh | 8 ++------
+ 2 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/tests/libtest.sh b/tests/libtest.sh
+index 73e8889..1ae04a7 100755
+--- a/tests/libtest.sh
++++ b/tests/libtest.sh
+@@ -150,6 +150,8 @@ setup_test_repository () {
+     export OSTREE="${CMD_PREFIX} ostree ${ot_repo}"
+ 
+     cd ${test_tmpdir}
++    local oldumask="$(umask)"
++    umask 022
+     mkdir files
+     cd files
+     ot_files=`pwd`
+@@ -172,6 +174,7 @@ setup_test_repository () {
+     ln -s nonexistent baz/alink
+     mkdir baz/another/
+     echo x > baz/another/y
++    umask "${oldumask}"
+ 
+     cd ${test_tmpdir}/files
+     $OSTREE commit ${COMMIT_ARGS}  -b test2 -s "Test Commit 2" -m "Commit body second"
+diff --git a/tests/test-basic-user.sh b/tests/test-basic-user.sh
+index 9486655..291806c 100755
+--- a/tests/test-basic-user.sh
++++ b/tests/test-basic-user.sh
+@@ -34,11 +34,7 @@ setup_test_repository "bare-user"
+ 
+ cd ${test_tmpdir}
+ objpath_nonexec=$(ostree_file_path_to_object_path repo test2 baz/cow)
+-# Sigh, umask
+-touch testfile
+-default_mode=$(stat -c '%a' testfile)
+-rm testfile
+-assert_file_has_mode ${objpath_nonexec} ${default_mode}
++assert_file_has_mode ${objpath_nonexec} 644
+ objpath_ro=$(ostree_file_path_to_object_path repo test2 baz/cowro)
+ assert_file_has_mode ${objpath_ro} 600
+ objpath_exec=$(ostree_file_path_to_object_path repo test2 baz/deeper/ohyeahx)
+@@ -48,7 +44,7 @@ echo "ok bare-user committed modes"
+ rm test2-checkout -rf
+ $OSTREE checkout -U -H test2 test2-checkout
+ cd test2-checkout
+-assert_file_has_mode baz/cow ${default_mode}
++assert_file_has_mode baz/cow 644
+ assert_file_has_mode baz/cowro 600
+ assert_file_has_mode baz/deeper/ohyeahx 755
+ echo "ok bare-user checkout modes"
