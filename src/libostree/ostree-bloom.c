@@ -247,7 +247,7 @@ ostree_bloom_set_bit (OstreeBloom *bloom,
 {
   g_assert (bloom->is_mutable);
   g_assert (idx / 8 < bloom->n_bytes);
-  bloom->mutable_bytes[idx / 8] |= (1 << (idx % 8));
+  bloom->mutable_bytes[idx / 8] |= (guint8) (1 << (idx % 8));
 }
 
 /**
@@ -274,11 +274,11 @@ ostree_bloom_maybe_contains (OstreeBloom   *bloom,
 
   for (i = 0; i < bloom->k; i++)
     {
-      gsize idx;
+      guint64 idx;
 
       idx = bloom->hash_func (element, i);
 
-      if (!ostree_bloom_get_bit (bloom, idx % (bloom->n_bytes * 8)))
+      if (!ostree_bloom_get_bit (bloom, (gsize) (idx % (bloom->n_bytes * 8))))
         return FALSE;  /* definitely not in the set */
     }
 
@@ -338,8 +338,8 @@ ostree_bloom_add_element (OstreeBloom   *bloom,
 
   for (i = 0; i < bloom->k; i++)
     {
-      gsize idx = bloom->hash_func (element, i);
-      ostree_bloom_set_bit (bloom, idx % (bloom->n_bytes * 8));
+      guint64 idx = bloom->hash_func (element, i);
+      ostree_bloom_set_bit (bloom, (gsize) (idx % (bloom->n_bytes * 8)));
     }
 }
 
