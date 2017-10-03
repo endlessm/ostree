@@ -5,6 +5,9 @@ ostree (2017.12-1) UNRELEASED; urgency=medium
     - Update symbols file
   * Add some post-release bug fix patches
   * Simplify autopkgtest now that test-local-pull seems to be stable
+  * Unexport HTTP proxy variables in autopkgtest to work around lack of
+    support for no_proxy, which breaks the tests on Ubuntu autopkgtest.
+    We don't actually need Internet access, so this is OK.
 
  -- Simon McVittie <smcv@debian.org>  Tue, 03 Oct 2017 19:14:14 +0100
 
