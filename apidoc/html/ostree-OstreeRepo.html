@@ -169,6 +169,22 @@
 </tr>
 <tr>
 <td class="function_type">
+<span class="returnvalue">guint</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-hash" title="ostree_repo_hash ()">ostree_repo_hash</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-equal" title="ostree_repo_equal ()">ostree_repo_equal</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
 <span class="returnvalue">GKeyFile</span> *
 </td>
 <td class="function_name">
@@ -1626,6 +1642,78 @@ repository (to see whether a ref was written).</p>
 <p> File descriptor for repository root - owned by <em class="parameter"><code>self</code></em>
 </p>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-hash"></a><h3>ostree_repo_hash ()</h3>
+<pre class="programlisting"><span class="returnvalue">guint</span>
+ostree_repo_hash (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>);</pre>
+<p>Calculate a hash value for the given open repository, suitable for use when
+putting it into a hash table. It is an error to call this on an <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a>
+which is not yet open, as a persistent hash value cannot be calculated until
+the repository is open and the inode of its root directory has been loaded.</p>
+<p>This function does no I/O.</p>
+<div class="refsect3">
+<a name="ostree-repo-hash.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-hash.returns"></a><h4>Returns</h4>
+<p> hash value for the <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p>
+</div>
+<p class="since">Since: 2017.12</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-equal"></a><h3>ostree_repo_equal ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_equal (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *a</code></em>,
+                   <em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *b</code></em>);</pre>
+<p>Check whether two opened repositories are the same on disk: if their root
+directories are the same inode. If <em class="parameter"><code>a</code></em>
+ or <em class="parameter"><code>b</code></em>
+ are not open yet (due to
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-open" title="ostree_repo_open ()"><code class="function">ostree_repo_open()</code></a> not being called on them yet), <code class="literal">FALSE</code> will be returned.</p>
+<div class="refsect3">
+<a name="ostree-repo-equal.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>a</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>b</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-equal.returns"></a><h4>Returns</h4>
+<p> <code class="literal">TRUE</code> if <em class="parameter"><code>a</code></em>
+and <em class="parameter"><code>b</code></em>
+are the same repository on disk, <code class="literal">FALSE</code> otherwise</p>
+</div>
+<p class="since">Since: 2017.12</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -7217,9 +7305,16 @@ possible modes.</p>
 <td class="enum_member_annotations"> </td>
 </tr>
 <tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-MODE-ARCHIVE:CAPS"></a>OSTREE_REPO_MODE_ARCHIVE</p></td>
+<td class="enum_member_description">
+<p>Files are compressed, should be owned by non-root.  Can be served via HTTP.  Since: 2017.12</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-MODE-ARCHIVE-Z2:CAPS"></a>OSTREE_REPO_MODE_ARCHIVE_Z2</p></td>
 <td class="enum_member_description">
-<p>Files are compressed, should be owned by non-root.  Can be served via HTTP</p>
+<p>Legacy alias for <code class="literal">OSTREE_REPO_MODE_ARCHIVE</code></p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
@@ -7816,7 +7911,7 @@ as - List of pack file checksums in which this object appears</p>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-PULL-FLAGS-UNTRUSTED:CAPS"></a>OSTREE_REPO_PULL_FLAGS_UNTRUSTED</p></td>
 <td class="enum_member_description">
-<p>Don't trust local remote</p>
+<p>Do verify checksums of local (filesystem-accessible) repositories (defaults on for HTTP)</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
@@ -7824,6 +7919,13 @@ as - List of pack file checksums in which this object appears</p>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-PULL-FLAGS-BAREUSERONLY-FILES:CAPS"></a>OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES</p></td>
 <td class="enum_member_description">
 <p>Since 2017.7.  Reject writes of content objects with modes outside of 0775.</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-PULL-FLAGS-TRUSTED-HTTP:CAPS"></a>OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP</p></td>
+<td class="enum_member_description">
+<p>Don't verify checksums of objects HTTP repositories (Since: 2017.12)</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>

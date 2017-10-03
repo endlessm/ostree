@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -90,6 +89,7 @@ _ostree_make_temporary_symlink_at (int             tmp_dirfd,
                                    GError        **error);
 
 GFileInfo * _ostree_stbuf_to_gfileinfo (const struct stat *stbuf);
+gboolean _ostree_gfileinfo_equal (GFileInfo *a, GFileInfo *b);
 GFileInfo * _ostree_mode_uidgid_to_gfileinfo (mode_t mode, uid_t uid, gid_t gid);
 
 static inline void
@@ -132,6 +132,19 @@ _ostree_get_relative_static_delta_part_path (const char        *from,
 static inline char * _ostree_get_commitpartial_path (const char *checksum)
 {
   return g_strconcat ("state/", checksum, ".commitpartial", NULL);
+}
+
+gboolean
+_ostree_validate_bareuseronly_mode (guint32     mode,
+                                    const char *checksum,
+                                    GError    **error);
+static inline gboolean
+_ostree_validate_bareuseronly_mode_finfo (GFileInfo  *finfo,
+                                          const char *checksum,
+                                          GError    **error)
+{
+  const guint32 content_mode = g_file_info_get_attribute_uint32 (finfo, "unix::mode");
+  return _ostree_validate_bareuseronly_mode (content_mode, checksum, error);
 }
 
 gboolean

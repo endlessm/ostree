@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2017 Georges Basile Stavracas Neto <georges.stavracas@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -44,7 +43,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_RELEASE_VERSION (11)
+#define OSTREE_RELEASE_VERSION (12)
 
 /**
  * OSTREE_VERSION
@@ -53,7 +52,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION (2017.11)
+#define OSTREE_VERSION (2017.12)
 
 /**
  * OSTREE_VERSION_S:
@@ -63,7 +62,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION_S "2017.11"
+#define OSTREE_VERSION_S "2017.12"
 
 #define OSTREE_ENCODE_VERSION(year,release) \
         ((year) << 16 | (release))

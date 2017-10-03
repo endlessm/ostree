@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -92,8 +91,7 @@ struct OstreeRepo {
   GObject parent;
 
   char *stagedir_prefix;
-  int commit_stagedir_fd;
-  char *commit_stagedir_name;
+  GLnxTmpDir commit_stagedir;
   GLnxLockFile commit_stagedir_lock;
 
   /* A cached fd-relative version, distinct from the case where we may have a
@@ -205,13 +203,11 @@ _ostree_repo_memory_cache_ref_destroy (OstreeRepoMemoryCacheRef *state);
 G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(OstreeRepoMemoryCacheRef, _ostree_repo_memory_cache_ref_destroy)
 
 #define OSTREE_REPO_TMPDIR_STAGING "staging-"
-#define OSTREE_REPO_TMPDIR_FETCHER "fetcher-"
 
 gboolean
 _ostree_repo_allocate_tmpdir (int           tmpdir_dfd,
                               const char   *tmpdir_prefix,
-                              char        **tmpdir_name_out,
-                              int          *tmpdir_fd_out,
+                              GLnxTmpDir   *tmpdir_out,
                               GLnxLockFile *file_lock_out,
                               gboolean *    reusing_dir_out,
                               GCancellable *cancellable,
@@ -345,6 +341,21 @@ _ostree_repo_verify_commit_internal (OstreeRepo    *self,
                                      GFile         *extra_keyring,
                                      GCancellable  *cancellable,
                                      GError       **error);
+
+typedef enum {
+  _OSTREE_REPO_IMPORT_FLAGS_NONE,
+  _OSTREE_REPO_IMPORT_FLAGS_TRUSTED,
+  _OSTREE_REPO_IMPORT_FLAGS_VERIFY_BAREUSERONLY,
+} OstreeRepoImportFlags;
+
+gboolean
+_ostree_repo_import_object (OstreeRepo           *self,
+                            OstreeRepo           *source,
+                            OstreeObjectType      objtype,
+                            const char           *checksum,
+                            OstreeRepoImportFlags flags,
+                            GCancellable         *cancellable,
+                            GError              **error);
 
 gboolean
 _ostree_repo_commit_tmpf_final (OstreeRepo        *self,

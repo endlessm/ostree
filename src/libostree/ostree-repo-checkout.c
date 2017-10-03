@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -303,11 +302,11 @@ create_file_copy_from_input_at (OstreeRepo     *repo,
         return FALSE;
 
       /* The add/union/none behaviors map directly to GLnxLinkTmpfileReplaceMode */
-      GLnxLinkTmpfileReplaceMode replace_mode;
+      GLnxLinkTmpfileReplaceMode replace_mode = GLNX_LINK_TMPFILE_NOREPLACE;
       switch (options->overwrite_mode)
         {
         case OSTREE_REPO_CHECKOUT_OVERWRITE_NONE:
-          replace_mode = GLNX_LINK_TMPFILE_NOREPLACE;
+          /* Handled above */
           break;
         case OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES:
           replace_mode = GLNX_LINK_TMPFILE_REPLACE;
@@ -338,6 +337,41 @@ typedef enum {
   HARDLINK_RESULT_LINKED
 } HardlinkResult;
 
+/* Used for OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES.  In
+ * order to atomically replace a target, we add a new link
+ * in self->tmp_dir_fd, with a name placed into the mutable
+ * buffer @tmpname.
+ */
+static gboolean
+hardlink_add_tmp_name (OstreeRepo              *self,
+                       int                      srcfd,
+                       const char              *loose_path,
+                       char                    *tmpname,
+                       GCancellable            *cancellable,
+                       GError                 **error)
+{
+  const int max_attempts = 128;
+  guint i;
+
+  for (i = 0; i < max_attempts; i++)
+    {
+      glnx_gen_temp_name (tmpname);
+      if (linkat (srcfd, loose_path, self->tmp_dir_fd, tmpname, 0) < 0)
+        {
+          if (errno == EEXIST)
+            continue;
+          else
+            return glnx_throw_errno_prefix (error, "linkat");
+        }
+      else
+        break;
+    }
+  if (i == max_attempts)
+    return glnx_throw (error, "Exhausted attempts to make temporary hardlink");
+
+  return TRUE;
+}
+
 static gboolean
 checkout_file_hardlink (OstreeRepo                          *self,
                         OstreeRepoCheckoutAtOptions           *options,
@@ -353,7 +387,6 @@ checkout_file_hardlink (OstreeRepo                          *self,
   int srcfd = _ostree_repo_mode_is_bare (self->mode) ?
     self->objects_dir_fd : self->uncompressed_objects_dir_fd;
 
- again:
   if (linkat (srcfd, loose_path, destination_dfd, destination_name, 0) == 0)
     ret_result = HARDLINK_RESULT_LINKED;
   else if (!options->no_copy_fallback && (errno == EMLINK || errno == EXDEV || errno == EPERM))
@@ -380,27 +413,20 @@ checkout_file_hardlink (OstreeRepo                          *self,
           ret_result = HARDLINK_RESULT_SKIP_EXISTED;
           break;
         case OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES:
-          {
-            /* Idiocy, from man rename(2)
-             *
-             * "If oldpath and newpath are existing hard links referring to
-             * the same file, then rename() does nothing, and returns a
-             * success status."
-             *
-             * So we can't make this atomic.
-             */
-            (void) unlinkat (destination_dfd, destination_name, 0);
-            goto again;
-          }
         case OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_IDENTICAL:
           {
-            /* In this mode, we error out on EEXIST *unless* the files are already
-             * hardlinked, which is what rpm-ostree wants for package layering.
-             * https://github.com/projectatomic/rpm-ostree/issues/982
+            /* In both union-files and union-identical, see if the src/target are
+             * already hardlinked.  If they are, we're done.
              *
+             * If not, for union-identical we error out, which is what
+             * rpm-ostree wants for package layering.
+             * https://github.com/projectatomic/rpm-ostree/issues/982
              * This should be similar to the librpm version:
              * https://github.com/rpm-software-management/rpm/blob/e3cd2bc85e0578f158d14e6f9624eb955c32543b/lib/rpmfi.c#L921
              * in rpmfilesCompare().
+             *
+             * For union-files, we make a temporary link, then rename() it
+             * into place.
              */
             struct stat src_stbuf;
             if (!glnx_fstatat (srcfd, loose_path, &src_stbuf,
@@ -413,10 +439,25 @@ checkout_file_hardlink (OstreeRepo                          *self,
             const gboolean is_identical =
               (src_stbuf.st_dev == dest_stbuf.st_dev &&
                src_stbuf.st_ino == dest_stbuf.st_ino);
+
             if (is_identical)
               ret_result = HARDLINK_RESULT_SKIP_EXISTED;
+            else if (options->overwrite_mode == OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES)
+              {
+                char *tmpname = strdupa ("checkout-union-XXXXXX");
+                /* Make a link with a temp name */
+                if (!hardlink_add_tmp_name (self, srcfd, loose_path, tmpname, cancellable, error))
+                  return FALSE;
+                /* Rename it into place */
+                if (!glnx_renameat (self->tmp_dir_fd, tmpname, destination_dfd, destination_name, error))
+                  return FALSE;
+                ret_result = HARDLINK_RESULT_LINKED;
+              }
             else
-              return glnx_throw_errno_prefix (error, "Hardlinking %s to %s", loose_path, destination_name);
+              {
+                g_assert_cmpint (options->overwrite_mode, ==, OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_IDENTICAL);
+                return glnx_throw_errno_prefix (error, "Hardlinking %s to %s", loose_path, destination_name);
+              }
             break;
           }
         }
@@ -495,7 +536,7 @@ checkout_one_file_at (OstreeRepo                        *repo,
             (repo_is_usermode && options->mode == OSTREE_REPO_CHECKOUT_MODE_USER);
           gboolean current_can_cache = (options->enable_uncompressed_cache
                                         && current_repo->enable_uncompressed_cache);
-          gboolean is_archive_z2_with_cache = (current_repo->mode == OSTREE_REPO_MODE_ARCHIVE_Z2
+          gboolean is_archive_z2_with_cache = (current_repo->mode == OSTREE_REPO_MODE_ARCHIVE
                                                && options->mode == OSTREE_REPO_CHECKOUT_MODE_USER
                                                && current_can_cache);
 
@@ -567,7 +608,7 @@ checkout_one_file_at (OstreeRepo                        *repo,
       && !is_whiteout
       && !is_symlink
       && need_copy
-      && repo->mode == OSTREE_REPO_MODE_ARCHIVE_Z2
+      && repo->mode == OSTREE_REPO_MODE_ARCHIVE
       && options->mode == OSTREE_REPO_CHECKOUT_MODE_USER)
     {
       HardlinkResult hardlink_res = HARDLINK_RESULT_NOT_SUPPORTED;

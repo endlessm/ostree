@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright © 2017 Endless Mobile, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -40,30 +39,27 @@
 typedef struct
 {
   OstreeRepo *parent_repo;
-  int working_dfd;  /* owned */
-  GFile *working_dir;  /* owned */
+  GLnxTmpDir tmpdir; /* owned */
+  GFile *working_dir; /* Points at tmpdir */
 } Fixture;
 
 static void
 setup (Fixture       *fixture,
        gconstpointer  test_data)
 {
-  g_autofree gchar *tmp_name = NULL;
   g_autoptr(GError) error = NULL;
 
-  tmp_name = g_strdup ("test-repo-finder-mount-XXXXXX");
-  glnx_mkdtempat_open_in_system (tmp_name, 0700, &fixture->working_dfd, &error);
+  (void)glnx_mkdtemp ("test-repo-finder-mount-XXXXXX", 0700, &fixture->tmpdir, &error);
   g_assert_no_error (error);
 
-  g_test_message ("Using temporary directory: %s", tmp_name);
+  g_test_message ("Using temporary directory: %s", fixture->tmpdir.path);
 
-  glnx_shutil_mkdir_p_at (fixture->working_dfd, "repo", 0700, NULL, &error);
+  glnx_shutil_mkdir_p_at (fixture->tmpdir.fd, "repo", 0700, NULL, &error);
   if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS))
     g_clear_error (&error);
   g_assert_no_error (error);
 
-  g_autoptr(GFile) tmp_dir = g_file_new_for_path (g_get_tmp_dir ());
-  fixture->working_dir = g_file_get_child (tmp_dir, tmp_name);
+  fixture->working_dir = g_file_new_for_path (fixture->tmpdir.path);
 
   fixture->parent_repo = ot_test_setup_repo (NULL, &error);
   g_assert_no_error (error);
@@ -73,13 +69,8 @@ static void
 teardown (Fixture       *fixture,
           gconstpointer  test_data)
 {
-  g_autoptr(GError) error = NULL;
-
   /* Recursively remove the temporary directory. */
-  glnx_shutil_rm_rf_at (fixture->working_dfd, ".", NULL, NULL);
-
-  close (fixture->working_dfd);
-  fixture->working_dfd = -1;
+  (void)glnx_tmpdir_delete (&fixture->tmpdir, NULL, NULL);
 
   /* The repo also needs its source files to be removed. This is the inverse
    * of setup_test_repository() in libtest.sh. */
@@ -156,7 +147,7 @@ test_repo_finder_mount_no_mounts (Fixture       *fixture,
   g_main_context_pop_thread_default (context);
 }
 
-/* Create a .ostree/repos directory under the given @mount_root, or abort. */
+/* Create a .ostree/repos.d directory under the given @mount_root, or abort. */
 static gboolean
 assert_create_repos_dir (Fixture      *fixture,
                          const gchar  *mount_root_name,
@@ -166,8 +157,8 @@ assert_create_repos_dir (Fixture      *fixture,
   glnx_fd_close int repos_dfd = -1;
   g_autoptr(GError) error = NULL;
 
-  g_autofree gchar *path = g_build_filename (mount_root_name, ".ostree", "repos", NULL);
-  glnx_shutil_mkdir_p_at_open (fixture->working_dfd, path, 0700, &repos_dfd, NULL, &error);
+  g_autofree gchar *path = g_build_filename (mount_root_name, ".ostree", "repos.d", NULL);
+  glnx_shutil_mkdir_p_at_open (fixture->tmpdir.fd, path, 0700, &repos_dfd, NULL, &error);
   if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS))
     g_clear_error (&error);
   g_assert_no_error (error);
@@ -191,7 +182,7 @@ assert_create_remote_va (Fixture *fixture,
   g_autoptr(GError) error = NULL;
 
   g_autoptr(OstreeRepo) repo = ostree_repo_new (repo_dir);
-  ostree_repo_create (repo, OSTREE_REPO_MODE_ARCHIVE_Z2, NULL, &error);
+  ostree_repo_create (repo, OSTREE_REPO_MODE_ARCHIVE, NULL, &error);
   g_assert_no_error (error);
 
   /* Set up the refs from @.... */
@@ -233,22 +224,22 @@ assert_create_remote_va (Fixture *fixture,
 }
 
 static OstreeRepo *
-assert_create_repo_dir (Fixture                    *fixture,
-                        int                         repos_dfd,
-                        GMount                     *repos_mount,
-                        const OstreeCollectionRef  *ref,
-                        gchar                     **out_uri,
+assert_create_repo_dir (Fixture     *fixture,
+                        int          repos_dfd,
+                        GMount      *repos_mount,
+                        const char  *repo_name,
+                        gchar      **out_uri,
                         ...) G_GNUC_NULL_TERMINATED;
 
-/* Create a @ref directory under the given @repos_dfd, or abort. Create a new
- * repository in it with the refs given in @..., as per assert_create_remote_va().
- * Return the URI of the repository. */
+/* Create a @repo_name directory under the given @repos_dfd, or abort. Create a
+ * new repository in it with the refs given in @..., as per
+ * assert_create_remote_va(). Return the URI of the repository. */
 static OstreeRepo *
-assert_create_repo_dir (Fixture                    *fixture,
-                        int                         repos_dfd,
-                        GMount                     *repos_mount,
-                        const OstreeCollectionRef  *ref,
-                        gchar                     **out_uri,
+assert_create_repo_dir (Fixture     *fixture,
+                        int          repos_dfd,
+                        GMount      *repos_mount,
+                        const char  *repo_name,
+                        gchar      **out_uri,
                         ...)
 {
   glnx_fd_close int ref_dfd = -1;
@@ -256,15 +247,14 @@ assert_create_repo_dir (Fixture                    *fixture,
   g_autoptr(GError) error = NULL;
   va_list args;
 
-  g_autofree gchar *path = g_build_filename (ref->collection_id, ref->ref_name, NULL);
-  glnx_shutil_mkdir_p_at_open (repos_dfd, path, 0700, &ref_dfd, NULL, &error);
+  glnx_shutil_mkdir_p_at_open (repos_dfd, repo_name, 0700, &ref_dfd, NULL, &error);
   if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS))
     g_clear_error (&error);
   g_assert_no_error (error);
 
   g_autoptr(GFile) mount_root = g_mount_get_root (repos_mount);
-  g_autoptr(GFile) repos_dir = g_file_get_child (mount_root, ".ostree/repos");
-  g_autoptr(GFile) repo_dir = g_file_get_child (repos_dir, path);
+  g_autoptr(GFile) repos_dir = g_file_get_child (mount_root, ".ostree/repos.d");
+  g_autoptr(GFile) repo_dir = g_file_get_child (repos_dir, repo_name);
 
   va_start (args, out_uri);
   repo = assert_create_remote_va (fixture, repo_dir, args);
@@ -275,38 +265,19 @@ assert_create_repo_dir (Fixture                    *fixture,
   return g_steal_pointer (&repo);
 }
 
-/* Create a @ref symlink under the given @repos_dfd, pointing to
- * @symlink_target, or abort. */
-static int
-assert_create_repo_symlink (int                        repos_dfd,
-                            const OstreeCollectionRef *ref,
-                            const gchar               *symlink_target_path)
+/* Create a @repo_name symlink under the given @repos_dfd, pointing to
+ * @symlink_target_path, or abort. */
+static void
+assert_create_repo_symlink (int         repos_dfd,
+                            const char *repo_name,
+                            const char *symlink_target_path)
 {
-  glnx_fd_close int symlink_target_dfd = -1;
-  g_autoptr(GError) error = NULL;
-
-  /* The @ref_parent_dir is not necessarily @collection_dir, since @ref may
-   * contain slashes. */
-  g_autofree gchar *path = g_build_filename (ref->collection_id, ref->ref_name, NULL);
-  g_autofree gchar *path_parent = g_path_get_dirname (path);
-
-  glnx_shutil_mkdir_p_at (repos_dfd, path_parent, 0700, NULL, &error);
-  if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS))
-    g_clear_error (&error);
-  g_assert_no_error (error);
-
-  if (TEMP_FAILURE_RETRY (symlinkat (symlink_target_path, repos_dfd, path)) != 0)
+  if (TEMP_FAILURE_RETRY (symlinkat (symlink_target_path, repos_dfd, repo_name)) != 0)
     {
       g_autoptr(GError) error = NULL;
       glnx_throw_errno_prefix (&error, "symlinkat");
       g_assert_no_error (error);
     }
-
-  /* Return a dir FD for the symlink target. */
-  glnx_opendirat (repos_dfd, path, TRUE, &symlink_target_dfd, &error);
-  g_assert_no_error (error);
-
-  return glnx_steal_fd (&symlink_target_dfd);
 }
 
 /* Add configuration for a remote named @remote_name, at @remote_uri, with a
@@ -356,7 +327,7 @@ test_repo_finder_mount_mixed_mounts (Fixture       *fixture,
   g_autofree gchar *repo2_repo_a_uri = NULL;
   g_autofree gchar *repo1_ref0_checksum = NULL, *repo1_ref1_checksum = NULL, *repo1_ref2_checksum = NULL;
   g_autofree gchar *repo2_ref0_checksum = NULL, *repo2_ref1_checksum = NULL, *repo2_ref2_checksum = NULL;
-  g_autofree gchar *repo1_ref5_checksum = NULL;
+  g_autofree gchar *repo1_ref5_checksum = NULL, *repo2_ref3_checksum = NULL;
   gsize i;
   const OstreeCollectionRef ref0 = { "org.example.Collection1", "exampleos/x86_64/ref0" };
   const OstreeCollectionRef ref1 = { "org.example.Collection1", "exampleos/x86_64/ref1" };
@@ -379,27 +350,26 @@ test_repo_finder_mount_mixed_mounts (Fixture       *fixture,
   assert_create_repos_dir (fixture, "no-repos-mount", &no_repos_repos, &no_repos_mount);
 
   assert_create_repos_dir (fixture, "repo1-mount", &repo1_repos, &repo1_mount);
-  repo1_repo_a = assert_create_repo_dir (fixture, repo1_repos, repo1_mount, refs[0], &repo1_repo_a_uri,
+  repo1_repo_a = assert_create_repo_dir (fixture, repo1_repos, repo1_mount, "repo1-repo-a", &repo1_repo_a_uri,
                                          refs[0], &repo1_ref0_checksum,
                                          refs[2], &repo1_ref2_checksum,
                                          refs[5], &repo1_ref5_checksum,
                                          NULL);
-  repo1_repo_b = assert_create_repo_dir (fixture, repo1_repos, repo1_mount, refs[1], &repo1_repo_b_uri,
+  repo1_repo_b = assert_create_repo_dir (fixture, repo1_repos, repo1_mount, "repo1-repo-b", &repo1_repo_b_uri,
                                          refs[1], &repo1_ref1_checksum,
                                          NULL);
-  assert_create_repo_symlink (repo1_repos, refs[2], "ref0");  /* repo1_repo_a */
-  assert_create_repo_symlink (repo1_repos, refs[5], "../../../org.example.Collection1/exampleos/x86_64/ref0");  /* repo1_repo_a */
+  assert_create_repo_symlink (repo1_repos, "repo1-repo-a-alias", "repo1-repo-a");
 
   assert_create_repos_dir (fixture, "repo2-mount", &repo2_repos, &repo2_mount);
-  repo2_repo_a = assert_create_repo_dir (fixture, repo2_repos, repo2_mount, refs[0], &repo2_repo_a_uri,
+  repo2_repo_a = assert_create_repo_dir (fixture, repo2_repos, repo2_mount, "repo2-repo-a", &repo2_repo_a_uri,
                                          refs[0], &repo2_ref0_checksum,
                                          refs[1], &repo2_ref1_checksum,
                                          refs[2], &repo2_ref2_checksum,
-                                         refs[3], NULL,
+                                         refs[3], &repo2_ref3_checksum,
                                          NULL);
-  assert_create_repo_symlink (repo2_repos, refs[1], "ref0");  /* repo2_repo_a */
-  assert_create_repo_symlink (repo2_repos, refs[2], "ref1");  /* repo2_repo_b */
-  assert_create_repo_symlink (repo2_repos, refs[3], "/");
+  assert_create_repo_symlink (repo2_repos, "repo2-repo-a-alias", "repo2-repo-a");
+  assert_create_repo_symlink (repo2_repos, "dangling-symlink", "repo2-repo-b");
+  assert_create_repo_symlink (repo2_repos, "root", "/");
 
   mounts = g_list_prepend (mounts, non_removable_mount);
   mounts = g_list_prepend (mounts, no_repos_mount);
@@ -462,10 +432,108 @@ test_repo_finder_mount_mixed_mounts (Fixture       *fixture,
       else if (g_strcmp0 (uri, repo2_repo_a_uri) == 0 &&
                g_strcmp0 (keyring, "remote1.trustedkeys.gpg") == 0)
         {
-          g_assert_cmpuint (g_hash_table_size (result->ref_to_checksum), ==, 3);
+          g_assert_cmpuint (g_hash_table_size (result->ref_to_checksum), ==, 4);
           g_assert_cmpstr (g_hash_table_lookup (result->ref_to_checksum, refs[0]), ==, repo2_ref0_checksum);
           g_assert_cmpstr (g_hash_table_lookup (result->ref_to_checksum, refs[1]), ==, repo2_ref1_checksum);
           g_assert_cmpstr (g_hash_table_lookup (result->ref_to_checksum, refs[2]), ==, repo2_ref2_checksum);
+          g_assert_cmpstr (g_hash_table_lookup (result->ref_to_checksum, refs[3]), ==, repo2_ref3_checksum);
+        }
+      else
+        {
+          g_test_message ("Unknown result ‘%s’ with keyring ‘%s’.",
+                          result->remote->name, result->remote->keyring);
+          g_assert_not_reached ();
+        }
+    }
+
+  g_main_context_pop_thread_default (context);
+}
+
+/* Test resolving the refs against a mock volume which contains two repositories
+ * in the default repository paths ostree/repo and .ostree/repo, to check that
+ * those paths are read */
+static void
+test_repo_finder_mount_well_known (Fixture       *fixture,
+                                   gconstpointer  test_data)
+{
+  g_autoptr(OstreeRepoFinderMount) finder = NULL;
+  g_autoptr(GVolumeMonitor) monitor = NULL;
+  g_autoptr(GMainContext) context = NULL;
+  g_autoptr(GAsyncResult) result = NULL;
+  g_autoptr(GPtrArray) results = NULL;  /* (element-type OstreeRepoFinderResult) */
+  g_autoptr(GError) error = NULL;
+  g_autoptr(GList) mounts = NULL;  /* (element-type OstreeMockMount)  */
+  g_autoptr(GMount) mount = NULL;
+  glnx_fd_close int repos = -1;
+  g_autoptr(OstreeRepo) repo_a = NULL, repo_b = NULL;
+  g_autofree gchar *repo_a_uri = NULL, *repo_b_uri = NULL;
+  g_autofree gchar *ref_a_checksum = NULL, *ref_b_checksum = NULL;
+  gsize i;
+  const OstreeCollectionRef ref_a = { "org.example.Collection1", "refA" };
+  const OstreeCollectionRef ref_b = { "org.example.Collection2", "refB" };
+  const OstreeCollectionRef * const refs[] = { &ref_a, &ref_b, NULL };
+
+  context = g_main_context_new ();
+  g_main_context_push_thread_default (context);
+
+  /* Build the various mock drives/volumes/mounts, and some repositories with
+   * refs within them. We use "/" under the assumption that it’s on a separate
+   * file system from /tmp, so it’s an example of a symlink pointing outside
+   * its mount point. */
+  assert_create_repos_dir (fixture, "mount", &repos, &mount);
+  repo_a = assert_create_repo_dir (fixture, repos, mount, "../../ostree/repo", &repo_a_uri,
+                                   &ref_a, &ref_a_checksum,
+                                   NULL);
+  repo_b = assert_create_repo_dir (fixture, repos, mount, "../../.ostree/repo", &repo_b_uri,
+                                   &ref_b, &ref_b_checksum,
+                                   NULL);
+  assert_create_repo_symlink (repos, "repo-a-alias", "../../ostree/repo");
+
+  mounts = g_list_prepend (mounts, mount);
+
+  monitor = ostree_mock_volume_monitor_new (mounts, NULL);
+  finder = ostree_repo_finder_mount_new (monitor);
+
+  assert_create_remote_config (fixture->parent_repo, "remote1", "https://nope1", "org.example.Collection1");
+  assert_create_remote_config (fixture->parent_repo, "remote2", "https://nope2", "org.example.Collection2");
+
+  /* Resolve the refs. */
+  ostree_repo_finder_resolve_async (OSTREE_REPO_FINDER (finder), refs,
+                                    fixture->parent_repo,
+                                    NULL, result_cb, &result);
+
+  while (result == NULL)
+    g_main_context_iteration (context, TRUE);
+
+  results = ostree_repo_finder_resolve_finish (OSTREE_REPO_FINDER (finder),
+                                               result, &error);
+  g_assert_no_error (error);
+  g_assert_nonnull (results);
+  g_assert_cmpuint (results->len, ==, 2);
+
+  /* Check that the results are correct: the valid results canonicalised and
+   * deduplicated. */
+  for (i = 0; i < results->len; i++)
+    {
+      g_autofree gchar *uri = NULL;
+      const gchar *keyring;
+      const OstreeRepoFinderResult *result = g_ptr_array_index (results, i);
+
+      uri = g_key_file_get_string (result->remote->options, result->remote->group, "url", &error);
+      g_assert_no_error (error);
+      keyring = result->remote->keyring;
+
+      if (g_strcmp0 (uri, repo_a_uri) == 0 &&
+          g_strcmp0 (keyring, "remote1.trustedkeys.gpg") == 0)
+        {
+          g_assert_cmpuint (g_hash_table_size (result->ref_to_checksum), ==, 1);
+          g_assert_cmpstr (g_hash_table_lookup (result->ref_to_checksum, &ref_a), ==, ref_a_checksum);
+        }
+      else if (g_strcmp0 (uri, repo_b_uri) == 0 &&
+          g_strcmp0 (keyring, "remote2.trustedkeys.gpg") == 0)
+        {
+          g_assert_cmpuint (g_hash_table_size (result->ref_to_checksum), ==, 1);
+          g_assert_cmpstr (g_hash_table_lookup (result->ref_to_checksum, &ref_b), ==, ref_b_checksum);
         }
       else
         {
@@ -488,6 +556,8 @@ int main (int argc, char **argv)
               test_repo_finder_mount_no_mounts, teardown);
   g_test_add ("/repo-finder-mount/mixed-mounts", Fixture, NULL, setup,
               test_repo_finder_mount_mixed_mounts, teardown);
+  g_test_add ("/repo-finder-mount/well-known", Fixture, NULL, setup,
+              test_repo_finder_mount_well_known, teardown);
 
   return g_test_run();
 }

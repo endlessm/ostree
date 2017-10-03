@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015,2016 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -313,7 +312,7 @@ do_open (const char *path, mode_t mode, struct fuse_file_info *finfo)
   if ((finfo->flags & O_ACCMODE) == O_RDONLY)
     {
       /* Read */
-      fd = openat (basefd, path, finfo->flags);
+      fd = openat (basefd, path, finfo->flags, mode);
       if (fd == -1)
         return -errno;
     }

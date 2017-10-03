@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -47,7 +46,7 @@ static int opt_depth = 0;
 static GOptionEntry options[] = {
   { "remote", 0, 0, G_OPTION_ARG_STRING, &opt_remote, "Add REMOTE to refspec", "REMOTE" },
   { "disable-fsync", 0, 0, G_OPTION_ARG_NONE, &opt_disable_fsync, "Do not invoke fsync()", NULL },
-  { "untrusted", 0, 0, G_OPTION_ARG_NONE, &opt_untrusted, "Do not verify checksums of local sources (always enabled for HTTP pulls)", NULL },
+  { "untrusted", 0, 0, G_OPTION_ARG_NONE, &opt_untrusted, "Verify checksums of local sources (always enabled for HTTP pulls)", NULL },
   { "bareuseronly-files", 0, 0, G_OPTION_ARG_NONE, &opt_bareuseronly_files, "Reject regular files with mode outside of 0775 (world writable, suid, etc.)", NULL },
   { "require-static-deltas", 0, 0, G_OPTION_ARG_NONE, &opt_require_static_deltas, "Require static deltas", NULL },
   { "gpg-verify", 0, 0, G_OPTION_ARG_NONE, &opt_gpg_verify, "GPG verify commits (must specify --remote)", NULL },
@@ -55,6 +54,14 @@ static GOptionEntry options[] = {
   { "depth", 0, 0, G_OPTION_ARG_INT, &opt_depth, "Traverse DEPTH parents (-1=infinite) (default: 0)", "DEPTH" },
   { NULL }
 };
+
+/* See canonical version of this in ot-builtin-pull.c */
+static void
+noninteractive_console_progress_changed (OstreeAsyncProgress *progress,
+                                         gpointer             user_data)
+{
+  /* We do nothing here - we just want the final status */
+}
 
 gboolean
 ostree_builtin_pull_local (int argc, char **argv, GCancellable *cancellable, GError **error)
@@ -171,6 +178,8 @@ ostree_builtin_pull_local (int argc, char **argv, GCancellable *cancellable, GEr
 
     if (console.is_tty)
       progress = ostree_async_progress_new_and_connect (ostree_repo_pull_default_console_progress_changed, &console);
+    else
+      progress = ostree_async_progress_new_and_connect (noninteractive_console_progress_changed, &console);
 
     opts = g_variant_ref_sink (g_variant_builder_end (&builder));
     if (!ostree_repo_pull_with_options (repo, src_repo_uri, 
@@ -179,8 +188,14 @@ ostree_builtin_pull_local (int argc, char **argv, GCancellable *cancellable, GEr
                                         cancellable, error))
       goto out;
 
-    if (progress)
-      ostree_async_progress_finish (progress);
+    if (!console.is_tty)
+      {
+        g_assert (progress);
+        const char *status = ostree_async_progress_get_status (progress);
+        if (status)
+          g_print ("%s\n", status);
+      }
+    ostree_async_progress_finish (progress);
   }
 
   ret = TRUE;

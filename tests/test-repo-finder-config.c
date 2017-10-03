@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright © 2017 Endless Mobile, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -39,7 +38,7 @@
 typedef struct
 {
   OstreeRepo *parent_repo;  /* owned */
-  int working_dfd;  /* owned */
+  GLnxTmpDir tmpdir; /* owned */
   GFile *working_dir;  /* owned */
 } Fixture;
 
@@ -47,20 +46,17 @@ static void
 setup (Fixture       *fixture,
        gconstpointer  test_data)
 {
-  g_autofree gchar *tmp_name = NULL;
   g_autoptr(GError) error = NULL;
 
-  tmp_name = g_strdup ("test-repo-finder-config-XXXXXX");
-  glnx_mkdtempat_open_in_system (tmp_name, 0700, &fixture->working_dfd, &error);
+  (void)glnx_mkdtemp ("test-repo-finder-config-XXXXXX", 0700, &fixture->tmpdir, &error);
   g_assert_no_error (error);
 
-  g_test_message ("Using temporary directory: %s", tmp_name);
+  g_test_message ("Using temporary directory: %s", fixture->tmpdir.path);
 
-  glnx_shutil_mkdir_p_at (fixture->working_dfd, "repo", 0700, NULL, &error);
+  glnx_shutil_mkdir_p_at (fixture->tmpdir.fd, "repo", 0700, NULL, &error);
   g_assert_no_error (error);
 
-  g_autoptr(GFile) tmp_dir = g_file_new_for_path (g_get_tmp_dir ());
-  fixture->working_dir = g_file_get_child (tmp_dir, tmp_name);
+  fixture->working_dir = g_file_new_for_path (fixture->tmpdir.path);
 
   fixture->parent_repo = ot_test_setup_repo (NULL, &error);
   g_assert_no_error (error);
@@ -73,10 +69,7 @@ teardown (Fixture       *fixture,
   g_autoptr(GError) error = NULL;
 
   /* Recursively remove the temporary directory. */
-  glnx_shutil_rm_rf_at (fixture->working_dfd, ".", NULL, NULL);
-
-  close (fixture->working_dfd);
-  fixture->working_dfd = -1;
+  (void)glnx_tmpdir_delete (&fixture->tmpdir, NULL, NULL);
 
   /* The repo also needs its source files to be removed. This is the inverse
    * of setup_test_repository() in libtest.sh. */
@@ -177,14 +170,14 @@ assert_create_remote (Fixture     *fixture,
   g_autoptr(GError) error = NULL;
   const gchar *repo_name = (collection_id != NULL) ? collection_id : "no-collection";
 
-  glnx_shutil_mkdir_p_at (fixture->working_dfd, repo_name, 0700, NULL, &error);
+  glnx_shutil_mkdir_p_at (fixture->tmpdir.fd, repo_name, 0700, NULL, &error);
   g_assert_no_error (error);
 
   g_autoptr(GFile) repo_path = g_file_get_child (fixture->working_dir, repo_name);
   g_autoptr(OstreeRepo) repo = ostree_repo_new (repo_path);
   ostree_repo_set_collection_id (repo, collection_id, &error);
   g_assert_no_error (error);
-  ostree_repo_create (repo, OSTREE_REPO_MODE_ARCHIVE_Z2, NULL, &error);
+  ostree_repo_create (repo, OSTREE_REPO_MODE_ARCHIVE, NULL, &error);
   g_assert_no_error (error);
 
   /* Set up the refs from @.... */

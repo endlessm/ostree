@@ -105,7 +105,7 @@ glnx_make_lock_file(int dfd, const char *p, int operation, GLnxLockFile *out_loc
                                 r = flock(fd, operation);
 
                         if (r < 0)
-                                return glnx_throw_errno(error);
+                                return glnx_throw_errno_prefix (error, "flock");
                 }
 
                 /* If we acquired the lock, let's check if the file
@@ -114,9 +114,8 @@ glnx_make_lock_file(int dfd, const char *p, int operation, GLnxLockFile *out_loc
                  * it. In such a case our acquired lock is worthless,
                  * hence try again. */
 
-                r = fstat(fd, &st);
-                if (r < 0)
-                        return glnx_throw_errno(error);
+                if (!glnx_fstat (fd, &st, error))
+                        return FALSE;
                 if (st.st_nlink > 0)
                         break;
 
@@ -127,21 +126,18 @@ glnx_make_lock_file(int dfd, const char *p, int operation, GLnxLockFile *out_loc
         /* Note that if this is not AT_FDCWD, the caller takes responsibility
          * for the fd's lifetime being >= that of the lock.
          */
+        out_lock->initialized = TRUE;
         out_lock->dfd = dfd;
-        out_lock->path = t;
-        out_lock->fd = fd;
+        out_lock->path = g_steal_pointer (&t);
+        out_lock->fd = glnx_steal_fd (&fd);
         out_lock->operation = operation;
-
-        fd = -1;
-        t = NULL;
-
         return TRUE;
 }
 
 void glnx_release_lock_file(GLnxLockFile *f) {
         int r;
 
-        if (!f)
+        if (!(f && f->initialized))
                 return;
 
         if (f->path) {
@@ -182,4 +178,5 @@ void glnx_release_lock_file(GLnxLockFile *f) {
                 (void) close (f->fd);
         f->fd = -1;
         f->operation = 0;
+        f->initialized = FALSE;
 }
