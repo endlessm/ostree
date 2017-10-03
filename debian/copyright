@@ -1,10 +1,9 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: libOSTree
+Upstream-Name: libostree
 Source: https://github.com/ostreedev/ostree/
 
 Files:
  *
- debian/dist/*
 Copyright:
  © 1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald
  © 1999-2000, 2002-2005 Free Software Foundation, Inc.

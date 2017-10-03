@@ -7,7 +7,6 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2016.7@LIBOSTREE_2016.7 2016.7
  LIBOSTREE_2016.8@LIBOSTREE_2016.8 2016.8
  LIBOSTREE_2016.14@LIBOSTREE_2016.14 2016.14
- LIBOSTREE_2017.10@LIBOSTREE_2017.10 2017.10
  LIBOSTREE_2017.1@LIBOSTREE_2017.1 2017.1
  LIBOSTREE_2017.2@LIBOSTREE_2017.2 2017.2
  LIBOSTREE_2017.3@LIBOSTREE_2017.3 2017.3
@@ -19,6 +18,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2017.8@LIBOSTREE_2017.8 2017.8
  LIBOSTREE_2017.8_EXPERIMENTAL@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  LIBOSTREE_2017.9@LIBOSTREE_2017.9 2017.9
+ LIBOSTREE_2017.10@LIBOSTREE_2017.10 2017.10
+ LIBOSTREE_2017.11@LIBOSTREE_2017.11 2017.11
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
@@ -175,6 +176,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_devino_cache_new@LIBOSTREE_2016.3 2016.4
  ostree_repo_devino_cache_ref@LIBOSTREE_2016.3 2016.4
  ostree_repo_devino_cache_unref@LIBOSTREE_2016.3 2016.4
+ ostree_repo_equal@LIBOSTREE_2017.12 2017.12
  ostree_repo_export_tree_to_archive@LIBOSTREE_2016.3 2016.3
  ostree_repo_file_ensure_resolved@LIBOSTREE_2016.3 2016.4
  ostree_repo_file_get_checksum@LIBOSTREE_2016.3 2016.4
@@ -224,6 +226,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_get_type@LIBOSTREE_2016.3 2016.4
  ostree_repo_gpg_verify_data@LIBOSTREE_2016.6 2016.6
  ostree_repo_has_object@LIBOSTREE_2016.3 2016.4
+ ostree_repo_hash@LIBOSTREE_2017.12 2017.12
  ostree_repo_import_archive_to_mtree@LIBOSTREE_2016.3 2016.3
  ostree_repo_import_object_from@LIBOSTREE_2016.3 2016.4
  ostree_repo_import_object_from_with_trust@LIBOSTREE_2016.5 2016.5
@@ -273,6 +276,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_remote_list@LIBOSTREE_2016.3 2016.4
  ostree_repo_remote_list_collection_refs@LIBOSTREE_2017.8_EXPERIMENTAL 2017.10
  ostree_repo_remote_list_refs@LIBOSTREE_2016.3 2016.4
+ ostree_repo_resolve_collection_ref@LIBOSTREE_2017.12_EXPERIMENTAL 2017.12
  ostree_repo_resolve_keyring_for_collection@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_resolve_rev@LIBOSTREE_2016.3 2016.4
  ostree_repo_resolve_rev_ext@LIBOSTREE_2016.7 2016.7

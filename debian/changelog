@@ -1,3 +1,89 @@
+ostree (2017.12-0endless1) unstable; urgency=medium
+
+  * Resync Debian packaging changes
+    - Resync to packaging from 2017.11-2
+    - Keep differences as per README.Endless
+    - Drop all debian/patches/ as they’re all present in the 2017.12 release
+    - Keep <!nodoc> profile usage from Debian packaging, as T18835 is now fixed
+  * New upstream release
+    - Update symbols file
+    - Add Build-Depends-Indep for docs as per upstream packaging
+
+ -- Philip Withnall <withnall@endlessm.com>  Tue, 03 Oct 2017 13:52:00 +0100
+
+ostree (2017.11-2) unstable; urgency=medium
+
+  * Replace patch with the version applied upstream in 2017.12
+  * Standards-Version: 4.1.0 (no changes)
+  * Add a patch to fix FTBFS in non-English locales
+  * Add a patch to fix FTBFS if building as root with umask != 022,
+    which for some reason debomatic does (Closes: #876138)
+  * Add a patch from upstream to fix undefined behaviour with
+    O_RDONLY|O_CREAT in rofiles-fuse
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 22 Sep 2017 15:48:24 +0100
+
+ostree (2017.11-1) unstable; urgency=medium
+
+  * New upstream release
+    - Drop all current patches, applied upstream
+    - Update symbols file
+  * Adjust Description and Upstream-Name to emphasize libostree
+  * Classify new ostree-tmpfiles.conf as part of ostree-boot, and so
+    don't install it yet
+  * Stop copying an old ostree-trivial-httpd.xml from debian/dist/
+    into source tree. Upstream distributes it again, and has since
+    2017.8.
+  * Add a patch to fix JavaScript tests with gjs 1.50.0, which is
+    more strict about 'let'
+  * Stop providing "ostree trivial-httpd" CLI, following upstream
+    default behaviour. flatpak used to use it in its tests, but
+    the version in stable no longer does.
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 15 Sep 2017 16:58:15 +0100
+
+ostree (2017.10-1) unstable; urgency=medium
+
+  * New upstream release
+    - Update symbols file
+    - Install new bash completions
+  * Use dh_missing --fail-missing instead of dh_install --fail-missing
+  * Only run tests when building architecture-dependent packages.
+    The tests aren't so interesting that we want to run them again
+    when splitting -arch/-indep builds.
+  * Add patches to make the tests pass again when /var/tmp is on tmpfs,
+    which does not support user xattrs
+  * Add patch to remove useless #! from bash completions
+  * Make build-time test failures fatal again, but only if they are
+    reproducible (at least 3 times out of 5) for now
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 29 Aug 2017 18:18:49 +0100
+
+ostree (2017.9-1) unstable; urgency=medium
+
+  * New upstream release
+    - Drop backported patch
+    - Update symbols file
+  * debian/rules: Adjust a comment to avoid Lintian thinking this is a
+    dh_make template
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 28 Jul 2017 14:43:30 +0100
+
+ostree (2017.8-1) unstable; urgency=medium
+
+  * New upstream release
+    - Update symbols file
+    - Remove patches that are no longer needed
+    - Add patch from upstream PR #1016 to fix a regression
+  * Add a Breaks on flatpak (<< 0.8.7-2~), which rely on libostree to
+    download the summary and its signature when mirroring.
+    libostree >= 2017.7 no longer does this. On affected flatpak versions,
+    this breaks installation of new apps and runtimes system-wide.
+  * Add Build-Depends-Indep: libglib2.0-doc so gtk-doc can set up
+    cross-references
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 19 Jul 2017 22:18:20 +0100
+
 ostree (2017.10-0endless1) unstable; urgency=medium
 
   * New upstream release

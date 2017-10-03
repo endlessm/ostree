@@ -9,12 +9,10 @@ export LC_ALL=C.UTF-8
 	dh $@ --with=gir
 
 override_dh_auto_clean:
-	rm -f man/ostree-trivial-httpd.xml
 	if [ -e Makefile ]; then dh_auto_clean; fi
 
 override_dh_autoreconf:
 	env NOCONFIGURE=1 dh_autoreconf ./autogen.sh
-	cp debian/dist/ostree-trivial-httpd.xml man/
 
 configure_options = \
 	--enable-experimental-api \
@@ -40,10 +38,13 @@ endif
 override_dh_auto_configure:
 	dh_auto_configure -- $(configure_options)
 
-override_dh_auto_test:
+override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	debian/test.sh
 endif
+
+override_dh_auto_test-indep:
+	:
 
 override_dh_auto_install:
 	dh_auto_install
@@ -63,7 +64,10 @@ override_dh_install:
 	rm -f debian/tmp/etc/grub.d/15_ostree
 	rm -f debian/tmp/usr/lib/libostree/grub2-15_ostree
 	:
-	dh_install --fail-missing
+	dh_install
+
+override_dh_missing:
+	dh_missing --fail-missing
 
 override_dh_makeshlibs:
 	# this is an LD_PRELOAD, not a real shared library
