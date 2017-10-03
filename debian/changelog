@@ -12,6 +12,8 @@ ostree (2017.12-1) UNRELEASED; urgency=medium
     too
   * Make build-time test failures fatal if they fail at least twice
     out of 5 tries (previously they had to fail at least 3 times)
+  * Add patch to reinstate test-libglnx-shutil.c, which was missed out
+    of the upstream tarball
 
  -- Simon McVittie <smcv@debian.org>  Tue, 03 Oct 2017 19:14:14 +0100
 
