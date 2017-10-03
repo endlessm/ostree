@@ -10,6 +10,8 @@ ostree (2017.12-1) UNRELEASED; urgency=medium
     We don't actually need Internet access, so this is OK.
   * debian/test.sh: Unexport HTTP proxy variables for build-time tests
     too
+  * Make build-time test failures fatal if they fail at least twice
+    out of 5 tries (previously they had to fail at least 3 times)
 
  -- Simon McVittie <smcv@debian.org>  Tue, 03 Oct 2017 19:14:14 +0100
 
