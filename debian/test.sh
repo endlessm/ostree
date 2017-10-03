@@ -4,6 +4,15 @@ set -e
 
 export VERBOSE=1
 
+# Ubuntu autopkgtest infra provides internet access via a proxy, and
+# buildds could conceivably do the same, but libostree doesn't need
+# that. However, libostree also doesn't support no_proxy, so it will try
+# to use Ubuntu's proxy for localhost, and fail to reach itself.
+unset ftp_proxy
+unset http_proxy
+unset https_proxy
+unset no_proxy
+
 try_tests=5
 
 failed=0

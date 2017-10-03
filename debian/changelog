@@ -8,6 +8,8 @@ ostree (2017.12-1) UNRELEASED; urgency=medium
   * Unexport HTTP proxy variables in autopkgtest to work around lack of
     support for no_proxy, which breaks the tests on Ubuntu autopkgtest.
     We don't actually need Internet access, so this is OK.
+  * debian/test.sh: Unexport HTTP proxy variables for build-time tests
+    too
 
  -- Simon McVittie <smcv@debian.org>  Tue, 03 Oct 2017 19:14:14 +0100
 
