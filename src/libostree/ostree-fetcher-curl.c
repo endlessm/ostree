@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2016 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -379,14 +378,13 @@ check_multi_info (OstreeFetcher *fetcher)
               g_autoptr(GError) local_error = NULL;
               GError **error = &local_error;
 
-              /* TODO - share file naming with soup, and fix it */
               g_autofree char *tmpfile_path =
-                g_compute_checksum_for_string (G_CHECKSUM_SHA256,
-                                               eff_url, strlen (eff_url));
+                ostree_fetcher_generate_url_tmpname (eff_url);
               if (!ensure_tmpfile (req, error))
                 {
                   g_task_return_error (task, g_steal_pointer (&local_error));
                 }
+              /* This should match the libsoup chmod */
               else if (fchmod (req->tmpf.fd, 0644) < 0)
                 {
                   glnx_set_error_from_errno (error);
@@ -748,6 +746,24 @@ initiate_next_curl_request (FetcherRequest *req,
 
   if (self->tls_client_cert_path)
     {
+      /* Support for pkcs11:
+       * https://github.com/ostreedev/ostree/pull/1183
+       * This will be used by https://github.com/advancedtelematic/aktualizr
+       * at least to fetch certificates.  No test coverage at the moment
+       * though. See https://gitlab.com/gnutls/gnutls/tree/master/tests/pkcs11
+       * and https://github.com/opendnssec/SoftHSMv2 and
+       * https://github.com/p11-glue/p11-kit/tree/master/p11-kit for
+       * possible ideas there.
+       */
+      if (g_str_has_prefix (self->tls_client_key_path, "pkcs11:"))
+        {
+          curl_easy_setopt (req->easy, CURLOPT_SSLENGINE, "pkcs11");
+          curl_easy_setopt (req->easy, CURLOPT_SSLENGINE_DEFAULT, 1L);
+          curl_easy_setopt (req->easy, CURLOPT_SSLKEYTYPE, "ENG");
+        }
+      if (g_str_has_prefix (self->tls_client_cert_path, "pkcs11:"))
+        curl_easy_setopt (req->easy, CURLOPT_SSLCERTTYPE, "ENG");
+
       curl_easy_setopt (req->easy, CURLOPT_SSLCERT, self->tls_client_cert_path);
       curl_easy_setopt (req->easy, CURLOPT_SSLKEY, self->tls_client_key_path);
     }

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -86,6 +85,7 @@ typedef struct {
 
   gboolean unused_bools[7];
   int unused_ints[6];
+  /* 4 byte hole on 64 bit */
   gpointer unused_ptrs[7];
 } OstreeDiffDirsOptions;
 

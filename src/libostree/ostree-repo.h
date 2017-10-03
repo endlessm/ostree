@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -122,6 +121,12 @@ GFile *       ostree_repo_get_path (OstreeRepo  *self);
 
 _OSTREE_PUBLIC
 int           ostree_repo_get_dfd (OstreeRepo  *self);
+
+_OSTREE_PUBLIC
+guint         ostree_repo_hash (OstreeRepo *self);
+_OSTREE_PUBLIC
+gboolean      ostree_repo_equal (OstreeRepo *a,
+                                 OstreeRepo *b);
 
 _OSTREE_PUBLIC
 OstreeRepoMode ostree_repo_get_mode (OstreeRepo  *self);
@@ -465,6 +470,17 @@ gboolean      ostree_repo_resolve_rev_ext (OstreeRepo                    *self,
                                            OstreeRepoResolveRevExtFlags   flags,
                                            char                         **out_rev,
                                            GError                       **error);
+
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+_OSTREE_PUBLIC
+gboolean      ostree_repo_resolve_collection_ref (OstreeRepo                    *self,
+                                                  const OstreeCollectionRef     *ref,
+                                                  gboolean                       allow_noent,
+                                                  OstreeRepoResolveRevExtFlags   flags,
+                                                  char                         **out_rev,
+                                                  GCancellable                  *cancellable,
+                                                  GError                       **error);
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
 _OSTREE_PUBLIC
 gboolean      ostree_repo_list_refs (OstreeRepo       *self,
@@ -1121,15 +1137,17 @@ gboolean ostree_repo_prune_from_reachable (OstreeRepo             *self,
  * @OSTREE_REPO_PULL_FLAGS_NONE: No special options for pull
  * @OSTREE_REPO_PULL_FLAGS_MIRROR: Write out refs suitable for mirrors and fetch all refs if none requested
  * @OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY: Fetch only the commit metadata
- * @OSTREE_REPO_PULL_FLAGS_UNTRUSTED: Don't trust local remote
+ * @OSTREE_REPO_PULL_FLAGS_UNTRUSTED: Do verify checksums of local (filesystem-accessible) repositories (defaults on for HTTP)
  * @OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES: Since 2017.7.  Reject writes of content objects with modes outside of 0775.
+ * @OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP: Don't verify checksums of objects HTTP repositories (Since: 2017.12)
  */
 typedef enum {
   OSTREE_REPO_PULL_FLAGS_NONE,
   OSTREE_REPO_PULL_FLAGS_MIRROR = (1 << 0),
   OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY = (1 << 1),
   OSTREE_REPO_PULL_FLAGS_UNTRUSTED = (1 << 2),
-  OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES = (1 << 3)
+  OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES = (1 << 3),
+  OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP = (1 << 4),
 } OstreeRepoPullFlags;
 
 _OSTREE_PUBLIC
@@ -1151,33 +1169,6 @@ ostree_repo_pull_one_dir (OstreeRepo               *self,
                           OstreeAsyncProgress      *progress,
                           GCancellable             *cancellable,
                           GError                  **error);
-
-
-
-#if 0
-FIXME
-Called with: remote_name, refs, override-commit-ids
-or: URL, refs, override-commit-ids
-=> we only need refs; could use the remote_name or URL as additional results
-
-Summary file is downloaded first, so this would result in multiple downloads of
-the summary, but we don’t care because of caching.
-
-Big problem preventing this from being the overall API: presenting the download
-sizes in the gnome-software UI before the user chooses to download.
-
-_OSTREE_PUBLIC
-gboolean ostree_repo_find_remotes_squashed (OstreeRepo           *self,
-                                                   const gchar * const  *refs, -> options
-                                                   GVariant             *options,
-                                                   OstreeRepoFinder    **finders, -> options
-                                                   GMainContext         *context, -> nope
-                                                   OstreeAsyncProgress  *progress,
-                                                   GCancellable         *cancellable,
-                                                   GError              **error);
-#endif
-
-
 
 _OSTREE_PUBLIC
 gboolean ostree_repo_pull_with_options (OstreeRepo             *self,
@@ -1217,10 +1208,10 @@ gboolean ostree_repo_pull_from_remotes_finish (OstreeRepo    *self,
                                                GError       **error);
 
 _OSTREE_PUBLIC
-gchar *ostree_repo_resolve_keyring_for_collection (OstreeRepo    *self,
-                                                   const gchar   *collection_id,
-                                                   GCancellable  *cancellable,
-                                                   GError       **error);
+OstreeRemote *ostree_repo_resolve_keyring_for_collection (OstreeRepo    *self,
+                                                          const gchar   *collection_id,
+                                                          GCancellable  *cancellable,
+                                                          GError       **error);
 
 _OSTREE_PUBLIC
 gboolean ostree_repo_list_collection_refs (OstreeRepo                 *self,

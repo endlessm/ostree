@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -224,6 +223,7 @@ commit_filter (OstreeRepo         *self,
   return OSTREE_REPO_COMMIT_FILTER_ALLOW;
 }
 
+#ifdef HAVE_LIBARCHIVE
 typedef struct {
   GRegex *regex;
   const char *replacement;
@@ -245,6 +245,7 @@ handle_translate_pathname (OstreeRepo *repo,
   g_assert (ret);
   return ret;
 }
+#endif
 
 static gboolean
 commit_editor (OstreeRepo     *repo,
@@ -631,12 +632,12 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
                   if (!ostree_repo_import_archive_to_mtree (repo, &opts, archive, mtree,
                                                             modifier, cancellable, error))
                     goto out;
-                }
 #else
-              g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-                           "This version of ostree is not compiled with libarchive support");
-              return FALSE;
+                  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+                               "This version of ostree is not compiled with libarchive support");
+                  goto out;
 #endif
+                }
             }
           else if (strcmp (tree_type, "ref") == 0)
             {

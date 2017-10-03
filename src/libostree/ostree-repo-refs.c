@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -469,6 +468,69 @@ ostree_repo_resolve_rev_ext (OstreeRepo                    *self,
   return _ostree_repo_resolve_rev_internal (self, refspec, allow_noent, FALSE, out_rev, error);
 }
 
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+/**
+ * ostree_repo_resolve_collection_ref:
+ * @self: an #OstreeRepo
+ * @ref: a collection–ref to resolve
+ * @allow_noent: %TRUE to not throw an error if @ref doesn’t exist
+ * @flags: options controlling behaviour
+ * @out_rev: (out) (transfer full) (optional) (nullable): return location for
+ *    the checksum corresponding to @ref, or %NULL if @allow_noent is %TRUE and
+ *    the @ref could not be found
+ * @cancellable: (nullable): a #GCancellable, or %NULL
+ * @error: return location for a #GError, or %NULL
+ *
+ * Look up the checksum for the given collection–ref, returning it in @out_rev.
+ * This will search through the mirrors and remote refs.
+ *
+ * If @allow_noent is %TRUE and the given @ref cannot be found, %TRUE will be
+ * returned and @out_rev will be set to %NULL. If @allow_noent is %FALSE and
+ * the given @ref cannot be found, a %G_IO_ERROR_NOT_FOUND error will be
+ * returned.
+ *
+ * There are currently no @flags which affect the behaviour of this function.
+ *
+ * Returns: %TRUE on success, %FALSE on failure
+ * Since: 2017.12
+ */
+gboolean
+ostree_repo_resolve_collection_ref (OstreeRepo                    *self,
+                                    const OstreeCollectionRef     *ref,
+                                    gboolean                       allow_noent,
+                                    OstreeRepoResolveRevExtFlags   flags,
+                                    char                         **out_rev,
+                                    GCancellable                  *cancellable,
+                                    GError                       **error)
+{
+  g_return_val_if_fail (OSTREE_IS_REPO (self), FALSE);
+  g_return_val_if_fail (ref != NULL, FALSE);
+  g_return_val_if_fail (ref->collection_id != NULL && ref->ref_name != NULL, FALSE);
+  g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), FALSE);
+  g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+  g_autoptr(GHashTable) refs = NULL;  /* (element-type OstreeCollectionRef utf8) */
+  if (!ostree_repo_list_collection_refs (self, ref->collection_id, &refs,
+                                         OSTREE_REPO_LIST_REFS_EXT_NONE,
+                                         cancellable, error))
+    return FALSE;
+
+  const char *ret_contents = g_hash_table_lookup (refs, ref);
+
+  if (ret_contents == NULL && !allow_noent)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                   "Collection–ref (%s, %s) not found",
+                   ref->collection_id, ref->ref_name);
+      return FALSE;
+    }
+
+  if (out_rev != NULL)
+    *out_rev = g_strdup (ret_contents);
+  return TRUE;
+}
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
+
 static gboolean
 enumerate_refs_recurse (OstreeRepo    *repo,
                         const char    *remote,
@@ -545,12 +607,10 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
                                  GCancellable     *cancellable,
                                  GError          **error)
 {
-  g_autoptr(GHashTable) ret_all_refs = NULL;
   g_autofree char *remote = NULL;
   g_autofree char *ref_prefix = NULL;
 
-  ret_all_refs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-
+  g_autoptr(GHashTable) ret_all_refs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   if (refspec_prefix)
     {
       struct stat stbuf;
@@ -571,12 +631,9 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
           path = glnx_strjoina (prefix_path, ref_prefix);
         }
 
-      if (fstatat (self->repo_dir_fd, path, &stbuf, 0) < 0)
-        {
-          if (errno != ENOENT)
-            return glnx_throw_errno (error);
-        }
-      else
+      if (!glnx_fstatat_allow_noent (self->repo_dir_fd, path, &stbuf, 0, error))
+        return FALSE;
+      if (errno == 0)
         {
           if (S_ISDIR (stbuf.st_mode))
             {

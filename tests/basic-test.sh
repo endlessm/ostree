@@ -19,11 +19,7 @@
 
 set -euo pipefail
 
-echo "1..$((72 + ${extra_basic_tests:-0}))"
-
-$CMD_PREFIX ostree --version > version.yaml
-python -c 'import yaml; yaml.safe_load(open("version.yaml"))'
-echo "ok yaml version"
+echo "1..$((73 + ${extra_basic_tests:-0}))"
 
 CHECKOUT_U_ARG=""
 CHECKOUT_H_ARGS="-H"
@@ -282,7 +278,8 @@ if ! skip_one_without_user_xattrs; then
         opposite_mode=archive
     fi
     ostree_repo_init repo2 --mode=$opposite_mode
-    ${CMD_PREFIX} ostree --repo=repo2 pull-local repo
+    ${CMD_PREFIX} ostree --repo=repo2 pull-local repo >out.txt
+    assert_file_has_content out.txt "[1-9][0-9]* metadata, [1-9][0-9]* content objects imported"
     test2_commitid=$(${CMD_PREFIX} ostree --repo=repo rev-parse test2)
     test2_commit_relpath=/objects/${test2_commitid:0:2}/${test2_commitid:2}.commit
     assert_files_hardlinked repo/${test2_commit_relpath} repo2/${test2_commit_relpath}
@@ -314,7 +311,7 @@ $CMD_PREFIX ostree --repo=repo-input commit -b content-with-suid --statoverride=
 if $CMD_PREFIX ostree pull-local --repo=repo --bareuseronly-files repo-input content-with-suid 2>err.txt; then
     assert_not_reached "copying suid file with --bareuseronly-files worked?"
 fi
-assert_file_has_content err.txt 'object.*\.file: invalid mode.*with bits 040.*'
+assert_file_has_content err.txt 'Content object.*: invalid mode.*with bits 040.*'
 echo "ok pull-local (bareuseronly files)"
 
 if ! skip_one_without_user_xattrs; then
@@ -606,6 +603,24 @@ $OSTREE checkout test2 test2-checkout
 echo "ok commit with link speedup"
 
 cd ${test_tmpdir}
+rm -rf test2-checkout
+$OSTREE checkout test2 test2-checkout
+# set cow to different perms, but re-set cowro to the same perms
+cat > statoverride.txt <<EOF
+=$((0600)) /baz/cow
+=$((0600)) /baz/cowro
+EOF
+$OSTREE commit ${COMMIT_ARGS} --statoverride=statoverride.txt \
+  --table-output --link-checkout-speedup -b test2-tmp test2-checkout > stats.txt
+$OSTREE diff test2 test2-tmp > diff-test2
+assert_file_has_content diff-test2 'M */baz/cow$'
+assert_not_file_has_content diff-test2 'M */baz/cowro$'
+assert_not_file_has_content diff-test2 'baz/saucer'
+# only /baz/cow is a cache miss
+assert_file_has_content stats.txt '^Content Written: 1$'
+echo "ok commit with link speedup and modifier"
+
+cd ${test_tmpdir}
 $OSTREE ls test2
 echo "ok ls with no argument"
 
@@ -809,8 +824,18 @@ cd ${test_tmpdir}
 rm -rf test2-checkout
 mkdir -p test2-checkout
 cd test2-checkout
-touch should-not-be-fsynced
-$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Unfsynced commit" --fsync=false
+echo 'should not be fsynced' > should-not-be-fsynced
+if ! skip_one_without_strace_fault_injection; then
+    # Test that --fsync=false doesn't fsync
+    fsync_inject_error_ostree="strace -o /dev/null -f -e inject=syncfs,fsync,sync:error=EPERM ostree"
+    ${fsync_inject_error_ostree} --repo=${test_tmpdir}/repo commit ${COMMIT_ARGS} -b test2-no-fsync --fsync=false
+    # And test that we get EPERM if we inject an error
+    if ${fsync_inject_error_ostree} --repo=${test_tmpdir}/repo commit ${COMMIT_ARGS} -b test2-no-fsync 2>err.txt; then
+        fatal "fsync error injection failed"
+    fi
+    assert_file_has_content err.txt 'sync.*Operation not permitted'
+    echo "ok fsync disabled"
+fi
 
 # Run this test only as non-root user.  When run as root, the chmod
 # won't have any effect.

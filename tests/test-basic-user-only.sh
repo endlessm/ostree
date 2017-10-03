@@ -22,8 +22,12 @@ set -euo pipefail
 . $(dirname $0)/libtest.sh
 
 setup_test_repository "bare-user-only"
-extra_basic_tests=4
+extra_basic_tests=5
 . $(dirname $0)/basic-test.sh
+
+$CMD_PREFIX ostree --version > version.yaml
+python -c 'import yaml; yaml.safe_load(open("version.yaml"))'
+echo "ok yaml version"
 
 # Reset things so we don't inherit a lot of state from earlier tests
 cd ${test_tmpdir}
@@ -45,7 +49,7 @@ $CMD_PREFIX ostree --repo=repo-input commit -b content-with-suid --statoverride=
 if $CMD_PREFIX ostree pull-local --repo=repo repo-input 2>err.txt; then
     assert_not_reached "copying suid file into bare-user worked?"
 fi
-assert_file_has_content err.txt "Invalid mode.*with bits 040.*in bare-user-only"
+assert_file_has_content err.txt "Content object.*invalid mode.*with bits 040.*"
 echo "ok failed to commit suid"
 
 cd ${test_tmpdir}

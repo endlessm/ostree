@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  * Copyright (C) 2015 Red Hat, Inc.
  *
@@ -49,6 +48,10 @@
 
 /* ABI Size checks for ostree-repo.h, only for LP64 systems;
  * https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models
+ *
+ * To generate this data, I used `pahole` from gdb. More concretely, `gdb --args
+ * /usr/bin/ostree`, then `start`, (to ensure debuginfo was loaded), then e.g.
+ * `$ pahole OstreeRepoTransactionStats`.
  */
 #if __SIZEOF_POINTER__ == 8 && __SIZEOF_LONG__ == 8 && __SIZEOF_INT__ == 4
 G_STATIC_ASSERT(sizeof(OstreeRepoTransactionStats) == sizeof(int) * 4 + 8 * 5);
@@ -487,9 +490,7 @@ ostree_repo_finalize (GObject *object)
   g_clear_object (&self->repodir);
   if (self->repo_dir_fd != -1)
     (void) close (self->repo_dir_fd);
-  if (self->commit_stagedir_fd != -1)
-    (void) close (self->commit_stagedir_fd);
-  g_free (self->commit_stagedir_name);
+  glnx_tmpdir_unset (&self->commit_stagedir);
   glnx_release_lock_file (&self->commit_stagedir_lock);
   if (self->tmp_dir_fd != -1)
     (void) close (self->tmp_dir_fd);
@@ -661,7 +662,6 @@ static void
 ostree_repo_init (OstreeRepo *self)
 {
   static gsize gpgme_initialized;
-  GLnxLockFile empty_lockfile = GLNX_LOCK_FILE_INIT;
   const GDebugKey test_error_keys[] = {
     { "pre-commit", OSTREE_REPO_TEST_ERROR_PRE_COMMIT },
   };
@@ -687,10 +687,8 @@ ostree_repo_init (OstreeRepo *self)
   self->repo_dir_fd = -1;
   self->cache_dir_fd = -1;
   self->tmp_dir_fd = -1;
-  self->commit_stagedir_fd = -1;
   self->objects_dir_fd = -1;
   self->uncompressed_objects_dir_fd = -1;
-  self->commit_stagedir_lock = empty_lockfile;
   self->sysroot_kind = OSTREE_REPO_SYSROOT_KIND_UNKNOWN;
 }
 
@@ -1753,7 +1751,8 @@ ostree_repo_mode_to_string (OstreeRepoMode   mode,
     case OSTREE_REPO_MODE_BARE_USER_ONLY:
       ret_mode = "bare-user-only";
       break;
-    case OSTREE_REPO_MODE_ARCHIVE_Z2:
+    case OSTREE_REPO_MODE_ARCHIVE:
+      /* Legacy alias */
       ret_mode ="archive-z2";
       break;
     default:
@@ -1779,7 +1778,7 @@ ostree_repo_mode_from_string (const char      *mode,
     ret_mode = OSTREE_REPO_MODE_BARE_USER_ONLY;
   else if (strcmp (mode, "archive-z2") == 0 ||
            strcmp (mode, "archive") == 0)
-    ret_mode = OSTREE_REPO_MODE_ARCHIVE_Z2;
+    ret_mode = OSTREE_REPO_MODE_ARCHIVE;
   else
     return glnx_throw (error, "Invalid mode '%s' in repository configuration", mode);
 
@@ -1809,7 +1808,9 @@ repo_create_at_internal (int             dfd,
   /* Early return if we have an existing repo */
   { g_autofree char *objects_path = g_build_filename (path, "objects", NULL);
 
-    if (fstatat (dfd, objects_path, &stbuf, 0) == 0)
+    if (!glnx_fstatat_allow_noent (dfd, objects_path, &stbuf, 0, error))
+      return FALSE;
+    if (errno == 0)
       {
         glnx_fd_close int repo_dfd = -1;
         if (!glnx_opendirat (dfd, path, TRUE, &repo_dfd, error))
@@ -1819,8 +1820,6 @@ repo_create_at_internal (int             dfd,
         *out_dfd = glnx_steal_fd (&repo_dfd);
         return TRUE;
       }
-    else if (errno != ENOENT)
-      return glnx_throw_errno_prefix (error, "fstatat");
   }
 
   if (mkdirat (dfd, path, 0755) != 0)
@@ -1833,32 +1832,29 @@ repo_create_at_internal (int             dfd,
   if (!glnx_opendirat (dfd, path, TRUE, &repo_dfd, error))
     return FALSE;
 
-  if (fstatat (repo_dfd, "config", &stbuf, 0) < 0)
+  if (!glnx_fstatat_allow_noent (repo_dfd, "config", &stbuf, 0, error))
+    return FALSE;
+  if (errno == ENOENT)
     {
-      if (errno == ENOENT)
-        {
-          const char *mode_str = NULL;
-          g_autoptr(GString) config_data = g_string_new (DEFAULT_CONFIG_CONTENTS);
+      const char *mode_str = NULL;
+      g_autoptr(GString) config_data = g_string_new (DEFAULT_CONFIG_CONTENTS);
 
-          if (!ostree_repo_mode_to_string (mode, &mode_str, error))
-            return FALSE;
-          g_assert (mode_str);
+      if (!ostree_repo_mode_to_string (mode, &mode_str, error))
+        return FALSE;
+      g_assert (mode_str);
 
-          g_string_append_printf (config_data, "mode=%s\n", mode_str);
+      g_string_append_printf (config_data, "mode=%s\n", mode_str);
 
-          const char *collection_id = NULL;
-          if (options)
-            g_variant_lookup (options, "collection-id", "&s", &collection_id);
-          if (collection_id != NULL)
-            g_string_append_printf (config_data, "collection-id=%s\n", collection_id);
+      const char *collection_id = NULL;
+      if (options)
+        g_variant_lookup (options, "collection-id", "&s", &collection_id);
+      if (collection_id != NULL)
+        g_string_append_printf (config_data, "collection-id=%s\n", collection_id);
 
-          if (!glnx_file_replace_contents_at (repo_dfd, "config",
-                                              (guint8*)config_data->str, config_data->len,
-                                              0, cancellable, error))
-            return FALSE;
-        }
-      else
-        return glnx_throw_errno_prefix (error, "fstatat");
+      if (!glnx_file_replace_contents_at (repo_dfd, "config",
+                                          (guint8*)config_data->str, config_data->len,
+                                          0, cancellable, error))
+        return FALSE;
     }
 
   for (guint i = 0; i < G_N_ELEMENTS (state_dirs); i++)
@@ -2480,7 +2476,7 @@ ostree_repo_open (OstreeRepo    *self,
     return FALSE;
 
   /* TODO - delete this */
-  if (self->mode == OSTREE_REPO_MODE_ARCHIVE_Z2 && self->enable_uncompressed_cache)
+  if (self->mode == OSTREE_REPO_MODE_ARCHIVE && self->enable_uncompressed_cache)
     {
       if (!glnx_shutil_mkdir_p_at (self->repo_dir_fd, "uncompressed-objects-cache", 0755,
                                    cancellable, error))
@@ -2615,6 +2611,61 @@ ostree_repo_get_dfd (OstreeRepo  *self)
   return self->repo_dir_fd;
 }
 
+/**
+ * ostree_repo_hash:
+ * @self: an #OstreeRepo
+ *
+ * Calculate a hash value for the given open repository, suitable for use when
+ * putting it into a hash table. It is an error to call this on an #OstreeRepo
+ * which is not yet open, as a persistent hash value cannot be calculated until
+ * the repository is open and the inode of its root directory has been loaded.
+ *
+ * This function does no I/O.
+ *
+ * Returns: hash value for the #OstreeRepo
+ * Since: 2017.12
+ */
+guint
+ostree_repo_hash (OstreeRepo *self)
+{
+  g_return_val_if_fail (OSTREE_IS_REPO (self), 0);
+
+  /* We cannot hash non-open repositories, since their hash value would change
+   * once they’re opened, resulting in false lookup misses and the inability to
+   * remove them from a hash table. */
+  g_assert (self->repo_dir_fd >= 0);
+
+  /* device and inode numbers are distributed fairly uniformly, so we can’t
+   * do much better than just combining them. No need to rehash to even out
+   * the distribution. */
+  return (self->device ^ self->inode);
+}
+
+/**
+ * ostree_repo_equal:
+ * @a: an #OstreeRepo
+ * @b: an #OstreeRepo
+ *
+ * Check whether two opened repositories are the same on disk: if their root
+ * directories are the same inode. If @a or @b are not open yet (due to
+ * ostree_repo_open() not being called on them yet), %FALSE will be returned.
+ *
+ * Returns: %TRUE if @a and @b are the same repository on disk, %FALSE otherwise
+ * Since: 2017.12
+ */
+gboolean
+ostree_repo_equal (OstreeRepo *a,
+                   OstreeRepo *b)
+{
+  g_return_val_if_fail (OSTREE_IS_REPO (a), FALSE);
+  g_return_val_if_fail (OSTREE_IS_REPO (b), FALSE);
+
+  if (a->repo_dir_fd < 0 || b->repo_dir_fd < 0)
+    return FALSE;
+
+  return (a->device == b->device && a->inode == b->inode);
+}
+
 OstreeRepoMode
 ostree_repo_get_mode (OstreeRepo  *self)
 {
@@ -2676,7 +2727,7 @@ list_loose_objects_at (OstreeRepo             *self,
         continue;
 
       OstreeObjectType objtype;
-      if ((self->mode == OSTREE_REPO_MODE_ARCHIVE_Z2
+      if ((self->mode == OSTREE_REPO_MODE_ARCHIVE
            && strcmp (dot, ".filez") == 0) ||
           ((_ostree_repo_mode_is_bare (self->mode))
            && strcmp (dot, ".file") == 0))
@@ -2793,9 +2844,9 @@ load_metadata_internal (OstreeRepo       *self,
                                error))
     return FALSE;
 
-  if (fd < 0 && self->commit_stagedir_fd != -1)
+  if (fd < 0 && self->commit_stagedir.initialized)
     {
-      if (!ot_openat_ignore_enoent (self->commit_stagedir_fd, loose_path_buf, &fd,
+      if (!ot_openat_ignore_enoent (self->commit_stagedir.fd, loose_path_buf, &fd,
                                     error))
         return FALSE;
     }
@@ -2906,9 +2957,9 @@ repo_load_file_archive (OstreeRepo *self,
                                 error))
     return FALSE;
 
-  if (fd < 0 && self->commit_stagedir_fd != -1)
+  if (fd < 0 && self->commit_stagedir.initialized)
     {
-      if (!ot_openat_ignore_enoent (self->commit_stagedir_fd, loose_path_buf, &fd,
+      if (!ot_openat_ignore_enoent (self->commit_stagedir.fd, loose_path_buf, &fd,
                                     error))
         return FALSE;
     }
@@ -2967,9 +3018,9 @@ _ostree_repo_load_file_bare (OstreeRepo         *self,
   int objdir_fd = self->objects_dir_fd;
   int res;
   if ((res = TEMP_FAILURE_RETRY (fstatat (objdir_fd, loose_path_buf, &stbuf, AT_SYMLINK_NOFOLLOW))) < 0
-      && errno == ENOENT && self->commit_stagedir_fd != -1)
+      && errno == ENOENT && self->commit_stagedir.initialized)
     {
-      objdir_fd = self->commit_stagedir_fd;
+      objdir_fd = self->commit_stagedir.fd;
       res = TEMP_FAILURE_RETRY (fstatat (objdir_fd, loose_path_buf, &stbuf, AT_SYMLINK_NOFOLLOW));
     }
   if (res < 0 && errno != ENOENT)
@@ -3102,7 +3153,7 @@ ostree_repo_load_file (OstreeRepo         *self,
                        GCancellable       *cancellable,
                        GError            **error)
 {
-  if (self->mode == OSTREE_REPO_MODE_ARCHIVE_Z2)
+  if (self->mode == OSTREE_REPO_MODE_ARCHIVE)
     return repo_load_file_archive (self, checksum, out_input, out_file_info, out_xattrs,
                                    cancellable, error);
   else
@@ -3214,7 +3265,9 @@ _ostree_repo_has_loose_object (OstreeRepo           *self,
 
   gboolean found = FALSE;
   /* It's easier to share code if we make this an array */
-  const int dfd_searches[] = { self->commit_stagedir_fd, self->objects_dir_fd };
+  int dfd_searches[] = { -1, self->objects_dir_fd };
+  if (self->commit_stagedir.initialized)
+    dfd_searches[0] = self->commit_stagedir.fd;
   for (guint i = 0; i < G_N_ELEMENTS (dfd_searches); i++)
     {
       int dfd = dfd_searches[i];
@@ -3346,114 +3399,6 @@ ostree_repo_delete_object (OstreeRepo           *self,
   return TRUE;
 }
 
-static gboolean
-copy_detached_metadata (OstreeRepo    *self,
-                        OstreeRepo    *source,
-                        const char   *checksum,
-                        GCancellable  *cancellable,
-                        GError        **error)
-{
-  g_autoptr(GVariant) detached_meta = NULL;
-  if (!ostree_repo_read_commit_detached_metadata (source,
-                                                  checksum, &detached_meta,
-                                                  cancellable, error))
-    return FALSE;
-
-  if (detached_meta)
-    {
-      if (!ostree_repo_write_commit_detached_metadata (self,
-                                                       checksum, detached_meta,
-                                                       cancellable, error))
-        return FALSE;
-    }
-
-  return TRUE;
-}
-
-/* Special case between bare-user and bare-user-only,
- * mostly for https://github.com/flatpak/flatpak/issues/845
- * see below for any more comments.
- */
-static gboolean
-import_is_bareuser_only_conversion (OstreeRepo *src_repo,
-                                    OstreeRepo *dest_repo,
-                                    OstreeObjectType objtype)
-{
-  return src_repo->mode == OSTREE_REPO_MODE_BARE_USER
-    && dest_repo->mode == OSTREE_REPO_MODE_BARE_USER_ONLY
-    && objtype == OSTREE_OBJECT_TYPE_FILE;
-}
-
-static gboolean
-import_one_object_link (OstreeRepo    *self,
-                        OstreeRepo    *source,
-                        const char   *checksum,
-                        OstreeObjectType objtype,
-                        gboolean       *out_was_supported,
-                        GCancellable  *cancellable,
-                        GError        **error)
-{
-  const char *errprefix = glnx_strjoina ("Importing ", checksum, ".",
-                                         ostree_object_type_to_string (objtype));
-  GLNX_AUTO_PREFIX_ERROR (errprefix, error);
-  char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
-  _ostree_loose_path (loose_path_buf, checksum, objtype, self->mode);
-
-  /* Hardlinking between bare-user → bare-user-only is only possible for regular
-   * files, *not* symlinks, which in bare-user are stored as regular files.  At
-   * this point we need to parse the file to see the difference.
-   */
-  if (import_is_bareuser_only_conversion (source, self, objtype))
-    {
-      struct stat stbuf;
-
-      if (!_ostree_repo_load_file_bare (source, checksum, NULL, &stbuf,
-                                        NULL, NULL, cancellable, error))
-        return FALSE;
-
-      if (S_ISREG (stbuf.st_mode))
-        {
-          /* This is OK, we'll drop through and try a hardlink */
-        }
-      else if (S_ISLNK (stbuf.st_mode))
-        {
-          /* NOTE early return */
-          *out_was_supported = FALSE;
-          return TRUE;
-        }
-      else
-        g_assert_not_reached ();
-    }
-
-  if (!_ostree_repo_ensure_loose_objdir_at (self->objects_dir_fd, loose_path_buf, cancellable, error))
-    return FALSE;
-
-  *out_was_supported = TRUE;
-  if (linkat (source->objects_dir_fd, loose_path_buf, self->objects_dir_fd, loose_path_buf, 0) != 0)
-    {
-      if (errno == EEXIST)
-        return TRUE;
-      else if (errno == EMLINK || errno == EXDEV || errno == EPERM)
-        {
-          /* EMLINK, EXDEV and EPERM shouldn't be fatal; we just can't do the
-           * optimization of hardlinking instead of copying.
-           */
-          *out_was_supported = FALSE;
-          return TRUE;
-        }
-      else
-        return glnx_throw_errno_prefix (error, "linkat");
-    }
-
-  if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
-    {
-      if (!copy_detached_metadata (self, source, checksum, cancellable, error))
-        return FALSE;
-    }
-
-  return TRUE;
-}
-
 /**
  * ostree_repo_import_object_from:
  * @self: Destination repo
@@ -3483,28 +3428,6 @@ ostree_repo_import_object_from (OstreeRepo           *self,
                                                checksum, TRUE, cancellable, error);
 }
 
-static gboolean
-import_via_hardlink_is_possible (OstreeRepo *src_repo,
-                                 OstreeRepo *dest_repo,
-                                 OstreeObjectType objtype)
-{
-  /* We need the ability to make hardlinks */
-  if (src_repo->owner_uid != dest_repo->owner_uid)
-    return FALSE;
-  /* Equal modes are always compatible */
-  if (src_repo->mode == dest_repo->mode)
-    return TRUE;
-  /* Metadata is identical between all modes */
-  if (OSTREE_OBJECT_TYPE_IS_META (objtype))
-    return TRUE;
-  /* And now a special case between bare-user and bare-user-only,
-   * mostly for https://github.com/flatpak/flatpak/issues/845
-   */
-  if (import_is_bareuser_only_conversion (src_repo, dest_repo, objtype))
-    return TRUE;
-  return FALSE;
-}
-
 /**
  * ostree_repo_import_object_from_with_trust:
  * @self: Destination repo
@@ -3531,102 +3454,11 @@ ostree_repo_import_object_from_with_trust (OstreeRepo           *self,
                                            GCancellable         *cancellable,
                                            GError              **error)
 {
-  /* We try to import via hardlink. If the remote is explicitly not trusted
-   * (i.e.) their checksums may be incorrect, we skip that. Also, we require the
-   * repository modes to match, as well as the owner uid (since we need to be
-   * able to make hardlinks).
-   */
-  if (trusted && import_via_hardlink_is_possible (source, self, objtype))
-    {
-      gboolean hardlink_was_supported = FALSE;
-
-      if (!import_one_object_link (self, source, checksum, objtype,
-                                   &hardlink_was_supported,
-                                   cancellable, error))
-        return FALSE;
-
-      /* If we hardlinked, we're done! */
-      if (hardlink_was_supported)
-        return TRUE;
-    }
-
-  /* The copy path */
-
-  /* First, do we have the object already? */
-  gboolean has_object;
-  if (!ostree_repo_has_object (self, objtype, checksum, &has_object,
-                               cancellable, error))
-    return FALSE;
-  /* If we have it, we're done */
-  if (has_object)
-    return TRUE;
-
-  if (OSTREE_OBJECT_TYPE_IS_META (objtype))
-    {
-      /* Metadata object */
-      g_autoptr(GVariant) variant = NULL;
-
-      if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
-        {
-          /* FIXME - cleanup detached metadata if copy below fails */
-          if (!copy_detached_metadata (self, source, checksum, cancellable, error))
-            return FALSE;
-        }
-
-      if (!ostree_repo_load_variant (source, objtype, checksum,
-                                     &variant, error))
-        return FALSE;
-
-      if (trusted)
-        {
-          if (!ostree_repo_write_metadata_trusted (self, objtype,
-                                                   checksum, variant,
-                                                   cancellable, error))
-            return FALSE;
-        }
-      else
-        {
-          g_autofree guchar *real_csum = NULL;
-
-          if (!ostree_repo_write_metadata (self, objtype,
-                                           checksum, variant,
-                                           &real_csum,
-                                           cancellable, error))
-            return FALSE;
-        }
-    }
-  else
-    {
-      /* Content object */
-      guint64 length;
-      g_autoptr(GInputStream) object_stream = NULL;
-
-      if (!ostree_repo_load_object_stream (source, objtype, checksum,
-                                           &object_stream, &length,
-                                           cancellable, error))
-        return FALSE;
-
-      if (trusted)
-        {
-          if (!ostree_repo_write_content_trusted (self, checksum,
-                                                  object_stream, length,
-                                                  cancellable, error))
-            return FALSE;
-        }
-      else
-        {
-          g_autofree guchar *real_csum = NULL;
-          if (!ostree_repo_write_content (self, checksum,
-                                          object_stream, length,
-                                          &real_csum,
-                                          cancellable, error))
-            return FALSE;
-        }
-    }
-
-  return TRUE;
+  /* This just wraps a currently internal API, may make it public later */
+  OstreeRepoImportFlags flags = trusted ? _OSTREE_REPO_IMPORT_FLAGS_TRUSTED : 0;
+  return _ostree_repo_import_object (self, source, objtype, checksum,
+                                     flags, cancellable, error);
 }
-
 
 /**
  * ostree_repo_query_object_storage_size:
@@ -3654,8 +3486,8 @@ ostree_repo_query_object_storage_size (OstreeRepo           *self,
 
   struct stat stbuf;
   res = TEMP_FAILURE_RETRY (fstatat (self->objects_dir_fd, loose_path, &stbuf, AT_SYMLINK_NOFOLLOW));
-  if (res < 0 && errno == ENOENT && self->commit_stagedir_fd != -1)
-    res = TEMP_FAILURE_RETRY (fstatat (self->commit_stagedir_fd, loose_path, &stbuf, AT_SYMLINK_NOFOLLOW));
+  if (res < 0 && errno == ENOENT && self->commit_stagedir.initialized)
+    res = TEMP_FAILURE_RETRY (fstatat (self->commit_stagedir.fd, loose_path, &stbuf, AT_SYMLINK_NOFOLLOW));
 
   if (res < 0)
     return glnx_throw_errno_prefix (error, "Querying object %s.%s", sha256, ostree_object_type_to_string (objtype));
@@ -4023,7 +3855,7 @@ ostree_repo_pull_default_console_progress_changed (OstreeAsyncProgress *progress
                                                    gpointer             user_data)
 {
   g_autofree char *status = NULL;
-  gboolean scanning;
+  gboolean caught_error, scanning;
   guint outstanding_fetches;
   guint outstanding_metadata_fetches;
   guint outstanding_writes;
@@ -4039,6 +3871,7 @@ ostree_repo_pull_default_console_progress_changed (OstreeAsyncProgress *progress
                              "outstanding-fetches", "u", &outstanding_fetches,
                              "outstanding-metadata-fetches", "u", &outstanding_metadata_fetches,
                              "outstanding-writes", "u", &outstanding_writes,
+                             "caught-error", "b", &caught_error,
                              "scanning", "u", &scanning,
                              "scanned-metadata", "u", &n_scanned_metadata,
                              "fetched-delta-parts", "u", &fetched_delta_parts,
@@ -4051,6 +3884,10 @@ ostree_repo_pull_default_console_progress_changed (OstreeAsyncProgress *progress
   if (*status != '\0')
     {
       g_string_append (buf, status);
+    }
+  else if (caught_error)
+    {
+      g_string_append_printf (buf, "Caught error, waiting for outstanding tasks");
     }
   else if (outstanding_fetches)
     {
@@ -4191,88 +4028,52 @@ sign_data (OstreeRepo     *self,
            GCancellable   *cancellable,
            GError        **error)
 {
-  gboolean ret = FALSE;
   g_auto(GLnxTmpfile) tmpf = { 0, };
-  g_autoptr(GOutputStream) tmp_signature_output = NULL;
-  gpgme_ctx_t context = NULL;
-  g_autoptr(GBytes) ret_signature = NULL;
-  gpgme_error_t err;
-  gpgme_key_t key = NULL;
-  gpgme_data_t commit_buffer = NULL;
-  gpgme_data_t signature_buffer = NULL;
-  g_autoptr(GMappedFile) signature_file = NULL;
-  
   if (!glnx_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_RDWR | O_CLOEXEC,
                                       &tmpf, error))
-    goto out;
-  tmp_signature_output = g_unix_output_stream_new (tmpf.fd, FALSE);
+    return FALSE;
+  g_autoptr(GOutputStream) tmp_signature_output = g_unix_output_stream_new (tmpf.fd, FALSE);
 
-  context = ot_gpgme_new_ctx (homedir, error);
+  g_auto(gpgme_ctx_t) context = ot_gpgme_new_ctx (homedir, error);
   if (!context)
-    goto out;
+    return FALSE;
 
   /* Get the secret keys with the given key id */
-  err = gpgme_get_key (context, key_id, &key, 1);
+  g_auto(gpgme_key_t) key = NULL;
+  gpgme_error_t err = gpgme_get_key (context, key_id, &key, 1);
   if (gpgme_err_code (err) == GPG_ERR_EOF)
-    {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "No gpg key found with ID %s (homedir: %s)", key_id,
-                   homedir ? homedir : "<default>");
-      goto out;
-    }
+    return glnx_throw (error, "No gpg key found with ID %s (homedir: %s)", key_id,
+                       homedir ? homedir : "<default>");
   else if (err != GPG_ERR_NO_ERROR)
-    {
-      ot_gpgme_throw (err, error, "Unable to lookup key ID %s", key_id);
-      goto out;
-    }
+    return ot_gpgme_throw (err, error, "Unable to lookup key ID %s", key_id);
 
   /* Add the key to the context as a signer */
   if ((err = gpgme_signers_add (context, key)) != GPG_ERR_NO_ERROR)
-    {
-      ot_gpgme_throw (err, error, "Error signing commit");
-      goto out;
-    }
+    return ot_gpgme_throw (err, error, "Error signing commit");
 
-  {
-    gsize len;
-    const char *buf = g_bytes_get_data (input_data, &len);
-    if ((err = gpgme_data_new_from_mem (&commit_buffer, buf, len, FALSE)) != GPG_ERR_NO_ERROR)
-      {
-        ot_gpgme_throw (err, error, "Failed to create buffer from commit file");
-        goto out;
-      }
-  }
+  /* Get a gpg buffer from the commit */
+  g_auto(gpgme_data_t) commit_buffer = NULL;
+  gsize len;
+  const char *buf = g_bytes_get_data (input_data, &len);
+  if ((err = gpgme_data_new_from_mem (&commit_buffer, buf, len, FALSE)) != GPG_ERR_NO_ERROR)
+    return ot_gpgme_throw (err, error, "Failed to create buffer from commit file");
 
-  signature_buffer = ot_gpgme_data_output (tmp_signature_output);
-
+  /* Sign it */
+  g_auto(gpgme_data_t) signature_buffer = ot_gpgme_data_output (tmp_signature_output);
   if ((err = gpgme_op_sign (context, commit_buffer, signature_buffer, GPGME_SIG_MODE_DETACH))
       != GPG_ERR_NO_ERROR)
-    {
-      ot_gpgme_throw (err, error, "Failure signing commit file");
-      goto out;
-    }
-  
+    return ot_gpgme_throw (err, error, "Failure signing commit file");
   if (!g_output_stream_close (tmp_signature_output, cancellable, error))
-    goto out;
-  
-  signature_file = g_mapped_file_new_from_fd (tmpf.fd, FALSE, error);
+    return FALSE;
+
+  /* Return a mmap() reference */
+  g_autoptr(GMappedFile) signature_file = g_mapped_file_new_from_fd (tmpf.fd, FALSE, error);
   if (!signature_file)
-    goto out;
-  ret_signature = g_mapped_file_get_bytes (signature_file);
-  
-  ret = TRUE;
+    return FALSE;
+
   if (out_signature)
-    *out_signature = g_steal_pointer (&ret_signature);
-out:
-  if (commit_buffer)
-    gpgme_data_release (commit_buffer);
-  if (signature_buffer)
-    gpgme_data_release (signature_buffer);
-  if (key)
-    gpgme_key_release (key);
-  if (context)
-    gpgme_release (context);
-  return ret;
+    *out_signature = g_mapped_file_get_bytes (signature_file);
+  return TRUE;
 }
 
 /**
@@ -5097,8 +4898,7 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
 gboolean
 _ostree_repo_is_locked_tmpdir (const char *filename)
 {
-  return g_str_has_prefix (filename, OSTREE_REPO_TMPDIR_STAGING) ||
-    g_str_has_prefix (filename, OSTREE_REPO_TMPDIR_FETCHER);
+  return g_str_has_prefix (filename, OSTREE_REPO_TMPDIR_STAGING);
 }
 
 gboolean
@@ -5141,8 +4941,7 @@ _ostree_repo_try_lock_tmpdir (int            tmpdir_dfd,
 gboolean
 _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
                               const char *tmpdir_prefix,
-                              char **tmpdir_name_out,
-                              int *tmpdir_fd_out,
+                              GLnxTmpDir *tmpdir_out,
                               GLnxLockFile *file_lock_out,
                               gboolean *reusing_dir_out,
                               GCancellable *cancellable,
@@ -5157,9 +4956,8 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
 
   gboolean reusing_dir = FALSE;
   gboolean did_lock = FALSE;
-  g_autofree char *tmpdir_name = NULL;
-  glnx_fd_close int tmpdir_fd = -1;
-  while (tmpdir_name == NULL)
+  g_auto(GLnxTmpDir) ret_tmpdir = { 0, };
+  while (!ret_tmpdir.initialized)
     {
       struct dirent *dent;
       glnx_fd_close int existing_tmpdir_fd = -1;
@@ -5179,8 +4977,9 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
           dent->d_type != DT_DIR)
         continue;
 
+      glnx_fd_close int target_dfd = -1;
       if (!glnx_opendirat (dfd_iter.fd, dent->d_name, FALSE,
-                           &existing_tmpdir_fd, &local_error))
+                           &target_dfd, &local_error))
         {
           if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY))
             continue;
@@ -5203,45 +5002,40 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
       /* Touch the reused directory so that we don't accidentally
        * remove it due to being old when cleaning up the tmpdir.
        */
-      (void)futimens (existing_tmpdir_fd, NULL);
+      (void)futimens (target_dfd, NULL);
 
       /* We found an existing tmpdir which we managed to lock */
-      tmpdir_name = g_strdup (dent->d_name);
-      tmpdir_fd = glnx_steal_fd (&existing_tmpdir_fd);
-      reusing_dir = TRUE;
+      ret_tmpdir.src_dfd = tmpdir_dfd;
+      ret_tmpdir.fd = glnx_steal_fd (&target_dfd);
+      ret_tmpdir.path = g_strdup (dent->d_name);
+      ret_tmpdir.initialized = TRUE;
     }
 
-  while (tmpdir_name == NULL)
+  const char *tmpdir_name_template = glnx_strjoina (tmpdir_prefix, "XXXXXX");
+  while (!ret_tmpdir.initialized)
     {
+      g_auto(GLnxTmpDir) new_tmpdir = { 0, };
       /* No existing tmpdir found, create a new */
-      g_autofree char *tmpdir_name_template = g_strconcat (tmpdir_prefix, "XXXXXX", NULL);
-      if (!glnx_mkdtempat (tmpdir_dfd, tmpdir_name_template, 0777, error))
-        return FALSE;
-
-      glnx_fd_close int new_tmpdir_fd = -1;
-      if (!glnx_opendirat (tmpdir_dfd, tmpdir_name_template, FALSE,
-                           &new_tmpdir_fd, error))
+      if (!glnx_mkdtempat (tmpdir_dfd, tmpdir_name_template, 0755,
+                           &new_tmpdir, error))
         return FALSE;
 
       /* Note, at this point we can race with another process that picks up this
        * new directory. If that happens we need to retry, making a new directory. */
-      if (!_ostree_repo_try_lock_tmpdir (tmpdir_dfd, tmpdir_name_template,
+      if (!_ostree_repo_try_lock_tmpdir (new_tmpdir.src_dfd, new_tmpdir.path,
                                          file_lock_out, &did_lock,
                                          error))
         return FALSE;
       if (!did_lock)
         continue;
 
-      tmpdir_name = g_steal_pointer (&tmpdir_name_template);
-      tmpdir_fd = glnx_steal_fd (&new_tmpdir_fd);
+      ret_tmpdir = new_tmpdir; /* Transfer ownership */
+      new_tmpdir.initialized = FALSE;
     }
 
-  if (tmpdir_name_out)
-    *tmpdir_name_out = g_steal_pointer (&tmpdir_name);
-  if (tmpdir_fd_out)
-    *tmpdir_fd_out = glnx_steal_fd (&tmpdir_fd);
-  if (reusing_dir_out)
-    *reusing_dir_out = reusing_dir;
+  *tmpdir_out = ret_tmpdir; /* Transfer ownership */
+  ret_tmpdir.initialized = FALSE;
+  *reusing_dir_out = reusing_dir;
   return TRUE;
 }
 

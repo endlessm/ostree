@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -40,6 +39,7 @@ BUILTINPROTO(diff);
 BUILTINPROTO(export);
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
 BUILTINPROTO(find_remotes);
+BUILTINPROTO(create_usb);
 #endif
 BUILTINPROTO(gpg_sign);
 BUILTINPROTO(init);

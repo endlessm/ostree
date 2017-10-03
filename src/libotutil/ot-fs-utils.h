@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>.
  *
  * This library is free software; you can redistribute it and/or
@@ -65,11 +64,6 @@ gboolean ot_openat_read_stream (int             dfd,
                                 GInputStream  **out_istream,
                                 GCancellable   *cancellable,
                                 GError        **error);
-
-
-gboolean ot_query_exists_at (int dfd, const char *path,
-                             gboolean *out_exists,
-                             GError **error);
 
 gboolean ot_ensure_unlinked_at (int dfd,
                                 const char *path,

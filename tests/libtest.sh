@@ -70,16 +70,50 @@ chmod -R u+w "${test_tmpdir}"
 export TEST_GPG_KEYHOME=${test_tmpdir}/gpghome
 export OSTREE_GPG_HOME=${test_tmpdir}/gpghome/trusted
 
-# See comment in ot-builtin-commit.c and https://github.com/ostreedev/ostree/issues/758
-# Also keep this in sync with the bits in libostreetest.c
-echo evaluating for overlayfs...
-case $(stat -f --printf '%T' /) in
-    overlayfs)
-        echo "overlayfs found; enabling OSTREE_NO_XATTRS"
-        export OSTREE_SYSROOT_DEBUG="${OSTREE_SYSROOT_DEBUG},no-xattrs"
-        export OSTREE_NO_XATTRS=1 ;;
-    *) ;;
-esac
+assert_has_setfattr() {
+    if ! which setfattr 2>/dev/null; then
+        fatal "no setfattr available to determine xattr support"
+    fi
+}
+
+_have_selinux_relabel=''
+have_selinux_relabel() {
+    assert_has_setfattr
+    if test "${_have_selinux_relabel}" = ''; then
+        pushd ${test_tmpdir}
+        echo testlabel > testlabel.txt
+        selinux_xattr=security.selinux
+        if getfattr --encoding=base64 -n ${selinux_xattr} testlabel.txt >label.txt 2>err.txt; then
+            label=$(grep -E -e "^${selinux_xattr}=" < label.txt |sed -e "s,${selinux_xattr}=,,")
+            if setfattr -n ${selinux_xattr} -v ${label} testlabel.txt 2>err.txt; then
+                echo "SELinux enabled in $(pwd), and have privileges to relabel"
+                _have_selinux_relabel=yes
+            else
+                sed -e 's/^/# /' < err.txt >&2
+                echo "Found SELinux label, but unable to set (Unprivileged Docker?)"
+                _have_selinux_relabel=no
+            fi
+        else
+            sed -e 's/^/# /' < err.txt >&2
+            echo "Unable to retrieve SELinux label, assuming disabled"
+            _have_selinux_relabel=no
+        fi
+        popd
+    fi
+    test ${_have_selinux_relabel} = yes
+}
+
+# just globally turn off xattrs if we can't manipulate security xattrs; this is
+# the case for overlayfs -- really, we should only enforce this for tests that
+# use bare repos; separate from other tests that should check for user xattrs
+# support
+# see https://github.com/ostreedev/ostree/issues/758
+# and https://github.com/ostreedev/ostree/pull/1217
+echo -n checking for xattrs...
+if ! have_selinux_relabel; then
+    export OSTREE_SYSROOT_DEBUG="${OSTREE_SYSROOT_DEBUG},no-xattrs"
+    export OSTREE_NO_XATTRS=1
+fi
 echo done
 
 if test -n "${OT_TESTS_DEBUG:-}"; then
@@ -141,6 +175,7 @@ setup_test_repository () {
     fi
 
     cd ${test_tmpdir}
+    rm -rf repo
     if test -n "${mode}"; then
         ostree_repo_init repo --mode=${mode}
     else
@@ -150,6 +185,9 @@ setup_test_repository () {
     export OSTREE="${CMD_PREFIX} ostree ${ot_repo}"
 
     cd ${test_tmpdir}
+    local oldumask="$(umask)"
+    umask 022
+    rm -rf files
     mkdir files
     cd files
     ot_files=`pwd`
@@ -172,6 +210,7 @@ setup_test_repository () {
     ln -s nonexistent baz/alink
     mkdir baz/another/
     echo x > baz/another/y
+    umask "${oldumask}"
 
     cd ${test_tmpdir}/files
     $OSTREE commit ${COMMIT_ARGS}  -b test2 -s "Test Commit 2" -m "Commit body second"
@@ -511,10 +550,24 @@ os_repository_new_commit ()
     cd ${test_tmpdir}
 }
 
+_have_user_xattrs=''
+have_user_xattrs() {
+    assert_has_setfattr
+    if test "${_have_user_xattrs}" = ''; then
+        touch test-xattrs
+        if setfattr -n user.testvalue -v somevalue test-xattrs 2>/dev/null; then
+            _have_user_xattrs=yes
+        else
+            _have_user_xattrs=no
+        fi
+        rm -f test-xattrs
+    fi
+    test ${_have_user_xattrs} = yes
+}
+
 # Usage: if ! skip_one_without_user_xattrs; then ... more tests ...; fi
 skip_one_without_user_xattrs () {
-    touch test-xattrs
-    if ! setfattr -n user.testvalue -v somevalue test-xattrs; then
+    if ! have_user_xattrs; then
         echo "ok # SKIP - this test requires xattr support"
         return 0
     else
@@ -523,9 +576,43 @@ skip_one_without_user_xattrs () {
 }
 
 skip_without_user_xattrs () {
-    touch test-xattrs
-    setfattr -n user.testvalue -v somevalue test-xattrs || \
+    if ! have_user_xattrs; then
         skip "this test requires xattr support"
+    fi
+}
+
+# Skip unless SELinux is disabled, or we can relabel.
+# Default Docker has security.selinux xattrs, but returns
+# EOPNOTSUPP when trying to set them, even to the existing value.
+# https://github.com/ostreedev/ostree/pull/759
+# https://github.com/ostreedev/ostree/pull/1217
+skip_without_no_selinux_or_relabel () {
+    if ! have_selinux_relabel; then
+        skip "this test requires xattr support"
+    fi
+}
+
+# https://brokenpi.pe/tools/strace-fault-injection
+_have_strace_fault_injection=''
+have_strace_fault_injection() {
+    if test "${_have_strace_fault_injection}" = ''; then
+        if strace -P ${test_srcdir}/libtest-core.sh -e inject=read:retval=0 cat ${test_srcdir}/libtest-core.sh >out.txt &&
+           test '!' -s out.txt; then
+            _have_strace_fault_injection=yes
+        else
+            _have_strace_fault_injection=no
+        fi
+        rm -f out.txt
+    fi
+    test ${_have_strace_fault_injection} = yes
+}
+
+skip_one_without_strace_fault_injection() {
+    if ! have_strace_fault_injection; then
+        echo "ok # SKIP this test requires strace fault injection"
+        return 0
+    fi
+    return 1
 }
 
 skip_without_fuse () {
@@ -536,6 +623,12 @@ skip_without_fuse () {
 
     [ -w /dev/fuse ] || skip "no write access to /dev/fuse"
     [ -e /etc/mtab ] || skip "no /etc/mtab"
+}
+
+skip_without_experimental () {
+    if ! ostree --version | grep -q -e '- experimental'; then
+        skip "No experimental API is compiled in"
+    fi
 }
 
 has_gpgme () {

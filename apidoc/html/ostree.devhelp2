@@ -97,6 +97,8 @@
     <keyword type="function" name="ostree_repo_get_mode ()" link="ostree-OstreeRepo.html#ostree-repo-get-mode"/>
     <keyword type="function" name="ostree_repo_get_config ()" link="ostree-OstreeRepo.html#ostree-repo-get-config"/>
     <keyword type="function" name="ostree_repo_get_dfd ()" link="ostree-OstreeRepo.html#ostree-repo-get-dfd"/>
+    <keyword type="function" name="ostree_repo_hash ()" link="ostree-OstreeRepo.html#ostree-repo-hash" since="2017.12"/>
+    <keyword type="function" name="ostree_repo_equal ()" link="ostree-OstreeRepo.html#ostree-repo-equal" since="2017.12"/>
     <keyword type="function" name="ostree_repo_copy_config ()" link="ostree-OstreeRepo.html#ostree-repo-copy-config"/>
     <keyword type="function" name="ostree_repo_remote_add ()" link="ostree-OstreeRepo.html#ostree-repo-remote-add"/>
     <keyword type="function" name="ostree_repo_remote_delete ()" link="ostree-OstreeRepo.html#ostree-repo-remote-delete"/>
@@ -387,6 +389,7 @@
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-TOMBSTONE-COMMIT:CAPS"/>
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_COMMIT_META" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-COMMIT-META:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_MODE_ARCHIVE" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-ARCHIVE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_ARCHIVE_Z2" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-ARCHIVE-Z2:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE_USER" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE-USER:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE_USER_ONLY" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE-USER-ONLY:CAPS"/>
@@ -431,6 +434,7 @@
     <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY" link="ostree-OstreeRepo.html#OSTREE-REPO-PULL-FLAGS-COMMIT-ONLY:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_UNTRUSTED" link="ostree-OstreeRepo.html#OSTREE-REPO-PULL-FLAGS-UNTRUSTED:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES" link="ostree-OstreeRepo.html#OSTREE-REPO-PULL-FLAGS-BAREUSERONLY-FILES:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP" link="ostree-OstreeRepo.html#OSTREE-REPO-PULL-FLAGS-TRUSTED-HTTP:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NONE" link="ostree-Root-partition-mount-point.html#OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN" link="ostree-Root-partition-mount-point.html#OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-RETAIN:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NOT_DEFAULT" link="ostree-Root-partition-mount-point.html#OSTREE-SYSROOT-SIMPLE-WRITE-DEPLOYMENT-FLAGS-NOT-DEFAULT:CAPS"/>
