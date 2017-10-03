@@ -1,4 +1,4 @@
-ostree (2017.12-1) UNRELEASED; urgency=medium
+ostree (2017.12-1) unstable; urgency=medium
 
   * New upstream release
     - Drop all current patches, applied upstream
@@ -15,7 +15,7 @@ ostree (2017.12-1) UNRELEASED; urgency=medium
   * Add patch to reinstate test-libglnx-shutil.c, which was missed out
     of the upstream tarball
 
- -- Simon McVittie <smcv@debian.org>  Tue, 03 Oct 2017 19:14:14 +0100
+ -- Simon McVittie <smcv@debian.org>  Tue, 03 Oct 2017 22:47:48 +0100
 
 ostree (2017.11-2) unstable; urgency=medium
 
