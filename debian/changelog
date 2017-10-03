@@ -4,6 +4,7 @@ ostree (2017.12-1) UNRELEASED; urgency=medium
     - Drop all current patches, applied upstream
     - Update symbols file
   * Add some post-release bug fix patches
+  * Simplify autopkgtest now that test-local-pull seems to be stable
 
  -- Simon McVittie <smcv@debian.org>  Tue, 03 Oct 2017 19:14:14 +0100
 

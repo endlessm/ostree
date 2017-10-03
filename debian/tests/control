@@ -1,4 +1,4 @@
-Tests: gnome-desktop-testing, test-local-pull
+Tests: gnome-desktop-testing
 Depends: gnome-desktop-testing, ostree-tests
 
 Tests: build
