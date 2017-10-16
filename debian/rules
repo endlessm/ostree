@@ -5,6 +5,8 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 # Some tests assert that we will see English strings
 export LC_ALL=C.UTF-8
 
+binaries := $(shell dh_listpackages)
+
 %:
 	dh $@ --with=gir
 
@@ -21,11 +23,15 @@ configure_options = \
 	--with-systemdsystemunitdir=/lib/systemd/system \
 	$(NULL)
 
-ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
+ifneq ($(filter libostree-doc,$(binaries)),)
 configure_options += --enable-gtk-doc
-configure_options += --enable-man
 else
 configure_options += --disable-gtk-doc
+endif
+
+ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
+configure_options += --enable-man
+else
 configure_options += --disable-man
 endif
 
