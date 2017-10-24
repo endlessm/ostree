@@ -22,6 +22,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2017.11@LIBOSTREE_2017.11 2017.11
  LIBOSTREE_2017.12@LIBOSTREE_2017.12 2017.12
  LIBOSTREE_2017.12_EXPERIMENTAL@LIBOSTREE_2017.12_EXPERIMENTAL 2017.12
+ LIBOSTREE_2017.13_EXPERIMENTAL@LIBOSTREE_2017.13_EXPERIMENTAL 2017.12-0endless2
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
@@ -204,6 +205,9 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_finder_get_type@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_finder_mount_get_type@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_finder_mount_new@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
+ ostree_repo_finder_override_add_uri@LIBOSTREE_2017.13_EXPERIMENTAL 2017.12-0endless2
+ ostree_repo_finder_override_get_type@LIBOSTREE_2017.13_EXPERIMENTAL 2017.12-0endless2
+ ostree_repo_finder_override_new@LIBOSTREE_2017.13_EXPERIMENTAL 2017.12-0endless2
  ostree_repo_finder_resolve_async@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_finder_resolve_all_async@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
  ostree_repo_finder_resolve_all_finish@LIBOSTREE_2017.8_EXPERIMENTAL 2017.8
