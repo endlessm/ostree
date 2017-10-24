@@ -157,6 +157,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_copy_config@LIBOSTREE_2016.3 2016.4
  ostree_repo_create@LIBOSTREE_2016.3 2016.4
  ostree_repo_create_at@LIBOSTREE_2017.10 2017.10
+ ostree_repo_delete_compat_signature@LIBOSTREE_2016.3 2016.3
  ostree_repo_delete_object@LIBOSTREE_2016.3 2016.4
  ostree_repo_devino_cache_get_type@LIBOSTREE_2016.3 2016.4
  ostree_repo_devino_cache_new@LIBOSTREE_2016.3 2016.4
@@ -177,6 +178,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_file_tree_get_metadata_checksum@LIBOSTREE_2016.3 2016.4
  ostree_repo_file_tree_query_child@LIBOSTREE_2016.3 2016.4
  ostree_repo_file_tree_set_metadata@LIBOSTREE_2016.3 2016.4
+ ostree_repo_get_commit_sizes@LIBOSTREE_2016.3 2016.3
  ostree_repo_get_config@LIBOSTREE_2016.3 2016.4
  ostree_repo_get_dfd@LIBOSTREE_2016.4 2016.4
  ostree_repo_get_disable_fsync@LIBOSTREE_2016.3 2016.3

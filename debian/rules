@@ -6,12 +6,13 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 export LC_ALL=C.UTF-8
 
 %:
-	dh $@ --with=gir
+	dh $@ --parallel --with=autoreconf,gir,systemd
 
 override_dh_autoreconf:
 	env NOCONFIGURE=1 dh_autoreconf ./autogen.sh
 
 configure_options = \
+	--disable-otmpfile \
 	--enable-installed-tests \
 	--libexecdir='$${prefix}/lib' \
 	--with-dracut \
