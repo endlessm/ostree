@@ -12,6 +12,7 @@ override_dh_autoreconf:
 	env NOCONFIGURE=1 dh_autoreconf ./autogen.sh
 
 configure_options = \
+	--enable-experimental-api \
 	--disable-otmpfile \
 	--enable-installed-tests \
 	--libexecdir='$${prefix}/lib' \
