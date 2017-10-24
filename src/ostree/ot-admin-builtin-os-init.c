@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2012 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -29,6 +28,11 @@
 
 #include <glib/gi18n.h>
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-os-init.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { NULL }
 };
@@ -37,7 +41,7 @@ gboolean
 ot_admin_builtin_os_init (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   gboolean ret = FALSE;
   const char *osname = NULL;
 

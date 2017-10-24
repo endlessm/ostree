@@ -73,15 +73,33 @@ Boston, MA 02111-1307, USA.
                 <term><option>-u</option></term>
 
                 <listitem><para>
-		  Update the summary file.
-                </para></listitem>
+                  Update the summary file.
+                </para><para>
+                  Any additional arguments to the command
+                  are treated as additional key–value pairs to be added to the
+                  summary file as additional metadata. They must be in the format
+                  <command><replaceable>KEY</replaceable>=<replaceable>VALUE</replaceable></command>
+                  or as two separate arguments. The keys must be namespaced for
+                  your organisation or repository using a dot prefix. The values
+                  must be in GVariant text format. For example,
+                  <command>exampleos.end-of-life "@t 1445385600"</command>.
+                </para>
+
+                <!-- FIXME: Uncomment this when collection ID support becomes non-experimental.
+                <para>If the repository has a collection ID configured, the
+                  <filename>ostree-metadata</filename> branch for that collection ID
+                  will also be updated with a new commit containing the given metadata,
+                  which will be signed if the summary file is signed.</para>
+                -->
+
+                </listitem>
             </varlistentry>
 
             <varlistentry>
                 <term><option>--gpg-sign</option>=KEYID</term>
 
                 <listitem><para>
-                    GPG Key ID to sign the delta with.
+                    GPG Key ID to sign the summary with.
                 </para></listitem>
             </varlistentry>
 

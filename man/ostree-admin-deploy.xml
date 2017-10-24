@@ -66,7 +66,7 @@ Boston, MA 02111-1307, USA.
 
         <variablelist>
             <varlistentry>
-                <term><option>--os</option>="OSNAME"</term>
+                <term><option>--os</option>="STATEROOT"</term>
 
                 <listitem><para>
                     Use a different operating system root than the current one.
@@ -86,6 +86,30 @@ Boston, MA 02111-1307, USA.
 
                 <listitem><para>
                     Do not delete previous deployment.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--retain-pending</option></term>
+
+                <listitem><para>
+                    Do not delete pending deployments.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--retain-rollback</option></term>
+
+                <listitem><para>
+                    Do not delete rollback deployments.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--not-as-default</option></term>
+
+                <listitem><para>
+                    Append rather than prepend new deployment.
                 </para></listitem>
             </varlistentry>
 

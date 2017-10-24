@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -21,6 +20,7 @@
 #include "config.h"
 
 #include "ostree-metalink.h"
+#include "ostree-fetcher-util.h"
 #include <gio/gfiledescriptorbased.h>
 
 #include "otutil.h"
@@ -430,10 +430,7 @@ try_one_url (OstreeMetalinkRequest *self,
   gssize n_bytes;
 
   if (!_ostree_fetcher_request_uri_to_membuf (self->metalink->fetcher,
-                                              uri,
-                                              FALSE,
-                                              FALSE,
-                                              &bytes,
+                                              uri, 0, &bytes,
                                               self->metalink->max_size,
                                               self->cancellable,
                                               error))
@@ -613,14 +610,9 @@ _ostree_metalink_request_sync (OstreeMetalink        *self,
   request.urls = g_ptr_array_new_with_free_func ((GDestroyNotify) _ostree_fetcher_uri_free);
   request.parser = g_markup_parse_context_new (&metalink_parser, G_MARKUP_PREFIX_ERROR_POSITION, &request, NULL);
 
-  if (!_ostree_fetcher_request_uri_to_membuf (self->fetcher,
-                                              self->uri,
-                                              FALSE,
-                                              FALSE,
-                                              &contents,
-                                              self->max_size,
-                                              cancellable,
-                                              error))
+  if (!_ostree_fetcher_request_uri_to_membuf (self->fetcher, self->uri, 0,
+                                              &contents, self->max_size,
+                                              cancellable, error))
     goto out;
 
   data = g_bytes_get_data (contents, &len);

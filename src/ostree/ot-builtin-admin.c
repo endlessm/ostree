@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -56,12 +55,9 @@ static GOptionContext *
 ostree_admin_option_context_new_with_commands (void)
 {
   OstreeAdminCommand *command = admin_subcommands;
-  GOptionContext *context;
-  GString *summary;
+  GOptionContext *context = g_option_context_new ("--print-current-dir|COMMAND");
 
-  context = g_option_context_new ("--print-current-dir|COMMAND");
-
-  summary = g_string_new ("Builtin \"admin\" Commands:");
+  g_autoptr(GString) summary = g_string_new ("Builtin \"admin\" Commands:");
 
   while (command->name != NULL)
     {
@@ -70,8 +66,6 @@ ostree_admin_option_context_new_with_commands (void)
     }
 
   g_option_context_set_summary (context, summary->str);
-
-  g_string_free (summary, TRUE);
 
   return context;
 }
@@ -125,13 +119,13 @@ ostree_builtin_admin (int argc, char **argv, GCancellable *cancellable, GError *
   if (!subcommand->name)
     {
       g_autoptr(GOptionContext) context = NULL;
-      g_autofree char *help;
+      g_autofree char *help = NULL;
 
       context = ostree_admin_option_context_new_with_commands ();
 
       /* This will not return for some options (e.g. --version). */
       if (ostree_admin_option_context_parse (context, NULL, &argc, &argv,
-                                             OSTREE_ADMIN_BUILTIN_FLAG_NONE | OSTREE_ADMIN_BUILTIN_FLAG_UNLOCKED,
+                                             OSTREE_ADMIN_BUILTIN_FLAG_NO_SYSROOT,
                                              NULL, cancellable, error))
         {
           if (subcommand_name == NULL)

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2013 Stef Walter <stefw@redhat.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -29,6 +28,11 @@
 #include "otutil.h"
 
 static gboolean opt_raw;
+
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-log.xml) when changing the option list.
+ */
 
 static GOptionEntry options[] = {
   { "raw", 0, 0, G_OPTION_ARG_NONE, &opt_raw, "Show raw variant data" },
@@ -82,7 +86,7 @@ ostree_builtin_log (int           argc,
                     GError      **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   gboolean ret = FALSE;
   const char *rev;
   g_autofree char *checksum = NULL;

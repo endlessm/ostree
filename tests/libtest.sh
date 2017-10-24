@@ -17,6 +17,8 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
+dn=$(dirname $0)
+
 if [ -n "${G_TEST_SRCDIR:-}" ]; then
   test_srcdir="${G_TEST_SRCDIR}/tests"
 else
@@ -28,21 +30,9 @@ if [ -n "${G_TEST_BUILDDIR:-}" ]; then
 else
   test_builddir=$(dirname $0)
 fi
-
-assert_not_reached () {
-    echo $@ 1>&2; exit 1
-}
+. ${test_srcdir}/libtest-core.sh
 
 test_tmpdir=$(pwd)
-
-# Some tests look for specific English strings. Use a UTF-8 version
-# of the C (POSIX) locale if we have one, or fall back to POSIX
-# (https://sourceware.org/glibc/wiki/Proposals/C.UTF-8)
-if locale -a | grep C.UTF-8 >/dev/null; then
-  export LC_ALL=C.UTF-8
-else
-  export LC_ALL=C
-fi
 
 # Sanity check that we're in a tmpdir that has
 # just .testtmp (created by tap-driver for `make check`,
@@ -57,8 +47,6 @@ if ! test -f .testtmp; then
     # C and JS tests which may source this file again
     touch .testtmp
 fi
-
-export G_DEBUG=fatal-warnings
 
 # Also, unbreak `tar` inside `make check`...Automake will inject
 # TAR_OPTIONS: --owner=0 --group=0 --numeric-owner presumably so that
@@ -82,6 +70,52 @@ chmod -R u+w "${test_tmpdir}"
 export TEST_GPG_KEYHOME=${test_tmpdir}/gpghome
 export OSTREE_GPG_HOME=${test_tmpdir}/gpghome/trusted
 
+assert_has_setfattr() {
+    if ! which setfattr 2>/dev/null; then
+        fatal "no setfattr available to determine xattr support"
+    fi
+}
+
+_have_selinux_relabel=''
+have_selinux_relabel() {
+    assert_has_setfattr
+    if test "${_have_selinux_relabel}" = ''; then
+        pushd ${test_tmpdir}
+        echo testlabel > testlabel.txt
+        selinux_xattr=security.selinux
+        if getfattr --encoding=base64 -n ${selinux_xattr} testlabel.txt >label.txt 2>err.txt; then
+            label=$(grep -E -e "^${selinux_xattr}=" < label.txt |sed -e "s,${selinux_xattr}=,,")
+            if setfattr -n ${selinux_xattr} -v ${label} testlabel.txt 2>err.txt; then
+                echo "SELinux enabled in $(pwd), and have privileges to relabel"
+                _have_selinux_relabel=yes
+            else
+                sed -e 's/^/# /' < err.txt >&2
+                echo "Found SELinux label, but unable to set (Unprivileged Docker?)"
+                _have_selinux_relabel=no
+            fi
+        else
+            sed -e 's/^/# /' < err.txt >&2
+            echo "Unable to retrieve SELinux label, assuming disabled"
+            _have_selinux_relabel=no
+        fi
+        popd
+    fi
+    test ${_have_selinux_relabel} = yes
+}
+
+# just globally turn off xattrs if we can't manipulate security xattrs; this is
+# the case for overlayfs -- really, we should only enforce this for tests that
+# use bare repos; separate from other tests that should check for user xattrs
+# support
+# see https://github.com/ostreedev/ostree/issues/758
+# and https://github.com/ostreedev/ostree/pull/1217
+echo -n checking for xattrs...
+if ! have_selinux_relabel; then
+    export OSTREE_SYSROOT_DEBUG="${OSTREE_SYSROOT_DEBUG},no-xattrs"
+    export OSTREE_NO_XATTRS=1
+fi
+echo done
+
 if test -n "${OT_TESTS_DEBUG:-}"; then
     set -x
 fi
@@ -102,84 +136,30 @@ else
     fi
 fi
 
-assert_streq () {
-    test "$1" = "$2" || (echo 1>&2 "$1 != $2"; exit 1)
-}
-
-assert_str_match () {
-    if ! echo "$1" | grep -E -q "$2"; then
-	(echo 1>&2 "$1 does not match regexp $2"; exit 1)
+if test -n "${OSTREE_UNINSTALLED:-}"; then
+    OSTREE_HTTPD=${OSTREE_UNINSTALLED}/ostree-trivial-httpd
+else
+    # trivial-httpd is now in $libexecdir by default, which we don't
+    # know at this point. Fortunately, libtest.sh is also in
+    # $libexecdir, so make an educated guess. If it's not found, assume
+    # it's still runnable as "ostree trivial-httpd".
+    if [ -x "${test_srcdir}/../../libostree/ostree-trivial-httpd" ]; then
+        OSTREE_HTTPD="${CMD_PREFIX} ${test_srcdir}/../../libostree/ostree-trivial-httpd"
+    else
+        OSTREE_HTTPD="${CMD_PREFIX} ostree trivial-httpd"
     fi
-}
+fi
 
-assert_not_streq () {
-    (! test "$1" = "$2") || (echo 1>&2 "$1 == $2"; exit 1)
-}
-
-assert_has_file () {
-    test -f "$1" || (echo 1>&2 "Couldn't find '$1'"; exit 1)
-}
-
-assert_has_dir () {
-    test -d "$1" || (echo 1>&2 "Couldn't find '$1'"; exit 1)
-}
-
-assert_not_has_file () {
-    if test -f "$1"; then
-        sed -e 's/^/# /' < "$1" >&2
-        echo 1>&2 "File '$1' exists"
-        exit 1
-    fi
-}
-
-assert_not_file_has_content () {
-    if grep -q -e "$2" "$1"; then
-        sed -e 's/^/# /' < "$1" >&2
-        echo 1>&2 "File '$1' incorrectly matches regexp '$2'"
-        exit 1
-    fi
-}
-
-assert_not_has_dir () {
-    if test -d "$1"; then
-	echo 1>&2 "Directory '$1' exists"; exit 1
-    fi
-}
-
-assert_file_has_content () {
-    if ! grep -q -e "$2" "$1"; then
-        sed -e 's/^/# /' < "$1" >&2
-        echo 1>&2 "File '$1' doesn't match regexp '$2'"
-        exit 1
-    fi
-}
-
-assert_symlink_has_content () {
-    if ! test -L "$1"; then
-        echo 1>&2 "File '$1' is not a symbolic link"
-        exit 1
-    fi
-    if ! readlink "$1" | grep -q -e "$2"; then
-        sed -e 's/^/# /' < "$1" >&2
-        echo 1>&2 "Symbolic link '$1' doesn't match regexp '$2'"
-        exit 1
-    fi
-}
-
-assert_file_empty() {
-    if test -s "$1"; then
-        sed -e 's/^/# /' < "$1" >&2
-        echo 1>&2 "File '$1' is not empty"
-        exit 1
-    fi
+files_are_hardlinked() {
+    inode1=$(stat -c %i $1)
+    inode2=$(stat -c %i $2)
+    test -n "${inode1}" && test -n "${inode2}"
+    [ "${inode1}" == "${inode2}" ]
 }
 
 assert_files_hardlinked() {
-    f1=$(stat -c %i $1)
-    f2=$(stat -c %i $2)
-    if [ "$f1" != "$f2" ]; then
-        echo 1>&2 "Files '$1' and '$2' are not hardlinked"
-        exit 1
+    if ! files_are_hardlinked "$1" "$2"; then
+        fatal "Files '$1' and '$2' are not hardlinked"
     fi
 }
 
@@ -189,18 +169,25 @@ setup_test_repository () {
 
     oldpwd=`pwd`
 
-    cd ${test_tmpdir}
-    mkdir repo
-    cd repo
-    ot_repo="--repo=`pwd`"
-    export OSTREE="${CMD_PREFIX} ostree ${ot_repo}"
-    if test -n "$mode"; then
-	$OSTREE init --mode=${mode}
-    else
-	$OSTREE init
+    COMMIT_ARGS=""
+    if [ $mode == "bare-user-only" ] ; then
+       COMMIT_ARGS="--owner-uid=0 --owner-gid=0 --no-xattrs --canonical-permissions"
     fi
 
     cd ${test_tmpdir}
+    rm -rf repo
+    if test -n "${mode}"; then
+        ostree_repo_init repo --mode=${mode}
+    else
+        ostree_repo_init repo
+    fi
+    ot_repo="--repo=$(pwd)/repo"
+    export OSTREE="${CMD_PREFIX} ostree ${ot_repo}"
+
+    cd ${test_tmpdir}
+    local oldumask="$(umask)"
+    umask 022
+    rm -rf files
     mkdir files
     cd files
     ot_files=`pwd`
@@ -209,22 +196,37 @@ setup_test_repository () {
     echo first > firstfile
 
     cd ${test_tmpdir}/files
-    $OSTREE commit -b test2 -s "Test Commit 1" -m "Commit body first"
+    $OSTREE commit ${COMMIT_ARGS}  -b test2 -s "Test Commit 1" -m "Commit body first"
 
     mkdir baz
     echo moo > baz/cow
+    echo mooro > baz/cowro
+    chmod 600 baz/cowro
     echo alien > baz/saucer
     mkdir baz/deeper
     echo hi > baz/deeper/ohyeah
+    echo hix > baz/deeper/ohyeahx
+    chmod 755 baz/deeper/ohyeahx
     ln -s nonexistent baz/alink
     mkdir baz/another/
     echo x > baz/another/y
+    umask "${oldumask}"
 
     cd ${test_tmpdir}/files
-    $OSTREE commit -b test2 -s "Test Commit 2" -m "Commit body second"
+    $OSTREE commit ${COMMIT_ARGS}  -b test2 -s "Test Commit 2" -m "Commit body second"
     $OSTREE fsck -q
 
     cd $oldpwd
+}
+
+# A wrapper which also possibly disables xattrs for CI testing
+ostree_repo_init() {
+    repo=$1
+    shift
+    ${CMD_PREFIX} ostree --repo=${repo} init "$@"
+    if test -n "${OSTREE_NO_XATTRS:-}"; then
+        echo -e 'disable-xattrs=true\n' >> ${repo}/config
+    fi
 }
 
 setup_fake_remote_repo1() {
@@ -236,7 +238,7 @@ setup_fake_remote_repo1() {
     mkdir ostree-srv
     cd ostree-srv
     mkdir gnomerepo
-    ${CMD_PREFIX} ostree --repo=gnomerepo init --mode=$mode
+    ostree_repo_init gnomerepo --mode=$mode
     mkdir gnomerepo-files
     cd gnomerepo-files 
     echo first > firstfile
@@ -257,11 +259,111 @@ setup_fake_remote_repo1() {
     mkdir ${test_tmpdir}/httpd
     cd httpd
     ln -s ${test_tmpdir}/ostree-srv ostree
-    ${CMD_PREFIX} ostree trivial-httpd --autoexit --daemonize -p ${test_tmpdir}/httpd-port $args
+    ${OSTREE_HTTPD} --autoexit --log-file $(pwd)/httpd.log --daemonize -p ${test_tmpdir}/httpd-port $args
     port=$(cat ${test_tmpdir}/httpd-port)
     echo "http://127.0.0.1:${port}" > ${test_tmpdir}/httpd-address
     cd ${oldpwd} 
 
+    export OSTREE="${CMD_PREFIX} ostree --repo=repo"
+}
+
+# Set up a large repository for stress testing.
+# Something like the Fedora Atomic Workstation branch which has
+# objects: meta: 7497 content: 103541
+# 9443 directories, 7097 symlinks, 112832 regfiles
+# So we'll make ~11 files per dir, with one of them a symlink
+# Actually, let's cut this down to 1/3 which is still useful.  So:
+# 3147 dirs, with still ~11 files per dir, for 37610 content objects
+setup_exampleos_repo() {
+    args=${1:-}
+    cd ${test_tmpdir}
+    mkdir ostree-srv
+    mkdir -p ostree-srv/exampleos/{repo,build-repo}
+    export ORIGIN_REPO=ostree-srv/exampleos/repo
+    export ORIGIN_BUILD_REPO=ostree-srv/exampleos/build-repo
+    ostree_repo_init ${ORIGIN_REPO} --mode=archive
+    ostree_repo_init ${ORIGIN_BUILD_REPO} --mode=bare-user
+    cd ${test_tmpdir}
+    rm main -rf
+    mkdir main
+    cd main
+    ndirs=3147
+    depth=0
+    set +x  # No need to spam the logs for this
+    echo "$(date): Generating initial content..."
+    while [ $ndirs -gt 0 ]; do
+        # 2/3 of the time, recurse a dir, up to a max of 9, otherwise back up
+        x=$(($ndirs % 3))
+        case $x in
+            0) if [ $depth -gt 0 ]; then cd ..; depth=$((depth-1)); fi ;;
+            1|2) if [ $depth -lt 9 ]; then
+                         mkdir dir-${ndirs}
+                         cd dir-${ndirs}
+                         depth=$((depth+1))
+                     else
+                         if [ $depth -gt 0 ]; then cd ..; depth=$((depth-1)); fi
+                 fi ;;
+        esac
+        # One symlink - we use somewhat predictable content to have dupes
+        ln -s $(($x % 20)) link-$ndirs
+        # 10 files
+        nfiles=10
+        while [ $nfiles -gt 0 ]; do
+            echo file-$ndirs-$nfiles > f$ndirs-$nfiles
+            # Make an unreadable file to trigger https://github.com/ostreedev/ostree/pull/634
+            if [ $(($x % 10)) -eq 0 ]; then
+                chmod 0600 f$ndirs-$nfiles
+            fi
+            nfiles=$((nfiles-1))
+        done
+        ndirs=$((ndirs-1))
+    done
+    cd ${test_tmpdir}
+    set -x
+
+    export REF=exampleos/42/standard
+
+    ${CMD_PREFIX} ostree --repo=${ORIGIN_BUILD_REPO} commit -b ${REF} --tree=dir=main
+    rm main -rf
+    ${CMD_PREFIX} ostree --repo=${ORIGIN_BUILD_REPO} checkout ${REF} main
+
+    find main > files.txt
+    nfiles=$(wc -l files.txt | cut -f 1 -d ' ')
+    # We'll make 5 more commits
+    for iter in $(seq 5); do
+        set +x
+        # Change 10% of files
+        for fiter in $(seq $(($nfiles / 10))); do
+            filenum=$(($RANDOM % ${nfiles}))
+            set +o pipefail
+            filename=$(tail -n +${filenum} < files.txt | head -1)
+            set -o pipefail
+            if test -f $filename; then
+                rm -f $filename
+                echo file-${iter}-${fiter} > ${filename}
+            fi
+        done
+        set -x
+        ${CMD_PREFIX} ostree --repo=${ORIGIN_BUILD_REPO} commit --link-checkout-speedup -b ${REF} --tree=dir=main
+    done
+
+    ${CMD_PREFIX} ostree --repo=${ORIGIN_REPO} pull-local --depth=-1 ${ORIGIN_BUILD_REPO}
+
+    for x in "^^" "^" ""; do
+        ${CMD_PREFIX} ostree --repo=${ORIGIN_REPO} static-delta generate --from="${REF}${x}^" --to="${REF}${x}"
+    done
+    ${CMD_PREFIX} ostree --repo=${ORIGIN_REPO} summary -u
+
+    cd ${test_tmpdir}/ostree-srv
+    mkdir httpd
+    ${OSTREE_HTTPD} --autoexit --log-file $(pwd)/httpd/httpd.log --daemonize -p httpd/port $args
+    port=$(cat httpd/port)
+    echo "http://127.0.0.1:${port}" > httpd/address
+
+    cd ${test_tmpdir}
+    rm repo -rf
+    ostree_repo_init repo --mode=bare-user
+    ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin $(cat ostree-srv/httpd/address)/exampleos/repo
     export OSTREE="${CMD_PREFIX} ostree --repo=repo"
 }
 
@@ -300,30 +402,45 @@ setup_os_boot_grub2() {
 
 setup_os_repository () {
     mode=$1
-    bootmode=$2
     shift
+    bootmode=$1
+    shift
+    bootdir=${1:-usr/lib/modules/3.6.0}
 
     oldpwd=`pwd`
 
     cd ${test_tmpdir}
     mkdir testos-repo
     if test -n "$mode"; then
-	${CMD_PREFIX} ostree --repo=testos-repo init --mode=${mode}
+	      ostree_repo_init testos-repo --mode=${mode}
     else
-	${CMD_PREFIX} ostree --repo=testos-repo init
+	      ostree_repo_init testos-repo
     fi
 
     cd ${test_tmpdir}
     mkdir osdata
     cd osdata
-    mkdir -p boot usr/bin usr/lib/modules/3.6.0 usr/share usr/etc
-    echo "a kernel" > boot/vmlinuz-3.6.0
-    echo "an initramfs" > boot/initramfs-3.6.0
-    bootcsum=$(cat boot/vmlinuz-3.6.0 boot/initramfs-3.6.0 | sha256sum | cut -f 1 -d ' ')
+    kver=3.6.0
+    mkdir -p usr/bin ${bootdir} usr/lib/modules/${kver} usr/share usr/etc
+    kernel_path=${bootdir}/vmlinuz
+    initramfs_path=${bootdir}/initramfs.img
+    # /usr/lib/modules just uses "vmlinuz", since the version is in the module
+    # directory name.
+    if [[ $bootdir != usr/lib/modules/* ]]; then
+        kernel_path=${kernel_path}-${kver}
+        initramfs_path=${bootdir}/initramfs-${kver}.img
+    fi
+    echo "a kernel" > ${kernel_path}
+    echo "an initramfs" > ${initramfs_path}
+    bootcsum=$(cat ${kernel_path} ${initramfs_path} | sha256sum | cut -f 1 -d ' ')
     export bootcsum
-    mv boot/vmlinuz-3.6.0 boot/vmlinuz-3.6.0-${bootcsum}
-    mv boot/initramfs-3.6.0 boot/initramfs-3.6.0-${bootcsum}
-    
+    # Add the checksum for legacy dirs (/boot, /usr/lib/ostree-boot), but not
+    # /usr/lib/modules.
+    if [[ $bootdir != usr/lib/modules/* ]]; then
+        mv ${kernel_path}{,-${bootcsum}}
+        mv ${initramfs_path}{,-${bootcsum}}
+    fi
+
     echo "an executable" > usr/bin/sh
     echo "some shared data" > usr/share/langs.txt
     echo "a library" > usr/lib/libfoo.so.0
@@ -342,7 +459,7 @@ EOF
     echo "a default daemon file" > usr/etc/testdirectory/test
 
     ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit --add-metadata-string version=1.0.9 -b testos/buildmaster/x86_64-runtime -s "Build"
-    
+
     # Ensure these commits have distinct second timestamps
     sleep 2
     echo "a new executable" > usr/bin/sh
@@ -361,6 +478,9 @@ EOF
     mkdir sysroot
     export OSTREE_SYSROOT=sysroot
     ${CMD_PREFIX} ostree admin init-fs sysroot
+    if test -n "${OSTREE_NO_XATTRS:-}"; then
+        echo -e 'disable-xattrs=true\n' >> sysroot/ostree/repo/config
+    fi
     ${CMD_PREFIX} ostree admin os-init testos
 
     case $bootmode in
@@ -374,12 +494,12 @@ EOF
         setup_os_boot_grub2 "${bootmode}"
             ;;
     esac
-    
+
     cd ${test_tmpdir}
     mkdir ${test_tmpdir}/httpd
     cd httpd
     ln -s ${test_tmpdir} ostree
-    ${CMD_PREFIX} ostree trivial-httpd --autoexit --daemonize -p ${test_tmpdir}/httpd-port
+    ${OSTREE_HTTPD} --autoexit --daemonize -p ${test_tmpdir}/httpd-port
     port=$(cat ${test_tmpdir}/httpd-port)
     echo "http://127.0.0.1:${port}" > ${test_tmpdir}/httpd-address
     cd ${oldpwd} 
@@ -389,15 +509,34 @@ os_repository_new_commit ()
 {
     boot_checksum_iteration=${1:-0}
     content_iteration=${2:-0}
+    branch=${3:-testos/buildmaster/x86_64-runtime}
     echo "BOOT ITERATION: $boot_checksum_iteration"
     cd ${test_tmpdir}/osdata
-    rm boot/*
-    echo "new: a kernel ${boot_checksum_iteration}" > boot/vmlinuz-3.6.0
-    echo "new: an initramfs ${boot_checksum_iteration}" > boot/initramfs-3.6.0
-    bootcsum=$(cat boot/vmlinuz-3.6.0 boot/initramfs-3.6.0 | sha256sum | cut -f 1 -d ' ')
+    kver=3.6.0
+    if test -f usr/lib/modules/${kver}/vmlinuz; then
+        bootdir=usr/lib/modules/${kver}
+    else
+        if test -d usr/lib/ostree-boot; then
+            bootdir=usr/lib/ostree-boot
+        else
+            bootdir=boot
+        fi
+    fi
+    rm ${bootdir}/*
+    kernel_path=${bootdir}/vmlinuz
+    initramfs_path=${bootdir}/initramfs.img
+    if [[ $bootdir != usr/lib/modules/* ]]; then
+        kernel_path=${kernel_path}-${kver}
+        initramfs_path=${bootdir}/initramfs-${kver}.img
+    fi
+    echo "new: a kernel ${boot_checksum_iteration}" > ${kernel_path}
+    echo "new: an initramfs ${boot_checksum_iteration}" > ${initramfs_path}
+    bootcsum=$(cat ${kernel_path} ${initramfs_path} | sha256sum | cut -f 1 -d ' ')
     export bootcsum
-    mv boot/vmlinuz-3.6.0 boot/vmlinuz-3.6.0-${bootcsum}
-    mv boot/initramfs-3.6.0 boot/initramfs-3.6.0-${bootcsum}
+    if [[ $bootdir != usr/lib/modules/* ]]; then
+        mv ${kernel_path}{,-${bootcsum}}
+        mv ${initramfs_path}{,-${bootcsum}}
+    fi
 
     echo "a new default config file" > usr/etc/a-new-default-config-file
     mkdir -p usr/etc/new-default-dir
@@ -407,19 +546,73 @@ os_repository_new_commit ()
 
     version=$(date "+%Y%m%d.${content_iteration}")
 
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit  --add-metadata-string "version=${version}" -b testos/buildmaster/x86_64-runtime -s "Build"
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit  --add-metadata-string "version=${version}" -b $branch -s "Build"
     cd ${test_tmpdir}
 }
 
-skip() {
-    echo "1..0 # SKIP" "$@"
-    exit 0
+_have_user_xattrs=''
+have_user_xattrs() {
+    assert_has_setfattr
+    if test "${_have_user_xattrs}" = ''; then
+        touch test-xattrs
+        if setfattr -n user.testvalue -v somevalue test-xattrs 2>/dev/null; then
+            _have_user_xattrs=yes
+        else
+            _have_user_xattrs=no
+        fi
+        rm -f test-xattrs
+    fi
+    test ${_have_user_xattrs} = yes
+}
+
+# Usage: if ! skip_one_without_user_xattrs; then ... more tests ...; fi
+skip_one_without_user_xattrs () {
+    if ! have_user_xattrs; then
+        echo "ok # SKIP - this test requires xattr support"
+        return 0
+    else
+        return 1
+    fi
 }
 
 skip_without_user_xattrs () {
-    touch test-xattrs
-    setfattr -n user.testvalue -v somevalue test-xattrs || \
+    if ! have_user_xattrs; then
         skip "this test requires xattr support"
+    fi
+}
+
+# Skip unless SELinux is disabled, or we can relabel.
+# Default Docker has security.selinux xattrs, but returns
+# EOPNOTSUPP when trying to set them, even to the existing value.
+# https://github.com/ostreedev/ostree/pull/759
+# https://github.com/ostreedev/ostree/pull/1217
+skip_without_no_selinux_or_relabel () {
+    if ! have_selinux_relabel; then
+        skip "this test requires xattr support"
+    fi
+}
+
+# https://brokenpi.pe/tools/strace-fault-injection
+_have_strace_fault_injection=''
+have_strace_fault_injection() {
+    if test "${_have_strace_fault_injection}" = ''; then
+        if strace -P ${test_srcdir}/libtest-core.sh -e inject=read:retval=0 cat ${test_srcdir}/libtest-core.sh >out.txt &&
+           test '!' -s out.txt; then
+            _have_strace_fault_injection=yes
+        else
+            _have_strace_fault_injection=no
+        fi
+        rm -f out.txt
+    fi
+    test ${_have_strace_fault_injection} = yes
+}
+
+skip_one_without_strace_fault_injection() {
+    if ! have_strace_fault_injection; then
+        echo "ok # SKIP this test requires strace fault injection"
+        return 0
+    fi
+    return 1
 }
 
 skip_without_fuse () {
@@ -432,10 +625,71 @@ skip_without_fuse () {
     [ -e /etc/mtab ] || skip "no /etc/mtab"
 }
 
+skip_without_experimental () {
+    if ! ostree --version | grep -q -e '- experimental'; then
+        skip "No experimental API is compiled in"
+    fi
+}
+
 has_gpgme () {
-    ${CMD_PREFIX} ostree --version | grep -q -e '\+gpgme'
+    ${CMD_PREFIX} ostree --version > version.txt
+    assert_file_has_content version.txt '- gpgme'
+    rm -f version.txt
+    true
 }
 
 libtest_cleanup_gpg () {
     gpg-connect-agent --homedir ${test_tmpdir}/gpghome killagent /bye || true
+}
+
+is_bare_user_only_repo () {
+  grep -q 'mode=bare-user-only' $1/config
+}
+
+# Given a path to a file in a repo for a ref, print its checksum
+ostree_file_path_to_checksum() {
+    repo=$1
+    ref=$2
+    path=$3
+    $CMD_PREFIX ostree --repo=$repo ls -C $ref $path | awk '{ print $5 }'
+}
+
+# Given an object checksum, print its relative file path
+ostree_checksum_to_relative_object_path() {
+    repo=$1
+    checksum=$2
+    if grep -Eq -e '^mode=archive' ${repo}/config; then suffix=z; else suffix=''; fi
+    echo objects/${checksum:0:2}/${checksum:2}.file${suffix}
+}
+
+# Given a path to a file in a repo for a ref, print the (relative) path to its
+# object
+ostree_file_path_to_relative_object_path() {
+    repo=$1
+    ref=$2
+    path=$3
+    checksum=$(ostree_file_path_to_checksum $repo $ref $path)
+    test -n "${checksum}"
+    ostree_checksum_to_relative_object_path ${repo} ${checksum}
+}
+
+# Given a path to a file in a repo for a ref, print the path to its object
+ostree_file_path_to_object_path() {
+    repo=$1
+    ref=$2
+    path=$3
+    relpath=$(ostree_file_path_to_relative_object_path $repo $ref $path)
+    echo ${repo}/${relpath}
+}
+
+# Assert ref $2 in repo $1 has checksum $3.
+assert_ref () {
+    assert_streq $(${CMD_PREFIX} ostree rev-parse --repo=$1 $2) $3
+}
+
+# Assert no ref named $2 is present in repo $1.
+assert_not_ref () {
+    if ${CMD_PREFIX} ostree rev-parse --repo=$1 $2 2>/dev/null; then
+        fatal "rev-parse $2 unexpectedly succeeded!"
+    fi
 }

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -70,6 +69,43 @@ gboolean ostree_diff_dirs (OstreeDiffFlags flags,
                            GPtrArray      *added,
                            GCancellable   *cancellable,
                            GError        **error);
+
+/**
+ * OstreeDiffDirsOptions:
+ *
+ * An extensible options structure controlling diff dirs. Make sure
+ * that owner_uid/gid is set to -1 when not used. This is used by
+ * ostree_diff_dirs_with_options().
+ */
+typedef struct {
+  gint owner_uid;
+  gint owner_gid;
+
+  OstreeRepoDevInoCache *devino_to_csum_cache;
+
+  gboolean unused_bools[7];
+  int unused_ints[6];
+  /* 4 byte hole on 64 bit */
+  gpointer unused_ptrs[7];
+} OstreeDiffDirsOptions;
+
+/**
+ * OSTREE_DIFF_DIRS_OPTIONS_INIT:
+ *
+ * Use this to initialize an `OstreeDiffDirsOptions` structure.
+ */
+#define OSTREE_DIFF_DIRS_OPTIONS_INIT { .owner_uid = -1, .owner_gid = -1, }
+
+_OSTREE_PUBLIC
+gboolean ostree_diff_dirs_with_options (OstreeDiffFlags       flags,
+                                        GFile                 *a,
+                                        GFile                 *b,
+                                        GPtrArray             *modified,
+                                        GPtrArray             *removed,
+                                        GPtrArray             *added,
+                                        OstreeDiffDirsOptions *options,
+                                        GCancellable          *cancellable,
+                                        GError                **error);
 
 _OSTREE_PUBLIC
 void ostree_diff_print (GFile          *a,

@@ -19,7 +19,20 @@
 
 include Makefile-libostree-defines.am
 
-noinst_LTLIBRARIES += libostree-kernel-args.la libbupsplit.la
+noinst_LTLIBRARIES += libostree-kernel-args.la
+
+
+if ENABLE_RUST
+bupsplitpath = @abs_top_builddir@/target/@RUST_TARGET_SUBDIR@/libbupsplit_rs.a
+BUPSPLIT_RUST_SRCS = rust/src/bupsplit.rs
+EXTRA_DIST += $(BUPSPLIT_RUST_SRCS)
+$(bupsplitpath): Makefile $(BUPSPLIT_RUST_SRCS)
+	cd $(top_srcdir)/rust && CARGO_TARGET_DIR=@abs_top_builddir@/target cargo build --verbose $(CARGO_RELEASE_ARGS)
+else
+bupsplitpath = libbupsplit.la
+noinst_LTLIBRARIES += libbupsplit.la
+libbupsplit_la_SOURCES = src/libostree/bupsplit.h src/libostree/bupsplit.c
+endif # ENABLE_RUST
 
 libostree_kernel_args_la_SOURCES = \
 	src/libostree/ostree-kernel-args.h \
@@ -31,7 +44,7 @@ libostree_kernel_args_la_LIBADD = $(OT_INTERNAL_GIO_UNIX_LIBS)
 lib_LTLIBRARIES += libostree-1.la
 
 libostreeincludedir = $(includedir)/ostree-1
-libostreeinclude_HEADERS = $(libostree_public_headers)
+libostreeinclude_HEADERS = $(libostree_public_headers) $(libostree_public_built_headers)
 
 ENUM_TYPES = $(NULL)
 ENUM_TYPES += $(srcdir)/src/libostree/ostree-fetcher.h
@@ -44,24 +57,18 @@ src/libostree/ostree-enumtypes.h: src/libostree/ostree-enumtypes.h.template $(EN
 src/libostree/ostree-enumtypes.c: src/libostree/ostree-enumtypes.c.template $(ENUM_TYPES)
 	$(AM_V_GEN) $(GLIB_MKENUMS) \
 	--template $< \
-	--fhead "#include \"ostree-enumtypes.h\"" \
 	$(ENUM_TYPES) > $@.tmp && mv $@.tmp $@
 
-ENUM_GENERATED = \
+nodist_libostree_1_la_SOURCES = \
 	src/libostree/ostree-enumtypes.h \
 	src/libostree/ostree-enumtypes.c \
 	$(NULL)
-BUILT_SOURCES += $(ENUM_GENERATED)
+
+BUILT_SOURCES += $(nodist_libostree_1_la_SOURCES)
 
 CLEANFILES += $(BUILT_SOURCES)
 
-libbupsplit_la_SOURCES = \
-	src/libostree/bupsplit.h \
-	src/libostree/bupsplit.c \
-	$(NULL)
-
 libostree_1_la_SOURCES = \
-	$(ENUM_GENERATED) \
 	src/libostree/ostree-async-progress.c \
 	src/libostree/ostree-cmdprivate.h \
 	src/libostree/ostree-cmdprivate.c \
@@ -86,6 +93,9 @@ libostree_1_la_SOURCES = \
 	src/libostree/ostree-linuxfsutil.c \
 	src/libostree/ostree-diff.c \
 	src/libostree/ostree-mutable-tree.c \
+	src/libostree/ostree-ref.c \
+	src/libostree/ostree-remote.c \
+	src/libostree/ostree-remote-private.h \
 	src/libostree/ostree-repo.c \
 	src/libostree/ostree-repo-checkout.c \
 	src/libostree/ostree-repo-commit.c \
@@ -99,11 +109,13 @@ libostree_1_la_SOURCES = \
 	src/libostree/ostree-repo-file-enumerator.c \
 	src/libostree/ostree-repo-file-enumerator.h \
 	src/libostree/ostree-sepolicy.c \
+	src/libostree/ostree-sepolicy-private.h \
 	src/libostree/ostree-sysroot-private.h \
 	src/libostree/ostree-sysroot.c \
 	src/libostree/ostree-sysroot-cleanup.c \
 	src/libostree/ostree-sysroot-deploy.c \
 	src/libostree/ostree-sysroot-upgrader.c \
+	src/libostree/ostree-impl-system-generator.c \
 	src/libostree/ostree-bootconfig-parser.c \
 	src/libostree/ostree-deployment.c \
 	src/libostree/ostree-bootloader.h \
@@ -137,19 +149,68 @@ libostree_1_la_SOURCES += \
 	src/libostree/ostree-tls-cert-interaction.h \
 	$(NULL)
 endif
+libostree_experimental_headers = \
+	src/libostree/ostree-ref.h \
+	src/libostree/ostree-remote.h \
+	src/libostree/ostree-repo-finder.h \
+	src/libostree/ostree-repo-finder-avahi.h \
+	src/libostree/ostree-repo-finder-config.h \
+	src/libostree/ostree-repo-finder-mount.h \
+	$(NULL)
+if !ENABLE_EXPERIMENTAL_API
+libostree_1_la_SOURCES += $(libostree_experimental_headers)
+else # if ENABLE_EXPERIMENTAL_API
+libostree_1_la_SOURCES += \
+	src/libostree/ostree-bloom.c \
+	src/libostree/ostree-bloom-private.h \
+	src/libostree/ostree-repo-finder.c \
+	src/libostree/ostree-repo-finder-avahi.c \
+	src/libostree/ostree-repo-finder-config.c \
+	src/libostree/ostree-repo-finder-mount.c \
+	$(NULL)
+
+if USE_AVAHI
+libostree_1_la_SOURCES += \
+	src/libostree/ostree-repo-finder-avahi-parser.c \
+	src/libostree/ostree-repo-finder-avahi-private.h \
+	$(NULL)
+endif # USE_AVAHI
+endif
+
+symbol_files = $(top_srcdir)/src/libostree/libostree-released.sym
+if BUILDOPT_IS_DEVEL_BUILD
+symbol_files += $(top_srcdir)/src/libostree/libostree-devel.sym
+endif
+if ENABLE_EXPERIMENTAL_API
+symbol_files += $(top_srcdir)/src/libostree/libostree-experimental.sym
+endif
+# http://blog.jgc.org/2007/06/escaping-comma-and-space-in-gnu-make.html
+wl_versionscript_arg = -Wl,--version-script=
+EXTRA_DIST += \
+	$(top_srcdir)/src/libostree/libostree-devel.sym \
+	$(top_srcdir)/src/libostree/libostree-experimental.sym \
+	$(top_srcdir)/src/libostree/libostree-released.sym \
+	$(NULL)
 
 libostree_1_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/bsdiff -I$(srcdir)/libglnx -I$(srcdir)/src/libotutil -I$(srcdir)/src/libostree -I$(builddir)/src/libostree \
-	$(OT_INTERNAL_GIO_UNIX_CFLAGS) $(OT_INTERNAL_GPGME_CFLAGS) $(OT_DEP_LZMA_CFLAGS) $(OT_DEP_ZLIB_CFLAGS) \
+	$(OT_INTERNAL_GIO_UNIX_CFLAGS) $(OT_INTERNAL_GPGME_CFLAGS) $(OT_DEP_LZMA_CFLAGS) $(OT_DEP_ZLIB_CFLAGS) $(OT_DEP_CRYPTO_CFLAGS) \
 	-fvisibility=hidden '-D_OSTREE_PUBLIC=__attribute__((visibility("default"))) extern'
-libostree_1_la_LDFLAGS = -version-number 1:0:0 -Bsymbolic-functions -Wl,--version-script=$(top_srcdir)/src/libostree/libostree.sym
-libostree_1_la_LIBADD = libotutil.la libbupsplit.la libglnx.la libbsdiff.la libostree-kernel-args.la $(OT_INTERNAL_GIO_UNIX_LIBS) $(OT_INTERNAL_GPGME_LIBS) $(OT_DEP_LZMA_LIBS) $(OT_DEP_ZLIB_LIBS)
-EXTRA_libostree_1_la_DEPENDENCIES = $(top_srcdir)/src/libostree/libostree.sym
-
-EXTRA_DIST += src/libostree/libostree.sym
+libostree_1_la_LDFLAGS = -version-number 1:0:0 -Bsymbolic-functions $(addprefix $(wl_versionscript_arg),$(symbol_files))
+libostree_1_la_LIBADD = libotutil.la libglnx.la libbsdiff.la libostree-kernel-args.la $(OT_INTERNAL_GIO_UNIX_LIBS) $(OT_INTERNAL_GPGME_LIBS) \
+                        $(OT_DEP_LZMA_LIBS) $(OT_DEP_ZLIB_LIBS) $(OT_DEP_CRYPTO_LIBS)
+libostree_1_la_LIBADD += $(bupsplitpath)
+EXTRA_libostree_1_la_DEPENDENCIES = $(symbol_files)
 
 if USE_LIBARCHIVE
 libostree_1_la_CFLAGS += $(OT_DEP_LIBARCHIVE_CFLAGS)
 libostree_1_la_LIBADD += $(OT_DEP_LIBARCHIVE_LIBS)
+endif
+
+if ENABLE_EXPERIMENTAL_API
+if USE_AVAHI
+libostree_1_la_CFLAGS += $(OT_DEP_AVAHI_CFLAGS)
+libostree_1_la_LIBADD += $(OT_DEP_AVAHI_LIBS)
+endif
 endif
 
 if BUILDOPT_LIBSYSTEMD
@@ -157,15 +218,30 @@ libostree_1_la_CFLAGS += $(LIBSYSTEMD_CFLAGS)
 libostree_1_la_LIBADD += $(LIBSYSTEMD_LIBS)
 endif
 
-if USE_LIBSOUP
+if USE_CURL_OR_SOUP
 libostree_1_la_SOURCES += \
 	src/libostree/ostree-fetcher.h \
-	src/libostree/ostree-fetcher.c \
+	src/libostree/ostree-fetcher-util.h \
+	src/libostree/ostree-fetcher-util.c \
+  src/libostree/ostree-fetcher-uri.c \
 	src/libostree/ostree-metalink.h \
 	src/libostree/ostree-metalink.c \
 	$(NULL)
+endif
+
+if USE_CURL
+libostree_1_la_SOURCES += src/libostree/ostree-fetcher-curl.c \
+	src/libostree/ostree-soup-uri.h src/libostree/ostree-soup-uri.c \
+  src/libostree/ostree-soup-form.c \
+  $(NULL)
+libostree_1_la_CFLAGS += $(OT_DEP_CURL_CFLAGS)
+libostree_1_la_LIBADD += $(OT_DEP_CURL_LIBS)
+else
+if USE_LIBSOUP
+libostree_1_la_SOURCES += src/libostree/ostree-fetcher-soup.c
 libostree_1_la_CFLAGS += $(OT_INTERNAL_SOUP_CFLAGS)
 libostree_1_la_LIBADD += $(OT_INTERNAL_SOUP_LIBS)
+endif
 endif
 
 if USE_LIBMOUNT
@@ -184,8 +260,8 @@ OSTree_1_0_gir_EXPORT_PACKAGES = ostree-1
 OSTree_1_0_gir_INCLUDES = Gio-2.0
 OSTree_1_0_gir_CFLAGS = $(libostree_1_la_CFLAGS)
 OSTree_1_0_gir_LIBS = libostree-1.la
-OSTree_1_0_gir_SCANNERFLAGS = --warn-all --identifier-prefix=Ostree --symbol-prefix=ostree
-OSTree_1_0_gir_FILES = $(libostreeinclude_HEADERS) $(filter-out %-private.h,$(libostree_1_la_SOURCES))
+OSTree_1_0_gir_SCANNERFLAGS = --warn-all --identifier-prefix=Ostree --symbol-prefix=ostree $(GI_SCANNERFLAGS)
+OSTree_1_0_gir_FILES = $(libostreeinclude_HEADERS) $(filter-out %-private.h %/ostree-soup-uri.h $(libostree_experimental_headers),$(libostree_1_la_SOURCES))
 INTROSPECTION_GIRS += OSTree-1.0.gir
 gir_DATA += OSTree-1.0.gir
 typelib_DATA += OSTree-1.0.typelib
@@ -196,12 +272,13 @@ endif
 pkgconfig_DATA += src/libostree/ostree-1.pc
 
 gpgreadme_DATA = src/libostree/README-gpg
-gpgreadmedir = $(pkgdatadir)/trusted.gpg.d
+gpgreadmedir = $(datadir)/ostree/trusted.gpg.d
 EXTRA_DIST += src/libostree/README-gpg src/libostree/bupsplit.h \
 		src/libostree/ostree-enumtypes.h.template \
 		src/libostree/ostree-enumtypes.c.template \
 		src/libostree/ostree-deployment-private.h \
-		src/libostree/ostree-repo-deprecated.h
+		src/libostree/ostree-repo-deprecated.h \
+		src/libostree/ostree-version.h
 
 install-mkdir-remotes-d-hook:
 	mkdir -p $(DESTDIR)$(sysconfdir)/ostree/remotes.d

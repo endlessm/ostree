@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2012,2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -33,16 +32,27 @@
 #include <glib/gi18n.h>
 
 static gboolean opt_retain;
+static gboolean opt_retain_pending;
+static gboolean opt_retain_rollback;
+static gboolean opt_not_as_default;
 static char **opt_kernel_argv;
 static char **opt_kernel_argv_append;
 static gboolean opt_kernel_proc_cmdline;
 static char *opt_osname;
 static char *opt_origin_path;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-deploy.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "os", 0, 0, G_OPTION_ARG_STRING, &opt_osname, "Use a different operating system root than the current one", "OSNAME" },
   { "origin-file", 0, 0, G_OPTION_ARG_FILENAME, &opt_origin_path, "Specify origin file", "FILENAME" },
-  { "retain", 0, 0, G_OPTION_ARG_NONE, &opt_retain, "Do not delete previous deployment", NULL },
+  { "retain", 0, 0, G_OPTION_ARG_NONE, &opt_retain, "Do not delete previous deployments", NULL },
+  { "retain-pending", 0, 0, G_OPTION_ARG_NONE, &opt_retain_pending, "Do not delete pending deployments", NULL },
+  { "retain-rollback", 0, 0, G_OPTION_ARG_NONE, &opt_retain_rollback, "Do not delete rollback deployments", NULL },
+  { "not-as-default", 0, 0, G_OPTION_ARG_NONE, &opt_not_as_default, "Append rather than prepend new deployment", NULL },
   { "karg-proc-cmdline", 0, 0, G_OPTION_ARG_NONE, &opt_kernel_proc_cmdline, "Import current /proc/cmdline", NULL },
   { "karg", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_kernel_argv, "Set kernel argument, like root=/dev/sda1; this overrides any earlier argument with the same name", "NAME=VALUE" },
   { "karg-append", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_kernel_argv_append, "Append kernel argument; useful with e.g. console= that can be used multiple times", "NAME=VALUE" },
@@ -52,64 +62,53 @@ static GOptionEntry options[] = {
 gboolean
 ot_admin_builtin_deploy (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
-  gboolean ret = FALSE;
-  const char *refspec;
-  g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
-  GKeyFile *origin = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
-  glnx_unref_object OstreeDeployment *new_deployment = NULL;
-  glnx_unref_object OstreeDeployment *merge_deployment = NULL;
-  g_autofree char *revision = NULL;
   __attribute__((cleanup(_ostree_kernel_args_cleanup))) OstreeKernelArgs *kargs = NULL;
 
-  context = g_option_context_new ("REFSPEC - Checkout revision REFSPEC as the new default deployment");
+  g_autoptr(GOptionContext) context =
+    g_option_context_new ("REFSPEC - Checkout revision REFSPEC as the new default deployment");
 
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   if (!ostree_admin_option_context_parse (context, options, &argc, &argv,
                                           OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER,
                                           &sysroot, cancellable, error))
-    goto out;
+    return FALSE;
 
   if (argc < 2)
     {
       ot_util_usage_error (context, "REF/REV must be specified", error);
-      goto out;
+      return FALSE;
     }
 
-  refspec = argv[1];
+  const char *refspec = argv[1];
 
-  if (!ostree_sysroot_load (sysroot, cancellable, error))
-    goto out;
-
-  if (!ostree_sysroot_get_repo (sysroot, &repo, cancellable, error))
-    goto out;
+  OstreeRepo *repo = ostree_sysroot_repo (sysroot);
 
   /* Find the currently booted deployment, if any; we will ensure it
    * is present in the new deployment list.
    */
   if (!ot_admin_require_booted_deployment_or_osname (sysroot, opt_osname,
                                                      cancellable, error))
-    {
-      g_prefix_error (error, "Looking for booted deployment: ");
-      goto out;
-    }
+    return glnx_prefix_error (error, "Looking for booted deployment");
 
+  g_autoptr(GKeyFile) origin = NULL;
   if (opt_origin_path)
     {
       origin = g_key_file_new ();
-      
+
       if (!g_key_file_load_from_file (origin, opt_origin_path, 0, error))
-        goto out;
+        return FALSE;
     }
   else
     {
       origin = ostree_sysroot_origin_new_from_refspec (sysroot, refspec);
     }
 
+  g_autofree char *revision = NULL;
   if (!ostree_repo_resolve_rev (repo, refspec, FALSE, &revision, error))
-    goto out;
+    return FALSE;
 
-  merge_deployment = ostree_sysroot_get_merge_deployment (sysroot, opt_osname);
+  g_autoptr(OstreeDeployment) merge_deployment =
+    ostree_sysroot_get_merge_deployment (sysroot, opt_osname);
 
   /* Here we perform cleanup of any leftover data from previous
    * partial failures.  This avoids having to call
@@ -119,10 +118,7 @@ ot_admin_builtin_deploy (int argc, char **argv, GCancellable *cancellable, GErro
    * we find it.
    */
   if (!ostree_sysroot_prepare_cleanup (sysroot, cancellable, error))
-    {
-      g_prefix_error (error, "Performing initial cleanup: ");
-      goto out;
-    }
+    return glnx_prefix_error (error, "Performing initial cleanup");
 
   kargs = _ostree_kernel_args_new ();
 
@@ -132,7 +128,7 @@ ot_admin_builtin_deploy (int argc, char **argv, GCancellable *cancellable, GErro
   if (opt_kernel_proc_cmdline)
     {
       if (!_ostree_kernel_args_append_proc_cmdline (kargs, cancellable, error))
-        goto out;
+        return FALSE;
     }
   else if (merge_deployment)
     {
@@ -152,26 +148,29 @@ ot_admin_builtin_deploy (int argc, char **argv, GCancellable *cancellable, GErro
       _ostree_kernel_args_append_argv (kargs, opt_kernel_argv_append);
     }
 
-  {
-    g_auto(GStrv) kargs_strv = _ostree_kernel_args_to_strv (kargs);
+  g_autoptr(OstreeDeployment) new_deployment = NULL;
+  g_auto(GStrv) kargs_strv = _ostree_kernel_args_to_strv (kargs);
+  if (!ostree_sysroot_deploy_tree (sysroot, opt_osname, revision, origin, merge_deployment,
+                                   kargs_strv, &new_deployment, cancellable, error))
+    return FALSE;
 
-    if (!ostree_sysroot_deploy_tree (sysroot,
-                                     opt_osname, revision, origin,
-                                     merge_deployment, kargs_strv,
-                                     &new_deployment,
-                                     cancellable, error))
-      goto out;
-  }
+  OstreeSysrootSimpleWriteDeploymentFlags flags = 0;
+  if (opt_retain)
+    flags |= OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN;
+  else
+    {
+      if (opt_retain_pending)
+        flags |= OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN_PENDING;
+      if (opt_retain_rollback)
+        flags |= OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN_ROLLBACK;
+    }
 
-  if (!ostree_sysroot_simple_write_deployment (sysroot, opt_osname,
-                                               new_deployment, merge_deployment,
-                                               opt_retain ? OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN : 0,
-                                               cancellable, error))
-    goto out;
+  if (opt_not_as_default)
+    flags |= OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NOT_DEFAULT;
 
-  ret = TRUE;
- out:
-  if (origin)
-    g_key_file_unref (origin);
-  return ret;
+  if (!ostree_sysroot_simple_write_deployment (sysroot, opt_osname, new_deployment,
+                                               merge_deployment, flags, cancellable, error))
+    return FALSE;
+
+  return TRUE;
 }

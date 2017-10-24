@@ -1,5 +1,20 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define if we are building with -fsanitize=address */
+#undef BUILDOPT_ASAN
+
+/* Define if we are enabling ostree trivial-httpd entrypoint */
+#undef BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE
+
+/* Define if doing a development build */
+#undef BUILDOPT_IS_DEVEL_BUILD
+
+/* Define if systemd and libmount */
+#undef BUILDOPT_LIBSYSTEMD_AND_LIBMOUNT
+
+/* Define if we are building with -fsanitize=thread */
+#undef BUILDOPT_TSAN
+
 /* Define if we should avoid using O_TMPFILE */
 #undef DISABLE_OTMPFILE
 
@@ -12,6 +27,9 @@
 /* Define to 1 if you have the `archive_read_support_filter_all' function. */
 #undef HAVE_ARCHIVE_READ_SUPPORT_FILTER_ALL
 
+/* Define if we have avahi-client.pc and avahi-glib.pc */
+#undef HAVE_AVAHI
+
 /* Define to 1 if you have the declaration of `', and to 0 if you don't. */
 #undef HAVE_DECL_
 
@@ -22,11 +40,20 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
+/* Define if we have gnutls */
+#undef HAVE_GNUTLS
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
 /* Define if we have libarchive.pc */
 #undef HAVE_LIBARCHIVE
+
+/* Define if we have libcurl.pc */
+#undef HAVE_LIBCURL
+
+/* Define if we have soup or curl */
+#undef HAVE_LIBCURL_OR_LIBSOUP
 
 /* Define if we have libmount.pc */
 #undef HAVE_LIBMOUNT
@@ -42,6 +69,12 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the `mnt_unref_cache' function. */
+#undef HAVE_MNT_UNREF_CACHE
+
+/* Define if we have openssl */
+#undef HAVE_OPENSSL
 
 /* Define if we have libselinux.pc */
 #undef HAVE_SELINUX
@@ -69,6 +102,9 @@
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
+
+/* Define if experimental API should be enabled */
+#undef OSTREE_ENABLE_EXPERIMENTAL_API
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
@@ -115,6 +151,9 @@
 # undef __EXTENSIONS__
 #endif
 
+
+/* Define if we have smack.pc */
+#undef WITH_SMACK
 
 /* Enable large inode numbers on Mac OS X 10.5.  */
 #ifndef _DARWIN_USE_64_BIT_INODE

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -21,6 +20,8 @@
 #include "config.h"
 #include <stdlib.h>
 #include <string.h>
+#include <linux/magic.h>
+#include <sys/vfs.h>
 
 #include "libglnx.h"
 #include "libostreetest.h"
@@ -31,9 +32,7 @@
 gboolean
 ot_test_run_libtest (const char *cmd, GError **error)
 {
-  gboolean ret = FALSE;
   const char *srcdir = g_getenv ("G_TEST_SRCDIR");
-  int estatus;
   g_autoptr(GPtrArray) argv = g_ptr_array_new ();
   g_autoptr(GString) cmdstr = g_string_new ("");
 
@@ -48,60 +47,114 @@ ot_test_run_libtest (const char *cmd, GError **error)
   g_ptr_array_add (argv, cmdstr->str);
   g_ptr_array_add (argv, NULL);
 
+  int estatus;
   if (!g_spawn_sync (NULL, (char**)argv->pdata, NULL, G_SPAWN_SEARCH_PATH,
                      NULL, NULL, NULL, NULL, &estatus, error))
-    goto out;
-
+    return FALSE;
   if (!g_spawn_check_exit_status (estatus, error))
-    goto out;
+    return FALSE;
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 OstreeRepo *
 ot_test_setup_repo (GCancellable *cancellable,
                     GError **error)
 {
-  gboolean ret = FALSE;
+  if (!ot_test_run_libtest ("setup_test_repository archive", error))
+    return NULL;
+
   g_autoptr(GFile) repo_path = g_file_new_for_path ("repo");
-  glnx_unref_object OstreeRepo* ret_repo = NULL;
-
-  if (!ot_test_run_libtest ("setup_test_repository archive-z2", error))
-    goto out;
-
-  ret_repo = ostree_repo_new (repo_path);
-
+  g_autoptr(OstreeRepo) ret_repo = ostree_repo_new (repo_path);
   if (!ostree_repo_open (ret_repo, cancellable, error))
-    goto out;
+    return NULL;
 
-  ret = TRUE;
- out:
-  if (ret)
-    return g_steal_pointer (&ret_repo);
-  return NULL;
+  return g_steal_pointer (&ret_repo);
+}
+
+/* Determine whether we're able to relabel files. Needed for bare tests. */
+gboolean
+ot_check_relabeling (gboolean *can_relabel,
+                     GError  **error)
+{
+  g_auto(GLnxTmpfile) tmpf = { 0, };
+  if (!glnx_open_tmpfile_linkable_at (AT_FDCWD, ".", O_RDWR | O_CLOEXEC, &tmpf, error))
+    return FALSE;
+
+  g_autoptr(GError) local_error = NULL;
+  g_autoptr(GBytes) bytes = glnx_fgetxattr_bytes (tmpf.fd, "security.selinux", &local_error);
+  if (!bytes)
+    {
+      /* libglnx preserves errno */
+      if (G_IN_SET (errno, ENOTSUP, ENODATA))
+        {
+          *can_relabel = FALSE;
+          return TRUE;
+        }
+      g_propagate_error (error, g_steal_pointer (&local_error));
+      return FALSE;
+    }
+
+  gsize data_len;
+  const guint8 *data = g_bytes_get_data (bytes, &data_len);
+  if (fsetxattr (tmpf.fd, "security.selinux", data, data_len, 0) < 0)
+    {
+      if (errno == ENOTSUP)
+        {
+          *can_relabel = FALSE;
+          return TRUE;
+        }
+      return glnx_throw_errno_prefix (error, "fsetxattr");
+    }
+
+  *can_relabel = TRUE;
+  return TRUE;
+}
+
+/* Determine whether the filesystem supports getting/setting user xattrs. */
+gboolean
+ot_check_user_xattrs (gboolean *has_user_xattrs,
+                      GError  **error)
+{
+  g_auto(GLnxTmpfile) tmpf = { 0, };
+  if (!glnx_open_tmpfile_linkable_at (AT_FDCWD, ".", O_RDWR | O_CLOEXEC, &tmpf, error))
+    return FALSE;
+
+  if (fsetxattr (tmpf.fd, "user.test", "novalue", strlen ("novalue"), 0) < 0)
+    {
+      if (errno == ENOTSUP)
+        {
+          *has_user_xattrs = FALSE;
+          return TRUE;
+        }
+      return glnx_throw_errno_prefix (error, "fsetxattr");
+    }
+
+  *has_user_xattrs = TRUE;
+  return TRUE;
 }
 
 OstreeSysroot *
 ot_test_setup_sysroot (GCancellable *cancellable,
                        GError **error)
 {
-  gboolean ret = FALSE;
-  g_autoptr(GFile) sysroot_path = g_file_new_for_path ("sysroot");
-  glnx_unref_object OstreeSysroot *ret_sysroot = NULL;
+  if (!ot_test_run_libtest ("setup_os_repository \"archive\" \"syslinux\"", error))
+    return FALSE;
 
-  if (!ot_test_run_libtest ("setup_os_repository \"archive-z2\" \"syslinux\"", error))
-    goto out;
+  g_autoptr(GString) buf = g_string_new ("mutable-deployments");
+
+  gboolean can_relabel;
+  if (!ot_check_relabeling (&can_relabel, error))
+    return FALSE;
+  if (!can_relabel)
+    {
+      g_print ("libostreetest: can't relabel, turning off xattrs\n");
+      g_string_append (buf, ",no-xattrs");
+    }
 
   /* Make sure deployments are mutable */
-  g_setenv ("OSTREE_SYSROOT_DEBUG", "mutable-deployments", TRUE);
+  g_setenv ("OSTREE_SYSROOT_DEBUG", buf->str, TRUE);
 
-  ret_sysroot = ostree_sysroot_new (sysroot_path);
-
-  ret = TRUE;
- out:
-  if (ret)
-    return g_steal_pointer (&ret_sysroot);
-  return NULL;
+  g_autoptr(GFile) sysroot_path = g_file_new_for_path ("sysroot");
+  return ostree_sysroot_new (sysroot_path);
 }

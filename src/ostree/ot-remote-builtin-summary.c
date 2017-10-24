@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -30,8 +29,13 @@ static gboolean opt_raw;
 
 static char* opt_cache_dir;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-remote.xml) when changing the option list.
+ */
+
 static GOptionEntry option_entries[] = {
-  { "cache-dir", 0, 0, G_OPTION_ARG_STRING, &opt_cache_dir, "Use custom cache dir", NULL },
+  { "cache-dir", 0, 0, G_OPTION_ARG_FILENAME, &opt_cache_dir, "Use custom cache dir", NULL },
   { "raw", 0, 0, G_OPTION_ARG_NONE, &opt_raw, "Show raw variant data", NULL },
   { NULL }
 };
@@ -40,7 +44,7 @@ gboolean
 ot_remote_builtin_summary (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   const char *remote_name;
   g_autoptr(GBytes) summary_bytes = NULL;
   g_autoptr(GBytes) signature_bytes = NULL;
@@ -101,7 +105,7 @@ ot_remote_builtin_summary (int argc, char **argv, GCancellable *cancellable, GEr
    *     option for raw signature data like "--raw-signatures". */
   if (signature_bytes != NULL && !opt_raw)
     {
-      glnx_unref_object OstreeGpgVerifyResult *result = NULL;
+      g_autoptr(OstreeGpgVerifyResult) result = NULL;
 
       /* The actual signed summary verification happens above in
        * ostree_repo_remote_fetch_summary().  Here we just parse

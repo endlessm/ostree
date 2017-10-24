@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -86,7 +85,7 @@ test_bsdiff (void)
   bsdiff_stream.opaque = out;
   g_assert_cmpint (bsdiff (old, OLD_SIZE, new, NEW_SIZE, &bsdiff_stream), ==, 0);
 
-  g_output_stream_close (out, NULL, NULL);
+  g_assert (g_output_stream_close (out, NULL, NULL));
 
   /* Now generate NEW_GENERATED from OLD and OUT.  */
   { g_autoptr(GBytes) bytes = g_memory_output_stream_steal_as_bytes (G_MEMORY_OUTPUT_STREAM (out));

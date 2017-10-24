@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011,2014 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -47,12 +46,9 @@ static GOptionContext *
 ostree_admin_instutil_option_context_new_with_commands (void)
 {
   OstreeAdminInstUtilCommand *command = admin_instutil_subcommands;
-  GOptionContext *context;
-  GString *summary;
+  GOptionContext *context = g_option_context_new ("COMMAND");
 
-  context = g_option_context_new ("COMMAND");
-
-  summary = g_string_new ("Builtin \"admin instutil\" Commands:");
+  g_autoptr(GString) summary = g_string_new ("Builtin \"admin instutil\" Commands:");
 
   while (command->name != NULL)
     {
@@ -62,18 +58,13 @@ ostree_admin_instutil_option_context_new_with_commands (void)
 
   g_option_context_set_summary (context, summary->str);
 
-  g_string_free (summary, TRUE);
-
   return context;
 }
 
 gboolean
 ot_admin_builtin_instutil (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
-  gboolean ret = FALSE;
-  OstreeAdminInstUtilCommand *subcommand;
   const char *subcommand_name = NULL;
-  g_autofree char *prgname = NULL;
   int in, out;
 
   for (in = 1, out = 1; in < argc; in++, out++)
@@ -99,7 +90,7 @@ ot_admin_builtin_instutil (int argc, char **argv, GCancellable *cancellable, GEr
 
   argc = out;
 
-  subcommand = admin_instutil_subcommands;
+  OstreeAdminInstUtilCommand *subcommand = admin_instutil_subcommands;
   while (subcommand->name)
     {
       if (g_strcmp0 (subcommand_name, subcommand->name) == 0)
@@ -109,14 +100,12 @@ ot_admin_builtin_instutil (int argc, char **argv, GCancellable *cancellable, GEr
 
   if (!subcommand->name)
     {
-      g_autoptr(GOptionContext) context = NULL;
-      g_autofree char *help;
-
-      context = ostree_admin_instutil_option_context_new_with_commands ();
+      g_autoptr(GOptionContext) context =
+        ostree_admin_instutil_option_context_new_with_commands ();
 
       /* This will not return for some options (e.g. --version). */
       if (ostree_admin_option_context_parse (context, NULL, &argc, &argv,
-                                             OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER | OSTREE_ADMIN_BUILTIN_FLAG_UNLOCKED,
+                                             OSTREE_ADMIN_BUILTIN_FLAG_NO_SYSROOT,
                                              NULL, cancellable, error))
         {
           if (subcommand_name == NULL)
@@ -131,19 +120,16 @@ ot_admin_builtin_instutil (int argc, char **argv, GCancellable *cancellable, GEr
             }
         }
 
-      help = g_option_context_get_help (context, FALSE, NULL);
+      g_autofree char *help = g_option_context_get_help (context, FALSE, NULL);
       g_printerr ("%s", help);
-
-      goto out;
+      return FALSE;
     }
 
-  prgname = g_strdup_printf ("%s %s", g_get_prgname (), subcommand_name);
+  g_autofree char *prgname = g_strdup_printf ("%s %s", g_get_prgname (), subcommand_name);
   g_set_prgname (prgname);
 
   if (!subcommand->fn (argc, argv, cancellable, error))
-    goto out;
- 
-  ret = TRUE;
- out:
-  return ret;
+    return FALSE;
+
+  return TRUE;
 }

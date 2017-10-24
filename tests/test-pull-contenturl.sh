@@ -28,7 +28,7 @@ if has_gpgme; then
   COMMIT_SIGN="--gpg-homedir=${TEST_GPG_KEYHOME} --gpg-sign=${TEST_GPG_KEYID_1}"
 fi
 
-setup_fake_remote_repo1 "archive-z2" "${COMMIT_SIGN}"
+setup_fake_remote_repo1 "archive" "${COMMIT_SIGN}"
 
 # create a summary
 ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo \
@@ -51,14 +51,13 @@ fi
 find ${test_tmpdir}/ostree-srv/gnomerepo/objects \
   ! -name '*.commitmeta' -type f | xargs rm
 
-${CMD_PREFIX} ostree trivial-httpd --autoexit --daemonize \
-  -p ${test_tmpdir}/httpd-content-port
+${OSTREE_HTTPD} --autoexit --daemonize -p ${test_tmpdir}/httpd-content-port
 content_port=$(cat ${test_tmpdir}/httpd-content-port)
 echo "http://127.0.0.1:${content_port}" > ${test_tmpdir}/httpd-content-address
 
 cd ${test_tmpdir}
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 if has_gpgme; then VERIFY=true; else VERIFY=false; fi
 ${CMD_PREFIX} ostree --repo=repo remote add origin \
   --set=gpg-verify=$VERIFY --set=gpg-verify-summary=$VERIFY \

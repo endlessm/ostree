@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  * Copyright (C) 2016 Sjoerd Simons <sjoerd@luon.net>
  *
@@ -21,14 +20,17 @@
 
 #include "config.h"
 
-#include <libsoup/soup.h>
-
 #include "otutil.h"
 
 #include "ot-main.h"
 #include "ot-remote-builtins.h"
 #include "ostree-repo-private.h"
+#include "ot-remote-cookie-util.h"
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-remote.xml) when changing the option list.
+ */
 
 static GOptionEntry option_entries[] = {
   { NULL }
@@ -37,15 +39,8 @@ static GOptionEntry option_entries[] = {
 gboolean
 ot_remote_builtin_list_cookies (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
-  g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
-  const char *remote_name;
-  g_autofree char *jar_path = NULL;
-  g_autofree char *cookie_file = NULL;
-  glnx_unref_object SoupCookieJar *jar = NULL;
-  GSList *cookies;
-
-  context = g_option_context_new ("NAME - Show remote repository cookies");
+  g_autoptr(OstreeRepo) repo = NULL;
+  g_autoptr(GOptionContext) context = g_option_context_new ("NAME - Show remote repository cookies");
 
   if (!ostree_option_context_parse (context, option_entries, &argc, &argv,
                                     OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
@@ -57,30 +52,10 @@ ot_remote_builtin_list_cookies (int argc, char **argv, GCancellable *cancellable
       return FALSE;
     }
 
-  remote_name = argv[1];
-
-  cookie_file = g_strdup_printf ("%s.cookies.txt", remote_name);
-  jar_path = g_build_filename (g_file_get_path (repo->repodir), cookie_file, NULL);
-
-  jar = soup_cookie_jar_text_new (jar_path, TRUE);
-  cookies = soup_cookie_jar_all_cookies (jar);
-
-  while (cookies != NULL)
-    {
-      SoupCookie *cookie = cookies->data;
-      SoupDate *expiry = soup_cookie_get_expires (cookie);
-
-      g_print ("--\n");
-      g_print ("Domain: %s\n", soup_cookie_get_domain (cookie));
-      g_print ("Path: %s\n", soup_cookie_get_path (cookie));
-      g_print ("Name: %s\n", soup_cookie_get_name (cookie));
-      g_print ("Secure: %s\n", soup_cookie_get_secure (cookie) ? "yes" : "no");
-      g_print ("Expires: %s\n", soup_date_to_string (expiry, SOUP_DATE_COOKIE));
-      g_print ("Value: %s\n", soup_cookie_get_value (cookie));
-
-      soup_cookie_free (cookie);
-      cookies = g_slist_delete_link (cookies, cookies);
-    }
+  const char *remote_name = argv[1];
+  g_autofree char *cookie_file = g_strdup_printf ("%s.cookies.txt", remote_name);
+  if (!ot_list_cookies_at (ostree_repo_get_dfd (repo), cookie_file, error))
+    return FALSE;
 
   return TRUE;
 }

@@ -26,14 +26,14 @@ if ! has_gpgme; then
     exit 0
 fi
 
-echo "1..1"
+echo "1..6"
 
 keyid="472CDAFA"
 oldpwd=`pwd`
 mkdir ostree-srv
 cd ostree-srv
 mkdir gnomerepo
-${CMD_PREFIX} ostree --repo=gnomerepo init --mode="archive-z2"
+ostree_repo_init gnomerepo --mode="archive"
 mkdir gnomerepo-files
 cd gnomerepo-files 
 echo first > firstfile
@@ -53,7 +53,7 @@ cd ${test_tmpdir}
 mkdir ${test_tmpdir}/httpd
 cd httpd
 ln -s ${test_tmpdir}/ostree-srv ostree
-${CMD_PREFIX} ostree trivial-httpd --autoexit --daemonize -P 18081 -p ${test_tmpdir}/httpd-port
+${OSTREE_HTTPD} --autoexit --daemonize -P 18081 -p ${test_tmpdir}/httpd-port
 port=$(cat ${test_tmpdir}/httpd-port)
 assert_streq $port 18081
 echo "http://127.0.0.1:${port}" > ${test_tmpdir}/httpd-address
@@ -67,22 +67,24 @@ cp -a ${repopath} ${repopath}.orig
 # Set OSTREE_GPG_HOME to a place with no keyrings, we shouldn't trust the signature
 cd ${test_tmpdir}
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add origin $(cat httpd-address)/ostree/gnomerepo
 if env OSTREE_GPG_HOME=${test_tmpdir} ${CMD_PREFIX} ostree --repo=repo pull origin main; then
     assert_not_reached "pull with no trusted GPG keys unexpectedly succeeded!"
 fi
 rm repo -rf
+echo "ok pull no trusted GPG"
 
 # And a test case with valid signature
 cd ${test_tmpdir}
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add origin $(cat httpd-address)/ostree/gnomerepo
 ${CMD_PREFIX} ostree --repo=repo pull origin main
-${CMD_PREFIX} ostree --repo=repo show --gpg-verify-remote=origin main | grep -o 'Found [[:digit:]] signature' > show-verify-remote
-assert_file_has_content show-verify-remote 'Found 1 signature'
+${CMD_PREFIX} ostree --repo=repo show --gpg-verify-remote=origin main > show.txt
+assert_file_has_content_literal show.txt 'Found 1 signature'
 rm repo -rf
+echo "ok pull verify"
 
 # A test with corrupted detached signature
 cd ${test_tmpdir}
@@ -90,21 +92,23 @@ find ${test_tmpdir}/ostree-srv/gnomerepo -name '*.commitmeta' | while read fname
     echo borkborkbork > ${fname};
 done
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add origin $(cat httpd-address)/ostree/gnomerepo
 if ${CMD_PREFIX} ostree --repo=repo pull origin main; then
     assert_not_reached "pull with corrupted signature unexpectedly succeeded!"
 fi
 rm repo -rf
+echo "ok pull corrupted sig"
 
 # And now attempt to pull the same corrupted commit, but with GPG
 # verification off
 cd ${test_tmpdir}
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
 ${CMD_PREFIX} ostree --repo=repo pull origin main
 rm repo -rf
+echo "ok repull corrupted"
 
 # Add an unsigned commit to the repo, then pull, then sign the commit,
 # then pull again.  Make sure we get the expected number of signatures
@@ -114,26 +118,24 @@ echo secret > signme
 ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo commit -b main -s "Don't forget to sign me!"
 cd ${test_tmpdir}
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
 ${CMD_PREFIX} ostree --repo=repo pull origin main
-if ${CMD_PREFIX} ostree --repo=repo show main | grep -o 'Found [[:digit:]] signature'; then
-  assert_not_reached
-fi
+${CMD_PREFIX} ostree --repo=repo show main > show.txt
+assert_not_file_has_content show.txt 'Found.*signature'
 ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo gpg-sign --gpg-homedir=${test_tmpdir}/gpghome main $keyid
 ${CMD_PREFIX} ostree --repo=repo pull origin main
-${CMD_PREFIX} ostree --repo=repo show main | grep -o 'Found [[:digit:]] signature' > show
-assert_file_has_content show 'Found 1 signature'
+${CMD_PREFIX} ostree --repo=repo show main > show.txt
+assert_file_has_content_literal show.txt 'Found 1 signature'
+echo "ok pull unsigned, then sign"
 
 # Delete the signature from the commit so the detached metadata is empty,
 # then pull and verify the signature is also deleted on the client side.
 ${CMD_PREFIX} ostree --repo=${test_tmpdir}/ostree-srv/gnomerepo gpg-sign --gpg-homedir=${test_tmpdir}/gpghome --delete main $keyid
 ${CMD_PREFIX} ostree --repo=repo pull origin main
-if ${CMD_PREFIX} ostree --repo=repo show main | grep -o 'Found [[:digit:]] signature'; then
-  assert_not_reached
-fi
+${CMD_PREFIX} ostree --repo=repo show main >show.txt
+assert_not_file_has_content show.txt 'Found.*signature'
+echo "ok pull sig deleted"
 
 rm -rf repo gnomerepo-files
 libtest_cleanup_gpg
-
-echo "ok"

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2016 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -55,7 +54,7 @@ input_stream_to_bytes (GInputStream *input)
 }
 
 static void
-test_raw_file_to_archive_z2_stream (gconstpointer data)
+test_raw_file_to_archive_stream (gconstpointer data)
 {
   OstreeRepo *repo = OSTREE_REPO (data);
   g_autofree gchar *commit_checksum = NULL;
@@ -170,6 +169,198 @@ test_raw_file_to_archive_z2_stream (gconstpointer data)
   g_assert_cmpint (checks, >, 0);
 }
 
+static gboolean hi_content_stream_new (GInputStream **out_stream,
+                                       guint64       *out_length,
+                                       GError **error)
+{
+  static const char hi[] = "hi";
+  g_autoptr(GMemoryInputStream) hi_memstream = (GMemoryInputStream*)g_memory_input_stream_new_from_data (hi, sizeof(hi)-1, NULL);
+  g_autoptr(GFileInfo) finfo = g_file_info_new ();
+  g_file_info_set_attribute_uint32 (finfo, "standard::type", G_FILE_TYPE_REGULAR);
+  g_file_info_set_attribute_boolean (finfo, "standard::is-symlink", FALSE);
+  g_file_info_set_attribute_uint32 (finfo, "unix::uid", 0);
+  g_file_info_set_attribute_uint32 (finfo, "unix::gid", 0);
+  g_file_info_set_attribute_uint32 (finfo, "unix::mode", S_IFREG|0644);
+  return ostree_raw_file_to_content_stream ((GInputStream*)hi_memstream, finfo, NULL, out_stream, out_length, NULL, error);
+}
+
+static void
+test_validate_remotename (void)
+{
+  const char *valid[] = {"foo", "hello-world"};
+  const char *invalid[] = {"foo/bar", ""};
+  for (guint i = 0; i < G_N_ELEMENTS(valid); i++)
+    {
+      g_autoptr(GError) error = NULL;
+      g_assert (ostree_validate_remote_name (valid[i], &error));
+      g_assert_no_error (error);
+    }
+  for (guint i = 0; i < G_N_ELEMENTS(invalid); i++)
+    {
+      g_autoptr(GError) error = NULL;
+      g_assert (!ostree_validate_remote_name (invalid[i], &error));
+      g_assert (error != NULL);
+    }
+}
+
+static void
+test_object_writes (gconstpointer data)
+{
+  OstreeRepo *repo = OSTREE_REPO (data);
+  g_autoptr(GError) error = NULL;
+
+  static const char hi_sha256[] = "2301b5923720c3edc1f0467addb5c287fd5559e3e0cd1396e7f1edb6b01be9f0";
+
+  /* Successful content write */
+  { g_autoptr(GInputStream) hi_memstream = NULL;
+    guint64 len;
+    hi_content_stream_new (&hi_memstream, &len, &error);
+    g_assert_no_error (error);
+    g_autofree guchar *csum = NULL;
+    (void)ostree_repo_write_content (repo, hi_sha256, hi_memstream, len, &csum,
+                                     NULL, &error);
+    g_assert_no_error (error);
+  }
+
+  /* Invalid content write */
+  { g_autoptr(GInputStream) hi_memstream = NULL;
+    guint64 len;
+    hi_content_stream_new (&hi_memstream, &len, &error);
+    g_assert_no_error (error);
+    g_autofree guchar *csum = NULL;
+    static const char invalid_hi_sha256[] = "cafebabecafebabecafebabecafebabecafebabecafebabecafebabecafebabe";
+    g_assert (!ostree_repo_write_content (repo, invalid_hi_sha256, hi_memstream, len, &csum,
+                                          NULL, &error));
+    g_assert (error);
+    g_assert (strstr (error->message, "Corrupted file object"));
+  }
+}
+
+static GVariant*
+xattr_cb (OstreeRepo  *repo,
+          const char  *path,
+          GFileInfo   *file_info,
+          gpointer     user_data)
+{
+  GVariant *xattr = user_data;
+  if (g_str_equal (path, "/baz/cow"))
+    return g_variant_ref (xattr);
+  return NULL;
+}
+
+/* check that using a devino cache doesn't cause us to ignore xattr callbacks */
+static void
+test_devino_cache_xattrs (void)
+{
+  g_autoptr(GError) error = NULL;
+  gboolean ret = FALSE;
+
+  g_autoptr(GFile) repo_path = g_file_new_for_path ("repo");
+
+  /* re-initialize as bare */
+  ret = ot_test_run_libtest ("setup_test_repository bare", &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  gboolean can_relabel;
+  ret = ot_check_relabeling (&can_relabel, &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  gboolean has_user_xattrs;
+  ret = ot_check_user_xattrs (&has_user_xattrs, &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  /* we need both because we're bare and our tests target user xattrs */
+  if (!can_relabel || !has_user_xattrs)
+    {
+      g_test_skip ("this test requires full xattr support");
+      return;
+    }
+
+  g_autoptr(OstreeRepo) repo = ostree_repo_new (repo_path);
+  ret = ostree_repo_open (repo, NULL, &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  g_autofree char *csum = NULL;
+  ret = ostree_repo_resolve_rev (repo, "test2", FALSE, &csum, &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  g_autoptr(OstreeRepoDevInoCache) cache = ostree_repo_devino_cache_new ();
+
+  OstreeRepoCheckoutAtOptions options = {0,};
+  options.no_copy_fallback = TRUE;
+  options.devino_to_csum_cache = cache;
+  ret = ostree_repo_checkout_at (repo, &options, AT_FDCWD, "checkout", csum, NULL, &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  g_autoptr(OstreeMutableTree) mtree = ostree_mutable_tree_new ();
+  g_autoptr(OstreeRepoCommitModifier) modifier =
+    ostree_repo_commit_modifier_new (0, NULL, NULL, NULL);
+  ostree_repo_commit_modifier_set_devino_cache (modifier, cache);
+
+  g_auto(GVariantBuilder) builder;
+  g_variant_builder_init (&builder, (GVariantType*)"a(ayay)");
+  g_variant_builder_add (&builder, "(@ay@ay)",
+                         g_variant_new_bytestring ("user.myattr"),
+                         g_variant_new_bytestring ("data"));
+  g_autoptr(GVariant) orig_xattrs = g_variant_ref_sink (g_variant_builder_end (&builder));
+
+  ret = ostree_repo_prepare_transaction (repo, NULL, NULL, &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  ostree_repo_commit_modifier_set_xattr_callback (modifier, xattr_cb, NULL, orig_xattrs);
+  ret = ostree_repo_write_dfd_to_mtree (repo, AT_FDCWD, "checkout",
+                                        mtree, modifier, NULL, &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  g_autoptr(GFile) root = NULL;
+  ret = ostree_repo_write_mtree (repo, mtree, &root, NULL, &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  /* now check that the final xattr matches */
+  g_autoptr(GFile) baz_child = g_file_get_child (root, "baz");
+  g_autoptr(GFile) cow_child = g_file_get_child (baz_child, "cow");
+
+  g_autoptr(GVariant) xattrs = NULL;
+  ret = ostree_repo_file_get_xattrs (OSTREE_REPO_FILE (cow_child), &xattrs, NULL, &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  gboolean found_xattr = FALSE;
+  gsize n = g_variant_n_children (xattrs);
+  for (gsize i = 0; i < n; i++)
+    {
+      const guint8* name;
+      const guint8* value;
+      g_variant_get_child (xattrs, i, "(^&ay^&ay)", &name, &value);
+
+      if (g_str_equal ((const char*)name, "user.myattr"))
+        {
+          g_assert_cmpstr ((const char*)value, ==, "data");
+          found_xattr = TRUE;
+          break;
+        }
+    }
+
+  g_assert (found_xattr);
+
+  OstreeRepoTransactionStats stats;
+  ret = ostree_repo_commit_transaction (repo, &stats, NULL, &error);
+  g_assert_no_error (error);
+  g_assert (ret);
+
+  /* we should only have had to checksum /baz/cow */
+  g_assert_cmpint (stats.content_objects_written, ==, 1);
+}
+
 int main (int argc, char **argv)
 {
   g_autoptr(GError) error = NULL;
@@ -177,12 +368,15 @@ int main (int argc, char **argv)
 
   g_test_init (&argc, &argv, NULL);
 
-  repo = ot_test_setup_repo (NULL, &error); 
+  repo = ot_test_setup_repo (NULL, &error);
   if (!repo)
     goto out;
-  
+
   g_test_add_data_func ("/repo-not-system", repo, test_repo_is_not_system);
-  g_test_add_data_func ("/raw-file-to-archive-z2-stream", repo, test_raw_file_to_archive_z2_stream);
+  g_test_add_data_func ("/raw-file-to-archive-stream", repo, test_raw_file_to_archive_stream);
+  g_test_add_data_func ("/objectwrites", repo, test_object_writes);
+  g_test_add_func ("/xattrs-devino-cache", test_devino_cache_xattrs);
+  g_test_add_func ("/remotename", test_validate_remotename);
 
   return g_test_run();
  out:

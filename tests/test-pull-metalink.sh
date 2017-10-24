@@ -21,7 +21,7 @@ set -euo pipefail
 
 . $(dirname $0)/libtest.sh
 
-setup_fake_remote_repo1 "archive-z2"
+setup_fake_remote_repo1 "archive"
 
 echo '1..9'
 
@@ -29,7 +29,7 @@ echo '1..9'
 cd ${test_tmpdir}
 mkdir metalink-data
 cd metalink-data
-${CMD_PREFIX} ostree trivial-httpd --autoexit --daemonize -p ${test_tmpdir}/metalink-httpd-port
+${OSTREE_HTTPD} --autoexit --daemonize -p ${test_tmpdir}/metalink-httpd-port
 metalink_port=$(cat ${test_tmpdir}/metalink-httpd-port)
 echo "http://127.0.0.1:${metalink_port}" > ${test_tmpdir}/metalink-httpd-address
 
@@ -68,7 +68,7 @@ EOF
 
 cd ${test_tmpdir}
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin metalink=$(cat metalink-httpd-address)/metalink.xml
 ${CMD_PREFIX} ostree --repo=repo pull origin:main
 ${CMD_PREFIX} ostree --repo=repo rev-parse origin:main
@@ -87,7 +87,7 @@ test_metalink_pull_error() {
     msg=$1
     rm repo -rf
     mkdir repo
-    ${CMD_PREFIX} ostree --repo=repo init
+    ostree_repo_init repo
     ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin metalink=$(cat metalink-httpd-address)/metalink.xml
     if ${CMD_PREFIX} ostree --repo=repo pull origin:main 2>err.txt; then
 	assert_not_reached "pull unexpectedly succeeded"
@@ -157,7 +157,7 @@ EOF
 cd ${test_tmpdir}
 rm repo -rf
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin metalink=$(cat metalink-httpd-address)/metalink.xml
 ${CMD_PREFIX} ostree --repo=repo pull origin:main
 ${CMD_PREFIX} ostree --repo=repo rev-parse origin:main

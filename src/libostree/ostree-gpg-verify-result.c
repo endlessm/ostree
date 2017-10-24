@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -63,7 +62,8 @@ static OstreeGpgSignatureAttr all_signature_attrs[] = {
   OSTREE_GPG_SIGNATURE_ATTR_PUBKEY_ALGO_NAME,
   OSTREE_GPG_SIGNATURE_ATTR_HASH_ALGO_NAME,
   OSTREE_GPG_SIGNATURE_ATTR_USER_NAME,
-  OSTREE_GPG_SIGNATURE_ATTR_USER_EMAIL
+  OSTREE_GPG_SIGNATURE_ATTR_USER_EMAIL,
+  OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT_PRIMARY
 };
 
 static void ostree_gpg_verify_result_initable_iface_init (GInitableIface *iface);
@@ -133,8 +133,7 @@ ostree_gpg_verify_result_initable_init (GInitable     *initable,
   gpg_error = gpgme_new (&result->context);
   if (gpg_error != GPG_ERR_NO_ERROR)
     {
-      ot_gpgme_error_to_gio_error (gpg_error, error);
-      g_prefix_error (error, "Unable to create context: ");
+      ot_gpgme_throw (gpg_error, error, "Unable to create context");
       goto out;
     }
 
@@ -237,34 +236,49 @@ ostree_gpg_verify_result_lookup (OstreeGpgVerifyResult *result,
                                  const gchar *key_id,
                                  guint *out_signature_index)
 {
-  g_autofree char *key_id_upper = NULL;
+  g_auto(gpgme_key_t) lookup_key = NULL;
   gpgme_signature_t signature;
   guint signature_index;
-  gboolean ret = FALSE;
 
   g_return_val_if_fail (OSTREE_IS_GPG_VERIFY_RESULT (result), FALSE);
   g_return_val_if_fail (key_id != NULL, FALSE);
 
-  /* signature->fpr is always upper-case. */
-  key_id_upper = g_ascii_strup (key_id, -1);
+  /* fetch requested key_id from keyring to canonicalise ID */
+  (void) gpgme_get_key (result->context, key_id, &lookup_key, 0);
+
+  if (lookup_key == NULL)
+    {
+      g_debug ("Could not find key ID %s to lookup signature.", key_id);
+      return FALSE;
+    }
 
   for (signature = result->details->signatures, signature_index = 0;
        signature != NULL;
        signature = signature->next, signature_index++)
     {
-      if (signature->fpr == NULL)
-        continue;
+      g_auto(gpgme_key_t) signature_key = NULL;
 
-      if (g_str_has_suffix (signature->fpr, key_id_upper))
+      (void) gpgme_get_key (result->context, signature->fpr, &signature_key, 0);
+
+      if (signature_key == NULL)
+        {
+          g_debug ("Could not find key when looking up signature from %s.", signature->fpr);
+          continue;
+        }
+
+      /* the first subkey in the list is the primary key */
+      if (!g_strcmp0 (lookup_key->subkeys->fpr,
+                      signature_key->subkeys->fpr))
         {
           if (out_signature_index != NULL)
             *out_signature_index = signature_index;
-          ret = TRUE;
-          break;
+          /* Note early return */
+          return TRUE;
         }
+
     }
 
-  return ret;
+  return FALSE;
 }
 
 /**
@@ -291,7 +305,7 @@ ostree_gpg_verify_result_get (OstreeGpgVerifyResult *result,
                               guint n_attrs)
 {
   GVariantBuilder builder;
-  gpgme_key_t key = NULL;
+  g_auto(gpgme_key_t) key = NULL;
   gpgme_signature_t signature;
   guint ii;
 
@@ -314,7 +328,8 @@ ostree_gpg_verify_result_get (OstreeGpgVerifyResult *result,
   for (ii = 0; ii < n_attrs; ii++)
     {
       if (attrs[ii] == OSTREE_GPG_SIGNATURE_ATTR_USER_NAME ||
-          attrs[ii] == OSTREE_GPG_SIGNATURE_ATTR_USER_EMAIL)
+          attrs[ii] == OSTREE_GPG_SIGNATURE_ATTR_USER_EMAIL ||
+          attrs[ii] == OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT_PRIMARY)
         {
           (void) gpgme_get_key (result->context, signature->fpr, &key, 0);
           break;
@@ -398,6 +413,14 @@ ostree_gpg_verify_result_get (OstreeGpgVerifyResult *result,
             child = g_variant_new_string (v_string);
             break;
 
+          case OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT_PRIMARY:
+            if (key != NULL && key->subkeys != NULL)
+              v_string = key->subkeys->fpr;
+            if (v_string == NULL)
+              v_string = "";
+            child = g_variant_new_string (v_string);
+            break;
+
           default:
             g_critical ("Invalid signature attribute (%d)", attrs[ii]);
             g_variant_builder_clear (&builder);
@@ -406,9 +429,6 @@ ostree_gpg_verify_result_get (OstreeGpgVerifyResult *result,
 
       g_variant_builder_add_value (&builder, child);
     }
-
-  if (key != NULL)
-    gpgme_key_unref (key);
 
   return g_variant_builder_end (&builder);
 }
@@ -518,6 +538,7 @@ ostree_gpg_verify_result_describe_variant (GVariant *variant,
   gint64 exp_timestamp;
   const char *type_string;
   const char *fingerprint;
+  const char *fingerprint_primary;
   const char *pubkey_algo;
   const char *user_name;
   const char *user_email;
@@ -533,7 +554,7 @@ ostree_gpg_verify_result_describe_variant (GVariant *variant,
   /* Verify the variant's type string.  This code is
    * not prepared to handle just any random GVariant. */
   type_string = g_variant_get_type_string (variant);
-  g_return_if_fail (strcmp (type_string, "(bbbbbsxxssss)") == 0);
+  g_return_if_fail (strcmp (type_string, "(bbbbbsxxsssss)") == 0);
 
   /* The default format roughly mimics the verify output generated by
    * check_sig_and_print() in gnupg/g10/mainproc.c, though obviously
@@ -547,6 +568,8 @@ ostree_gpg_verify_result_describe_variant (GVariant *variant,
                        "b", &key_missing);
   g_variant_get_child (variant, OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT,
                        "&s", &fingerprint);
+  g_variant_get_child (variant, OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT_PRIMARY,
+                       "&s", &fingerprint_primary);
   g_variant_get_child (variant, OSTREE_GPG_SIGNATURE_ATTR_TIMESTAMP,
                        "x", &timestamp);
   g_variant_get_child (variant, OSTREE_GPG_SIGNATURE_ATTR_EXP_TIMESTAMP,
@@ -562,6 +585,14 @@ ostree_gpg_verify_result_describe_variant (GVariant *variant,
   key_id = (len > 16) ? fingerprint + len - 16 : fingerprint;
 
   date_time_utc = g_date_time_new_from_unix_utc (timestamp);
+  if (date_time_utc == NULL)
+    {
+      g_string_append_printf (output_buffer,
+                              "Can't check signature: timestamp %" G_GINT64_FORMAT " is invalid\n",
+                              timestamp);
+      return;
+    }
+
   date_time_local = g_date_time_to_local (date_time_utc);
   formatted_date_time = g_date_time_format (date_time_local, "%c");
 
@@ -603,14 +634,37 @@ ostree_gpg_verify_result_describe_variant (GVariant *variant,
                               user_name, user_email);
     }
 
-  if (exp_timestamp > 0)
+  if (!key_missing && (g_strcmp0 (fingerprint, fingerprint_primary) != 0))
     {
-      date_time_utc = g_date_time_new_from_unix_utc (exp_timestamp);
-      date_time_local = g_date_time_to_local (date_time_utc);
-      formatted_date_time = g_date_time_format (date_time_local, "%c");
+      const char *key_id_primary;
+
+      len = strlen (fingerprint_primary);
+      key_id_primary = (len > 16) ? fingerprint_primary + len - 16 :
+                                    fingerprint_primary;
 
       if (line_prefix != NULL)
         g_string_append (output_buffer, line_prefix);
+
+      g_string_append_printf (output_buffer,
+                              "Primary key ID %s\n", key_id_primary);
+    }
+
+  if (exp_timestamp > 0)
+    {
+      if (line_prefix != NULL)
+        g_string_append (output_buffer, line_prefix);
+
+      date_time_utc = g_date_time_new_from_unix_utc (exp_timestamp);
+      if (date_time_utc == NULL)
+        {
+          g_string_append_printf (output_buffer,
+                                  "Signature expiry timestamp (%" G_GINT64_FORMAT ") is invalid\n",
+                                  exp_timestamp);
+          return;
+        }
+
+      date_time_local = g_date_time_to_local (date_time_utc);
+      formatted_date_time = g_date_time_format (date_time_local, "%c");
 
       if (sig_expired)
         {
@@ -649,10 +703,12 @@ ostree_gpg_verify_result_require_valid_signature (OstreeGpgVerifyResult *result,
 
   if (ostree_gpg_verify_result_count_valid (result) == 0)
     {
-      g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                           "GPG signatures found, but none are in trusted keyring");
+      g_set_error (error, OSTREE_GPG_ERROR, OSTREE_GPG_ERROR_MISSING_KEY,
+                   "GPG signatures found, but none are in trusted keyring");
       return FALSE;
     }
 
   return TRUE;
 }
+
+G_DEFINE_QUARK (OstreeGpgError, ostree_gpg_error)

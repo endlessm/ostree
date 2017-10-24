@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -29,6 +28,11 @@
 
 #include "otutil.h"
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-instutil.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { NULL }
 };
@@ -39,16 +43,13 @@ ot_admin_instutil_builtin_grub2_generate (int argc, char **argv, GCancellable *c
   gboolean ret = FALSE;
   guint bootversion;
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
 
   context = g_option_context_new ("[BOOTVERSION] - generate GRUB2 configuration from given BLS entries");
 
   if (!ostree_admin_option_context_parse (context, options, &argc, &argv,
                                           OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER | OSTREE_ADMIN_BUILTIN_FLAG_UNLOCKED,
                                           &sysroot, cancellable, error))
-    goto out;
-
-  if (!ostree_sysroot_load (sysroot, cancellable, error))
     goto out;
 
   if (argc >= 2)

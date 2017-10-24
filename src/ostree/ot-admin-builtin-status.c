@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2012,2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -28,6 +27,11 @@
 #include "ostree.h"
 
 #include <glib/gi18n.h>
+
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-status.xml) when changing the option list.
+ */
 
 static GOptionEntry options[] = {
   { NULL }
@@ -84,10 +88,12 @@ gboolean
 ot_admin_builtin_status (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   gboolean ret = FALSE;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   OstreeDeployment *booted_deployment = NULL;
+  g_autoptr(OstreeDeployment) pending_deployment = NULL;
+  g_autoptr(OstreeDeployment) rollback_deployment = NULL;
   g_autoptr(GPtrArray) deployments = NULL;
   const int is_tty = isatty (1);
   const char *red_bold_prefix = is_tty ? "\x1b[31m\x1b[1m" : "";
@@ -101,14 +107,15 @@ ot_admin_builtin_status (int argc, char **argv, GCancellable *cancellable, GErro
                                           &sysroot, cancellable, error))
     goto out;
 
-  if (!ostree_sysroot_load (sysroot, cancellable, error))
-    goto out;
-
   if (!ostree_sysroot_get_repo (sysroot, &repo, cancellable, error))
     goto out;
 
   deployments = ostree_sysroot_get_deployments (sysroot);
   booted_deployment = ostree_sysroot_get_booted_deployment (sysroot);
+
+  if (booted_deployment)
+    ostree_sysroot_query_deployments_for (sysroot, NULL, &pending_deployment,
+                                          &rollback_deployment);
 
   if (deployments->len == 0)
     {
@@ -123,18 +130,23 @@ ot_admin_builtin_status (int argc, char **argv, GCancellable *cancellable, GErro
           const char *ref = ostree_deployment_get_csum (deployment);
           OstreeDeploymentUnlockedState unlocked = ostree_deployment_get_unlocked (deployment);
           g_autofree char *version = version_of_commit (repo, ref);
-          glnx_unref_object OstreeGpgVerifyResult *result = NULL;
-          GString *output_buffer;
+          g_autoptr(OstreeGpgVerifyResult) result = NULL;
           guint jj, n_signatures;
           GError *local_error = NULL;
 
           origin = ostree_deployment_get_origin (deployment);
 
-          g_print ("%c %s %s.%d\n",
+          const char *deployment_status = "";
+          if (deployment == pending_deployment)
+            deployment_status = " (pending)";
+          else if (deployment == rollback_deployment)
+            deployment_status = " (rollback)";
+          g_print ("%c %s %s.%d%s\n",
                    deployment == booted_deployment ? '*' : ' ',
                    ostree_deployment_get_osname (deployment),
                    ostree_deployment_get_csum (deployment),
-                   ostree_deployment_get_deployserial (deployment));
+                   ostree_deployment_get_deployserial (deployment),
+                   deployment_status);
           if (version)
             g_print ("    Version: %s\n", version);
           switch (unlocked)
@@ -159,6 +171,7 @@ ot_admin_builtin_status (int argc, char **argv, GCancellable *cancellable, GErro
 
           if (deployment_get_gpg_verify (deployment, repo))
             {
+              g_autoptr(GString) output_buffer = g_string_sized_new (256);
               /* Print any digital signatures on this commit. */
 
               result = ostree_repo_verify_commit_ext (repo, ref, NULL, NULL,
@@ -176,7 +189,6 @@ ot_admin_builtin_status (int argc, char **argv, GCancellable *cancellable, GErro
                   goto out;
                 }
 
-              output_buffer = g_string_sized_new (256);
               n_signatures = ostree_gpg_verify_result_count_all (result);
 
               for (jj = 0; jj < n_signatures; jj++)
@@ -186,7 +198,6 @@ ot_admin_builtin_status (int argc, char **argv, GCancellable *cancellable, GErro
                 }
 
               g_print ("%s", output_buffer->str);
-              g_string_free (output_buffer, TRUE);
             }
         }
     }

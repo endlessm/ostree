@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -29,6 +28,11 @@
 
 #include <gio/gunixoutputstream.h>
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-cat.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { NULL },
 };
@@ -39,64 +43,45 @@ cat_one_file (GFile         *f,
               GCancellable  *cancellable,
               GError       **error)
 {
-  gboolean ret = FALSE;
-  g_autoptr(GInputStream) in = NULL;
-  
-  in = (GInputStream*)g_file_read (f, cancellable, error);
+  g_autoptr(GInputStream) in = (GInputStream*)g_file_read (f, cancellable, error);
   if (!in)
-    goto out;
+    return FALSE;
 
-  {
-    gssize n_bytes_written = g_output_stream_splice (stdout_stream, in, G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE,
-                                                     cancellable, error);
-    if (n_bytes_written < 0)
-      goto out;
-  }
+  if (g_output_stream_splice (stdout_stream, in, G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE,
+                              cancellable, error) < 0)
+    return FALSE;
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 gboolean
 ostree_builtin_cat (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
-  g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
-  gboolean ret = FALSE;
-  int i;
-  const char *rev;
-  g_autoptr(GOutputStream) stdout_stream = NULL;
-  g_autoptr(GFile) root = NULL;
-  g_autoptr(GFile) f = NULL;
-
-  context = g_option_context_new ("COMMIT PATH... - Concatenate contents of files");
-
+  g_autoptr(GOptionContext) context = g_option_context_new ("COMMIT PATH... - Concatenate contents of files");
+  g_autoptr(OstreeRepo) repo = NULL;
   if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
-    goto out;
+    return FALSE;
 
   if (argc <= 2)
     {
       ot_util_usage_error (context, "A COMMIT and at least one PATH argument are required", error);
-      goto out;
+      return FALSE;
     }
-  rev = argv[1];
+  const char *rev = argv[1];
 
+  g_autoptr(GFile) root = NULL;
   if (!ostree_repo_read_commit (repo, rev, &root, NULL, NULL, error))
-    goto out;
+    return FALSE;
 
-  stdout_stream = g_unix_output_stream_new (1, FALSE);
+  g_autoptr(GOutputStream) stdout_stream = g_unix_output_stream_new (1, FALSE);
 
-  for (i = 2; i < argc; i++)
+  for (int i = 2; i < argc; i++)
     {
-      g_clear_object (&f);
-      f = g_file_resolve_relative_path (root, argv[i]);
+      g_autoptr(GFile) f = g_file_resolve_relative_path (root, argv[i]);
 
       if (!cat_one_file (f, stdout_stream, cancellable, error))
-        goto out;
+        return FALSE;
     }
- 
-  ret = TRUE;
- out:
-  return ret;
+
+  return TRUE;
 }

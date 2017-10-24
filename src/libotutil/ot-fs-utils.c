@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -24,97 +23,16 @@
 #include "libglnx.h"
 #include <sys/xattr.h>
 #include <gio/gunixinputstream.h>
+#include <gio/gunixoutputstream.h>
 
-int
-ot_opendirat (int dfd, const char *path, gboolean follow)
+/* Convert a fd-relative path to a GFile* - use
+ * for legacy code.
+ */
+GFile *
+ot_fdrel_to_gfile (int dfd, const char *path)
 {
-  int flags = O_RDONLY | O_NONBLOCK | O_DIRECTORY | O_CLOEXEC | O_NOCTTY;
-  if (!follow)
-    flags |= O_NOFOLLOW;
-  return openat (dfd, path, flags);
-}
-
-gboolean
-ot_gopendirat (int             dfd,
-               const char     *path,
-               gboolean        follow,
-               int            *out_fd,
-               GError        **error)
-{
-  int ret = ot_opendirat (dfd, path, follow);
-  if (ret == -1)
-    {
-      glnx_set_error_from_errno (error);
-      return FALSE;
-    }
-  *out_fd = ret;
-  return TRUE;
-}
-
-GBytes *
-ot_lgetxattrat (int            dfd,
-                const char    *path,
-                const char    *attribute,
-                GError       **error)
-{
-  /* A workaround for the lack of lgetxattrat(), thanks to Florian Weimer:
-   * https://mail.gnome.org/archives/ostree-list/2014-February/msg00017.html
-   */
-  g_autofree char *full_path = g_strdup_printf ("/proc/self/fd/%d/%s", dfd, path);
-  GBytes *bytes = NULL;
-  ssize_t bytes_read, real_size;
-  char *buf;
-
-  do
-    bytes_read = lgetxattr (full_path, attribute, NULL, 0);
-  while (G_UNLIKELY (bytes_read < 0 && errno == EINTR));
-  if (G_UNLIKELY (bytes_read < 0))
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
-
-  buf = g_malloc (bytes_read);
-  do
-    real_size = lgetxattr (full_path, attribute, buf, bytes_read);
-  while (G_UNLIKELY (real_size < 0 && errno == EINTR));
-  if (G_UNLIKELY (real_size < 0))
-    {
-      glnx_set_error_from_errno (error);
-      g_free (buf);
-      goto out;
-    }
-
-  bytes = g_bytes_new_take (buf, real_size);
- out:
-  return bytes;
-}
-
-gboolean
-ot_lsetxattrat (int            dfd,
-                const char    *path,
-                const char    *attribute,
-                const void    *value,
-                gsize          value_size,
-                int            flags,
-                GError       **error)
-{
-  /* A workaround for the lack of lsetxattrat(), thanks to Florian Weimer:
-   * https://mail.gnome.org/archives/ostree-list/2014-February/msg00017.html
-   */
-  g_autofree char *full_path = g_strdup_printf ("/proc/self/fd/%d/%s", dfd, path);
-  int res;
-
-  do
-    res = lsetxattr (full_path, "user.ostreemeta", value, value_size, flags);
-  while (G_UNLIKELY (res == -1 && errno == EINTR));
-  if (G_UNLIKELY (res == -1))
-    {
-      glnx_set_error_from_errno (error);
-      return FALSE;
-    }
-
-  return TRUE;
+  g_autofree char *abspath = glnx_fdrel_abspath (dfd, path);
+  return g_file_new_for_path (abspath);
 }
 
 gboolean
@@ -124,24 +42,15 @@ ot_readlinkat_gfile_info (int             dfd,
                           GCancellable   *cancellable,
                           GError        **error)
 {
-  gboolean ret = FALSE;
   char targetbuf[PATH_MAX+1];
   ssize_t len;
 
-  do
-    len = readlinkat (dfd, path, targetbuf, sizeof (targetbuf) - 1);
-  while (G_UNLIKELY (len == -1 && errno == EINTR));
-  if (len == -1)
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
+  if (TEMP_FAILURE_RETRY (len = readlinkat (dfd, path, targetbuf, sizeof (targetbuf) - 1)) < 0)
+    return glnx_throw_errno_prefix (error, "readlinkat");
   targetbuf[len] = '\0';
   g_file_info_set_symlink_target (target_info, targetbuf);
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 
@@ -167,28 +76,20 @@ ot_openat_read_stream (int             dfd,
                        GCancellable   *cancellable,
                        GError        **error)
 {
-  gboolean ret = FALSE;
   int fd = -1;
   int flags = O_RDONLY | O_NOCTTY | O_CLOEXEC;
 
   if (!follow)
     flags |= O_NOFOLLOW;
 
-  do
-    fd = openat (dfd, path, flags, 0);
-  while (G_UNLIKELY (fd == -1 && errno == EINTR));
-  if (fd == -1)
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
+  if (TEMP_FAILURE_RETRY (fd = openat (dfd, path, flags, 0)) < 0)
+    return glnx_throw_errno_prefix (error, "openat(%s)", path);
 
   *out_istream = g_unix_input_stream_new (fd, TRUE);
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
+/* Like unlinkat() but ignore ENOENT */
 gboolean
 ot_ensure_unlinked_at (int dfd,
                        const char *path,
@@ -197,10 +98,7 @@ ot_ensure_unlinked_at (int dfd,
   if (unlinkat (dfd, path, 0) != 0)
     {
       if (G_UNLIKELY (errno != ENOENT))
-        {
-          glnx_set_error_from_errno (error);
-          return FALSE;
-        }
+        return glnx_throw_errno_prefix (error, "unlink(%s)", path);
     }
   return TRUE;
 }
@@ -211,23 +109,39 @@ ot_openat_ignore_enoent (int dfd,
                          int *out_fd,
                          GError **error)
 {
-  gboolean ret = FALSE;
-  int target_fd = -1;
-
-  target_fd = openat (dfd, path, O_CLOEXEC | O_RDONLY);
+  int target_fd = openat (dfd, path, O_CLOEXEC | O_RDONLY);
   if (target_fd < 0)
     {
       if (errno != ENOENT)
-        {
-          glnx_set_error_from_errno (error);
-          goto out;
-        }
+        return glnx_throw_errno_prefix (error, "openat(%s)", path);
     }
 
-  ret = TRUE;
   *out_fd = target_fd;
- out:
-  return ret;
+  return TRUE;
+}
+
+/* Like glnx_dirfd_iterator_init_at(), but if %ENOENT, then set
+ * @out_exists to %FALSE, and return successfully.
+ */
+gboolean
+ot_dfd_iter_init_allow_noent (int dfd,
+                              const char *path,
+                              GLnxDirFdIterator *dfd_iter,
+                              gboolean *out_exists,
+                              GError **error)
+{
+  glnx_fd_close int fd = glnx_opendirat_with_errno (dfd, path, TRUE);
+  if (fd < 0)
+    {
+      if (errno != ENOENT)
+        return glnx_throw_errno_prefix (error, "opendirat");
+      *out_exists = FALSE;
+      return TRUE;
+    }
+  if (!glnx_dirfd_iterator_init_take_fd (&fd, dfd_iter, error))
+    return FALSE;
+  *out_exists = TRUE;
+  return TRUE;
 }
 
 GBytes *
@@ -239,14 +153,37 @@ ot_file_mapat_bytes (int dfd,
   g_autoptr(GMappedFile) mfile = NULL;
 
   if (fd < 0)
-    {
-      glnx_set_error_from_errno (error);
-      return FALSE;
-    }
+    return glnx_null_throw_errno_prefix (error, "openat(%s)", path);
 
   mfile = g_mapped_file_new_from_fd (fd, FALSE, error);
   if (!mfile)
     return FALSE;
 
+  return g_mapped_file_get_bytes (mfile);
+}
+
+/* Given an input stream, splice it to an anonymous file (O_TMPFILE).
+ * Useful for potentially large but transient files.
+ */
+GBytes *
+ot_map_anonymous_tmpfile_from_content (GInputStream *instream,
+                                       GCancellable *cancellable,
+                                       GError      **error)
+{
+  g_auto(GLnxTmpfile) tmpf = { 0, };
+  if (!glnx_open_anonymous_tmpfile (O_RDWR | O_CLOEXEC, &tmpf, error))
+    return NULL;
+
+  g_autoptr(GOutputStream) out = g_unix_output_stream_new (tmpf.fd, FALSE);
+  gssize n_bytes_written = g_output_stream_splice (out, instream,
+                                                   G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE |
+                                                   G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET,
+                                                   cancellable, error);
+  if (n_bytes_written < 0)
+    return NULL;
+
+  g_autoptr(GMappedFile) mfile = g_mapped_file_new_from_fd (tmpf.fd, FALSE, error);
+  if (!mfile)
+    return NULL;
   return g_mapped_file_get_bytes (mfile);
 }

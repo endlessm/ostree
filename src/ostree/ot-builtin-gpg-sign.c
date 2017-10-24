@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -26,13 +25,19 @@
 #include "ot-builtins.h"
 #include "ostree.h"
 #include "otutil.h"
+#include "ostree-core-private.h"
 
 static gboolean opt_delete;
 static char *opt_gpg_homedir;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-gpg-sign.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "delete", 'd', 0, G_OPTION_ARG_NONE, &opt_delete, "Delete signatures having any of the GPG KEY-IDs" },
-  { "gpg-homedir", 0, 0, G_OPTION_ARG_STRING, &opt_gpg_homedir, "GPG Homedir to use when looking for keyrings", "HOMEDIR" },
+  { "gpg-homedir", 0, 0, G_OPTION_ARG_FILENAME, &opt_gpg_homedir, "GPG Homedir to use when looking for keyrings", "HOMEDIR" },
   { NULL }
 };
 
@@ -54,7 +59,7 @@ delete_signatures (OstreeRepo *repo,
                    GError **error)
 {
   GVariantDict metadata_dict;
-  glnx_unref_object OstreeGpgVerifyResult *result = NULL;
+  g_autoptr(OstreeGpgVerifyResult) result = NULL;
   g_autoptr(GVariant) old_metadata = NULL;
   g_autoptr(GVariant) new_metadata = NULL;
   g_autoptr(GVariant) signature_data = NULL;
@@ -85,7 +90,7 @@ delete_signatures (OstreeRepo *repo,
   g_variant_dict_init (&metadata_dict, old_metadata);
 
   signature_data = g_variant_dict_lookup_value (&metadata_dict,
-                                                "ostree.gpgsigs",
+                                                _OSTREE_METADATA_GPGSIGS_NAME,
                                                 G_VARIANT_TYPE ("aay"));
 
   /* Taking the approach of deleting whatever matches we find for the
@@ -154,7 +159,7 @@ delete_signatures (OstreeRepo *repo,
   /* Update the metadata dictionary. */
   if (g_queue_is_empty (&signatures))
     {
-      g_variant_dict_remove (&metadata_dict, "ostree.gpgsigs");
+      g_variant_dict_remove (&metadata_dict, _OSTREE_METADATA_GPGSIGS_NAME);
     }
   else
     {
@@ -170,7 +175,7 @@ delete_signatures (OstreeRepo *repo,
         }
 
       g_variant_dict_insert_value (&metadata_dict,
-                                   "ostree.gpgsigs",
+                                   _OSTREE_METADATA_GPGSIGS_NAME,
                                    g_variant_builder_end (&signature_builder));
     }
 
@@ -198,7 +203,7 @@ gboolean
 ostree_builtin_gpg_sign (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   g_autofree char *resolved_commit = NULL;
   const char *commit;
   char **key_ids;

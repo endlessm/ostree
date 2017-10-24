@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -27,8 +26,13 @@
 
 static char* opt_cache_dir;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-remote.xml) when changing the option list.
+ */
+
 static GOptionEntry option_entries[] = {
-  { "cache-dir", 0, 0, G_OPTION_ARG_STRING, &opt_cache_dir, "Use custom cache dir", NULL },
+  { "cache-dir", 0, 0, G_OPTION_ARG_FILENAME, &opt_cache_dir, "Use custom cache dir", NULL },
   { NULL }
 };
 
@@ -36,7 +40,7 @@ gboolean
 ot_remote_builtin_refs (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   const char *remote_name;
   gboolean ret = FALSE;
   g_autoptr(GHashTable) refs = NULL;

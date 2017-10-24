@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015,2016 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -56,12 +55,12 @@ callback_getattr (const char *path, struct stat *st_data)
   if (!*path)
     {
       if (fstat (basefd, st_data) == -1)
-	return -errno;
+        return -errno;
     }
   else
     {
       if (fstatat (basefd, path, st_data, AT_SYMLINK_NOFOLLOW) == -1)
-	return -errno;
+        return -errno;
     }
   return 0;
 }
@@ -85,7 +84,7 @@ callback_readlink (const char *path, char *buf, size_t size)
 
 static int
 callback_readdir (const char *path, void *buf, fuse_fill_dir_t filler,
-		  off_t offset, struct fuse_file_info *fi)
+                  off_t offset, struct fuse_file_info *fi)
 {
   DIR *dp;
   struct dirent *de;
@@ -96,13 +95,15 @@ callback_readdir (const char *path, void *buf, fuse_fill_dir_t filler,
   if (!*path)
     {
       dfd = fcntl (basefd, F_DUPFD_CLOEXEC, 3);
+      if (dfd < 0)
+        return -errno;
       lseek (dfd, 0, SEEK_SET);
     }
   else
     {
       dfd = openat (basefd, path, O_RDONLY | O_NONBLOCK | O_DIRECTORY | O_CLOEXEC | O_NOCTTY);
       if (dfd == -1)
-	return -errno;
+        return -errno;
     }
 
   /* Transfers ownership of fd */
@@ -117,7 +118,7 @@ callback_readdir (const char *path, void *buf, fuse_fill_dir_t filler,
       st.st_ino = de->d_ino;
       st.st_mode = de->d_type << 12;
       if (filler (buf, de->d_name, &st, 0))
-	break;
+        break;
     }
 
   (void) closedir (dp);
@@ -170,7 +171,7 @@ callback_symlink (const char *from, const char *to)
   if (fstatat (basefd, to, &stbuf, AT_SYMLINK_NOFOLLOW) == -1)
     {
       fprintf (stderr, "Failed to find newly created symlink '%s': %s\n",
-	       to, g_strerror (errno));
+               to, g_strerror (errno));
       exit (EXIT_FAILURE);
     }
   return 0;
@@ -196,32 +197,48 @@ callback_link (const char *from, const char *to)
   return 0;
 }
 
-static gboolean
-stbuf_is_regfile_hardlinked (struct stat *stbuf)
+/* Check whether @stbuf refers to a hardlinked regfile or symlink, and if so
+ * return -EROFS. Otherwise return 0.
+ */
+static int
+can_write_stbuf (struct stat *stbuf)
 {
-  return S_ISREG (stbuf->st_mode) && stbuf->st_nlink > 1;
+  /* If it's not a regular file or symlink, ostree won't hardlink it, so allow
+   * writes - it might be a FIFO or device that somehow
+   * ended up underneath our mount.
+   */
+  if (!(S_ISREG (stbuf->st_mode) || S_ISLNK (stbuf->st_mode)))
+    return 0;
+  /* If the object isn't hardlinked, it's OK to write */
+  if (stbuf->st_nlink <= 1)
+    return 0;
+  /* Otherwise, it's a hardlinked file or symlink; it must be
+   * immutable.
+   */
+  return -EROFS;
 }
 
+/* Check whether @path refers to a hardlinked regfile or symlink, and if so
+ * return -EROFS. Otherwise return 0.
+ */
 static int
 can_write (const char *path)
 {
   struct stat stbuf;
-  if (fstatat (basefd, path, &stbuf, 0) == -1)
+  if (fstatat (basefd, path, &stbuf, AT_SYMLINK_NOFOLLOW) == -1)
     {
       if (errno == ENOENT)
-	return 0;
+        return 0;
       else
-	return -errno;
+        return -errno;
     }
-  if (stbuf_is_regfile_hardlinked (&stbuf))
-    return -EROFS;
-  return 0;
+  return can_write_stbuf (&stbuf);
 }
 
-#define VERIFY_WRITE(path) do { \
-  int r = can_write (path); \
-  if (r != 0) \
-    return r; \
+#define VERIFY_WRITE(path) do {                 \
+    int r = can_write (path);                   \
+    if (r != 0)                                 \
+      return r;                                 \
   } while (0)
 
 static int
@@ -229,6 +246,10 @@ callback_chmod (const char *path, mode_t mode)
 {
   path = ENSURE_RELPATH (path);
   VERIFY_WRITE(path);
+  /* Note we can't use AT_SYMLINK_NOFOLLOW yet;
+   * https://marc.info/?l=linux-kernel&m=148830147803162&w=2
+   * https://marc.info/?l=linux-fsdevel&m=149193779929561&w=2
+   */
   if (fchmodat (basefd, path, mode, 0) != 0)
     return -errno;
   return 0;
@@ -239,7 +260,7 @@ callback_chown (const char *path, uid_t uid, gid_t gid)
 {
   path = ENSURE_RELPATH (path);
   VERIFY_WRITE(path);
-  if (fchownat (basefd, path, uid, gid, 0) != 0)
+  if (fchownat (basefd, path, uid, gid, AT_SYMLINK_NOFOLLOW) != 0)
     return -errno;
   return 0;
 }
@@ -252,7 +273,7 @@ callback_truncate (const char *path, off_t size)
   path = ENSURE_RELPATH (path);
   VERIFY_WRITE(path);
 
-  fd = openat (basefd, path, O_WRONLY);
+  fd = openat (basefd, path, O_NOFOLLOW|O_WRONLY);
   if (fd == -1)
     return -errno;
 
@@ -291,7 +312,7 @@ do_open (const char *path, mode_t mode, struct fuse_file_info *finfo)
   if ((finfo->flags & O_ACCMODE) == O_RDONLY)
     {
       /* Read */
-      fd = openat (basefd, path, finfo->flags);
+      fd = openat (basefd, path, finfo->flags, mode);
       if (fd == -1)
         return -errno;
     }
@@ -310,10 +331,11 @@ do_open (const char *path, mode_t mode, struct fuse_file_info *finfo)
           return -errno;
         }
 
-      if (stbuf_is_regfile_hardlinked (&stbuf))
+      int r = can_write_stbuf (&stbuf);
+      if (r != 0)
         {
           (void) close (fd);
-          return -EROFS;
+          return r;
         }
 
       /* Handle O_TRUNC here only after verifying hardlink state */
@@ -345,8 +367,28 @@ callback_create(const char *path, mode_t mode, struct fuse_file_info *finfo)
 }
 
 static int
+callback_read_buf (const char *path, struct fuse_bufvec **bufp,
+                   size_t size, off_t offset, struct fuse_file_info *finfo)
+{
+  struct fuse_bufvec *src;
+
+  src = malloc (sizeof (struct fuse_bufvec));
+  if (src == NULL)
+    return -ENOMEM;
+
+  *src = FUSE_BUFVEC_INIT (size);
+
+  src->buf[0].flags = FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK;
+  src->buf[0].fd = finfo->fh;
+  src->buf[0].pos = offset;
+  *bufp = src;
+
+  return 0;
+}
+
+static int
 callback_read (const char *path, char *buf, size_t size, off_t offset,
-	       struct fuse_file_info *finfo)
+               struct fuse_file_info *finfo)
 {
   int r;
   r = pread (finfo->fh, buf, size, offset);
@@ -356,8 +398,21 @@ callback_read (const char *path, char *buf, size_t size, off_t offset,
 }
 
 static int
+callback_write_buf (const char *path, struct fuse_bufvec *buf, off_t offset,
+                    struct fuse_file_info *finfo)
+{
+  struct fuse_bufvec dst = FUSE_BUFVEC_INIT (fuse_buf_size (buf));
+
+  dst.buf[0].flags = FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK;
+  dst.buf[0].fd = finfo->fh;
+  dst.buf[0].pos = offset;
+
+  return fuse_buf_copy (&dst, buf, FUSE_BUF_SPLICE_NONBLOCK);
+}
+
+static int
 callback_write (const char *path, const char *buf, size_t size, off_t offset,
-		struct fuse_file_info *finfo)
+                struct fuse_file_info *finfo)
 {
   int r;
   r = pwrite (finfo->fh, buf, size, offset);
@@ -393,26 +448,26 @@ static int
 callback_access (const char *path, int mode)
 {
   path = ENSURE_RELPATH (path);
-  
+
   /* Apparently at least GNU coreutils rm calls `faccessat(W_OK)`
    * before trying to do an unlink.  So...we'll just lie about
    * writable access here.
    */
-  if (faccessat (basefd, path, mode, 0) == -1)
+  if (faccessat (basefd, path, mode, AT_SYMLINK_NOFOLLOW) == -1)
     return -errno;
   return 0;
 }
 
 static int
 callback_setxattr (const char *path, const char *name, const char *value,
-		   size_t size, int flags)
+                   size_t size, int flags)
 {
   return -ENOTSUP;
 }
 
 static int
 callback_getxattr (const char *path, const char *name, char *value,
-		   size_t size)
+                   size_t size)
 {
   return -ENOTSUP;
 }
@@ -454,7 +509,9 @@ struct fuse_operations callback_oper = {
   .utime = callback_utime,
   .create = callback_create,
   .open = callback_open,
+  .read_buf = callback_read_buf,
   .read = callback_read,
+  .write_buf = callback_write_buf,
   .write = callback_write,
   .statfs = callback_statfs,
   .release = callback_release,
@@ -468,8 +525,7 @@ struct fuse_operations callback_oper = {
   .removexattr = callback_removexattr
 };
 
-enum
-{
+enum {
   KEY_HELP,
   KEY_VERSION,
 };
@@ -478,19 +534,19 @@ static void
 usage (const char *progname)
 {
   fprintf (stdout,
-	   "usage: %s basepath mountpoint [options]\n"
-	   "\n"
-	   "   Makes basepath visible at mountpoint such that files are read-only, directories are writable\n"
-	   "\n"
-	   "general options:\n"
-	   "   -o opt,[opt...]     mount options\n"
-	   "   -h  --help          print help\n"
-	   "\n", progname);
+           "usage: %s basepath mountpoint [options]\n"
+           "\n"
+           "   Makes basepath visible at mountpoint such that files are read-only, directories are writable\n"
+           "\n"
+           "general options:\n"
+           "   -o opt,[opt...]     mount options\n"
+           "   -h  --help          print help\n"
+           "\n", progname);
 }
 
 static int
 rofs_parse_opt (void *data, const char *arg, int key,
-		struct fuse_args *outargs)
+                struct fuse_args *outargs)
 {
   (void) data;
 
@@ -498,19 +554,19 @@ rofs_parse_opt (void *data, const char *arg, int key,
     {
     case FUSE_OPT_KEY_NONOPT:
       if (basefd == -1)
-	{
-	  basefd = openat (AT_FDCWD, arg, O_RDONLY | O_NONBLOCK | O_DIRECTORY | O_CLOEXEC | O_NOCTTY);
-	  if (basefd == -1)
-	    {
-	      perror ("openat");
-	      exit (EXIT_FAILURE);
-	    }
-	  return 0;
-	}
+        {
+          basefd = openat (AT_FDCWD, arg, O_RDONLY | O_NONBLOCK | O_DIRECTORY | O_CLOEXEC | O_NOCTTY);
+          if (basefd == -1)
+            {
+              perror ("openat");
+              exit (EXIT_FAILURE);
+            }
+          return 0;
+        }
       else
-	{
-	  return 1;
-	}
+        {
+          return 1;
+        }
     case FUSE_OPT_KEY_OPT:
       return 1;
     case KEY_HELP:

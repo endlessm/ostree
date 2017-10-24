@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -24,7 +23,18 @@
 
 #include "libglnx.h"
 #include "ostree.h"
+#include "ostree-repo-private.h"
 #include "otutil.h"
+
+/* See ostree-repo.c for a bit more info about these ABI checks */
+#if __SIZEOF_POINTER__ == 8 && __SIZEOF_LONG__ == 8 && __SIZEOF_INT__ == 4
+G_STATIC_ASSERT(sizeof(OstreeDiffDirsOptions) ==
+                sizeof(int) * 2 +
+                sizeof(gpointer) +
+                sizeof(int) * (7+6) +
+                sizeof(int) +  /* hole */
+                sizeof(gpointer) * 7);
+#endif
 
 static gboolean
 get_file_checksum (OstreeDiffFlags  flags,
@@ -34,9 +44,7 @@ get_file_checksum (OstreeDiffFlags  flags,
                    GCancellable *cancellable,
                    GError   **error)
 {
-  gboolean ret = FALSE;
   g_autofree char *ret_checksum = NULL;
-  g_autofree guchar *csum = NULL;
 
   if (OSTREE_IS_REPO_FILE (f))
     {
@@ -51,27 +59,26 @@ get_file_checksum (OstreeDiffFlags  flags,
         {
           if (!glnx_dfd_name_get_all_xattrs (AT_FDCWD, gs_file_get_path_cached (f),
                                              &xattrs, cancellable, error))
-            goto out;
+            return FALSE;
         }
 
       if (g_file_info_get_file_type (f_info) == G_FILE_TYPE_REGULAR)
         {
           in = (GInputStream*)g_file_read (f, cancellable, error);
           if (!in)
-            goto out;
+            return FALSE;
         }
 
+      g_autofree guchar *csum = NULL;
       if (!ostree_checksum_file_from_input (f_info, xattrs, in,
                                             OSTREE_OBJECT_TYPE_FILE,
                                             &csum, cancellable, error))
-        goto out;
+        return FALSE;
       ret_checksum = ostree_checksum_from_bytes (csum);
     }
 
-  ret = TRUE;
   ot_transfer_out_value(out_checksum, &ret_checksum);
- out:
-  return ret;
+  return TRUE;
 }
 
 OstreeDiffItem *
@@ -129,28 +136,22 @@ diff_files (OstreeDiffFlags  flags,
             GCancellable    *cancellable,
             GError         **error)
 {
-  gboolean ret = FALSE;
   g_autofree char *checksum_a = NULL;
   g_autofree char *checksum_b = NULL;
-  OstreeDiffItem *ret_item = NULL;
-
   if (!get_file_checksum (flags, a, a_info, &checksum_a, cancellable, error))
-    goto out;
+    return FALSE;
   if (!get_file_checksum (flags, b, b_info, &checksum_b, cancellable, error))
-    goto out;
+    return FALSE;
 
+  g_autoptr(OstreeDiffItem) ret_item = NULL;
   if (strcmp (checksum_a, checksum_b) != 0)
     {
       ret_item = diff_item_new (a, a_info, b, b_info,
                                 checksum_a, checksum_b);
     }
 
-  ret = TRUE;
   ot_transfer_out_value(out_item, &ret_item);
- out:
-  if (ret_item)
-    ostree_diff_item_unref (ret_item);
-  return ret;
+  return TRUE;
 }
 
 static gboolean
@@ -159,47 +160,38 @@ diff_add_dir_recurse (GFile          *d,
                       GCancellable   *cancellable,
                       GError        **error)
 {
-  gboolean ret = FALSE;
-  GError *temp_error = NULL;
-  g_autoptr(GFileEnumerator) dir_enum = NULL;
-  g_autoptr(GFile) child = NULL;
-  g_autoptr(GFileInfo) child_info = NULL;
-
-  dir_enum = g_file_enumerate_children (d, OSTREE_GIO_FAST_QUERYINFO, 
-                                        G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
-                                        cancellable, 
-                                        error);
+  g_autoptr(GFileEnumerator) dir_enum =
+    g_file_enumerate_children (d, OSTREE_GIO_FAST_QUERYINFO,
+                               G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS,
+                               cancellable,
+                               error);
   if (!dir_enum)
-    goto out;
+    return FALSE;
 
-  while ((child_info = g_file_enumerator_next_file (dir_enum, cancellable, &temp_error)) != NULL)
+  while (TRUE)
     {
+      GFileInfo *child_info;
       const char *name;
+
+      if (!g_file_enumerator_iterate (dir_enum, &child_info, NULL,
+                                      cancellable, error))
+        return FALSE;
+      if (child_info == NULL)
+        break;
 
       name = g_file_info_get_name (child_info);
 
-      g_clear_object (&child);
-      child = g_file_get_child (d, name);
-
+      g_autoptr(GFile) child = g_file_get_child (d, name);
       g_ptr_array_add (added, g_object_ref (child));
 
       if (g_file_info_get_file_type (child_info) == G_FILE_TYPE_DIRECTORY)
         {
           if (!diff_add_dir_recurse (child, added, cancellable, error))
-            goto out;
+            return FALSE;
         }
-      
-      g_clear_object (&child_info);
-    }
-  if (temp_error != NULL)
-    {
-      g_propagate_error (error, temp_error);
-      goto out;
     }
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -226,6 +218,37 @@ ostree_diff_dirs (OstreeDiffFlags flags,
                   GCancellable   *cancellable,
                   GError        **error)
 {
+  return ostree_diff_dirs_with_options (flags, a, b, modified,
+                                        removed, added, NULL,
+                                        cancellable, error);
+}
+
+/**
+ * ostree_diff_dirs_with_options:
+ * @flags: Flags
+ * @a: First directory path, or %NULL
+ * @b: First directory path
+ * @modified: (element-type OstreeDiffItem): Modified files
+ * @removed: (element-type Gio.File): Removed files
+ * @added: (element-type Gio.File): Added files
+ * @cancellable: Cancellable
+ * @options: (allow-none): Options
+ * @error: Error
+ *
+ * Compute the difference between directory @a and @b as 3 separate
+ * sets of #OstreeDiffItem in @modified, @removed, and @added.
+ */
+gboolean
+ostree_diff_dirs_with_options (OstreeDiffFlags        flags,
+                               GFile                 *a,
+                               GFile                 *b,
+                               GPtrArray             *modified,
+                               GPtrArray             *removed,
+                               GPtrArray             *added,
+                               OstreeDiffDirsOptions *options,
+                               GCancellable          *cancellable,
+                               GError               **error)
+{
   gboolean ret = FALSE;
   GError *temp_error = NULL;
   g_autoptr(GFileEnumerator) dir_enum = NULL;
@@ -233,6 +256,23 @@ ostree_diff_dirs (OstreeDiffFlags flags,
   g_autoptr(GFile) child_b = NULL;
   g_autoptr(GFileInfo) child_a_info = NULL;
   g_autoptr(GFileInfo) child_b_info = NULL;
+  OstreeDiffDirsOptions default_opts = OSTREE_DIFF_DIRS_OPTIONS_INIT;
+
+  if (!options)
+    options = &default_opts;
+
+  /* If we're diffing versus a repo, and either of them have xattrs disabled,
+   * then disable for both.
+   */
+  OstreeRepo *repo;
+  if (OSTREE_IS_REPO_FILE (a))
+    repo = ostree_repo_file_get_repo ((OstreeRepoFile*)a);
+  else if (OSTREE_IS_REPO_FILE (b))
+    repo = ostree_repo_file_get_repo ((OstreeRepoFile*)b);
+  else
+    repo = NULL;
+  if (repo != NULL && repo->disable_xattrs)
+    flags |= OSTREE_DIFF_FLAGS_IGNORE_XATTRS;
 
   if (a == NULL)
     {
@@ -316,6 +356,11 @@ ostree_diff_dirs (OstreeDiffFlags flags,
         }
       else
         {
+          if (options->owner_uid >= 0)
+            g_file_info_set_attribute_uint32 (child_b_info, "unix::uid", options->owner_uid);
+          if (options->owner_gid >= 0)
+            g_file_info_set_attribute_uint32 (child_b_info, "unix::gid", options->owner_gid);
+
           child_b_type = g_file_info_get_file_type (child_b_info);
           if (child_a_type != child_b_type)
             {
@@ -337,8 +382,9 @@ ostree_diff_dirs (OstreeDiffFlags flags,
 
               if (child_a_type == G_FILE_TYPE_DIRECTORY)
                 {
-                  if (!ostree_diff_dirs (flags, child_a, child_b, modified,
-                                         removed, added, cancellable, error))
+                  if (!ostree_diff_dirs_with_options (flags, child_a, child_b, modified,
+                                                      removed, added, options,
+                                                      cancellable, error))
                     goto out;
                 }
             }

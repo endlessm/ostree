@@ -1,3 +1,220 @@
+ostree (2017.12-1xenial1) xenial; urgency=medium
+
+  * Backport to xenial (T18830)
+    - Drop debhelper compat back to 9 since 10 is not in xenial.
+      + debian/compat: Drop back to debhelper 9.
+      + debian/control: Add back dh-autoreconf and dh-systemd deps.
+      + debian/rules: Add back --with autoreconf and systemd.
+    - Disable use of O_TMPFILE in the jessie backport. O_TMPFILE was
+      still a new thing when jessie was released, and fails on
+      the arm64, armel, armhf, powerpc and ppc64el buildds.
+    - Switch libgpgme-dev build-dependency back to libgpgme11-dev
+  * Add Endless specific ostree_repo_delete_compat_signature and
+    ostree_repo_get_commit_sizes ABIs to symbols file. These are
+    specified to the 2016.3 version like all older symbols.
+  * Enable experimental API and update symbols file. (T19082)
+  * Remove patches that are on our main branch or aren't needed since we
+    generate our own tarball.
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Tue, 24 Oct 2017 13:58:51 +0000
+
+ostree (2017.12-1) unstable; urgency=medium
+
+  * New upstream release
+    - Drop all current patches, applied upstream
+    - Update symbols file
+  * Add some post-release bug fix patches
+  * Simplify autopkgtest now that test-local-pull seems to be stable
+  * Unexport HTTP proxy variables in autopkgtest to work around lack of
+    support for no_proxy, which breaks the tests on Ubuntu autopkgtest.
+    We don't actually need Internet access, so this is OK.
+  * debian/test.sh: Unexport HTTP proxy variables for build-time tests
+    too
+  * Make build-time test failures fatal if they fail at least twice
+    out of 5 tries (previously they had to fail at least 3 times)
+  * Add patch to reinstate test-libglnx-shutil.c, which was missed out
+    of the upstream tarball
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 03 Oct 2017 22:47:48 +0100
+
+ostree (2017.11-2) unstable; urgency=medium
+
+  * Replace patch with the version applied upstream in 2017.12
+  * Standards-Version: 4.1.0 (no changes)
+  * Add a patch to fix FTBFS in non-English locales
+  * Add a patch to fix FTBFS if building as root with umask != 022,
+    which for some reason debomatic does (Closes: #876138)
+  * Add a patch from upstream to fix undefined behaviour with
+    O_RDONLY|O_CREAT in rofiles-fuse
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 22 Sep 2017 15:48:24 +0100
+
+ostree (2017.11-1) unstable; urgency=medium
+
+  * New upstream release
+    - Drop all current patches, applied upstream
+    - Update symbols file
+  * Adjust Description and Upstream-Name to emphasize libostree
+  * Classify new ostree-tmpfiles.conf as part of ostree-boot, and so
+    don't install it yet
+  * Stop copying an old ostree-trivial-httpd.xml from debian/dist/
+    into source tree. Upstream distributes it again, and has since
+    2017.8.
+  * Add a patch to fix JavaScript tests with gjs 1.50.0, which is
+    more strict about 'let'
+  * Stop providing "ostree trivial-httpd" CLI, following upstream
+    default behaviour. flatpak used to use it in its tests, but
+    the version in stable no longer does.
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 15 Sep 2017 16:58:15 +0100
+
+ostree (2017.10-1) unstable; urgency=medium
+
+  * New upstream release
+    - Update symbols file
+    - Install new bash completions
+  * Use dh_missing --fail-missing instead of dh_install --fail-missing
+  * Only run tests when building architecture-dependent packages.
+    The tests aren't so interesting that we want to run them again
+    when splitting -arch/-indep builds.
+  * Add patches to make the tests pass again when /var/tmp is on tmpfs,
+    which does not support user xattrs
+  * Add patch to remove useless #! from bash completions
+  * Make build-time test failures fatal again, but only if they are
+    reproducible (at least 3 times out of 5) for now
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 29 Aug 2017 18:18:49 +0100
+
+ostree (2017.9-1) unstable; urgency=medium
+
+  * New upstream release
+    - Drop backported patch
+    - Update symbols file
+  * debian/rules: Adjust a comment to avoid Lintian thinking this is a
+    dh_make template
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 28 Jul 2017 14:43:30 +0100
+
+ostree (2017.8-1) unstable; urgency=medium
+
+  * New upstream release
+    - Update symbols file
+    - Remove patches that are no longer needed
+    - Add patch from upstream PR #1016 to fix a regression
+  * Add a Breaks on flatpak (<< 0.8.7-2~), which rely on libostree to
+    download the summary and its signature when mirroring.
+    libostree >= 2017.7 no longer does this. On affected flatpak versions,
+    this breaks installation of new apps and runtimes system-wide.
+  * Add Build-Depends-Indep: libglib2.0-doc so gtk-doc can set up
+    cross-references
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 19 Jul 2017 22:18:20 +0100
+
+ostree (2017.7-1) unstable; urgency=medium
+
+  * New upstream release
+    - Update symbols file
+    - Add post-release patches so test-symbols.sh passes again
+    - debian/dist/: Add ostree-trivial-httpd.xml, which was incorrectly
+      excluded from the upstream release
+  * Standards-Version: 4.0.0
+    - Use https URL for copyright-format
+  * Implement <nodoc> build profile
+  * Upload to unstable
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 21 Jun 2017 13:06:54 +0100
+
+ostree (2017.6-1) experimental; urgency=medium
+
+  * New upstream release
+    - Update debian/copyright
+    - Update disabled ostree-boot packaging for new systemd generator
+    - Add new ABI to symbols file
+  * Skip build-time tests when nocheck is in DEB_BUILD_OPTIONS
+    (Closes: #862803). Thanks to Krzesimir Nowak
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 25 May 2017 10:01:12 +0100
+
+ostree (2017.5-1) experimental; urgency=high
+
+  * New upstream release
+    - This release fixes a regression in 2017.4 that caused symlinks
+      in Flatpak apps and runtimes to be checked out as regular files.
+      Any apps or runtimes that were installed or updated with 2017.4
+      will need to be removed and reinstalled.
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 19 Apr 2017 14:18:16 +0100
+
+ostree (2017.4-1) experimental; urgency=medium
+
+  * New upstream release
+    - d/rules: Explicitly enable trivial-httpd: the tests still need it
+    - Update symbols file for new ABI
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 17 Apr 2017 17:19:58 +0100
+
+ostree (2017.3-2) experimental; urgency=medium
+
+  * d/ostree.maintscript: Clean up obsolete conffiles from before we
+    started removing what will eventually become ostree-boot
+    (see #824650)
+  * libostree-dev: Add missing dependency on libostree-1-1
+    (Closes: #860047)
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 10 Apr 2017 18:52:26 +0100
+
+ostree (2017.3-1) experimental; urgency=medium
+
+  * d/watch, d/copyright: upstream project is now named libostree
+  * New upstream release
+    - d/copyright: update
+    - symbols file: update
+    - tests, ostree-tests.install: update for new location of tests
+    - d/control: ostree-tests now needs python-yaml
+    - build-depend on python, python-yaml for tests
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 16 Mar 2017 06:58:46 +0000
+
+ostree (2017.1-1) experimental; urgency=medium
+
+  * Branch to experimental to avoid interfering with the Debian 9 freeze
+  * Remove an unintended line in the previous changelog
+  * New upstream release
+    - trivial-httpd is now a separate binary. Move it to ostree-tests,
+      so that it doesn't continue to pull in libsoup if the ostree
+      downloader is ported to libcurl.
+    - d/copyright: update
+    - d/patches: drop all patches, applied upstream
+  * Explicitly depend on autoconf, automake, libtool. This avoids
+    builds for experimental non-deterministically pulling in an older
+    version of automake, in my case automake1.11 which is far too old.
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 27 Jan 2017 10:23:47 +0000
+
+ostree (2016.15-3) unstable; urgency=medium
+
+  * debian/control: Don't run gjs tests on sparc64. gjs doesn't seem
+    to work there at all (#827815)
+    - d/ostree-tests.lintian-overrides: silence
+      missing-dep-for-interpreter error on sparc64, where we install
+      the script but do not attempt to run it
+  * debian/tests/gnome-desktop-testing: Skip test-local-pull.sh.test
+    which suffers from a known bug (#842606)
+    - debian/tests/test-local-pull: Run the unreliable test separately,
+      repeated 3 times to assess how often it fails
+  * d/p/Sourced-test-snippets-remove-shebang-and-make-non-executa.patch,
+    d/p/Make-corrupt-repo-ref.js-executable.patch:
+    Fix permissions and #! lines for some tests in the upstream build
+    system
+  * d/rules: remove workarounds for script permissions.
+    The upstream build system now uses the intended permissions throughout.
+    - Retain explicit chmod for *.js, which dh_fixperms assumes should
+      not be executable.
+  * d/p/Fix-TAP-syntax-in-test-basic-user.sh-and-run-it.patch:
+    Run an additional test, which was previously installed but not run
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 19 Jan 2017 13:23:32 +0000
+
 ostree (2016.15-2xenial1) xenial; urgency=medium
 
   [ Dan Nicholson ]

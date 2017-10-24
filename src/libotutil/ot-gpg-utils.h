@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -26,15 +25,14 @@
 
 G_BEGIN_DECLS
 
-GLNX_DEFINE_CLEANUP_FUNCTION0(gpgme_data_t, ot_cleanup_gpgme_data, gpgme_data_release)
-#define ot_auto_gpgme_data __attribute__((cleanup(ot_cleanup_gpgme_data)))
-GLNX_DEFINE_CLEANUP_FUNCTION0(gpgme_ctx_t, ot_cleanup_gpgme_ctx, gpgme_release)
-#define ot_auto_gpgme_ctx __attribute__((cleanup(ot_cleanup_gpgme_ctx)))
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC(gpgme_data_t, gpgme_data_release, NULL)
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC(gpgme_ctx_t, gpgme_release, NULL)
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC(gpgme_key_t, gpgme_key_unref, NULL)
 
-void ot_gpgme_error_to_gio_error (gpgme_error_t gpg_error, GError **error);
+gboolean ot_gpgme_throw (gpgme_error_t gpg_error, GError **error,
+                         const char *fmt, ...) G_GNUC_PRINTF (3, 4);
 
 gboolean ot_gpgme_ctx_tmp_home_dir (gpgme_ctx_t     gpgme_ctx,
-                                    const char     *tmp_dir,
                                     char          **out_tmp_home_dir,
                                     GOutputStream **out_pubring_stream,
                                     GCancellable   *cancellable,

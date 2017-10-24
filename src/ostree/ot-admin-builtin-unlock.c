@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2016 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -33,8 +32,13 @@
 
 static gboolean opt_hotfix;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-unlock.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
-  { "hotfix", 0, 0, G_OPTION_ARG_NONE, &opt_hotfix, "Keep the current deployment as default", NULL },
+  { "hotfix", 0, 0, G_OPTION_ARG_NONE, &opt_hotfix, "Retain changes across reboots", NULL },
   { NULL }
 };
 
@@ -43,7 +47,7 @@ ot_admin_builtin_unlock (int argc, char **argv, GCancellable *cancellable, GErro
 {
   gboolean ret = FALSE;
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   OstreeDeployment *booted_deployment = NULL;
   OstreeDeploymentUnlockedState target_state;
 
@@ -59,9 +63,6 @@ ot_admin_builtin_unlock (int argc, char **argv, GCancellable *cancellable, GErro
       ot_util_usage_error (context, "This command takes no extra arguments", error);
       goto out;
     }
-
-  if (!ostree_sysroot_load (sysroot, cancellable, error))
-    goto out;
 
   booted_deployment = ostree_sysroot_get_booted_deployment (sysroot);
   if (!booted_deployment)

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>.
  *
  * This library is free software; you can redistribute it and/or
@@ -37,11 +36,6 @@ GHashTable *ot_util_variant_asv_to_hash_table (GVariant *variant);
 
 GVariant * ot_util_variant_take_ref (GVariant *variant);
 
-gboolean ot_util_variant_save (GFile *dest,
-                               GVariant *variant,
-                               GCancellable *cancellable,
-                               GError  **error);
-
 typedef enum {
   OT_VARIANT_MAP_TRUSTED = (1 << 0),
   OT_VARIANT_MAP_ALLOW_NOENT = (1 << 1)
@@ -60,13 +54,6 @@ gboolean ot_util_variant_map_fd (int                  fd,
                                  gboolean             trusted,
                                  GVariant           **out_variant,
                                  GError             **error);
-
-gboolean ot_util_variant_from_stream (GInputStream         *src,
-                                      const GVariantType   *type,
-                                      gboolean              trusted,
-                                      GVariant            **out_variant,
-                                      GCancellable         *cancellable,
-                                      GError              **error);
 
 GInputStream *ot_variant_read (GVariant             *variant);
 

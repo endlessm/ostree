@@ -27,23 +27,36 @@ EXTRA_DIST += \
 # We should probably consider flipping the default for DEBUG.  Also,
 # include the builddir in $PATH so we find our just-built ostree
 # binary.
-TESTS_ENVIRONMENT += OT_TESTS_DEBUG=1 \
+AM_TESTS_ENVIRONMENT += OT_TESTS_DEBUG=1 \
+  OSTREE_UNINSTALLED_SRCDIR=$(abs_top_srcdir) \
+	OSTREE_UNINSTALLED=$(abs_top_builddir) \
 	G_DEBUG=fatal-warnings \
 	GI_TYPELIB_PATH=$$(cd $(top_builddir) && pwd)$${GI_TYPELIB_PATH:+:$$GI_TYPELIB_PATH} \
 	LD_LIBRARY_PATH=$$(cd $(top_builddir)/.libs && pwd)$${LD_LIBRARY_PATH:+:$${LD_LIBRARY_PATH}} \
 	PATH=$$(cd $(top_builddir)/tests && pwd):$${PATH} \
+	OSTREE_FEATURES="$(OSTREE_FEATURES)" \
 	$(NULL)
 if BUILDOPT_ASAN
-TESTS_ENVIRONMENT += OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
+AM_TESTS_ENVIRONMENT += OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
 endif
 
 uninstalled_test_data = tests/ostree-symlink-stamp tests/ostree-prepare-root-symlink-stamp \
 			tests/ostree-remount-symlink-stamp tests/rofiles-fuse-symlink-stamp
 
-dist_uninstalled_test_scripts = tests/test-symbols.sh
+dist_uninstalled_test_scripts = tests/test-symbols.sh tests/coccinelle.sh
 
-dist_test_scripts = \
+# This logic implements ENABLE_INSTALLED_TESTS_EXCLUSIVE; see below.
+# The goal here if installed tests are enabled, we explicitly make the
+# tests *only* run installed, to avoid having to run them twice in CI.
+# This overrides the glib-tap.mk emphasis on doing both, if we'd
+# used e.g. `dist_test_scripts`.
+dist_test_scripts = $(NULL)
+test_programs = $(NULL)
+_installed_or_uninstalled_test_scripts = \
 	tests/test-basic.sh \
+	tests/test-basic-user.sh \
+	tests/test-basic-user-only.sh \
+	tests/test-basic-root.sh \
 	tests/test-pull-subpath.sh \
 	tests/test-archivez.sh \
 	tests/test-remote-add.sh \
@@ -54,7 +67,8 @@ dist_test_scripts = \
 	tests/test-help.sh \
 	tests/test-libarchive.sh \
 	tests/test-parent.sh \
-	tests/test-pull-archive-z.sh \
+	tests/test-pull-bare.sh \
+	tests/test-pull-bareuser.sh \
 	tests/test-pull-commit-only.sh \
 	tests/test-pull-depth.sh \
 	tests/test-pull-mirror-summary.sh \
@@ -65,10 +79,12 @@ dist_test_scripts = \
 	tests/test-pull-repeated.sh \
 	tests/test-pull-untrusted.sh \
 	tests/test-pull-override-url.sh \
+	tests/test-pull-localcache.sh \
 	tests/test-local-pull.sh \
 	tests/test-local-pull-depth.sh \
 	tests/test-gpg-signed-commit.sh \
 	tests/test-admin-upgrade-unconfigured.sh \
+	tests/test-admin-upgrade-endoflife.sh \
 	tests/test-admin-deploy-syslinux.sh \
 	tests/test-admin-deploy-2.sh \
 	tests/test-admin-deploy-karg.sh \
@@ -80,9 +96,9 @@ dist_test_scripts = \
 	tests/test-admin-instutil-set-kargs.sh \
 	tests/test-admin-upgrade-not-backwards.sh \
 	tests/test-admin-pull-deploy-commit.sh \
+	tests/test-admin-pull-deploy-split.sh \
 	tests/test-admin-locking.sh \
 	tests/test-admin-deploy-clean.sh \
-	tests/test-repo-checkout-subpath.sh	\
 	tests/test-reset-nonlinear.sh \
 	tests/test-oldstyle-partial.sh \
 	tests/test-delta.sh \
@@ -94,22 +110,49 @@ dist_test_scripts = \
 	tests/test-switchroot.sh \
 	tests/test-pull-contenturl.sh \
 	tests/test-pull-mirrorlist.sh \
+	tests/test-summary-update.sh \
+	tests/test-summary-view.sh \
 	$(NULL)
 
+experimental_test_scripts = \
+	tests/test-create-usb.sh \
+	tests/test-find-remotes.sh \
+	tests/test-fsck-collections.sh \
+	tests/test-init-collections.sh \
+	tests/test-prune-collections.sh \
+	tests/test-refs-collections.sh \
+	tests/test-remote-add-collections.sh \
+	tests/test-repo-finder-mount-integration.sh \
+	tests/test-summary-collections.sh \
+	tests/test-pull-collections.sh \
+	$(NULL)
+test_extra_programs = $(NULL)
+
+tests_repo_finder_mount_SOURCES = tests/repo-finder-mount.c
+tests_repo_finder_mount_CFLAGS = $(common_tests_cflags)
+tests_repo_finder_mount_LDADD = $(common_tests_ldadd) libostreetest.la
+
+if ENABLE_EXPERIMENTAL_API
+_installed_or_uninstalled_test_scripts += $(experimental_test_scripts)
+test_extra_programs += tests/repo-finder-mount
+else
+EXTRA_DIST += $(experimental_test_scripts)
+endif
+
 if BUILDOPT_FUSE
-dist_test_scripts += tests/test-rofiles-fuse.sh
+_installed_or_uninstalled_test_scripts += tests/test-rofiles-fuse.sh
 else
 EXTRA_DIST += tests/test-rofiles-fuse.sh
 endif
 
 if USE_LIBSOUP
-dist_test_scripts += tests/test-remote-cookies.sh
+_installed_or_uninstalled_test_scripts += tests/test-remote-cookies.sh
 endif
 
-# These call into gjs scripts 
+# These call into gjs scripts
 js_tests = tests/test-corruption.sh tests/test-pull-corruption.sh
 if BUILDOPT_GJS
-dist_test_scripts += $(js_tests)
+_installed_or_uninstalled_test_scripts += $(js_tests)
 else
 EXTRA_DIST += $(js_tests)
 endif
@@ -118,16 +161,18 @@ dist_installed_test_data = tests/archive-test.sh \
 	tests/pull-test.sh \
 	tests/admin-test.sh \
 	tests/basic-test.sh \
-	tests/test-basic-user.sh \
-	tests/corrupt-repo-ref.js \
 	tests/pre-endian-deltas-repo-big.tar.xz \
 	tests/pre-endian-deltas-repo-little.tar.xz \
+	tests/libtest-core.sh \
 	$(NULL)
 
-EXTRA_DIST += tests/libtest.sh 
+EXTRA_DIST += tests/libtest.sh
 
-dist_test_extra_scripts = tests/bootloader-entries-crosscheck.py \
-     tests/ostree-grub-generator
+dist_test_extra_scripts = \
+	tests/bootloader-entries-crosscheck.py \
+	tests/corrupt-repo-ref.js \
+	tests/ostree-grub-generator \
+	$(NULL)
 
 # We can't use nobase_ as we need to strip off the tests/, can't
 # use plain installed_ as we do need the gpghome/ prefix.
@@ -149,12 +194,13 @@ endif
 
 js_installed_tests = \
 	tests/test-core.js \
+	tests/test-remotes-config-dir.js \
 	tests/test-sizes.js \
 	tests/test-sysroot.js \
 	$(NULL)
 
 if BUILDOPT_GJS
-dist_installed_test_scripts = $(js_installed_tests)
+_installed_or_uninstalled_test_scripts += $(js_installed_tests)
 else
 EXTRA_DIST += $(js_installed_tests)
 endif
@@ -171,23 +217,35 @@ if !ENABLE_INSTALLED_TESTS
 libreaddir_rand_la_LDFLAGS += -rpath $(abs_builddir)
 endif
 
-test_programs = tests/test-varint tests/test-ot-unix-utils tests/test-bsdiff tests/test-mutable-tree \
+_installed_or_uninstalled_test_programs = tests/test-varint tests/test-ot-unix-utils tests/test-bsdiff tests/test-mutable-tree \
 	tests/test-keyfile-utils tests/test-ot-opt-utils tests/test-ot-tool-util \
 	tests/test-gpg-verify-result tests/test-checksum tests/test-lzma tests/test-rollsum \
-	tests/test-basic-c tests/test-sysroot-c tests/test-pull-c
+	tests/test-basic-c tests/test-sysroot-c tests/test-pull-c tests/test-repo
+
+if ENABLE_EXPERIMENTAL_API
+test_programs += \
+	tests/test-bloom \
+	tests/test-repo-finder-config \
+	tests/test-repo-finder-mount \
+	$(NULL)
+
+if USE_AVAHI
+test_programs += tests/test-repo-finder-avahi
+endif
+endif
 
 # An interactive tool
 noinst_PROGRAMS += tests/test-rollsum-cli
 
 if USE_LIBARCHIVE
-test_programs += tests/test-libarchive-import
+_installed_or_uninstalled_test_programs += tests/test-libarchive-import
 endif
 
 common_tests_cflags = $(ostree_bin_shared_cflags) $(OT_INTERNAL_GIO_UNIX_CFLAGS) -I$(srcdir)/libglnx
 common_tests_ldadd = $(ostree_bin_shared_ldadd) $(OT_INTERNAL_GIO_UNIX_LIBS)
 
 noinst_LTLIBRARIES += libostreetest.la
-libostreetest_la_SOURCES = tests/libostreetest.c
+libostreetest_la_SOURCES = tests/libostreetest.c tests/test-mock-gio.c tests/test-mock-gio.h
 libostreetest_la_CFLAGS = $(common_tests_cflags) -I $(srcdir)/tests
 libostreetest_la_LIBADD = $(common_tests_ldadd)
 
@@ -196,11 +254,29 @@ TESTS_LDADD = $(common_tests_ldadd) libostreetest.la
 
 tests_test_rollsum_cli_SOURCES = src/libostree/ostree-rollsum.c tests/test-rollsum-cli.c
 tests_test_rollsum_cli_CFLAGS = $(TESTS_CFLAGS) $(OT_DEP_ZLIB_CFLAGS)
-tests_test_rollsum_cli_LDADD = libbupsplit.la $(TESTS_LDADD) $(OT_DEP_ZLIB_LIBS)
+tests_test_rollsum_cli_LDADD = $(bupsplitpath) $(TESTS_LDADD) $(OT_DEP_ZLIB_LIBS)
 
 tests_test_rollsum_SOURCES = src/libostree/ostree-rollsum.c tests/test-rollsum.c
 tests_test_rollsum_CFLAGS = $(TESTS_CFLAGS) $(OT_DEP_ZLIB_CFLAGS)
-tests_test_rollsum_LDADD = libbupsplit.la $(TESTS_LDADD) $(OT_DEP_ZLIB_LIBS)
+tests_test_rollsum_LDADD = $(bupsplitpath) $(TESTS_LDADD) $(OT_DEP_ZLIB_LIBS)
+
+tests_test_bloom_SOURCES = src/libostree/ostree-bloom.c tests/test-bloom.c
+tests_test_bloom_CFLAGS = $(TESTS_CFLAGS)
+tests_test_bloom_LDADD = $(TESTS_LDADD)
+
+if USE_AVAHI
+tests_test_repo_finder_avahi_SOURCES = src/libostree/ostree-repo-finder-avahi-parser.c tests/test-repo-finder-avahi.c
+tests_test_repo_finder_avahi_CFLAGS = $(TESTS_CFLAGS)
+tests_test_repo_finder_avahi_LDADD = $(TESTS_LDADD)
+endif
+
+tests_test_repo_finder_config_SOURCES = tests/test-repo-finder-config.c
+tests_test_repo_finder_config_CFLAGS = $(TESTS_CFLAGS)
+tests_test_repo_finder_config_LDADD = $(TESTS_LDADD)
+
+tests_test_repo_finder_mount_SOURCES = tests/test-repo-finder-mount.c
+tests_test_repo_finder_mount_CFLAGS = $(TESTS_CFLAGS)
+tests_test_repo_finder_mount_LDADD = $(TESTS_LDADD)
 
 tests_test_mutable_tree_CFLAGS = $(TESTS_CFLAGS)
 tests_test_mutable_tree_LDADD = $(TESTS_LDADD)
@@ -213,6 +289,9 @@ tests_test_sysroot_c_LDADD = $(TESTS_LDADD)
 
 tests_test_pull_c_CFLAGS = $(TESTS_CFLAGS)
 tests_test_pull_c_LDADD = $(TESTS_LDADD)
+
+tests_test_repo_CFLAGS = $(TESTS_CFLAGS)
+tests_test_repo_LDADD = $(TESTS_LDADD)
 
 tests_test_ot_unix_utils_CFLAGS = $(TESTS_CFLAGS)
 tests_test_ot_unix_utils_LDADD = $(TESTS_LDADD)
@@ -276,6 +355,17 @@ tests/%-symlink-stamp: % Makefile
 	fi; \
 	ln -sf "$${real_bin}" tests/$*; \
 	touch $@
+
+# See above comment on binding the tests to be either installed or not.
+if ENABLE_INSTALLED_TESTS_EXCLUSIVE
+dist_installed_test_scripts = $(_installed_or_uninstalled_test_scripts)
+installed_test_programs = $(_installed_or_uninstalled_test_programs)
+check-local:
+	echo "NOTE: Exclusive installed tests are enabled; to run them, make install, then: gnome-desktop-testing-runner -p 0 libostree/"
+else
+dist_test_scripts += $(_installed_or_uninstalled_test_scripts)
+test_programs += $(_installed_or_uninstalled_test_programs)
+endif
 
 # Unfortunately the glib test data APIs don't actually handle
 # non-recursive Automake, so we change our code to canonically look

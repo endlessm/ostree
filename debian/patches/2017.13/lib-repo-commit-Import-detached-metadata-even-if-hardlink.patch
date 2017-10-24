@@ -1,0 +1,30 @@
+From: Philip Withnall <withnall@endlessm.com>
+Date: Tue, 3 Oct 2017 15:45:34 +0100
+Subject: lib/repo-commit: Import detached metadata even if hardlink exists
+
+Spotted while reading through the code, it looks like the
+copy_detached_metadata() call is accidentally omitted if a hardlink
+already exists for the .commit object.
+
+Signed-off-by: Philip Withnall <withnall@endlessm.com>
+
+Closes: #1242
+Approved by: cgwalters
+Origin: upstream, 2017.13, commit:86e072bdbe48a4f16efb05c00eb79114e5fdbf61
+---
+ src/libostree/ostree-repo-commit.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libostree/ostree-repo-commit.c b/src/libostree/ostree-repo-commit.c
+index c4484f4..76bc187 100644
+--- a/src/libostree/ostree-repo-commit.c
++++ b/src/libostree/ostree-repo-commit.c
+@@ -3255,7 +3255,7 @@ import_one_object_direct (OstreeRepo    *dest_repo,
+       if (linkat (src_repo->objects_dir_fd, loose_path_buf, dest_dfd, loose_path_buf, 0) != 0)
+         {
+           if (errno == EEXIST)
+-            return TRUE;
++            did_hardlink = TRUE;
+           else if (errno == EMLINK || errno == EXDEV || errno == EPERM)
+             {
+               /* EMLINK, EXDEV and EPERM shouldn't be fatal; we just can't do

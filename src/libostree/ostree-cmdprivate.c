@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -45,6 +44,7 @@ const OstreeCmdPrivateVTable *
 ostree_cmd__private__ (void)
 {
   static OstreeCmdPrivateVTable table = {
+    _ostree_impl_system_generator,
     impl_ostree_generate_grub2_config,
     _ostree_repo_static_delta_dump,
     _ostree_repo_static_delta_query_exists,

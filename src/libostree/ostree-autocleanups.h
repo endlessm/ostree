@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2016 Endless Mobile, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -26,14 +25,10 @@
 
 G_BEGIN_DECLS
 
-#ifndef OSTREE_WITH_AUTOCLEANUPS
-#define OSTREE_WITH_AUTOCLEANUPS 0
-#endif
-
 /* ostree can use g_autoptr backports from libglnx when glib is too
  * old, but still avoid exposing them to users that also have an old
  * glib */
-#if defined(OSTREE_COMPILATION) || (OSTREE_WITH_AUTOCLEANUPS && GLIB_CHECK_VERSION(2, 44, 0))
+#if defined(OSTREE_COMPILATION) || GLIB_CHECK_VERSION(2, 44, 0)
 
 /*
  * The following types have no specific clear/free/unref functions, so
@@ -62,6 +57,18 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeSysroot, g_object_unref)
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeSysrootUpgrader, g_object_unref)
 
 G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC (OstreeRepoCommitTraverseIter, ostree_repo_commit_traverse_iter_clear)
+
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeCollectionRef, ostree_collection_ref_free)
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC (OstreeCollectionRefv, ostree_collection_ref_freev, NULL)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRemote, ostree_remote_unref)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinder, g_object_unref)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderAvahi, g_object_unref)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderConfig, g_object_unref)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderMount, g_object_unref)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderResult, ostree_repo_finder_result_free)
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC (OstreeRepoFinderResultv, ostree_repo_finder_result_freev, NULL)
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
 #endif
 

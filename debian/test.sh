@@ -4,6 +4,15 @@ set -e
 
 export VERBOSE=1
 
+# Ubuntu autopkgtest infra provides internet access via a proxy, and
+# buildds could conceivably do the same, but libostree doesn't need
+# that. However, libostree also doesn't support no_proxy, so it will try
+# to use Ubuntu's proxy for localhost, and fail to reach itself.
+unset ftp_proxy
+unset http_proxy
+unset https_proxy
+unset no_proxy
+
 try_tests=5
 
 failed=0
@@ -29,7 +38,10 @@ fi
 # There are several race conditions that cause intermittent failures.
 # They are not actually a regression - we've just been luckier in the
 # past - so let newer versions build reliably.
-if [ "$failed" -gt 0 ]; then
+if [ "$failed" -gt 1 ]; then
+    echo "Failed $failed out of $try_tests test runs; that seems bad"
+    exit 1
+elif [ "$failed" -gt 0 ]; then
     echo "Failed $failed out of $try_tests test runs; continuing anyway"
 else
     echo "All tests passed"

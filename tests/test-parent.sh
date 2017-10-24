@@ -25,14 +25,14 @@ skip_without_user_xattrs
 
 echo '1..2'
 
-setup_test_repository "archive-z2"
+setup_test_repository "archive"
 
 export OSTREE_GPG_SIGN="${OSTREE} gpg-sign --gpg-homedir=${TEST_GPG_KEYHOME}"
 
 cd ${test_tmpdir}
 
 # Create a repo
-${CMD_PREFIX} ostree --repo=repo2 init
+ostree_repo_init repo2
 ${CMD_PREFIX} ostree --repo=repo2 remote add --gpg-import=${test_tmpdir}/gpghome/trusted/pubring.gpg --set=gpg-verify=true aremote file://$(pwd)/repo test2
 
 # Create a repo with repo2 as parent

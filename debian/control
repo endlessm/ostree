@@ -8,20 +8,23 @@ Uploaders:
  Sjoerd Simons <sjoerd@debian.org>
 Build-Depends:
  attr,
+ autoconf,
+ automake,
  bison,
  ca-certificates,
  cpio,
  debhelper (>= 9),
  dh-autoreconf,
  dh-systemd,
- docbook-xml,
- docbook-xsl,
+ dh-exec,
+ docbook-xml <!nodoc>,
+ docbook-xsl <!nodoc>,
  e2fslibs-dev,
  elfutils,
  fuse,
- gjs,
+ gjs [!sparc64],
  gobject-introspection,
- gtk-doc-tools,
+ gtk-doc-tools <!nodoc>,
  libarchive-dev,
  libattr1-dev,
  libcap-dev,
@@ -34,10 +37,15 @@ Build-Depends:
  libselinux1-dev,
  libsoup2.4-dev (>= 2.39.1),
  libsystemd-dev,
+ libtool,
  procps,
- xsltproc,
+ python <!nocheck>,
+ python-yaml <!nocheck>,
+ xsltproc <!nodoc>,
  zlib1g-dev,
-Standards-Version: 3.9.8
+Build-Depends-Indep:
+ libglib2.0-doc,
+Standards-Version: 4.1.0
 Homepage: https://github.com/ostreedev/ostree/
 Vcs-Git: https://anonscm.debian.org/git/collab-maint/ostree.git
 Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/ostree.git
@@ -50,8 +58,9 @@ Depends:
  ${gir:Depends},
  ${misc:Depends},
 Description: content-addressed filesystem for operating system binaries (introspection)
- OSTree is a tool for managing bootable, immutable, versioned filesystem
- trees. See the ostree package's description for more details.
+ libostree provides a library and tools for managing bootable, immutable,
+ versioned filesystem trees. See the ostree package's description for
+ more details.
  .
  This package contains GObject-Introspection metadata, which can be used
  to generate dynamic bindings into languages such as Python and JavaScript.
@@ -64,9 +73,11 @@ Depends:
  ${shlibs:Depends},
 Pre-Depends:
  ${misc:Pre-Depends},
+Breaks:
+ flatpak (<< 0.8.7-2~),
 Multi-arch: same
 Description: content-addressed filesystem for operating system binaries (library)
- OSTree is a tool and library for managing bootable, immutable, versioned
+ libostree is a library for managing bootable, immutable, versioned
  filesystem trees. It is like git in that it checksums individual files
  and has a content-addressed object store; unlike git, it "checks out"
  the files using hardlinks into an immutable directory tree. This
@@ -84,12 +95,13 @@ Section: libdevel
 Depends:
  gir1.2-ostree-1.0 (= ${binary:Version}),
  libglib2.0-dev,
+ libostree-1-1 (= ${binary:Version}),
  pkg-config,
  ${misc:Depends},
 Suggests:
  libostree-doc,
-Description: Development files for the ostree library
- OSTree is a tool and library for managing bootable, immutable, versioned
+Description: Development files for the libostree library
+ libostree is a library for managing bootable, immutable, versioned
  filesystem trees. It is like git in that it checksums individual files
  and has a content-addressed object store; unlike git, it "checks out"
  the files using hardlinks into an immutable directory tree. This
@@ -98,9 +110,11 @@ Description: Development files for the ostree library
  such as embedded devices. It is also used by the Flatpak application
  runtime system.
  .
- This package contains development headers and the pkg-config file for ostree.
+ This package contains development headers and the pkg-config file for
+ libostree.
 
 Package: libostree-doc
+Build-Profiles: <!nodoc>
 Architecture: all
 Multi-Arch: foreign
 Section: doc
@@ -108,11 +122,12 @@ Depends:
  ${misc:Depends},
 Suggests:
  devhelp,
-Description: Development documentation for the ostree library
- OSTree is a tool for managing bootable, immutable, versioned filesystem
- trees. See the ostree package's description for more details.
+Description: Development documentation for the libostree library
+ libostree provides a library and tools for managing bootable, immutable,
+ versioned filesystem trees. See the ostree package's description for
+ more details.
  .
- This package contains development documentation for ostree.
+ This package contains development documentation for libostree.
 
 Package: ostree
 Architecture: linux-any
@@ -120,13 +135,13 @@ Depends:
  ${misc:Depends},
  ${shlibs:Depends},
 Description: content-addressed filesystem for operating system binaries
- OSTree is a tool and library for managing bootable, immutable, versioned
- filesystem trees. It is like git in that it checksums individual files
- and has a content-addressed object store; unlike git, it "checks out"
- the files using hardlinks into an immutable directory tree. This
- can be used to provide atomic upgrades with rollback, history and
- parallel-installation, particularly useful on "fixed purpose" systems
- such as embedded devices.
+ libostree provides a library and tools for managing bootable, immutable,
+ versioned filesystem trees. It is like git in that it checksums
+ individual files and has a content-addressed object store; unlike git,
+ it "checks out" the files using hardlinks into an immutable directory
+ tree. This can be used to provide atomic upgrades with rollback, history
+ and parallel-installation, particularly useful on "fixed purpose"
+ systems such as embedded devices.
  .
  This package contains the executables used to manage and create
  filesystem trees. It does not affect the boot process for the system
@@ -140,13 +155,15 @@ Depends:
  cpio,
  fuse,
  gir1.2-ostree-1.0,
- gjs,
+ gjs [!sparc64],
  ostree,
  python,
+ python-yaml,
  ${misc:Depends},
  ${shlibs:Depends},
 Description: content-addressed filesystem for operating system binaries - tests
- OSTree is a tool for managing bootable, immutable, versioned filesystem
- trees. See the ostree package's description for more details.
+ libostree provides a library and tools for managing bootable, immutable,
+ versioned filesystem trees. See the ostree package's description for
+ more details.
  .
  This package contains automated tests.

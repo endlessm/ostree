@@ -25,6 +25,8 @@ function assertEquals(a, b) {
 	throw new Error("assertion failed " + JSON.stringify(a) + " == " + JSON.stringify(b));
 }
 
+print('1..1')
+
 let testDataDir = Gio.File.new_for_path('test-data');
 testDataDir.make_directory(null);
 testDataDir.get_child('some-file').replace_contents("hello world!", null, false, 0, null);
@@ -52,4 +54,18 @@ let child = root.get_child('some-file');
 let info = child.query_info("standard::name,standard::type,standard::size", 0, null);
 assertEquals(info.get_size(), 12);
 
-print("test-core complete");
+// Write a ref and read it back
+repo.prepare_transaction(null);
+repo.transaction_set_refspec('someref', commit);
+repo.commit_transaction(null, null);
+let [,readCommit] = repo.resolve_rev('someref', false);
+assertEquals(readCommit, commit);
+
+// Delete a ref
+repo.prepare_transaction(null);
+repo.transaction_set_refspec('someref', null);
+repo.commit_transaction(null, null);
+[,readCommit] = repo.resolve_rev('someref', true);
+assertEquals(readCommit, null);
+
+print("ok test-core");

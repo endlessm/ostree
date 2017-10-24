@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>Progress notification system for asynchronous operations: OSTree API references</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<meta name="generator" content="DocBook XSL Stylesheets Vsnapshot">
 <link rel="home" href="index.html" title="OSTree API references">
 <link rel="up" href="reference.html" title="API Reference">
 <link rel="prev" href="ostree-Root-partition-mount-point.html" title="Root partition mount point">
@@ -65,7 +65,23 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="returnvalue">guint</span></a>
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get" title="ostree_async_progress_get ()">ostree_async_progress_get</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">GVariant</span> *
+</td>
+<td class="function_name">
+<a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-variant" title="ostree_async_progress_get_variant ()">ostree_async_progress_get_variant</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">guint</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-uint" title="ostree_async_progress_get_uint ()">ostree_async_progress_get_uint</a> <span class="c_punctuation">()</span>
@@ -73,7 +89,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint64"><span class="returnvalue">guint64</span></a>
+<span class="returnvalue">guint64</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-uint64" title="ostree_async_progress_get_uint64 ()">ostree_async_progress_get_uint64</a> <span class="c_punctuation">()</span>
@@ -85,6 +101,22 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set-status" title="ostree_async_progress_set_status ()">ostree_async_progress_set_status</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set" title="ostree_async_progress_set ()">ostree_async_progress_set</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set-variant" title="ostree_async_progress_set_variant ()">ostree_async_progress_set_variant</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -138,6 +170,10 @@ operations to communicate back with callers.  It transparently
 handles thread safety, ensuring that the progress change
 notification occurs in the thread-default context of the calling
 operation.</p>
+<p>The <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-status" title="ostree_async_progress_get_status ()"><code class="function">ostree_async_progress_get_status()</code></a> and <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set-status" title="ostree_async_progress_set_status ()"><code class="function">ostree_async_progress_set_status()</code></a>
+methods get and set a well-known <code class="literal">status</code> key of type <code class="literal">G_VARIANT_TYPE_STRING</code>.
+This key may be accessed using the other <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> methods, but it
+must always have the correct type.</p>
 </div>
 <div class="refsect1">
 <a name="ostree-Progress-notification-system-for-asynchronous-operations.functions_details"></a><h2>Functions</h2>
@@ -156,25 +192,160 @@ ostree_async_progress_new (<em class="parameter"><code><span class="type">void</
 <a name="ostree-async-progress-new-and-connect"></a><h3>ostree_async_progress_new_and_connect ()</h3>
 <pre class="programlisting"><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="returnvalue">OstreeAsyncProgress</span></a> *
 ostree_async_progress_new_and_connect (<em class="parameter"><code><span class="type">void</span> (*changed) (OstreeAsyncProgress *self, gpointer user_data)</code></em>,
-                                       <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gpointer"><span class="type">gpointer</span></a> user_data</code></em>);</pre>
+                                       <em class="parameter"><code><span class="type">gpointer</span> user_data</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-async-progress-get-status"></a><h3>ostree_async_progress_get_status ()</h3>
 <pre class="programlisting"><span class="returnvalue">char</span> *
 ostree_async_progress_get_status (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>);</pre>
+<p>Get the human-readable status string from the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a>. This
+operation is thread-safe. The retuned value may be <code class="literal">NULL</code> if no status is
+set.</p>
+<p>This is a convenience function to get the well-known <code class="literal">status</code> key.</p>
+<div class="refsect3">
+<a name="ostree-async-progress-get-status.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-async-progress-get-status.returns"></a><h4>Returns</h4>
+<p> the current status, or <code class="literal">NULL</code> if none is set. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
+</div>
+<p class="since">Since: 2017.6</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-async-progress-get"></a><h3>ostree_async_progress_get ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+ostree_async_progress_get (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
+                           <em class="parameter"><code>...</code></em>);</pre>
+<p>Get the values corresponding to zero or more keys from the
+<a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a>. Each key is specified in @... as the key name, followed
+by a <span class="type">GVariant</span> format string, followed by the necessary arguments for that
+format string, just as for <code class="function">g_variant_get()</code>. After those arguments is the
+next key name. The varargs list must be <code class="literal">NULL</code>-terminated.</p>
+<p>Each format string must make deep copies of its value, as the values stored
+in the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> may be freed from another thread after this
+function returns.</p>
+<p>This operation is thread-safe, and all the keys are queried atomically.</p>
+<div class="informalexample">
+  <table class="listing_frame" border="0" cellpadding="0" cellspacing="0">
+    <tbody>
+      <tr>
+        <td class="listing_lines" align="right"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11</pre></td>
+        <td class="listing_code"><pre class="programlisting"><span class="usertype">guint32</span><span class="normal"> outstanding_fetches</span><span class="symbol">;</span>
+<span class="usertype">guint64</span><span class="normal"> bytes_received</span><span class="symbol">;</span>
+<span class="usertype">g_autofree</span><span class="normal"> </span><span class="usertype">gchar</span><span class="normal"> </span><span class="symbol">*</span><span class="normal">status </span><span class="symbol">=</span><span class="normal"> NULL</span><span class="symbol">;</span>
+<span class="function">g_autoptr</span><span class="symbol">(</span><span class="normal">GVariant</span><span class="symbol">)</span><span class="normal"> refs_variant </span><span class="symbol">=</span><span class="normal"> NULL</span><span class="symbol">;</span>
+
+<span class="function"><a href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get">ostree_async_progress_get</a></span><span class="normal"> </span><span class="symbol">(</span><span class="normal">progress</span><span class="symbol">,</span>
+<span class="normal">                           </span><span class="string">"outstanding-fetches"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"u"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">outstanding_fetches</span><span class="symbol">,</span>
+<span class="normal">                           </span><span class="string">"bytes-received"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"t"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">bytes_received</span><span class="symbol">,</span>
+<span class="normal">                           </span><span class="string">"status"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"s"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">status</span><span class="symbol">,</span>
+<span class="normal">                           </span><span class="string">"refs"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"@a{ss}"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">refs_variant</span><span class="symbol">,</span>
+<span class="normal">                           NULL</span><span class="symbol">);</span></pre></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p></p>
+<div class="refsect3">
+<a name="ostree-async-progress-get.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>...</p></td>
+<td class="parameter_description"><p>key name, format string, <span class="type">GVariant</span> return locations, …, followed by <code class="literal">NULL</code></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2017.6</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-async-progress-get-variant"></a><h3>ostree_async_progress_get_variant ()</h3>
+<pre class="programlisting"><span class="returnvalue">GVariant</span> *
+ostree_async_progress_get_variant (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
+                                   <em class="parameter"><code>const <span class="type">char</span> *key</code></em>);</pre>
+<p>Look up a key in the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> and return the <span class="type">GVariant</span> associated
+with it. The lookup is thread-safe.</p>
+<div class="refsect3">
+<a name="ostree-async-progress-get-variant.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>key</p></td>
+<td class="parameter_description"><p>a key to look up</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-async-progress-get-variant.returns"></a><h4>Returns</h4>
+<p> value for the given <em class="parameter"><code>key</code></em>
+, or <code class="literal">NULL</code> if
+it was not set. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
+</div>
+<p class="since">Since: 2017.6</p>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-async-progress-get-uint"></a><h3>ostree_async_progress_get_uint ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="returnvalue">guint</span></a>
+<pre class="programlisting"><span class="returnvalue">guint</span>
 ostree_async_progress_get_uint (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                 <em class="parameter"><code>const <span class="type">char</span> *key</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-async-progress-get-uint64"></a><h3>ostree_async_progress_get_uint64 ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint64"><span class="returnvalue">guint64</span></a>
+<pre class="programlisting"><span class="returnvalue">guint64</span>
 ostree_async_progress_get_uint64 (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                   <em class="parameter"><code>const <span class="type">char</span> *key</code></em>);</pre>
 </div>
@@ -184,6 +355,145 @@ ostree_async_progress_get_uint64 (<em class="parameter"><code><a class="link" hr
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_async_progress_set_status (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                   <em class="parameter"><code>const <span class="type">char</span> *status</code></em>);</pre>
+<p>Set the human-readable status string for the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a>. This
+operation is thread-safe. <code class="literal">NULL</code> may be passed to clear the status.</p>
+<p>This is a convenience function to set the well-known <code class="literal">status</code> key.</p>
+<div class="refsect3">
+<a name="ostree-async-progress-set-status.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>status</p></td>
+<td class="parameter_description"><p> new status string, or <code class="literal">NULL</code> to clear the status. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2017.6</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-async-progress-set"></a><h3>ostree_async_progress_set ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+ostree_async_progress_set (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
+                           <em class="parameter"><code>...</code></em>);</pre>
+<p>Set the values for zero or more keys in the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a>. Each key is
+specified in @... as the key name, followed by a <span class="type">GVariant</span> format string,
+followed by the necessary arguments for that format string, just as for
+<code class="function">g_variant_new()</code>. After those arguments is the next key name. The varargs list
+must be <code class="literal">NULL</code>-terminated.</p>
+<p>g_variant_ref_sink() will be called as appropriate on the <span class="type">GVariant</span>
+parameters, so they may be floating.</p>
+<p>This operation is thread-safe, and all the keys are set atomically.</p>
+<div class="informalexample">
+  <table class="listing_frame" border="0" cellpadding="0" cellspacing="0">
+    <tbody>
+      <tr>
+        <td class="listing_lines" align="right"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9</pre></td>
+        <td class="listing_code"><pre class="programlisting"><span class="usertype">guint32</span><span class="normal"> outstanding_fetches </span><span class="symbol">=</span><span class="normal"> </span><span class="number">15</span><span class="symbol">;</span>
+<span class="usertype">guint64</span><span class="normal"> bytes_received </span><span class="symbol">=</span><span class="normal"> </span><span class="number">1000</span><span class="symbol">;</span>
+
+<span class="function"><a href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set">ostree_async_progress_set</a></span><span class="normal"> </span><span class="symbol">(</span><span class="normal">progress</span><span class="symbol">,</span>
+<span class="normal">                           </span><span class="string">"outstanding-fetches"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"u"</span><span class="symbol">,</span><span class="normal"> outstanding_fetches</span><span class="symbol">,</span>
+<span class="normal">                           </span><span class="string">"bytes-received"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"t"</span><span class="symbol">,</span><span class="normal"> bytes_received</span><span class="symbol">,</span>
+<span class="normal">                           </span><span class="string">"status"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"s"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"Updated status"</span><span class="symbol">,</span>
+<span class="normal">                           </span><span class="string">"refs"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"@a{ss}"</span><span class="symbol">,</span><span class="normal"> </span><span class="function">g_variant_new_parsed</span><span class="normal"> </span><span class="symbol">(</span><span class="string">"@a{ss} {}"</span><span class="symbol">),</span>
+<span class="normal">                           NULL</span><span class="symbol">);</span></pre></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p></p>
+<div class="refsect3">
+<a name="ostree-async-progress-set.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>...</p></td>
+<td class="parameter_description"><p>key name, format string, <span class="type">GVariant</span> parameters, …, followed by <code class="literal">NULL</code></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2017.6</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-async-progress-set-variant"></a><h3>ostree_async_progress_set_variant ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+ostree_async_progress_set_variant (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
+                                   <em class="parameter"><code>const <span class="type">char</span> *key</code></em>,
+                                   <em class="parameter"><code><span class="type">GVariant</span> *value</code></em>);</pre>
+<p>Assign a new <em class="parameter"><code>value</code></em>
+ to the given <em class="parameter"><code>key</code></em>
+, replacing any existing value. The
+operation is thread-safe. <em class="parameter"><code>value</code></em>
+ may be a floating reference;
+<code class="function">g_variant_ref_sink()</code> will be called on it.</p>
+<p>Any watchers of the <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> will be notified of the change if
+<em class="parameter"><code>value</code></em>
+ differs from the existing value for <em class="parameter"><code>key</code></em>
+.</p>
+<div class="refsect3">
+<a name="ostree-async-progress-set-variant.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>key</p></td>
+<td class="parameter_description"><p>a key to set</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>value</p></td>
+<td class="parameter_description"><p>the value to assign to <em class="parameter"><code>key</code></em>
+</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2017.6</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -191,7 +501,7 @@ ostree_async_progress_set_status (<em class="parameter"><code><a class="link" hr
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_async_progress_set_uint (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                 <em class="parameter"><code>const <span class="type">char</span> *key</code></em>,
-                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="type">guint</span></a> value</code></em>);</pre>
+                                <em class="parameter"><code><span class="type">guint</span> value</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">
@@ -199,7 +509,7 @@ ostree_async_progress_set_uint (<em class="parameter"><code><a class="link" href
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_async_progress_set_uint64 (<em class="parameter"><code><a class="link" href="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress" title="OstreeAsyncProgress"><span class="type">OstreeAsyncProgress</span></a> *self</code></em>,
                                   <em class="parameter"><code>const <span class="type">char</span> *key</code></em>,
-                                  <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint64"><span class="type">guint64</span></a> value</code></em>);</pre>
+                                  <em class="parameter"><code><span class="type">guint64</span> value</code></em>);</pre>
 </div>
 <hr>
 <div class="refsect2">

@@ -23,13 +23,13 @@ set -euo pipefail
 
 skip_without_user_xattrs
 
-setup_fake_remote_repo1 "archive-z2"
+setup_fake_remote_repo1 "archive"
 
-echo '1..3'
+echo '1..12'
 
 cd ${test_tmpdir}
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
 
 mkdir -p tree/root
@@ -44,15 +44,20 @@ done
 
 ${CMD_PREFIX} ostree --repo=repo pull --depth=-1 origin test
 
+assert_repo_has_n_commits() {
+    repo=$1
+    count=$2
+    assert_streq "$(find ${repo}/objects -name '*.commit' | wc -l)" "${count}"
+}
+
 ${CMD_PREFIX} ostree prune --repo=repo --refs-only --depth=2 -v
-find repo | grep \.commit$ | wc -l > commitcount
-assert_file_has_content commitcount "^3$"
+assert_repo_has_n_commits repo 3
 find repo/objects -name '*.tombstone-commit' | wc -l > tombstonecommitcount
 assert_file_has_content tombstonecommitcount "^0$"
+$OSTREE fsck
 
 ${CMD_PREFIX} ostree prune --repo=repo --refs-only --depth=1 -v
-find repo | grep \.commit$ | wc -l > commitcount
-assert_file_has_content commitcount "^2$"
+assert_repo_has_n_commits repo 2
 find repo/objects -name '*.tombstone-commit' | wc -l > tombstonecommitcount
 assert_file_has_content tombstonecommitcount "^0$"
 
@@ -69,10 +74,10 @@ find repo/objects -name '*.tombstone-commit' | wc -l > tombstonecommitcount
 assert_file_has_content tombstonecommitcount "^0$"
 
 ${CMD_PREFIX} ostree prune --repo=repo --refs-only --depth=0 -v
-find repo/objects -name '*.commit' | wc -l > commitcount
-assert_file_has_content commitcount "^1$"
+assert_repo_has_n_commits repo 1
 find repo/objects -name '*.tombstone-commit' | wc -l > tombstonecommitcount
 assert_not_file_has_content tombstonecommitcount "^0$"
+$OSTREE fsck
 
 # and that tombstone are deleted once the commits are pulled again
 ${CMD_PREFIX} ostree --repo=repo pull --depth=-1 origin test
@@ -83,35 +88,32 @@ COMMIT_TO_DELETE=$(${CMD_PREFIX} ostree --repo=repo log test | grep ^commit | cu
 ${CMD_PREFIX} ostree --repo=repo prune --delete-commit=$COMMIT_TO_DELETE
 find repo/objects -name '*.tombstone-commit' | wc -l > tombstonecommitcount
 assert_file_has_content tombstonecommitcount "^1$"
+$OSTREE fsck
 
 ${CMD_PREFIX} ostree prune --repo=repo --refs-only --depth=0 -v
-find repo/objects -name '*.commit' | wc -l > commitcount
-assert_file_has_content commitcount "^1$"
+assert_repo_has_n_commits repo 1
 ${CMD_PREFIX} ostree --repo=repo commit --branch=test -m test -s test tree --timestamp="2005-10-29 12:43:29 +0000"
 ${CMD_PREFIX} ostree --repo=repo commit --branch=test -m test -s test tree --timestamp="2010-10-29 12:43:29 +0000"
-find repo/objects -name '*.commit' | wc -l > commitcount
-assert_file_has_content commitcount "^3$"
+assert_repo_has_n_commits repo 3
 ${CMD_PREFIX} ostree --repo=repo prune --keep-younger-than="2015-10-29 12:43:29 +0000"
-find repo/objects -name '*.commit' | wc -l > commitcount
-assert_file_has_content commitcount "^2$"
+assert_repo_has_n_commits repo 2
+$OSTREE fsck
 
 
 ${CMD_PREFIX} ostree prune --repo=repo --refs-only --depth=0 -v
-find repo/objects -name '*.commit' | wc -l > commitcount
-assert_file_has_content commitcount "^2$"
+assert_repo_has_n_commits repo 2
 ${CMD_PREFIX} ostree --repo=repo commit --branch=test -m test -s test tree --timestamp="October 25 1985"
 ${CMD_PREFIX} ostree --repo=repo commit --branch=test -m test -s test tree --timestamp="October 21 2015"
-find repo/objects -name '*.commit' | wc -l > commitcount
-assert_file_has_content commitcount "^4$"
+assert_repo_has_n_commits repo 4
 ${CMD_PREFIX} ostree --repo=repo prune --keep-younger-than="1 week ago"
-find repo/objects -name '*.commit' | wc -l > commitcount
-assert_file_has_content commitcount "^2$"
+assert_repo_has_n_commits repo 2
 
 ${CMD_PREFIX} ostree --repo=repo commit --branch=oldcommit tree --timestamp="2005-10-29 12:43:29 +0000"
 oldcommit_rev=$($OSTREE --repo=repo rev-parse oldcommit)
 $OSTREE ls ${oldcommit_rev}
 ${CMD_PREFIX} ostree --repo=repo prune --keep-younger-than="1 week ago"
 $OSTREE ls ${oldcommit_rev}
+$OSTREE fsck
 
 ${CMD_PREFIX} ostree --repo=repo pull --depth=-1 origin test
 ${CMD_PREFIX} ostree --repo=repo commit --branch=test -m test -s test tree --timestamp="November 05 1955"
@@ -124,6 +126,7 @@ ${CMD_PREFIX} ostree --repo=repo static-delta list | wc -l > deltascount
 assert_file_has_content deltascount "^2$"
 COMMIT_TO_DELETE=$(${CMD_PREFIX} ostree --repo=repo rev-parse test)
 ${CMD_PREFIX} ostree --repo=repo prune --static-deltas-only --delete-commit=$COMMIT_TO_DELETE
+${CMD_PREFIX} ostree --repo=repo fsck
 ${CMD_PREFIX} ostree --repo=repo static-delta list | wc -l > deltascount
 assert_file_has_content deltascount "^1$"
 ${CMD_PREFIX} ostree --repo=repo static-delta generate test
@@ -136,7 +139,7 @@ assert_file_has_content deltascount "^1$"
 echo "ok prune"
 
 rm repo -rf
-${CMD_PREFIX} ostree --repo=repo init --mode=bare-user
+ostree_repo_init repo --mode=bare-user
 ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
 ${CMD_PREFIX} ostree --repo=repo pull --depth=-1 --commit-metadata-only origin test
 ${CMD_PREFIX} ostree --repo=repo prune
@@ -152,7 +155,7 @@ assert_has_n_objects() {
 cd ${test_tmpdir}
 for repo in repo child-repo tmp-repo; do
     rm ${repo} -rf
-    ${CMD_PREFIX} ostree --repo=${repo} init --mode=archive
+    ostree_repo_init ${repo} --mode=archive
 done
 echo parent=${test_tmpdir}/repo >> child-repo/config
 mkdir files
@@ -178,3 +181,108 @@ ${CMD_PREFIX} ostree --repo=child-repo prune --refs-only --depth=0
 assert_has_n_objects child-repo 3
 
 echo "ok prune with parent repo"
+
+# Delete all the above since I can't be bothered to think about how new tests
+# would interact. We make a new repo test suite, then clone it
+# for "subtests" below with reinitialize_datesnap_repo()
+rm repo datetest-snapshot-repo -rf
+ostree_repo_init datetest-snapshot-repo --mode=archive
+# Some ancient commits on the both a stable/dev branch
+for day in $(seq 5); do
+    ${CMD_PREFIX} ostree --repo=datetest-snapshot-repo commit --branch=stable -m test -s "old stable build $day" tree --timestamp="October $day 1985"
+    ${CMD_PREFIX} ostree --repo=datetest-snapshot-repo commit --branch=dev -m test -s "old dev build $day" tree --timestamp="October $day 1985"
+done
+# And some new ones
+for x in $(seq 3); do
+    ${CMD_PREFIX} ostree --repo=datetest-snapshot-repo commit --branch=stable -m test -s "new stable build $x" tree
+    ${CMD_PREFIX} ostree --repo=datetest-snapshot-repo commit --branch=dev -m test -s "new dev build $x" tree
+done
+assert_repo_has_n_commits datetest-snapshot-repo 16
+
+# Snapshot the above
+reinitialize_datesnap_repo() {
+    rm repo -rf
+    ostree_repo_init repo --mode=archive
+    ${CMD_PREFIX} ostree --repo=repo pull-local --depth=-1 datetest-snapshot-repo 
+}
+
+# This test prunes with both younger than as well as a full strong ref to the
+# stable branch
+reinitialize_datesnap_repo
+# First, a quick test of invalid input
+if ${CMD_PREFIX} ostree --repo=repo prune --keep-younger-than="1 week ago" --retain-branch-depth=stable=BACON 2>err.txt; then
+    assert_not_reached "BACON is a number?!"
+fi
+assert_file_has_content err.txt 'Invalid depth BACON'
+${CMD_PREFIX} ostree --repo=repo prune --keep-younger-than="1 week ago" --retain-branch-depth=stable=-1
+assert_repo_has_n_commits repo 11
+# Double check our backup is unchanged
+assert_repo_has_n_commits datetest-snapshot-repo 16
+$OSTREE fsck
+
+# Again but this time only retain 6 (5+1) commits on stable.  This should drop
+# out 8 - 6 = 2 commits (so the 11 above minus 2 = 9)
+${CMD_PREFIX} ostree --repo=repo prune --keep-younger-than="1 week ago" --retain-branch-depth=stable=5
+assert_repo_has_n_commits repo 9
+$OSTREE fsck
+echo "ok retain branch depth and keep-younger-than"
+
+# Just stable branch ref, we should prune everything except the tip of dev,
+# so 8 stable + 1 dev = 9
+reinitialize_datesnap_repo
+${CMD_PREFIX} ostree --repo=repo prune --depth=0 --retain-branch-depth=stable=-1
+assert_repo_has_n_commits repo 9
+$OSTREE fsck
+
+echo "ok retain branch depth (alone)"
+
+# Test --only-branch with --depth=0; this should be exactly identical to the
+# above with a result of 9.
+reinitialize_datesnap_repo
+${CMD_PREFIX} ostree --repo=repo prune --only-branch=dev --depth=0
+assert_repo_has_n_commits repo 9
+$OSTREE fsck
+echo "ok --only-branch --depth=0"
+
+# Test --only-branch with --depth=1; should just add 1 to the above, for 10.
+reinitialize_datesnap_repo
+${CMD_PREFIX} ostree --repo=repo prune --only-branch=dev --depth=1
+assert_repo_has_n_commits repo 10
+echo "ok --only-branch --depth=1"
+
+# Test --only-branch with all branches
+reinitialize_datesnap_repo
+${CMD_PREFIX} ostree --repo=repo prune --only-branch=dev --only-branch=stable --depth=0
+assert_repo_has_n_commits repo 2
+reinitialize_datesnap_repo
+${CMD_PREFIX} ostree --repo=repo prune --only-branch=dev --only-branch=stable --depth=1
+assert_repo_has_n_commits repo 4
+echo "ok --only-branch (all) --depth=1"
+
+# Test --only-branch and --retain-branch-depth overlap
+reinitialize_datesnap_repo
+${CMD_PREFIX} ostree --repo=repo prune --only-branch=dev --only-branch=stable --depth=0 \
+                     --retain-branch-depth=stable=2
+assert_repo_has_n_commits repo 4
+echo "ok --only-branch and --retain-branch-depth overlap"
+
+# Test --only-branch and --retain-branch-depth together
+reinitialize_datesnap_repo
+${CMD_PREFIX} ostree --repo=repo prune --only-branch=dev --depth=0 --retain-branch-depth=stable=2
+assert_repo_has_n_commits repo 4
+echo "ok --only-branch and --retain-branch-depth together"
+
+# Test --only-branch with --keep-younger-than; this should be identical to the test
+# above for --retain-branch-depth=stable=-1
+reinitialize_datesnap_repo
+${CMD_PREFIX} ostree --repo=repo prune --only-branch=stable --keep-younger-than="1 week ago"
+assert_repo_has_n_commits repo 11
+echo "ok --only-branch --keep-younger-than"
+
+# Test --only-branch with a nonexistent ref
+reinitialize_datesnap_repo
+if ${CMD_PREFIX} ostree --repo=repo prune --only-branch=BACON 2>err.txt; then
+    fatal "we pruned BACON?"
+fi
+assert_file_has_content err.txt "Refspec.*BACON.*not found"
+echo "ok --only-branch=BACON"

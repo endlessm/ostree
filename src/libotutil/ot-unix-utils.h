@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>.
  *
  * This library is free software; you can redistribute it and/or
@@ -35,10 +34,6 @@
 #include <stdio.h>
 
 G_BEGIN_DECLS
-
-void ot_util_fatal_literal (const char *msg) G_GNUC_NORETURN;
-
-void ot_util_fatal_gerror (GError *error) G_GNUC_NORETURN;
 
 gboolean ot_util_filename_validate (const char *name, GError **error);
 

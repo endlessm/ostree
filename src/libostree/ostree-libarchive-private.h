@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2016 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,8 +21,10 @@
 
 #pragma once
 
+#include "config.h"
+
 #include <gio/gio.h>
-#include "libglnx.h"
+#include "otutil.h"
 #ifdef HAVE_LIBARCHIVE
 #include <archive.h>
 #include <archive_entry.h>
@@ -32,11 +33,32 @@
 G_BEGIN_DECLS
 
 #ifdef HAVE_LIBARCHIVE
-GLNX_DEFINE_CLEANUP_FUNCTION (void *, flatpak_local_free_write_archive, archive_write_free)
-#define ot_cleanup_write_archive __attribute__((cleanup (flatpak_local_free_write_archive)))
+typedef struct archive OtAutoArchiveWrite;
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(OtAutoArchiveWrite, archive_write_free)
+typedef struct archive OtAutoArchiveRead;
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(OtAutoArchiveRead, archive_read_free)
 
-GLNX_DEFINE_CLEANUP_FUNCTION (void *, flatpak_local_free_read_archive, archive_read_free)
-#define ot_cleanup_read_archive __attribute__((cleanup (flatpak_local_free_read_archive)))
+static inline OtAutoArchiveRead *
+ot_open_archive_read (const char *path, GError **error)
+{
+  g_autoptr(OtAutoArchiveRead) a = archive_read_new ();
+
+#ifdef HAVE_ARCHIVE_READ_SUPPORT_FILTER_ALL
+  archive_read_support_filter_all (a);
+#else
+  archive_read_support_compression_all (a);
+#endif
+  archive_read_support_format_all (a);
+  if (archive_read_open_filename (a, path, 8192) != ARCHIVE_OK)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                   "%s", archive_error_string (a));
+      return NULL;
+    }
+
+  return g_steal_pointer (&a);
+}
+
 #endif
 
 G_END_DECLS

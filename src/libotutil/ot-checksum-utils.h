@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>.
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +24,8 @@
 #include <gio/gio.h>
 
 G_BEGIN_DECLS
+
+void ot_bin2hex (char *out_buf, const guint8 *inbuf, gsize len);
 
 guchar *ot_csum_from_gchecksum (GChecksum *checksum);
 
@@ -58,15 +59,5 @@ char * ot_checksum_file_at (int             dfd,
                             GChecksumType   checksum_type,
                             GCancellable   *cancellable,
                             GError        **error);
-
-void ot_gio_checksum_stream_async (GInputStream         *in,
-                                   int                   io_priority,
-                                   GCancellable         *cancellable,
-                                   GAsyncReadyCallback   callback,
-                                   gpointer              user_data);
-
-guchar * ot_gio_checksum_stream_finish (GInputStream   *in,
-                                        GAsyncResult   *result,
-                                        GError        **error);
 
 G_END_DECLS

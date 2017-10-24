@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -34,6 +33,11 @@
 static int opt_index = -1;
 static char **opt_set;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-set-origin.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "set", 's', 0, G_OPTION_ARG_STRING_ARRAY, &opt_set, "Set config option KEY=VALUE for remote", "KEY=VALUE" },
   { "index", 0, 0, G_OPTION_ARG_INT, &opt_index, "Operate on the deployment INDEX, starting from zero", "INDEX" },
@@ -48,9 +52,9 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
   const char *remotename = NULL;
   const char *url = NULL;
   const char *branch = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
-  glnx_unref_object OstreeDeployment *target_deployment = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
+  g_autoptr(OstreeDeployment) target_deployment = NULL;
 
   context = g_option_context_new ("REMOTENAME URL [BRANCH]");
 
@@ -69,9 +73,6 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
   url = argv[2];
   if (argc > 3)
     branch = argv[3];
-
-  if (!ostree_sysroot_load (sysroot, cancellable, error))
-    goto out;
 
   if (!ostree_sysroot_get_repo (sysroot, &repo, cancellable, error))
     goto out;

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -48,15 +47,11 @@ OstreeBootconfigParser *
 ostree_bootconfig_parser_clone (OstreeBootconfigParser *self)
 {
   OstreeBootconfigParser *parser = ostree_bootconfig_parser_new ();
-  guint i;
-  GHashTableIter hashiter;
-  gpointer k, v;
 
-  for (i = 0; i < self->lines->len; i++)
+  for (guint i = 0; i < self->lines->len; i++)
     g_ptr_array_add (parser->lines, g_variant_ref (self->lines->pdata[i]));
 
-  g_hash_table_iter_init (&hashiter, self->options);
-  while (g_hash_table_iter_next (&hashiter, &k, &v))
+  GLNX_HASH_TABLE_FOREACH_KV (self->options, const char*, k, const char*, v)
     g_hash_table_replace (parser->options, g_strdup (k), g_strdup (v));
 
   return parser;
@@ -79,23 +74,18 @@ ostree_bootconfig_parser_parse_at (OstreeBootconfigParser  *self,
                                    GCancellable            *cancellable,
                                    GError                 **error)
 {
-  gboolean ret = FALSE;
-  g_autofree char *contents = NULL;
-  char **lines = NULL;
-  char **iter = NULL;
-
   g_return_val_if_fail (!self->parsed, FALSE);
 
-  contents = glnx_file_get_contents_utf8_at (dfd, path, NULL, cancellable, error);
+  g_autofree char *contents = glnx_file_get_contents_utf8_at (dfd, path, NULL, cancellable, error);
   if (!contents)
-    goto out;
+    return FALSE;
 
-  lines = g_strsplit (contents, "\n", -1);
-  for (iter = lines; *iter; iter++)
+  g_auto(GStrv) lines = g_strsplit (contents, "\n", -1);
+  for (char **iter = lines; *iter; iter++)
     {
       const char *line = *iter;
       char *keyname = "";
-      
+
       if (g_ascii_isalpha (*line))
         {
           char **items = NULL;
@@ -115,11 +105,8 @@ ostree_bootconfig_parser_parse_at (OstreeBootconfigParser  *self,
     }
 
   self->parsed = TRUE;
-  
-  ret = TRUE;
- out:
-  g_strfreev (lines);
-  return ret;
+
+  return TRUE;
 }
 
 gboolean
@@ -166,16 +153,10 @@ ostree_bootconfig_parser_write_at (OstreeBootconfigParser   *self,
                                    GCancellable             *cancellable,
                                    GError                  **error)
 {
-  gboolean ret = FALSE;
-  GHashTableIter hashiter;
-  gpointer hashkey, hashvalue;
-  GString *buf = g_string_new ("");
-  guint i;
-  g_autoptr(GHashTable) written_overrides = NULL;
+  g_autoptr(GString) buf = g_string_new ("");
+  g_autoptr(GHashTable) written_overrides = g_hash_table_new (g_str_hash, g_str_equal);
 
-  written_overrides = g_hash_table_new (g_str_hash, g_str_equal);
-
-  for (i = 0; i < self->lines->len; i++)
+  for (guint i = 0; i < self->lines->len; i++)
     {
       GVariant *linedata = self->lines->pdata[i];
       const char *key;
@@ -197,26 +178,21 @@ ostree_bootconfig_parser_write_at (OstreeBootconfigParser   *self,
         }
     }
 
-  g_hash_table_iter_init (&hashiter, self->options);
-  while (g_hash_table_iter_next (&hashiter, &hashkey, &hashvalue))
+  GLNX_HASH_TABLE_FOREACH_KV (self->options, const char*, k, const char*, v)
     {
-      if (g_hash_table_lookup (written_overrides, hashkey))
+      if (g_hash_table_lookup (written_overrides, k))
         continue;
-      write_key (self, buf, hashkey, hashvalue);
+      write_key (self, buf, k, v);
     }
 
   if (!glnx_file_replace_contents_at (dfd, path, (guint8*)buf->str, buf->len,
                                       GLNX_FILE_REPLACE_NODATASYNC,
                                       cancellable, error))
-    goto out;
+    return FALSE;
 
-  ret = TRUE;
- out:
-  if (buf)
-    g_string_free (buf, TRUE);
-  return ret;
+  return TRUE;
 }
-           
+
 gboolean
 ostree_bootconfig_parser_write (OstreeBootconfigParser   *self,
                                 GFile            *output,

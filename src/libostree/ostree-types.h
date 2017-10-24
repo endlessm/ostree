@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -37,5 +36,9 @@ typedef struct OstreeSysroot OstreeSysroot;
 typedef struct OstreeSysrootUpgrader OstreeSysrootUpgrader;
 typedef struct OstreeMutableTree OstreeMutableTree;
 typedef struct OstreeRepoFile OstreeRepoFile;
+
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+typedef struct OstreeRemote OstreeRemote;
+#endif
 
 G_END_DECLS

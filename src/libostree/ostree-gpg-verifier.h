@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  * Copyright (C) 2013 Sjoerd Simons <sjoerd.simons@collabora.co.uk>
  *
@@ -55,12 +54,20 @@ gboolean      _ostree_gpg_verifier_add_keyring_dir (OstreeGpgVerifier   *self,
                                                     GCancellable        *cancellable,
                                                     GError             **error);
 
+gboolean      _ostree_gpg_verifier_add_keyring_dir_at (OstreeGpgVerifier   *self,
+                                                       int                  dfd,
+                                                       const char          *path,
+                                                       GCancellable        *cancellable,
+                                                       GError             **error);
+
 gboolean      _ostree_gpg_verifier_add_global_keyring_dir (OstreeGpgVerifier  *self,
                                                            GCancellable       *cancellable,
                                                            GError            **error);
 
-void _ostree_gpg_verifier_add_keyring (OstreeGpgVerifier *self,
-                                       GFile             *path);
+void _ostree_gpg_verifier_add_keyring_data (OstreeGpgVerifier *self,
+                                            GBytes            *data);
+void _ostree_gpg_verifier_add_keyring_file (OstreeGpgVerifier *self,
+                                            GFile             *path);
 
 void _ostree_gpg_verifier_add_key_ascii_file (OstreeGpgVerifier *self,
                                               const char        *path);

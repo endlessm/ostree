@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>.
  *
  * This library is free software; you can redistribute it and/or
@@ -21,28 +20,37 @@
 #pragma once
 
 #include "ot-unix-utils.h"
+#include "libglnx.h"
 
 G_BEGIN_DECLS
 
-int ot_opendirat (int dfd, const char *path, gboolean follow);
-gboolean ot_gopendirat (int             dfd,
-                        const char     *path,
-                        gboolean        follow,
-                        int            *out_fd,
-                        GError        **error);
+/* A little helper to call unlinkat() as a cleanup
+ * function.  Mostly only necessary to handle
+ * deletion of temporary symlinks.
+ */
+typedef struct {
+  int dfd;
+  char *path;
+} OtCleanupUnlinkat;
 
-GBytes * ot_lgetxattrat (int            dfd,
-                         const char    *path,
-                         const char    *attribute,
-                         GError       **error);
+static inline void
+ot_cleanup_unlinkat_clear (OtCleanupUnlinkat *cleanup)
+{
+  g_clear_pointer (&cleanup->path, g_free);
+}
 
-gboolean ot_lsetxattrat (int            dfd,
-                         const char    *path,
-                         const char    *attribute,
-                         const void    *value,
-                         gsize          value_size,
-                         int            flags,
-                         GError       **error);
+static inline void
+ot_cleanup_unlinkat (OtCleanupUnlinkat *cleanup)
+{
+  if (cleanup->path)
+    {
+      (void) unlinkat (cleanup->dfd, cleanup->path, 0);
+      ot_cleanup_unlinkat_clear (cleanup);
+    }
+}
+G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(OtCleanupUnlinkat, ot_cleanup_unlinkat)
+
+GFile * ot_fdrel_to_gfile (int dfd, const char *path);
 
 gboolean ot_readlinkat_gfile_info (int             dfd,
                                    const char     *path,
@@ -65,6 +73,17 @@ gboolean ot_openat_ignore_enoent (int dfd,
                                   const char *path,
                                   int *out_fd,
                                   GError **error);
+
+gboolean ot_dfd_iter_init_allow_noent (int dfd,
+                                       const char *path,
+                                       GLnxDirFdIterator *dfd_iter,
+                                       gboolean *out_exists,
+                                       GError **error);
+
+GBytes *
+ot_map_anonymous_tmpfile_from_content (GInputStream *instream,
+                                       GCancellable *cancellable,
+                                       GError      **error);
 
 GBytes *ot_file_mapat_bytes (int dfd,
                              const char *path,

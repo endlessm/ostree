@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2012 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -33,20 +32,11 @@ ot_admin_require_booted_deployment_or_osname (OstreeSysroot       *sysroot,
                                               GCancellable        *cancellable,
                                               GError             **error)
 {
-  gboolean ret = FALSE;
   OstreeDeployment *booted_deployment =
     ostree_sysroot_get_booted_deployment (sysroot);
-
   if (booted_deployment == NULL && osname == NULL)
-    {
-      g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                           "Not currently booted into an OSTree system and no --os= argument given");
-      goto out;
-    }
-
-  ret = TRUE;
- out:
-  return ret;
+      return glnx_throw (error, "Not currently booted into an OSTree system and no --os= argument given");
+  return TRUE;
 }
 
 /**
@@ -66,7 +56,7 @@ ot_admin_checksum_version (GVariant *checksum)
 
   metadata = g_variant_get_child_value (checksum, 0);
 
-  if (!g_variant_lookup (metadata, "version", "&s", &ret))
+  if (!g_variant_lookup (metadata, OSTREE_COMMIT_META_KEY_VERSION, "&s", &ret))
     return NULL;
 
   return g_strdup (ret);
@@ -141,7 +131,7 @@ ot_admin_sysroot_lock (OstreeSysroot  *sysroot,
       g_source_set_callback (timeout_src, (GSourceFunc)on_sysroot_lock_timeout, &state, NULL);
       g_source_attach (timeout_src, state.mainctx);
       g_source_unref (timeout_src);
-      
+
       on_sysroot_lock_timeout (&state);
 
       ostree_sysroot_lock_async (sysroot, NULL, (GAsyncReadyCallback)on_sysroot_lock_acquired, &state);
@@ -160,16 +150,15 @@ ot_admin_sysroot_lock (OstreeSysroot  *sysroot,
 gboolean
 ot_admin_execve_reboot (OstreeSysroot *sysroot, GError **error)
 {
-  g_autoptr(GFile) real_sysroot = g_file_new_for_path ("/");
-      
-  if (g_file_equal (ostree_sysroot_get_path (sysroot), real_sysroot))
-    {
-      if (execl ("systemctl", "systemctl", "reboot", NULL) < 0)
-        {
-          glnx_set_error_from_errno (error);
-          return FALSE;
-        }
-    }
+  OstreeDeployment *booted = ostree_sysroot_get_booted_deployment (sysroot);
 
+  /* If the sysroot isn't booted, we shouldn't reboot, even if somehow the user
+   * asked for it; might accidentally be specified in a build script, etc.
+   */
+  if (!booted)
+    return TRUE;
+
+  if (execlp ("systemctl", "systemctl", "reboot", NULL) < 0)
+    return glnx_throw_errno_prefix (error, "execve(systemctl reboot)");
   return TRUE;
 }

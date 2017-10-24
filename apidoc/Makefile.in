@@ -130,6 +130,15 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_1 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-ref.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-remote.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-avahi.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-config.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-mount.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
+
 subdir = apidoc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/buildutil/attributes.m4 \
@@ -180,6 +189,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BASH_COMPLETIONSDIR = @BASH_COMPLETIONSDIR@
 BUILDOPT_FUSE_CFLAGS = @BUILDOPT_FUSE_CFLAGS@
 BUILDOPT_FUSE_LIBS = @BUILDOPT_FUSE_LIBS@
 CC = @CC@
@@ -253,6 +263,12 @@ OBJEXT = @OBJEXT@
 OSTREE_FEATURES = @OSTREE_FEATURES@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
+OT_DEP_AVAHI_CFLAGS = @OT_DEP_AVAHI_CFLAGS@
+OT_DEP_AVAHI_LIBS = @OT_DEP_AVAHI_LIBS@
+OT_DEP_CRYPTO_CFLAGS = @OT_DEP_CRYPTO_CFLAGS@
+OT_DEP_CRYPTO_LIBS = @OT_DEP_CRYPTO_LIBS@
+OT_DEP_CURL_CFLAGS = @OT_DEP_CURL_CFLAGS@
+OT_DEP_CURL_LIBS = @OT_DEP_CURL_LIBS@
 OT_DEP_E2P_CFLAGS = @OT_DEP_E2P_CFLAGS@
 OT_DEP_E2P_LIBS = @OT_DEP_E2P_LIBS@
 OT_DEP_GIO_UNIX_CFLAGS = @OT_DEP_GIO_UNIX_CFLAGS@
@@ -283,6 +299,8 @@ PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
+RELEASE_VERSION = @RELEASE_VERSION@
+RUST_TARGET_SUBDIR = @RUST_TARGET_SUBDIR@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -292,6 +310,7 @@ VERSION = @VERSION@
 WARN_CFLAGS = @WARN_CFLAGS@
 XSLTPROC = @XSLTPROC@
 YACC = @YACC@
+YEAR_VERSION = @YEAR_VERSION@
 YFLAGS = @YFLAGS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -312,6 +331,7 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
+cargo = @cargo@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -339,35 +359,35 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+rustc = @rustc@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
+systemdsystemgeneratordir = @systemdsystemgeneratordir@
 systemdsystemunitdir = @systemdsystemunitdir@
 target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-libostree_public_headers = \
-	src/libostree/ostree.h \
+libostree_public_headers = src/libostree/ostree.h \
 	src/libostree/ostree-async-progress.h \
 	src/libostree/ostree-autocleanups.h \
 	src/libostree/ostree-core.h \
 	src/libostree/ostree-dummy-enumtypes.h \
 	src/libostree/ostree-mutable-tree.h \
-	src/libostree/ostree-repo.h \
-	src/libostree/ostree-types.h \
-	src/libostree/ostree-repo-file.h \
-	src/libostree/ostree-diff.h \
+	src/libostree/ostree-repo.h src/libostree/ostree-types.h \
+	src/libostree/ostree-repo-file.h src/libostree/ostree-diff.h \
 	src/libostree/ostree-gpg-verify-result.h \
-	src/libostree/ostree-sepolicy.h \
-	src/libostree/ostree-sysroot.h \
+	src/libostree/ostree-sepolicy.h src/libostree/ostree-sysroot.h \
 	src/libostree/ostree-sysroot-upgrader.h \
 	src/libostree/ostree-deployment.h \
 	src/libostree/ostree-bootconfig-parser.h \
-	src/libostree/ostree-repo-deprecated.h \
-	$(NULL)
+	src/libostree/ostree-repo-deprecated.h $(NULL) $(am__append_1)
 
+# This one is generated via configure.ac, and the gtk-doc
+# code hence needs to look in the builddir.
+libostree_public_built_headers = src/libostree/ostree-version.h
 NULL = 
 
 # We require automake 1.6 at least.
@@ -409,7 +429,7 @@ FIXXREF_OPTIONS =
 # Used for dependencies. The docs will be rebuilt if any of these change.
 # e.g. HFILE_GLOB=$(top_srcdir)/gtk/*.h
 # e.g. CFILE_GLOB=$(top_srcdir)/gtk/*.c
-HFILE_GLOB = $(addprefix $(top_srcdir)/,$(libostree_public_headers))
+HFILE_GLOB = $(addprefix $(top_srcdir)/,$(libostree_public_headers)) $(addprefix $(top_builddir)/,$(libostree_public_built_headers))
 CFILE_GLOB = $(top_srcdir)/src/libostree/*.c
 
 # Header files to ignore when scanning.
@@ -486,7 +506,7 @@ SETUP_FILES = \
 
 # This includes the standard gtk-doc make rules, copied by gtkdocize.
 EXTRA_DIST = $(HTML_IMAGES) $(SETUP_FILES) version.xml \
-	ostree-sections.txt $(NULL)
+	ostree-sections.txt ostree-experimental-sections.txt $(NULL)
 DOC_STAMPS = setup-build.stamp scan-build.stamp sgml-build.stamp \
 	html-build.stamp pdf-build.stamp \
 	sgml.stamp html.stamp pdf.stamp

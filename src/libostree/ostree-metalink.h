@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -40,6 +39,7 @@ struct OstreeMetalinkClass
 {
   GObjectClass parent_class;
 };
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeMetalink, g_object_unref)
 
 GType   _ostree_metalink_get_type (void) G_GNUC_CONST;
 

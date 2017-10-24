@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>.
  *
  * This library is free software; you can redistribute it and/or
@@ -49,9 +48,8 @@
 #include <ot-opt-utils.h>
 #include <ot-unix-utils.h>
 #include <ot-variant-utils.h>
-#include <ot-spawn-utils.h>
 #include <ot-checksum-utils.h>
 #include <ot-gpg-utils.h>
-#include <ot-log-utils.h>
+#include <ot-checksum-instream.h>
 
 void ot_ptrarray_add_many (GPtrArray  *a, ...) G_GNUC_NULL_TERMINATED; 

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,6 +21,8 @@
 
 #pragma once
 
+#include "config.h"
+
 #include "ostree.h"
 
 G_BEGIN_DECLS
@@ -36,6 +37,10 @@ BUILTINPROTO(checksum);
 BUILTINPROTO(commit);
 BUILTINPROTO(diff);
 BUILTINPROTO(export);
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+BUILTINPROTO(find_remotes);
+BUILTINPROTO(create_usb);
+#endif
 BUILTINPROTO(gpg_sign);
 BUILTINPROTO(init);
 BUILTINPROTO(log);

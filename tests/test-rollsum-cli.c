@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -21,13 +20,13 @@
 #include "config.h"
 
 #include "ostree-rollsum.h"
-#include <unistd.h>
-#include <stdlib.h>
+
+#include "libglnx.h"
 
 int
 main (int argc, char **argv)
 {
-  GError *local_error = NULL;
+  g_autoptr(GError) local_error = NULL;
   GError **error = &local_error;
   GBytes *from_bytes = NULL;
   GBytes *to_bytes = NULL;
@@ -39,7 +38,7 @@ main (int argc, char **argv)
   g_setenv ("GIO_USE_VFS", "local", TRUE);
 
   if (argc < 3)
-    exit (EXIT_FAILURE);
+    return 1;
 
   from_path = argv[1];
   to_path = argv[2];
@@ -66,7 +65,6 @@ main (int argc, char **argv)
   if (local_error)
     {
       g_printerr ("%s\n", local_error->message);
-      g_error_free (local_error);
       return 1;
     }
   return 0;

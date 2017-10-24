@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,9 +21,8 @@
 
 #include "config.h"
 
-#include "ostree-mutable-tree.h"
 #include "otutil.h"
-#include "ostree-core.h"
+#include "ostree.h"
 
 /**
  * SECTION:ostree-mutable-tree
@@ -114,9 +112,6 @@ ostree_mutable_tree_set_contents_checksum (OstreeMutableTree *self,
 const char *
 ostree_mutable_tree_get_contents_checksum (OstreeMutableTree *self)
 {
-  GHashTableIter iter;
-  gpointer key, value;
-
   if (!self->contents_checksum)
     return NULL;
 
@@ -127,10 +122,8 @@ ostree_mutable_tree_get_contents_checksum (OstreeMutableTree *self)
    *
    * However, we only call this function once right now.
    */
-  g_hash_table_iter_init (&iter, self->subdirs);
-  while (g_hash_table_iter_next (&iter, &key, &value))
+  GLNX_HASH_TABLE_FOREACH_V (self->subdirs, OstreeMutableTree*, subdir)
     {
-      OstreeMutableTree *subdir = value;
       if (!ostree_mutable_tree_get_contents_checksum (subdir))
         {
           g_free (self->contents_checksum);
@@ -188,7 +181,7 @@ ostree_mutable_tree_ensure_dir (OstreeMutableTree *self,
                                 GError           **error)
 {
   gboolean ret = FALSE;
-  glnx_unref_object OstreeMutableTree *ret_dir = NULL;
+  g_autoptr(OstreeMutableTree) ret_dir = NULL;
 
   g_return_val_if_fail (name != NULL, FALSE);
 
@@ -224,7 +217,7 @@ ostree_mutable_tree_lookup (OstreeMutableTree   *self,
                             GError             **error)
 {
   gboolean ret = FALSE;
-  glnx_unref_object OstreeMutableTree *ret_subdir = NULL;
+  g_autoptr(OstreeMutableTree) ret_subdir = NULL;
   g_autofree char *ret_file_checksum = NULL;
   
   ret_subdir = ot_gobject_refz (g_hash_table_lookup (self->subdirs, name));
@@ -266,7 +259,7 @@ ostree_mutable_tree_ensure_parent_dirs (OstreeMutableTree  *self,
   gboolean ret = FALSE;
   int i;
   OstreeMutableTree *subdir = self; /* nofree */
-  glnx_unref_object OstreeMutableTree *ret_parent = NULL;
+  g_autoptr(OstreeMutableTree) ret_parent = NULL;
 
   g_assert (metadata_checksum != NULL);
 

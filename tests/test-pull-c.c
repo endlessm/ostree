@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2016 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -43,11 +42,13 @@ test_data_init (TestData *td)
   if (!td->repo)
     goto out;
 
-  if (!ot_test_run_libtest ("setup_fake_remote_repo1 archive-z2", error))
+  if (!ot_test_run_libtest ("setup_fake_remote_repo1 archive", error))
     goto out;
 
   if (!g_file_get_contents ("httpd-address", &http_address, NULL, error))
     goto out;
+
+  g_strstrip (http_address);
 
   repo_url = g_strconcat (http_address, "/ostree/gnomerepo", NULL);
 

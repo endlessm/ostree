@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -25,6 +24,11 @@
 #include "ot-main.h"
 #include "ot-remote-builtins.h"
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-remote.xml) when changing the option list.
+ */
+
 static GOptionEntry option_entries[] = {
   { NULL }
 };
@@ -33,7 +37,7 @@ gboolean
 ot_remote_builtin_show_url (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   const char *remote_name;
   g_autofree char *remote_url = NULL;
   gboolean ret = FALSE;

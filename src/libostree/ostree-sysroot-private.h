@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2012,2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -30,8 +29,11 @@ G_BEGIN_DECLS
 typedef enum {
 
   /* Don't flag deployments as immutable. */
-  OSTREE_SYSROOT_DEBUG_MUTABLE_DEPLOYMENTS = 1 << 0
-
+  OSTREE_SYSROOT_DEBUG_MUTABLE_DEPLOYMENTS = 1 << 0,
+  /* See https://github.com/ostreedev/ostree/pull/759 */
+  OSTREE_SYSROOT_DEBUG_NO_XATTRS = 1 << 1,
+  /* https://github.com/ostreedev/ostree/pull/1049 */
+  OSTREE_SYSROOT_DEBUG_TEST_FIFREEZE = 1 << 2,
 } OstreeSysrootDebugFlags;
 
 /**
@@ -46,16 +48,15 @@ struct OstreeSysroot {
   GLnxLockFile lock;
 
   gboolean loaded;
-  
-  OstreeSePolicy *sepolicy;
-  
+
+  gboolean is_physical; /* TRUE if we're pointed at physical storage root and not a deployment */
   GPtrArray *deployments;
   int bootversion;
   int subbootversion;
   OstreeDeployment *booted_deployment;
   struct timespec loaded_ts;
 
-  /* Only access through ostree_sysroot_get_repo() */
+  /* Only access through ostree_sysroot_[_get]repo() */
   OstreeRepo *repo;
 
   OstreeSysrootDebugFlags debug_flags;
@@ -65,6 +66,10 @@ struct OstreeSysroot {
 /* We keep some transient state in /run */
 #define _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_DIR "/run/ostree/deployment-state/"
 #define _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_FLAG_DEVELOPMENT "unlocked-development"
+
+void
+_ostree_sysroot_emit_journal_msg (OstreeSysroot  *self,
+                                  const char     *msg);
 
 gboolean
 _ostree_sysroot_read_boot_loader_configs (OstreeSysroot *self,
@@ -87,7 +92,8 @@ _ostree_sysroot_parse_deploy_path_name (const char *name,
                                         GError    **error);
 
 gboolean
-_ostree_sysroot_list_deployment_dirs_for_os (GFile               *osdir,
+_ostree_sysroot_list_deployment_dirs_for_os (int                  deploydir_dfd,
+                                             const char          *osname,
                                              GPtrArray           *inout_deployments,
                                              GCancellable        *cancellable,
                                              GError             **error);
@@ -109,22 +115,9 @@ gboolean _ostree_sysroot_query_bootloader (OstreeSysroot     *sysroot,
 gboolean _ostree_sysroot_bump_mtime (OstreeSysroot *sysroot,
                                      GError       **error);
 
-typedef enum {
-  OSTREE_SYSROOT_CLEANUP_BOOTVERSIONS = 1 << 0,
-  OSTREE_SYSROOT_CLEANUP_DEPLOYMENTS  = 1 << 1,
-  OSTREE_SYSROOT_CLEANUP_PRUNE_REPO   = 1 << 2,
-  OSTREE_SYSROOT_CLEANUP_ALL          = 0xffff
-} OstreeSysrootCleanupFlags;
-
-gboolean _ostree_sysroot_piecemeal_cleanup (OstreeSysroot *sysroot,
-                                            OstreeSysrootCleanupFlags flags,
-                                            GCancellable *cancellable,
-                                            GError **error);
-
-gboolean _ostree_sysroot_write_deployments_internal (OstreeSysroot     *self,
-                                                     GPtrArray         *new_deployments,
-                                                     OstreeSysrootCleanupFlags cleanup_flags,
-                                                     GCancellable      *cancellable,
-                                                     GError           **error);
+gboolean _ostree_sysroot_cleanup_internal (OstreeSysroot *sysroot,
+                                           gboolean       prune_repo,
+                                           GCancellable  *cancellable,
+                                           GError       **error);
 
 G_END_DECLS

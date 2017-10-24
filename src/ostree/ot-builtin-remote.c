@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -51,12 +50,9 @@ static GOptionContext *
 remote_option_context_new_with_commands (void)
 {
   OstreeRemoteCommand *subcommand = remote_subcommands;
-  GOptionContext *context;
-  GString *summary;
+  GOptionContext *context = g_option_context_new ("COMMAND");
 
-  context = g_option_context_new ("COMMAND");
-
-  summary = g_string_new ("Builtin \"remote\" Commands:");
+  g_autoptr(GString) summary = g_string_new ("Builtin \"remote\" Commands:");
 
   while (subcommand->name != NULL)
     {
@@ -65,8 +61,6 @@ remote_option_context_new_with_commands (void)
     }
 
   g_option_context_set_summary (context, summary->str);
-
-  g_string_free (summary, TRUE);
 
   return context;
 }
@@ -114,13 +108,14 @@ ostree_builtin_remote (int argc, char **argv, GCancellable *cancellable, GError 
   if (!subcommand->name)
     {
       g_autoptr(GOptionContext) context = NULL;
-      g_autofree char *help;
+      g_autofree char *help = NULL;
 
       context = remote_option_context_new_with_commands ();
 
       /* This will not return for some options (e.g. --version). */
       if (ostree_option_context_parse (context, NULL, &argc, &argv,
-                                       OSTREE_BUILTIN_FLAG_NONE, NULL, cancellable, error))
+                                       OSTREE_BUILTIN_FLAG_NO_REPO, NULL, cancellable,
+                                       error))
         {
           if (subcommand_name == NULL)
             {

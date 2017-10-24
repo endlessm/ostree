@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -43,13 +42,6 @@ G_BEGIN_DECLS
  * will be emitted.
  */
 #define OSTREE_MAX_METADATA_WARN_SIZE (7 * 1024 * 1024)
-
-/**
- * OSTREE_MAX_RECURSION:
- * 
- * Maximum depth of metadata.
- */
-#define OSTREE_MAX_RECURSION (256)
 
 /**
  * OSTREE_SHA256_DIGEST_LEN:
@@ -104,9 +96,9 @@ typedef enum {
 /**
  * OSTREE_DIRMETA_GVARIANT_FORMAT:
  *
- * - u - uid
- * - u - gid
- * - u - mode
+ * - u - uid (big-endian)
+ * - u - gid (big-endian)
+ * - u - mode (big-endian)
  * - a(ayay) - xattrs
  */
 #define OSTREE_DIRMETA_GVARIANT_STRING "(uuua(ayay))"
@@ -120,9 +112,9 @@ typedef enum {
  * can't store in the real filesystem but we can still use a regular .file object
  * that we can hardlink to in the case of a user-mode checkout.
  *
- * - u - uid
- * - u - gid
- * - u - mode
+ * - u - uid (big-endian)
+ * - u - gid (big-endian)
+ * - u - mode (big-endian)
  * - a(ayay) - xattrs
  */
 #define OSTREE_FILEMETA_GVARIANT_STRING "(uuua(ayay))"
@@ -145,7 +137,7 @@ typedef enum {
  * - a(say) - Related objects
  * - s - subject
  * - s - body
- * - t - Timestamp in seconds since the epoch (UTC)
+ * - t - Timestamp in seconds since the epoch (UTC, big-endian)
  * - ay - Root tree contents
  * - ay - Root tree metadata
  */
@@ -158,6 +150,17 @@ typedef enum {
  * - a(s(taya{sv})) - Map of ref name -> (latest commit size, latest commit checksum, additional metadata), sorted by ref name
  * - a{sv} - Additional metadata, at the current time the following are defined:
  *   - key: "ostree.static-deltas", value: a{sv}, static delta name -> 32 bytes of checksum
+ *   - key: "ostree.summary.last-modified", value: t, timestamp (seconds since
+ *     the Unix epoch in UTC, big-endian) when the summary was last regenerated
+ *     (similar to the HTTP `Last-Modified` header)
+ *   - key: "ostree.summary.expires", value: t, timestamp (seconds since the
+ *     Unix epoch in UTC, big-endian) after which the summary is considered
+ *     stale and should be re-downloaded if possible (similar to the HTTP
+ *     `Expires` header)
+ *
+ * The currently defined keys for the `a{sv}` of additional metadata for each commit are:
+ *  - key: `ostree.commit.timestamp`, value: `t`, timestamp (seconds since the
+ *    Unix epoch in UTC, big-endian) when the commit was committed
  */
 #define OSTREE_SUMMARY_GVARIANT_STRING "(a(s(taya{sv}))a{sv})"
 #define OSTREE_SUMMARY_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_SUMMARY_GVARIANT_STRING)
@@ -177,17 +180,80 @@ typedef enum {
 /**
  * OstreeRepoMode:
  * @OSTREE_REPO_MODE_BARE: Files are stored as themselves; checkouts are hardlinks; can only be written as root
- * @OSTREE_REPO_MODE_ARCHIVE_Z2: Files are compressed, should be owned by non-root.  Can be served via HTTP
+ * @OSTREE_REPO_MODE_ARCHIVE: Files are compressed, should be owned by non-root.  Can be served via HTTP.  Since: 2017.12
+ * @OSTREE_REPO_MODE_ARCHIVE_Z2: Legacy alias for `OSTREE_REPO_MODE_ARCHIVE`
  * @OSTREE_REPO_MODE_BARE_USER: Files are stored as themselves, except ownership; can be written by user. Hardlinks work only in user checkouts.
+ * @OSTREE_REPO_MODE_BARE_USER_ONLY: Same as BARE_USER, but all metadata is not stored, so it can only be used for user checkouts. Does not need xattrs.
  *
  * See the documentation of #OstreeRepo for more information about the
  * possible modes.
  */
 typedef enum {
   OSTREE_REPO_MODE_BARE,
-  OSTREE_REPO_MODE_ARCHIVE_Z2,
-  OSTREE_REPO_MODE_BARE_USER
+  OSTREE_REPO_MODE_ARCHIVE,
+  OSTREE_REPO_MODE_ARCHIVE_Z2 = OSTREE_REPO_MODE_ARCHIVE,
+  OSTREE_REPO_MODE_BARE_USER,
+  OSTREE_REPO_MODE_BARE_USER_ONLY,
 } OstreeRepoMode;
+
+/**
+ * OSTREE_COMMIT_META_KEY_VERSION:
+ *
+ * GVariant type `s`. This metadata key is used for version numbers. A freeform
+ * string; the intention is that systems using ostree do not interpret this
+ * semantically as traditional package managers do.
+ *
+ * This is the only ostree-defined metadata key that does not start with `ostree.`.
+ * Since: 2014.9
+ */
+#define OSTREE_COMMIT_META_KEY_VERSION "version"
+/**
+ * OSTREE_COMMIT_META_KEY_ENDOFLIFE_REBASE:
+ *
+ * GVariant type `s`.  Should contain a refspec defining a new target branch;
+ * `ostree admin upgrade` and `OstreeSysrootUpgrader` will automatically initiate
+ * a rebase upon encountering this metadata key.
+ *
+ * Since: 2017.7
+ */
+#define OSTREE_COMMIT_META_KEY_ENDOFLIFE_REBASE "ostree.endoflife-rebase"
+/**
+ * OSTREE_COMMIT_META_KEY_ENDOFLIFE:
+ *
+ * GVariant type `s`. This metadata key is used to display vendor's message
+ * when an update stream for a particular branch ends. It usually provides
+ * update instructions for the users.
+ *
+ * Since: 2017.7
+ */
+#define OSTREE_COMMIT_META_KEY_ENDOFLIFE "ostree.endoflife"
+/**
+ * OSTREE_COMMIT_META_KEY_REF_BINDING:
+ *
+ * GVariant type `as`; each element is a branch name. If this is added to a
+ * commit, `ostree_repo_pull()` will enforce that the commit was retrieved from
+ * one of the branch names in this array.  This prevents "sidegrade" attacks.
+ * The rationale for having this support multiple branch names is that it helps
+ * support a "promotion" model of taking a commit and moving it between development
+ * and production branches.
+ *
+ * Since: 2017.9
+ */
+#define OSTREE_COMMIT_META_KEY_REF_BINDING "ostree.ref-binding"
+/**
+ * OSTREE_COMMIT_META_KEY_COLLECTION_BINDING:
+ *
+ * GVariant type `s`.  If this is added to a commit, `ostree_repo_pull()`
+ * will enforce that the commit was retrieved from a repository which has
+ * the same collection ID.  See `ostree_repo_set_collection_id()`.
+ * This is most useful in concert with `OSTREE_COMMIT_META_KEY_REF_BINDING`,
+ * as it more strongly binds the commit to the repository and branch.
+ *
+ * Since: 2017.9
+ */
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+#define OSTREE_COMMIT_META_KEY_COLLECTION_BINDING "ostree.collection-binding"
+#endif
 
 _OSTREE_PUBLIC
 const GVariantType *ostree_metadata_variant_type (OstreeObjectType objtype);
@@ -235,6 +301,14 @@ int ostree_cmp_checksum_bytes (const guchar *a, const guchar *b);
 
 _OSTREE_PUBLIC
 gboolean ostree_validate_rev (const char *rev, GError **error);
+
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+_OSTREE_PUBLIC
+gboolean ostree_validate_collection_id (const char *collection_id, GError **error);
+#endif /* OSTREE_ENABLE_EXPERIMENTAL_API */
+
+_OSTREE_PUBLIC
+gboolean ostree_validate_remote_name (const char *remote_name, GError **error);
 
 _OSTREE_PUBLIC
 gboolean ostree_parse_refspec (const char *refspec,
@@ -310,6 +384,16 @@ ostree_raw_file_to_archive_z2_stream (GInputStream       *input,
                                       GInputStream      **out_input,
                                       GCancellable       *cancellable,
                                       GError            **error);
+
+_OSTREE_PUBLIC
+gboolean
+ostree_raw_file_to_archive_z2_stream_with_options (GInputStream       *input,
+                                                   GFileInfo          *file_info,
+                                                   GVariant           *xattrs,
+                                                   GVariant           *options,
+                                                   GInputStream      **out_input,
+                                                   GCancellable       *cancellable,
+                                                   GError            **error);
 
 _OSTREE_PUBLIC
 gboolean ostree_raw_file_to_content_stream (GInputStream       *input,
@@ -388,5 +472,8 @@ _OSTREE_PUBLIC
 gchar *  ostree_commit_get_parent            (GVariant  *commit_variant);
 _OSTREE_PUBLIC
 guint64  ostree_commit_get_timestamp         (GVariant  *commit_variant);
+
+_OSTREE_PUBLIC
+gboolean ostree_check_version (guint required_year, guint required_release);
 
 G_END_DECLS

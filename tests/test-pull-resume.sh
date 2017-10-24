@@ -21,7 +21,7 @@ set -euo pipefail
 
 . $(dirname $0)/libtest.sh
 
-setup_fake_remote_repo1 "archive-z2" "" "--force-range-requests"
+setup_fake_remote_repo1 "archive" "" "--force-range-requests"
 
 echo '1..1'
 
@@ -31,7 +31,7 @@ cp -a ${repopath} ${repopath}.orig
 cd ${test_tmpdir}
 rm repo -rf
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add --set=gpg-verify=false origin $(cat httpd-address)/ostree/gnomerepo
 
 maxtries=`find ${repopath}/objects | wc -l`
@@ -42,7 +42,7 @@ do
   if ${CMD_PREFIX} ostree --repo=repo pull origin main 2>err.log; then
     break
   fi
-  assert_file_has_content err.log 'error:.*Download incomplete'
+  assert_file_has_content err.log 'error:.*\(Download incomplete\)\|\(Transferred a partial file\)'
 done
 if ${CMD_PREFIX} ostree --repo=repo fsck; then
     echo "ok, pull succeeded!"

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -34,25 +33,40 @@ static gboolean opt_dry_run;
 static gboolean opt_disable_static_deltas;
 static gboolean opt_require_static_deltas;
 static gboolean opt_untrusted;
+static gboolean opt_http_trusted;
+static gboolean opt_timestamp_check;
+static gboolean opt_bareuseronly_files;
 static char** opt_subpaths;
 static char** opt_http_headers;
 static char* opt_cache_dir;
 static int opt_depth = 0;
+static int opt_frequency = 0;
 static char* opt_url;
+static char** opt_localcache_repos;
+
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-pull.xml) when changing the option list.
+ */
 
 static GOptionEntry options[] = {
    { "commit-metadata-only", 0, 0, G_OPTION_ARG_NONE, &opt_commit_only, "Fetch only the commit metadata", NULL },
-   { "cache-dir", 0, 0, G_OPTION_ARG_STRING, &opt_cache_dir, "Use custom cache dir", NULL },
+   { "cache-dir", 0, 0, G_OPTION_ARG_FILENAME, &opt_cache_dir, "Use custom cache dir", NULL },
    { "disable-fsync", 0, 0, G_OPTION_ARG_NONE, &opt_disable_fsync, "Do not invoke fsync()", NULL },
    { "disable-static-deltas", 0, 0, G_OPTION_ARG_NONE, &opt_disable_static_deltas, "Do not use static deltas", NULL },
    { "require-static-deltas", 0, 0, G_OPTION_ARG_NONE, &opt_require_static_deltas, "Require static deltas", NULL },
-   { "mirror", 0, 0, G_OPTION_ARG_NONE, &opt_mirror, "Write refs suitable for a mirror", NULL },
-   { "subpath", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_subpaths, "Only pull the provided subpath(s)", NULL },
-   { "untrusted", 0, 0, G_OPTION_ARG_NONE, &opt_untrusted, "Do not trust (local) sources", NULL },
+   { "mirror", 0, 0, G_OPTION_ARG_NONE, &opt_mirror, "Write refs suitable for a mirror and fetches all refs if none provided", NULL },
+   { "subpath", 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_subpaths, "Only pull the provided subpath(s)", NULL },
+   { "untrusted", 0, 0, G_OPTION_ARG_NONE, &opt_untrusted, "Verify checksums of local sources (always enabled for HTTP pulls)", NULL },
+   { "http-trusted", 0, 0, G_OPTION_ARG_NONE, &opt_http_trusted, "Do not verify checksums of HTTP sources (mostly useful when mirroring)", NULL },
+   { "bareuseronly-files", 0, 0, G_OPTION_ARG_NONE, &opt_bareuseronly_files, "Reject regular files with mode outside of 0775 (world writable, suid, etc.)", NULL },
    { "dry-run", 0, 0, G_OPTION_ARG_NONE, &opt_dry_run, "Only print information on what will be downloaded (requires static deltas)", NULL },
    { "depth", 0, 0, G_OPTION_ARG_INT, &opt_depth, "Traverse DEPTH parents (-1=infinite) (default: 0)", "DEPTH" },
    { "url", 0, 0, G_OPTION_ARG_STRING, &opt_url, "Pull objects from this URL instead of the one from the remote config", NULL },
    { "http-header", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_http_headers, "Add NAME=VALUE as HTTP header to all requests", "NAME=VALUE" },
+   { "update-frequency", 0, 0, G_OPTION_ARG_INT, &opt_frequency, "Sets the update frequency, in milliseconds (0=1000ms) (default: 0)", "FREQUENCY" },
+   { "localcache-repo", 'L', 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_localcache_repos, "Add REPO as local cache source for objects during this pull", "REPO" },
+   { "timestamp-check", 'T', 0, G_OPTION_ARG_NONE, &opt_timestamp_check, "Require fetched commits to have newer timestamps", NULL },
    { NULL }
  };
 
@@ -80,43 +94,65 @@ dry_run_console_progress_changed (OstreeAsyncProgress *progress,
                                   gpointer             user_data)
 {
   guint fetched_delta_parts, total_delta_parts;
-  guint64 total_delta_part_size, total_delta_part_usize;
-  GString *buf;
+  guint fetched_delta_part_fallbacks, total_delta_part_fallbacks;
+  guint64 fetched_delta_part_size, total_delta_part_size, total_delta_part_usize;
 
   g_assert (!printed_console_progress);
   printed_console_progress = TRUE;
 
-  fetched_delta_parts = ostree_async_progress_get_uint (progress, "fetched-delta-parts");
-  total_delta_parts = ostree_async_progress_get_uint (progress, "total-delta-parts");
-  total_delta_part_size = ostree_async_progress_get_uint64 (progress, "total-delta-part-size");
-  total_delta_part_usize = ostree_async_progress_get_uint64 (progress, "total-delta-part-usize");
+  ostree_async_progress_get (progress,
+                             /* Number of parts */
+                             "fetched-delta-parts", "u", &fetched_delta_parts,
+                             "total-delta-parts", "u", &total_delta_parts,
+                             "fetched-delta-fallbacks", "u", &fetched_delta_part_fallbacks,
+                             "total-delta-fallbacks", "u", &total_delta_part_fallbacks,
+                             /* Size variables */
+                             "fetched-delta-part-size", "t", &fetched_delta_part_size,
+                             "total-delta-part-size", "t", &total_delta_part_size,
+                             "total-delta-part-usize", "t", &total_delta_part_usize,
+                             NULL);
 
-  buf = g_string_new ("");
+  /* Fold the count of deltaparts + fallbacks for simplicity; if changing this,
+   * please change ostree_repo_pull_default_console_progress_changed() first.
+   */
+  fetched_delta_parts += fetched_delta_part_fallbacks;
+  total_delta_parts += total_delta_part_fallbacks;
 
-  { g_autofree char *formatted_size =
+  g_autoptr(GString) buf = g_string_new ("");
+
+  { g_autofree char *formatted_fetched =
+      g_format_size (fetched_delta_part_size);
+    g_autofree char *formatted_size =
       g_format_size (total_delta_part_size);
     g_autofree char *formatted_usize =
       g_format_size (total_delta_part_usize);
 
-    g_string_append_printf (buf, "Delta update: %u/%u parts, %s to transfer, %s uncompressed",
+    g_string_append_printf (buf, "Delta update: %u/%u parts, %s/%s, %s total uncompressed",
                             fetched_delta_parts, total_delta_parts,
-                            formatted_size, formatted_usize);
+                            formatted_fetched, formatted_size,
+                            formatted_usize);
   }
   g_print ("%s\n", buf->str);
-  g_string_free (buf, TRUE);
+}
+
+static void
+noninteractive_console_progress_changed (OstreeAsyncProgress *progress,
+                                         gpointer             user_data)
+{
+  /* We do nothing here - we just want the final status */
 }
 
 gboolean
 ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   gboolean ret = FALSE;
   g_autofree char *remote = NULL;
   OstreeRepoPullFlags pullflags = 0;
   g_autoptr(GPtrArray) refs_to_fetch = NULL;
   g_autoptr(GPtrArray) override_commit_ids = NULL;
-  glnx_unref_object OstreeAsyncProgress *progress = NULL;
+  g_autoptr(OstreeAsyncProgress) progress = NULL;
   gulong signal_handler_id = 0;
 
   context = g_option_context_new ("REMOTE [BRANCH...] - Download data from remote repository");
@@ -148,8 +184,16 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
   if (opt_commit_only)
     pullflags |= OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY;
 
+  if (opt_http_trusted)
+    pullflags |= OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP;
   if (opt_untrusted)
-    pullflags |= OSTREE_REPO_PULL_FLAGS_UNTRUSTED;
+    {
+      pullflags |= OSTREE_REPO_PULL_FLAGS_UNTRUSTED;
+      /* If the user specifies both, assume they really mean untrusted */
+      pullflags &= ~OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP;
+    }
+  if (opt_bareuseronly_files)
+    pullflags |= OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES;
 
   if (opt_dry_run && !opt_require_static_deltas)
     {
@@ -179,11 +223,13 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
                     goto out;
 
                   if (!override_commit_ids)
-                    override_commit_ids = g_ptr_array_new_with_free_func (g_free);
+                    {
+                      override_commit_ids = g_ptr_array_new_with_free_func (g_free);
 
-                  /* Backfill */
-                  for (j = 2; j < i; i++)
-                    g_ptr_array_add (override_commit_ids, g_strdup (""));
+                      /* Backfill */
+                      for (j = 2; j < i; j++)
+                        g_ptr_array_add (override_commit_ids, g_strdup (""));
+                    }
 
                   g_ptr_array_add (override_commit_ids, g_strdup (override_commit_id));
                   g_ptr_array_add (refs_to_fetch, g_strndup (argv[i], at - argv[i]));
@@ -191,6 +237,8 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
               else
                 {
                   g_ptr_array_add (refs_to_fetch, g_strdup (argv[i]));
+                  if (override_commit_ids)
+                    g_ptr_array_add (override_commit_ids, g_strdup (""));
                 }
             }
 
@@ -238,6 +286,9 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
     g_variant_builder_add (&builder, "{s@v}", "depth",
                            g_variant_new_variant (g_variant_new_int32 (opt_depth)));
    
+    g_variant_builder_add (&builder, "{s@v}", "update-frequency",
+                           g_variant_new_variant (g_variant_new_uint32 (opt_frequency)));
+
     g_variant_builder_add (&builder, "{s@v}", "disable-static-deltas",
                            g_variant_new_variant (g_variant_new_boolean (opt_disable_static_deltas)));
 
@@ -246,10 +297,16 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
 
     g_variant_builder_add (&builder, "{s@v}", "dry-run",
                            g_variant_new_variant (g_variant_new_boolean (opt_dry_run)));
+    if (opt_timestamp_check)
+      g_variant_builder_add (&builder, "{s@v}", "timestamp-check",
+                             g_variant_new_variant (g_variant_new_boolean (opt_timestamp_check)));
 
     if (override_commit_ids)
       g_variant_builder_add (&builder, "{s@v}", "override-commit-ids",
                              g_variant_new_variant (g_variant_new_strv ((const char*const*)override_commit_ids->pdata, override_commit_ids->len)));
+    if (opt_localcache_repos)
+      g_variant_builder_add (&builder, "{s@v}", "localcache-repos",
+                             g_variant_new_variant (g_variant_new_strv ((const char*const*)opt_localcache_repos, -1)));
 
     if (opt_http_headers)
       {
@@ -278,6 +335,8 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
       {
         if (console.is_tty)
           progress = ostree_async_progress_new_and_connect (ostree_repo_pull_default_console_progress_changed, &console);
+        else
+          progress = ostree_async_progress_new_and_connect (noninteractive_console_progress_changed, &console);
       }
     else
       {
@@ -297,8 +356,15 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
                                         progress, cancellable, error))
       goto out;
 
-    if (progress)
-      ostree_async_progress_finish (progress);
+    if (!console.is_tty && !opt_dry_run)
+      {
+        g_assert (progress);
+        const char *status = ostree_async_progress_get_status (progress);
+        if (status)
+          g_print ("%s\n", status);
+      }
+
+    ostree_async_progress_finish (progress);
 
     if (opt_dry_run)
       g_assert (printed_console_progress);

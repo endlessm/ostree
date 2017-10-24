@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -64,6 +63,11 @@ typedef struct OstreeGpgVerifyResult OstreeGpgVerifyResult;
  * @OSTREE_GPG_SIGNATURE_ATTR_USER_EMAIL:
  *   [#G_VARIANT_TYPE_STRING] The email address of the signing key's primary
  *   user
+ * @OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT_PRIMARY:
+ *   [#G_VARIANT_TYPE_STRING] Fingerprint of the signing key's primary key
+ *   (will be the same as OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT if the
+ *   the signature is already from the primary key rather than a subkey,
+ *   and will be the empty string if the key is missing.)
  *
  * Signature attributes available from an #OstreeGpgVerifyResult.
  * The attribute's #GVariantType is shown in brackets.
@@ -80,7 +84,8 @@ typedef enum {
   OSTREE_GPG_SIGNATURE_ATTR_PUBKEY_ALGO_NAME,
   OSTREE_GPG_SIGNATURE_ATTR_HASH_ALGO_NAME,
   OSTREE_GPG_SIGNATURE_ATTR_USER_NAME,
-  OSTREE_GPG_SIGNATURE_ATTR_USER_EMAIL
+  OSTREE_GPG_SIGNATURE_ATTR_USER_EMAIL,
+  OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT_PRIMARY,
 } OstreeGpgSignatureAttr;
 
 _OSTREE_PUBLIC
@@ -136,5 +141,26 @@ void ostree_gpg_verify_result_describe_variant (GVariant *variant,
 _OSTREE_PUBLIC
 gboolean ostree_gpg_verify_result_require_valid_signature (OstreeGpgVerifyResult *result,
                                                            GError **error);
+
+/**
+ * OstreeGpgError:
+ * @OSTREE_GPG_ERROR_NO_SIGNATURE: A signature was expected, but not found.
+ * @OSTREE_GPG_ERROR_INVALID_SIGNATURE: A signature was malformed.
+ * @OSTREE_GPG_ERROR_MISSING_KEY: A signature was found, but was created with a key not in the configured keyrings.
+ *
+ * Errors returned by signature creation and verification operations in OSTree.
+ * These may be returned by any API which creates or verifies signatures.
+ *
+ * Since: 2017.10
+ */
+typedef enum {
+  OSTREE_GPG_ERROR_NO_SIGNATURE = 0,
+  OSTREE_GPG_ERROR_INVALID_SIGNATURE,
+  OSTREE_GPG_ERROR_MISSING_KEY,
+} OstreeGpgError;
+
+_OSTREE_PUBLIC
+GQuark ostree_gpg_error_quark (void);
+#define OSTREE_GPG_ERROR (ostree_gpg_error_quark ())
 
 G_END_DECLS

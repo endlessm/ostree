@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>GPG signature verification results: OSTree API references</title>
-<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<meta name="generator" content="DocBook XSL Stylesheets Vsnapshot">
 <link rel="home" href="index.html" title="OSTree API references">
 <link rel="up" href="reference.html" title="API Reference">
 <link rel="prev" href="ostree-Simple-upgrade-class.html" title="Simple upgrade class">
@@ -41,7 +41,7 @@
 <tbody>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="returnvalue">guint</span></a>
+<span class="returnvalue">guint</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-count-all" title="ostree_gpg_verify_result_count_all ()">ostree_gpg_verify_result_count_all</a> <span class="c_punctuation">()</span>
@@ -49,7 +49,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="returnvalue">guint</span></a>
+<span class="returnvalue">guint</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-count-valid" title="ostree_gpg_verify_result_count_valid ()">ostree_gpg_verify_result_count_valid</a> <span class="c_punctuation">()</span>
@@ -57,7 +57,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-lookup" title="ostree_gpg_verify_result_lookup ()">ostree_gpg_verify_result_lookup</a> <span class="c_punctuation">()</span>
@@ -65,7 +65,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="returnvalue">GVariant</span></a> *
+<span class="returnvalue">GVariant</span> *
 </td>
 <td class="function_name">
 <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-get" title="ostree_gpg_verify_result_get ()">ostree_gpg_verify_result_get</a> <span class="c_punctuation">()</span>
@@ -73,7 +73,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="returnvalue">GVariant</span></a> *
+<span class="returnvalue">GVariant</span> *
 </td>
 <td class="function_name">
 <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-get-all" title="ostree_gpg_verify_result_get_all ()">ostree_gpg_verify_result_get_all</a> <span class="c_punctuation">()</span>
@@ -97,7 +97,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-require-valid-signature" title="ostree_gpg_verify_result_require_valid_signature ()">ostree_gpg_verify_result_require_valid_signature</a> <span class="c_punctuation">()</span>
@@ -114,6 +114,10 @@
 <col class="description">
 </colgroup>
 <tbody>
+<tr>
+<td class="datatype_keyword">enum</td>
+<td class="function_name"><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgError" title="enum OstreeGpgError">OstreeGpgError</a></td>
+</tr>
 <tr>
 <td class="typedef_keyword">typedef</td>
 <td class="function_name"><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult">OstreeGpgVerifyResult</a></td>
@@ -132,7 +136,7 @@
 <div class="refsect1">
 <a name="ostree-GPG-signature-verification-results.description"></a><h2>Description</h2>
 <p><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a> contains verification details for GPG signatures
-read from a detached <a class="link" href="ostree-Content-addressed-object-store.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> metadata object.</p>
+read from a detached <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> metadata object.</p>
 <p>Use <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-count-all" title="ostree_gpg_verify_result_count_all ()"><code class="function">ostree_gpg_verify_result_count_all()</code></a> and
 <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-count-valid" title="ostree_gpg_verify_result_count_valid ()"><code class="function">ostree_gpg_verify_result_count_valid()</code></a> to quickly check overall signature
 validity.</p>
@@ -146,7 +150,7 @@ or get all signature details with <a class="link" href="ostree-GPG-signature-ver
 <a name="ostree-GPG-signature-verification-results.functions_details"></a><h2>Functions</h2>
 <div class="refsect2">
 <a name="ostree-gpg-verify-result-count-all"></a><h3>ostree_gpg_verify_result_count_all ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="returnvalue">guint</span></a>
+<pre class="programlisting"><span class="returnvalue">guint</span>
 ostree_gpg_verify_result_count_all (<em class="parameter"><code><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a> *result</code></em>);</pre>
 <p>Counts all the signatures in <em class="parameter"><code>result</code></em>
 .</p>
@@ -173,7 +177,7 @@ ostree_gpg_verify_result_count_all (<em class="parameter"><code><a class="link" 
 <hr>
 <div class="refsect2">
 <a name="ostree-gpg-verify-result-count-valid"></a><h3>ostree_gpg_verify_result_count_valid ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="returnvalue">guint</span></a>
+<pre class="programlisting"><span class="returnvalue">guint</span>
 ostree_gpg_verify_result_count_valid (<em class="parameter"><code><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a> *result</code></em>);</pre>
 <p>Counts only the valid signatures in <em class="parameter"><code>result</code></em>
 .</p>
@@ -200,17 +204,17 @@ ostree_gpg_verify_result_count_valid (<em class="parameter"><code><a class="link
 <hr>
 <div class="refsect2">
 <a name="ostree-gpg-verify-result-lookup"></a><h3>ostree_gpg_verify_result_lookup ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_gpg_verify_result_lookup (<em class="parameter"><code><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a> *result</code></em>,
-                                 <em class="parameter"><code>const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *key_id</code></em>,
-                                 <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="type">guint</span></a> *out_signature_index</code></em>);</pre>
+                                 <em class="parameter"><code>const <span class="type">gchar</span> *key_id</code></em>,
+                                 <em class="parameter"><code><span class="type">guint</span> *out_signature_index</code></em>);</pre>
 <p>Searches <em class="parameter"><code>result</code></em>
  for a signature signed by <em class="parameter"><code>key_id</code></em>
 .  If a match is found,
-the function returns <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> and sets <em class="parameter"><code>out_signature_index</code></em>
+the function returns <code class="literal">TRUE</code> and sets <em class="parameter"><code>out_signature_index</code></em>
  so that further
 signature details can be obtained through <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-get" title="ostree_gpg_verify_result_get ()"><code class="function">ostree_gpg_verify_result_get()</code></a>.
-If no match is found, the function returns <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#FALSE:CAPS"><code class="literal">FALSE</code></a> and leaves
+If no match is found, the function returns <code class="literal">FALSE</code> and leaves
 <em class="parameter"><code>out_signature_index</code></em>
  unchanged.</p>
 <div class="refsect3">
@@ -236,7 +240,7 @@ If no match is found, the function returns <a href="https://developer.gnome.org/
 <td class="parameter_name"><p>out_signature_index</p></td>
 <td class="parameter_description"><p> return location for the index of the signature
 signed by <em class="parameter"><code>key_id</code></em>
-, or <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a>. </p></td>
+, or <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 </tbody>
@@ -244,22 +248,22 @@ signed by <em class="parameter"><code>key_id</code></em>
 </div>
 <div class="refsect3">
 <a name="ostree-gpg-verify-result-lookup.returns"></a><h4>Returns</h4>
-<p> <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> on success, <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#FALSE:CAPS"><code class="literal">FALSE</code></a> on failure</p>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> on failure</p>
 </div>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-gpg-verify-result-get"></a><h3>ostree_gpg_verify_result_get ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="returnvalue">GVariant</span></a> *
+<pre class="programlisting"><span class="returnvalue">GVariant</span> *
 ostree_gpg_verify_result_get (<em class="parameter"><code><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a> *result</code></em>,
-                              <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="type">guint</span></a> signature_index</code></em>,
+                              <em class="parameter"><code><span class="type">guint</span> signature_index</code></em>,
                               <em class="parameter"><code><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureAttr" title="enum OstreeGpgSignatureAttr"><span class="type">OstreeGpgSignatureAttr</span></a> *attrs</code></em>,
-                              <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="type">guint</span></a> n_attrs</code></em>);</pre>
-<p>Builds a <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> tuple of requested attributes for the GPG signature at
+                              <em class="parameter"><code><span class="type">guint</span> n_attrs</code></em>);</pre>
+<p>Builds a <span class="type">GVariant</span> tuple of requested attributes for the GPG signature at
 <em class="parameter"><code>signature_index</code></em>
  in <em class="parameter"><code>result</code></em>
 .  See the <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureAttr" title="enum OstreeGpgSignatureAttr"><span class="type">OstreeGpgSignatureAttr</span></a> description
-for the <a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#GVariantType"><span class="type">GVariantType</span></a> of each available attribute.</p>
+for the <span class="type">GVariantType</span> of each available attribute.</p>
 <p>It is a programmer error to request an invalid <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureAttr" title="enum OstreeGpgSignatureAttr"><span class="type">OstreeGpgSignatureAttr</span></a> or
 an invalid <em class="parameter"><code>signature_index</code></em>
 .  Use <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-count-all" title="ostree_gpg_verify_result_count_all ()"><code class="function">ostree_gpg_verify_result_count_all()</code></a> to
@@ -300,29 +304,29 @@ array</p></td>
 </div>
 <div class="refsect3">
 <a name="ostree-gpg-verify-result-get.returns"></a><h4>Returns</h4>
-<p> a new, floating, <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> tuple</p>
+<p> a new, floating, <span class="type">GVariant</span> tuple</p>
 </div>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-gpg-verify-result-get-all"></a><h3>ostree_gpg_verify_result_get_all ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="returnvalue">GVariant</span></a> *
+<pre class="programlisting"><span class="returnvalue">GVariant</span> *
 ostree_gpg_verify_result_get_all (<em class="parameter"><code><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a> *result</code></em>,
-                                  <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="type">guint</span></a> signature_index</code></em>);</pre>
-<p>Builds a <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> tuple of all available attributes for the GPG signature
+                                  <em class="parameter"><code><span class="type">guint</span> signature_index</code></em>);</pre>
+<p>Builds a <span class="type">GVariant</span> tuple of all available attributes for the GPG signature
 at <em class="parameter"><code>signature_index</code></em>
  in <em class="parameter"><code>result</code></em>
 .</p>
-<p>The child values in the returned <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> tuple are ordered to match the
+<p>The child values in the returned <span class="type">GVariant</span> tuple are ordered to match the
 <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureAttr" title="enum OstreeGpgSignatureAttr"><span class="type">OstreeGpgSignatureAttr</span></a> enumeration, which means the enum values can be
-used as index values in functions like <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#g-variant-get-child"><code class="function">g_variant_get_child()</code></a>.  See the
-<a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureAttr" title="enum OstreeGpgSignatureAttr"><span class="type">OstreeGpgSignatureAttr</span></a> description for the <a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#GVariantType"><span class="type">GVariantType</span></a> of each
+used as index values in functions like <code class="function">g_variant_get_child()</code>.  See the
+<a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureAttr" title="enum OstreeGpgSignatureAttr"><span class="type">OstreeGpgSignatureAttr</span></a> description for the <span class="type">GVariantType</span> of each
 available attribute.</p>
 <div class="note"><p>
     The <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureAttr" title="enum OstreeGpgSignatureAttr"><span class="type">OstreeGpgSignatureAttr</span></a> enumeration may be extended in the future
-    with new attributes, which would affect the <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> tuple returned by
+    with new attributes, which would affect the <span class="type">GVariant</span> tuple returned by
     this function.  While the position and type of current child values in
-    the <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> tuple will not change, to avoid backward-compatibility
+    the <span class="type">GVariant</span> tuple will not change, to avoid backward-compatibility
     issues <span class="emphasis"><em>please do not depend on the tuple's overall size or
     type signature</em></span>.
   </p></div>
@@ -355,7 +359,7 @@ available attribute.</p>
 </div>
 <div class="refsect3">
 <a name="ostree-gpg-verify-result-get-all.returns"></a><h4>Returns</h4>
-<p> a new, floating, <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> tuple</p>
+<p> a new, floating, <span class="type">GVariant</span> tuple</p>
 </div>
 </div>
 <hr>
@@ -363,9 +367,9 @@ available attribute.</p>
 <a name="ostree-gpg-verify-result-describe"></a><h3>ostree_gpg_verify_result_describe ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_gpg_verify_result_describe (<em class="parameter"><code><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a> *result</code></em>,
-                                   <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#guint"><span class="type">guint</span></a> signature_index</code></em>,
-                                   <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Strings.html#GString"><span class="type">GString</span></a> *output_buffer</code></em>,
-                                   <em class="parameter"><code>const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *line_prefix</code></em>,
+                                   <em class="parameter"><code><span class="type">guint</span> signature_index</code></em>,
+                                   <em class="parameter"><code><span class="type">GString</span> *output_buffer</code></em>,
+                                   <em class="parameter"><code>const <span class="type">gchar</span> *line_prefix</code></em>,
                                    <em class="parameter"><code><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureFormatFlags" title="enum OstreeGpgSignatureFormatFlags"><span class="type">OstreeGpgSignatureFormatFlags</span></a> flags</code></em>);</pre>
 <p>Appends a brief, human-readable description of the GPG signature at
 <em class="parameter"><code>signature_index</code></em>
@@ -404,7 +408,7 @@ format.  Currently must be 0.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>output_buffer</p></td>
-<td class="parameter_description"><p>a <a href="https://developer.gnome.org/glib/unstable/glib-Strings.html#GString"><span class="type">GString</span></a> to hold the description</p></td>
+<td class="parameter_description"><p>a <span class="type">GString</span> to hold the description</p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 <tr>
@@ -426,11 +430,11 @@ format.  Currently must be 0.</p>
 <a name="ostree-gpg-verify-result-describe-variant"></a><h3>ostree_gpg_verify_result_describe_variant ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_gpg_verify_result_describe_variant
-                               (<em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> *variant</code></em>,
-                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Strings.html#GString"><span class="type">GString</span></a> *output_buffer</code></em>,
-                                <em class="parameter"><code>const <a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gchar"><span class="type">gchar</span></a> *line_prefix</code></em>,
+                               (<em class="parameter"><code><span class="type">GVariant</span> *variant</code></em>,
+                                <em class="parameter"><code><span class="type">GString</span> *output_buffer</code></em>,
+                                <em class="parameter"><code>const <span class="type">gchar</span> *line_prefix</code></em>,
                                 <em class="parameter"><code><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureFormatFlags" title="enum OstreeGpgSignatureFormatFlags"><span class="type">OstreeGpgSignatureFormatFlags</span></a> flags</code></em>);</pre>
-<p>Similar to <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-describe" title="ostree_gpg_verify_result_describe ()"><code class="function">ostree_gpg_verify_result_describe()</code></a> but takes a <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> of
+<p>Similar to <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-describe" title="ostree_gpg_verify_result_describe ()"><code class="function">ostree_gpg_verify_result_describe()</code></a> but takes a <span class="type">GVariant</span> of
 all attributes for a GPG signature instead of an <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a>
 and signature index.</p>
 <p>The <em class="parameter"><code>variant</code></em>
@@ -447,12 +451,12 @@ and signature index.</p>
 <tbody>
 <tr>
 <td class="parameter_name"><p>variant</p></td>
-<td class="parameter_description"><p>a <a href="https://developer.gnome.org/glib/unstable/glib-GVariant.html#GVariant"><span class="type">GVariant</span></a> from <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-get-all" title="ostree_gpg_verify_result_get_all ()"><code class="function">ostree_gpg_verify_result_get_all()</code></a></p></td>
+<td class="parameter_description"><p>a <span class="type">GVariant</span> from <a class="link" href="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-get-all" title="ostree_gpg_verify_result_get_all ()"><code class="function">ostree_gpg_verify_result_get_all()</code></a></p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 <tr>
 <td class="parameter_name"><p>output_buffer</p></td>
-<td class="parameter_description"><p>a <a href="https://developer.gnome.org/glib/unstable/glib-Strings.html#GString"><span class="type">GString</span></a> to hold the description</p></td>
+<td class="parameter_description"><p>a <span class="type">GString</span> to hold the description</p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 <tr>
@@ -472,14 +476,14 @@ and signature index.</p>
 <hr>
 <div class="refsect2">
 <a name="ostree-gpg-verify-result-require-valid-signature"></a><h3>ostree_gpg_verify_result_require_valid_signature ()</h3>
-<pre class="programlisting"><a href="https://developer.gnome.org/glib/unstable/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_gpg_verify_result_require_valid_signature
                                (<em class="parameter"><code><a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a> *result</code></em>,
-                                <em class="parameter"><code><a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Checks if the result contains at least one signature from the
 trusted keyring.  You can call this function immediately after
-<a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-verify-summary" title="ostree_repo_verify_summary ()"><code class="function">ostree_repo_verify_summary()</code></a> or <a class="link" href="ostree-Content-addressed-object-store.html#ostree-repo-verify-commit-ext" title="ostree_repo_verify_commit_ext ()"><code class="function">ostree_repo_verify_commit_ext()</code></a> -
-it will handle the <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> <em class="parameter"><code>result</code></em>
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-verify-summary" title="ostree_repo_verify_summary ()"><code class="function">ostree_repo_verify_summary()</code></a> or <a class="link" href="ostree-OstreeRepo.html#ostree-repo-verify-commit-ext" title="ostree_repo_verify_commit_ext ()"><code class="function">ostree_repo_verify_commit_ext()</code></a> -
+it will handle the <code class="literal">NULL</code> <em class="parameter"><code>result</code></em>
  and filled <em class="parameter"><code>error</code></em>
  too.</p>
 <div class="refsect3">
@@ -498,7 +502,7 @@ it will handle the <a href="https://developer.gnome.org/glib/unstable/glib-Stand
 </tr>
 <tr>
 <td class="parameter_name"><p>error</p></td>
-<td class="parameter_description"><p>A <a href="https://developer.gnome.org/glib/unstable/glib-Error-Reporting.html#GError"><span class="type">GError</span></a></p></td>
+<td class="parameter_description"><p>A <span class="type">GError</span></p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 </tbody>
@@ -506,14 +510,54 @@ it will handle the <a href="https://developer.gnome.org/glib/unstable/glib-Stand
 </div>
 <div class="refsect3">
 <a name="ostree-gpg-verify-result-require-valid-signature.returns"></a><h4>Returns</h4>
-<p> <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> if <em class="parameter"><code>result</code></em>
-was not <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#NULL:CAPS"><code class="literal">NULL</code></a> and had at least one
-signature from trusted keyring, otherwise <a href="https://developer.gnome.org/glib/unstable/glib-Standard-Macros.html#FALSE:CAPS"><code class="literal">FALSE</code></a></p>
+<p> <code class="literal">TRUE</code> if <em class="parameter"><code>result</code></em>
+was not <code class="literal">NULL</code> and had at least one
+signature from trusted keyring, otherwise <code class="literal">FALSE</code></p>
 </div>
 </div>
 </div>
 <div class="refsect1">
 <a name="ostree-GPG-signature-verification-results.other_details"></a><h2>Types and Values</h2>
+<div class="refsect2">
+<a name="OstreeGpgError"></a><h3>enum OstreeGpgError</h3>
+<p>Errors returned by signature creation and verification operations in OSTree.
+These may be returned by any API which creates or verifies signatures.</p>
+<div class="refsect3">
+<a name="OstreeGpgError.members"></a><h4>Members</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="300px" class="enum_members_name">
+<col class="enum_members_description">
+<col width="200px" class="enum_members_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-GPG-ERROR-NO-SIGNATURE:CAPS"></a>OSTREE_GPG_ERROR_NO_SIGNATURE</p></td>
+<td class="enum_member_description">
+<p>A signature was expected, but not found.</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-GPG-ERROR-INVALID-SIGNATURE:CAPS"></a>OSTREE_GPG_ERROR_INVALID_SIGNATURE</p></td>
+<td class="enum_member_description">
+<p>A signature was malformed.</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-GPG-ERROR-MISSING-KEY:CAPS"></a>OSTREE_GPG_ERROR_MISSING_KEY</p></td>
+<td class="enum_member_description">
+<p>A signature was found, but was created with a key not in the configured keyrings.</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2017.10</p>
+</div>
+<hr>
 <div class="refsect2">
 <a name="OstreeGpgVerifyResult"></a><h3>OstreeGpgVerifyResult</h3>
 <pre class="programlisting">typedef struct OstreeGpgVerifyResult OstreeGpgVerifyResult;
@@ -524,7 +568,7 @@ signature from trusted keyring, otherwise <a href="https://developer.gnome.org/g
 <div class="refsect2">
 <a name="OstreeGpgSignatureAttr"></a><h3>enum OstreeGpgSignatureAttr</h3>
 <p>Signature attributes available from an <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a>.
-The attribute's <a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#GVariantType"><span class="type">GVariantType</span></a> is shown in brackets.</p>
+The attribute's <span class="type">GVariantType</span> is shown in brackets.</p>
 <div class="refsect3">
 <a name="OstreeGpgSignatureAttr.members"></a><h4>Members</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -537,56 +581,56 @@ The attribute's <a href="https://developer.gnome.org/glib/unstable/glib-GVariant
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-VALID:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_VALID</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-BOOLEAN:CAPS"><span class="type">G_VARIANT_TYPE_BOOLEAN</span></a>] Is the signature valid?</p>
+<p>  [<span class="type">G_VARIANT_TYPE_BOOLEAN</span>] Is the signature valid?</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-SIG-EXPIRED:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_SIG_EXPIRED</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-BOOLEAN:CAPS"><span class="type">G_VARIANT_TYPE_BOOLEAN</span></a>] Has the signature expired?</p>
+<p>  [<span class="type">G_VARIANT_TYPE_BOOLEAN</span>] Has the signature expired?</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-KEY-EXPIRED:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_KEY_EXPIRED</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-BOOLEAN:CAPS"><span class="type">G_VARIANT_TYPE_BOOLEAN</span></a>] Has the signing key expired?</p>
+<p>  [<span class="type">G_VARIANT_TYPE_BOOLEAN</span>] Has the signing key expired?</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-KEY-REVOKED:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_KEY_REVOKED</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-BOOLEAN:CAPS"><span class="type">G_VARIANT_TYPE_BOOLEAN</span></a>] Has the signing key been revoked?</p>
+<p>  [<span class="type">G_VARIANT_TYPE_BOOLEAN</span>] Has the signing key been revoked?</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-KEY-MISSING:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_KEY_MISSING</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-BOOLEAN:CAPS"><span class="type">G_VARIANT_TYPE_BOOLEAN</span></a>] Is the signing key missing?</p>
+<p>  [<span class="type">G_VARIANT_TYPE_BOOLEAN</span>] Is the signing key missing?</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-FINGERPRINT:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-STRING:CAPS"><span class="type">G_VARIANT_TYPE_STRING</span></a>] Fingerprint of the signing key</p>
+<p>  [<span class="type">G_VARIANT_TYPE_STRING</span>] Fingerprint of the signing key</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-TIMESTAMP:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_TIMESTAMP</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-INT64:CAPS"><span class="type">G_VARIANT_TYPE_INT64</span></a>] Signature creation Unix timestamp</p>
+<p>  [<span class="type">G_VARIANT_TYPE_INT64</span>] Signature creation Unix timestamp</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-EXP-TIMESTAMP:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_EXP_TIMESTAMP</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-INT64:CAPS"><span class="type">G_VARIANT_TYPE_INT64</span></a>] Signature expiration Unix timestamp (0 if no
+<p>  [<span class="type">G_VARIANT_TYPE_INT64</span>] Signature expiration Unix timestamp (0 if no
   expiration)</p>
 </td>
 <td class="enum_member_annotations"> </td>
@@ -594,7 +638,7 @@ The attribute's <a href="https://developer.gnome.org/glib/unstable/glib-GVariant
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-PUBKEY-ALGO-NAME:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_PUBKEY_ALGO_NAME</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-STRING:CAPS"><span class="type">G_VARIANT_TYPE_STRING</span></a>] Name of the public key algorithm used to create
+<p>  [<span class="type">G_VARIANT_TYPE_STRING</span>] Name of the public key algorithm used to create
   the signature</p>
 </td>
 <td class="enum_member_annotations"> </td>
@@ -602,7 +646,7 @@ The attribute's <a href="https://developer.gnome.org/glib/unstable/glib-GVariant
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-HASH-ALGO-NAME:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_HASH_ALGO_NAME</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-STRING:CAPS"><span class="type">G_VARIANT_TYPE_STRING</span></a>] Name of the hash algorithm used to create the
+<p>  [<span class="type">G_VARIANT_TYPE_STRING</span>] Name of the hash algorithm used to create the
   signature</p>
 </td>
 <td class="enum_member_annotations"> </td>
@@ -610,15 +654,25 @@ The attribute's <a href="https://developer.gnome.org/glib/unstable/glib-GVariant
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-USER-NAME:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_USER_NAME</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-STRING:CAPS"><span class="type">G_VARIANT_TYPE_STRING</span></a>] The name of the signing key's primary user</p>
+<p>  [<span class="type">G_VARIANT_TYPE_STRING</span>] The name of the signing key's primary user</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-USER-EMAIL:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_USER_EMAIL</p></td>
 <td class="enum_member_description">
-<p>  [<a href="https://developer.gnome.org/glib/unstable/glib-GVariantType.html#G-VARIANT-TYPE-STRING:CAPS"><span class="type">G_VARIANT_TYPE_STRING</span></a>] The email address of the signing key's primary
+<p>  [<span class="type">G_VARIANT_TYPE_STRING</span>] The email address of the signing key's primary
   user</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-FINGERPRINT-PRIMARY:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT_PRIMARY</p></td>
+<td class="enum_member_description">
+<p>  [<span class="type">G_VARIANT_TYPE_STRING</span>] Fingerprint of the signing key's primary key
+  (will be the same as OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT if the
+  the signature is already from the primary key rather than a subkey,
+  and will be the empty string if the key is missing.)</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>

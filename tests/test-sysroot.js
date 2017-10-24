@@ -33,12 +33,16 @@ function assertNotEquals(a, b) {
 
 function libtestExec(shellCode) {
     let testdatadir = GLib.getenv("G_TEST_SRCDIR");
-    let libtestPath = GLib.build_filenamev([testdatadir, 'libtest.sh'])
+    let libtestPath = GLib.build_filenamev([testdatadir, 'tests/libtest.sh'])
     let proc = Gio.Subprocess.new(['bash', '-c', 'set -xeuo pipefail; . ' + GLib.shell_quote(libtestPath) + '; ' + shellCode], 0);
     proc.wait_check(null);
 }
 
-libtestExec('setup_os_repository archive-z2 syslinux');
+print('1..1')
+
+libtestExec('setup_os_repository archive syslinux');
+
+GLib.setenv("OSTREE_SYSROOT_DEBUG", "mutable-deployments", true);
 
 let upstreamRepo = OSTree.Repo.new(Gio.File.new_for_path('testos-repo'));
 upstreamRepo.open(null);
@@ -93,9 +97,9 @@ assertEquals(deploymentPath.query_exists(null), false);
 
 //// Ok, redeploy, then add a new revision upstream and pull it
 
-let [,deployment] = sysroot.deploy_tree('testos', rev, origin,
-					mergeDeployment, null,
-					null);
+[,deployment] = sysroot.deploy_tree('testos', rev, origin,
+				 mergeDeployment, null,
+				 null);
 newDeployments = deployments;
 deployments = null;
 newDeployments.unshift(deployment);
@@ -145,3 +149,5 @@ newDeployments = [deployment, newDeployment, thirdDeployment];
 sysroot.write_deployments(newDeployments, null);
 deployments = sysroot.get_deployments();
 assertEquals(deployments.length, 3);
+
+print("ok test-sysroot")

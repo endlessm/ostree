@@ -4,9 +4,13 @@ OstreeAsyncProgress
 ostree_async_progress_new
 ostree_async_progress_new_and_connect
 ostree_async_progress_get_status
+ostree_async_progress_get
+ostree_async_progress_get_variant
 ostree_async_progress_get_uint
 ostree_async_progress_get_uint64
 ostree_async_progress_set_status
+ostree_async_progress_set
+ostree_async_progress_set_variant
 ostree_async_progress_set_uint
 ostree_async_progress_set_uint64
 ostree_async_progress_finish
@@ -72,10 +76,19 @@ ostree_checksum_input_stream_get_type
 </SECTION>
 
 <SECTION>
+<FILE>ostree-version</FILE>
+OSTREE_CHECK_VERSION
+OSTREE_YEAR_VERSION
+OSTREE_RELEASE_VERSION
+OSTREE_VERSION
+OSTREE_VERSION_S
+OSTREE_VERSION_HEX
+</SECTION>
+
+<SECTION>
 <FILE>ostree-core</FILE>
 OSTREE_MAX_METADATA_SIZE
 OSTREE_MAX_METADATA_WARN_SIZE
-OSTREE_MAX_RECURSION
 OstreeObjectType
 OSTREE_OBJECT_TYPE_IS_META
 OSTREE_OBJECT_TYPE_LAST
@@ -105,6 +118,7 @@ ostree_checksum_b64_inplace_from_bytes
 ostree_checksum_b64_inplace_to_bytes
 ostree_cmp_checksum_bytes
 ostree_validate_rev
+ostree_validate_remote_name
 ostree_parse_refspec
 ostree_object_type_to_string
 ostree_object_type_from_string
@@ -117,6 +131,7 @@ ostree_content_stream_parse
 ostree_content_file_parse
 ostree_content_file_parse_at
 ostree_raw_file_to_archive_z2_stream
+ostree_raw_file_to_archive_z2_stream_with_options
 ostree_raw_file_to_content_stream
 ostree_checksum_file_from_input
 ostree_checksum_file
@@ -132,6 +147,7 @@ ostree_validate_structureof_dirtree
 ostree_validate_structureof_dirmeta
 ostree_commit_get_parent
 ostree_commit_get_timestamp
+ostree_check_version
 </SECTION>
 
 <SECTION>
@@ -170,6 +186,7 @@ OstreeDiffItem
 ostree_diff_item_ref
 ostree_diff_item_unref
 ostree_diff_dirs
+ostree_diff_dirs_with_options
 ostree_diff_print
 <SUBSECTION Standard>
 ostree_diff_item_get_type
@@ -177,6 +194,7 @@ ostree_diff_item_get_type
 
 <SECTION>
 <FILE>ostree-gpg-verify-result</FILE>
+OstreeGpgError
 OstreeGpgVerifyResult
 OstreeGpgSignatureAttr
 ostree_gpg_verify_result_count_all
@@ -193,6 +211,8 @@ OSTREE_GPG_VERIFY_RESULT
 OSTREE_IS_GPG_VERIFY_RESULT
 OSTREE_TYPE_GPG_VERIFY_RESULT
 ostree_gpg_verify_result_get_type
+OSTREE_GPG_ERROR
+ostree_gpg_error_quark
 </SECTION>
 
 <FILE>ostree-lzma-compressor</FILE>
@@ -248,9 +268,11 @@ ostree_mutable_tree_get_type
 
 <SECTION>
 <FILE>ostree-repo</FILE>
+<TITLE>OstreeRepo</TITLE>
 OstreeRepo
 OstreeRepoMode
 ostree_repo_mode_from_string
+ostree_repo_open_at
 ostree_repo_new
 ostree_repo_new_for_sysroot_path
 ostree_repo_new_default
@@ -259,11 +281,14 @@ ostree_repo_set_disable_fsync
 ostree_repo_get_disable_fsync
 ostree_repo_is_system
 ostree_repo_is_writable
+ostree_repo_create_at
 ostree_repo_create
 ostree_repo_get_path
 ostree_repo_get_mode
 ostree_repo_get_config
 ostree_repo_get_dfd
+ostree_repo_hash
+ostree_repo_equal
 ostree_repo_copy_config
 ostree_repo_remote_add
 ostree_repo_remote_delete
@@ -276,6 +301,7 @@ ostree_repo_remote_get_gpg_verify_summary
 ostree_repo_remote_gpg_import
 ostree_repo_remote_fetch_summary
 ostree_repo_remote_fetch_summary_with_options
+ostree_repo_reload_config
 ostree_repo_get_remote_boolean_option
 ostree_repo_get_remote_list_option
 ostree_repo_get_remote_option
@@ -289,6 +315,7 @@ ostree_repo_abort_transaction
 ostree_repo_transaction_set_refspec
 ostree_repo_transaction_set_ref
 ostree_repo_set_ref_immediate
+ostree_repo_set_alias_ref_immediate
 ostree_repo_set_cache_dir
 ostree_repo_sign_delta
 ostree_repo_has_object
@@ -302,11 +329,14 @@ ostree_repo_write_content_trusted
 ostree_repo_write_content_async
 ostree_repo_write_content_finish
 ostree_repo_resolve_rev
+OstreeRepoResolveRevExtFlags
 ostree_repo_resolve_rev_ext
 ostree_repo_list_refs
+OstreeRepoListRefsExtFlags
 ostree_repo_list_refs_ext
 ostree_repo_remote_list_refs
 ostree_repo_load_variant
+OstreeRepoCommitState
 ostree_repo_load_commit
 ostree_repo_load_variant_if_exists
 ostree_repo_load_file
@@ -362,12 +392,15 @@ ostree_repo_commit_traverse_iter_cleanup
 ostree_repo_commit_traverse_iter_clear
 ostree_repo_commit_traverse_iter_get_dir
 ostree_repo_commit_traverse_iter_get_file
+OstreeRepoCommitTraverseFlags
 ostree_repo_commit_traverse_iter_init_commit
 ostree_repo_commit_traverse_iter_init_dirtree
+OstreeRepoCommitIterResult
 ostree_repo_commit_traverse_iter_next
 OstreeRepoPruneFlags
 ostree_repo_prune
 ostree_repo_prune_static_deltas
+ostree_repo_prune_from_reachable
 OstreeRepoPullFlags
 ostree_repo_pull
 ostree_repo_pull_one_dir
@@ -421,6 +454,7 @@ ostree_repo_file_get_type
 <FILE>ostree-sepolicy</FILE>
 OstreeSePolicy
 ostree_sepolicy_new
+ostree_sepolicy_new_at
 ostree_sepolicy_get_path
 ostree_sepolicy_get_name
 ostree_sepolicy_get_label
@@ -461,15 +495,18 @@ ostree_sysroot_get_deployment_dirpath
 ostree_sysroot_get_deployment_origin_path
 ostree_sysroot_cleanup
 ostree_sysroot_prepare_cleanup
+ostree_sysroot_repo
 ostree_sysroot_get_repo
 ostree_sysroot_init_osname
 ostree_sysroot_deployment_set_kargs
 ostree_sysroot_deployment_set_mutable
 ostree_sysroot_deployment_unlock
 ostree_sysroot_write_deployments
+ostree_sysroot_write_deployments_with_options
 ostree_sysroot_write_origin_file
 ostree_sysroot_deploy_tree
 ostree_sysroot_get_merge_deployment
+ostree_sysroot_query_deployments_for
 ostree_sysroot_origin_new_from_refspec
 OstreeSysrootSimpleWriteDeploymentFlags
 ostree_sysroot_simple_write_deployment

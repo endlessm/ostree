@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -41,21 +40,15 @@ ot_util_filename_validate (const char *name,
 {
   if (strcmp (name, ".") == 0)
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Invalid self-referential filename '.'");
-      return FALSE;
+      return glnx_throw (error, "Invalid self-referential filename '.'");
     }
   if (strcmp (name, "..") == 0)
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Invalid path uplink filename '..'");
-      return FALSE;
+      return glnx_throw (error, "Invalid path uplink filename '..'");
     }
   if (strchr (name, '/') != NULL)
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Invalid / in filename %s", name);
-      return FALSE;
+      return glnx_throw (error, "Invalid / in filename %s", name);
     }
   return TRUE;
 }
@@ -120,18 +113,4 @@ ot_util_path_split_validate (const char *path,
   ot_transfer_out_value(out_components, &ret_components);
  out:
   return ret;
-}
-
-void
-ot_util_fatal_literal (const char *msg)
-{
-  g_printerr ("%s\n", msg);
-  exit (EXIT_FAILURE);
-}
-
-void
-ot_util_fatal_gerror (GError *error)
-{
-  g_assert (error != NULL);
-  ot_util_fatal_literal (error->message);
 }

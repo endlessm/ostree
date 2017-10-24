@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -29,11 +28,5 @@ _ostree_linuxfs_fd_alter_immutable_flag (int            fd,
                                          gboolean       new_immutable_state,
                                          GCancellable  *cancellable,
                                          GError       **error);
-
-gboolean
-_ostree_linuxfs_alter_immutable_flag (GFile         *path,
-                                      gboolean       new_immutable_state,
-                                      GCancellable  *cancellable,
-                                      GError       **error);
 
 G_END_DECLS

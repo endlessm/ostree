@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -33,6 +32,11 @@
 
 static gboolean opt_stdin;
 static char **opt_keyrings;
+
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-remote.xml) when changing the option list.
+ */
 
 static GOptionEntry option_entries[] = {
   { "keyring", 'k', 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_keyrings, "Import keys from a keyring file (repeatable)", "FILE" },
@@ -94,7 +98,7 @@ gboolean
 ot_remote_builtin_gpg_import (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   g_autoptr(GInputStream) source_stream = NULL;
   const char *remote_name;
   const char * const *key_ids;

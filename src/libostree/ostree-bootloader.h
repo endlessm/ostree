@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,6 +20,7 @@
 #pragma once
 
 #include <gio/gio.h>
+#include "otutil.h"
 
 G_BEGIN_DECLS
 
@@ -48,6 +48,7 @@ struct _OstreeBootloaderInterface
                                                    GError       **error);
   gboolean             (* is_atomic)              (OstreeBootloader  *self);
 };
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeBootloader, g_object_unref)
 
 GType _ostree_bootloader_get_type (void) G_GNUC_CONST;
 

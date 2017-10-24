@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -27,6 +26,11 @@
 #include "ostree.h"
 #include "otutil.h"
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-config.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { NULL }
 };
@@ -41,9 +45,8 @@ split_key_string (const char   *k,
   
   if (!dot)
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Key must be of the form \"sectionname.keyname\"");
-      return FALSE;
+      return glnx_throw (error,
+                        "Key must be of the form \"sectionname.keyname\"");
     }
 
   *out_section = g_strndup (k, dot - k);
@@ -56,7 +59,7 @@ gboolean
 ostree_builtin_config (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   gboolean ret = FALSE;
   const char *op;
   const char *section_key;
@@ -65,7 +68,7 @@ ostree_builtin_config (int argc, char **argv, GCancellable *cancellable, GError 
   g_autofree char *key = NULL;
   GKeyFile *config = NULL;
 
-  context = g_option_context_new ("- Change configuration settings");
+  context = g_option_context_new ("(get KEY|set KEY VALUE) - Change repo configuration settings");
 
   if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
     goto out;

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
@@ -72,8 +71,10 @@ test_mutable_tree_walk (void)
     glnx_unref_object OstreeMutableTree *subdir = NULL;
     glnx_unref_object OstreeMutableTree *a = NULL;
     g_autofree char *source_checksum = NULL;
-    ostree_mutable_tree_lookup (tree, "a", &source_checksum, &a, &error);
+    g_assert (ostree_mutable_tree_lookup (tree, "a", &source_checksum, &a, &error));
+    g_assert_no_error (error);
     g_assert (ostree_mutable_tree_walk (a, split_path, 1, &subdir, &error));
+    g_assert_no_error (error);
     g_assert (subdir);
   }
 }

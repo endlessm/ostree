@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -127,6 +126,9 @@ gboolean ostree_sysroot_write_origin_file (OstreeSysroot         *sysroot,
                                            GError               **error);
 
 _OSTREE_PUBLIC
+OstreeRepo * ostree_sysroot_repo (OstreeSysroot *self);
+
+_OSTREE_PUBLIC
 gboolean ostree_sysroot_get_repo (OstreeSysroot         *self,
                                   OstreeRepo           **out_repo,
                                   GCancellable          *cancellable,
@@ -144,6 +146,20 @@ gboolean ostree_sysroot_write_deployments (OstreeSysroot     *self,
                                            GPtrArray         *new_deployments,
                                            GCancellable      *cancellable,
                                            GError           **error);
+
+typedef struct {
+  gboolean do_postclean;
+  gboolean unused_bools[7];
+  int unused_ints[7];
+  gpointer unused_ptrs[7];
+} OstreeSysrootWriteDeploymentsOpts;
+
+_OSTREE_PUBLIC
+gboolean ostree_sysroot_write_deployments_with_options (OstreeSysroot     *self,
+                                                        GPtrArray         *new_deployments,
+                                                        OstreeSysrootWriteDeploymentsOpts *opts,
+                                                        GCancellable      *cancellable,
+                                                        GError           **error);
 
 _OSTREE_PUBLIC
 gboolean ostree_sysroot_deploy_tree (OstreeSysroot     *self,
@@ -171,6 +187,12 @@ gboolean ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
                                            GError           **error);
 
 _OSTREE_PUBLIC
+void ostree_sysroot_query_deployments_for (OstreeSysroot     *self,
+                                           const char        *osname,
+                                           OstreeDeployment  **out_pending,
+                                           OstreeDeployment  **out_rollback);
+
+_OSTREE_PUBLIC
 OstreeDeployment *ostree_sysroot_get_merge_deployment (OstreeSysroot     *self,
                                                        const char        *osname);
 
@@ -184,6 +206,8 @@ typedef enum {
   OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN = (1 << 0),
   OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NOT_DEFAULT = (1 << 1),
   OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_NO_CLEAN = (1 << 2),
+  OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN_PENDING = (1 << 3),
+  OSTREE_SYSROOT_SIMPLE_WRITE_DEPLOYMENT_FLAGS_RETAIN_ROLLBACK = (1 << 4),
 } OstreeSysrootSimpleWriteDeploymentFlags;
 
 _OSTREE_PUBLIC

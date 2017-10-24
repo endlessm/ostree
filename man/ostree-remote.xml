@@ -97,6 +97,13 @@ Boston, MA 02111-1307, USA.
             Changes remote repository configurations.  The NAME refers to the name of the remote.
         </para>
         <para>
+            The <literal>BRANCH</literal> arguments to the
+            <command>add</command> subcommand specifies the configured branches
+            for the remote. See the <literal>branches</literal> section in
+            <citerefentry><refentrytitle>ostree.repo-config</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+            for more information.
+        </para>
+        <para>
             The <command>gpg-import</command> subcommand can associate GPG keys to a specific remote repository for use when pulling signed commits from that repository (if GPG verification is enabled).
         </para>
         <para>
@@ -135,6 +142,16 @@ Boston, MA 02111-1307, USA.
                 </para><para>
                   Equivalent to
                   <command>ostree remote gpg-import --keyring=FILE</command>.
+                </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term><option>--collection-id</option>=COLLECTION-ID</term>
+
+                <listitem><para>
+                  Set the collection ID for the remote to a value provided by
+                  the repository owner, which allows refs from this remote to be
+                  shared peer to peer.
                 </para></listitem>
             </varlistentry>
         </variablelist>

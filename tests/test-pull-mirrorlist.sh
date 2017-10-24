@@ -23,7 +23,7 @@ set -euo pipefail
 
 echo "1..3"
 
-setup_fake_remote_repo1 "archive-z2"
+setup_fake_remote_repo1 "archive"
 
 setup_mirror () {
   name=$1; shift
@@ -33,7 +33,7 @@ setup_mirror () {
   cd $name
   cp -a ${test_tmpdir}/ostree-srv ostree
 
-  ${CMD_PREFIX} ostree trivial-httpd --autoexit --daemonize \
+  ${OSTREE_HTTPD} --autoexit --daemonize \
     -p ${test_tmpdir}/${name}-port
   port=$(cat ${test_tmpdir}/${name}-port)
   echo "http://127.0.0.1:${port}" > ${test_tmpdir}/${name}-address
@@ -72,7 +72,7 @@ EOF
 
 cd ${test_tmpdir}
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add origin --no-gpg-verify \
   mirrorlist=$(cat httpd-address)/ostree/mirrorlist
 ${CMD_PREFIX} ostree --repo=repo pull origin:main
@@ -84,7 +84,7 @@ echo "ok pull objects from mirrorlist"
 cd ${test_tmpdir}
 rm -rf repo
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add origin --no-gpg-verify \
   --contenturl=mirrorlist=$(cat httpd-address)/ostree/mirrorlist \
   $(cat httpd-address)/ostree/gnomerepo
@@ -97,7 +97,7 @@ echo "ok pull objects from contenturl mirrorlist"
 cd ${test_tmpdir}
 rm -rf repo
 mkdir repo
-${CMD_PREFIX} ostree --repo=repo init
+ostree_repo_init repo
 ${CMD_PREFIX} ostree --repo=repo remote add origin --no-gpg-verify \
   --contenturl=mirrorlist=$(cat httpd-address)/ostree/mirrorlist \
   mirrorlist=$(cat httpd-address)/ostree/mirrorlist

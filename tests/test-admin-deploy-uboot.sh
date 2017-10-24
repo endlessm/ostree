@@ -20,18 +20,18 @@
 
 set -euo pipefail
 
-echo "1..17"
-
 . $(dirname $0)/libtest.sh
 
 # Exports OSTREE_SYSROOT so --sysroot not needed.
-setup_os_repository "archive-z2" "uboot"
+setup_os_repository "archive" "uboot"
+
+extra_admin_tests=1
 
 . $(dirname $0)/admin-test.sh
 
 cd ${test_tmpdir}
-ln -s ../../boot/ osdata/usr/lib/ostree-boot
-cat << 'EOF' > osdata/boot/uEnv.txt
+mkdir -p osdata/usr/lib/ostree-boot
+cat << 'EOF' > osdata/usr/lib/ostree-boot/uEnv.txt
 loaduimage=load mmc ${bootpart} ${loadaddr} ${kernel_image}
 loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}${fdtfile}
 loadramdisk=load mmc ${bootpart} ${rdaddr} ${ramdisk_image}
@@ -42,5 +42,7 @@ ${CMD_PREFIX} ostree --repo=testos-repo commit --tree=dir=osdata/ -b testos/buil
 ${CMD_PREFIX} ostree admin upgrade --os=testos
 assert_file_has_content sysroot/boot/uEnv.txt "loadfdt="
 assert_file_has_content sysroot/boot/uEnv.txt "kernel_image="
+assert_file_has_content sysroot/boot/uEnv.txt "kernel_image2="
+assert_file_has_content sysroot/boot/uEnv.txt "kernel_image3="
 
 echo "ok merging uEnv.txt files"

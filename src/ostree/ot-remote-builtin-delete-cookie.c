@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2015 Red Hat, Inc.
  * Copyright (C) 2016 Sjoerd Simons <sjoerd@luon.net>
  *
@@ -21,14 +20,18 @@
 
 #include "config.h"
 
-#include <libsoup/soup.h>
-
 #include "otutil.h"
+#include <sys/stat.h>
 
 #include "ot-main.h"
 #include "ot-remote-builtins.h"
 #include "ostree-repo-private.h"
+#include "ot-remote-cookie-util.h"
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-remote.xml) when changing the option list.
+ */
 
 static GOptionEntry option_entries[] = {
   { NULL }
@@ -37,19 +40,8 @@ static GOptionEntry option_entries[] = {
 gboolean
 ot_remote_builtin_delete_cookie (int argc, char **argv, GCancellable *cancellable, GError **error)
 {
-  g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
-  const char *remote_name;
-  const char *domain;
-  const char *path;
-  const char *cookie_name;
-  g_autofree char *jar_path = NULL;
-  g_autofree char *cookie_file = NULL;
-  glnx_unref_object SoupCookieJar *jar = NULL;
-  GSList *cookies;
-  gboolean found = FALSE;
-
-  context = g_option_context_new ("NAME DOMAIN PATH COOKIE_NAME- Remote one cookie from remote");
+  g_autoptr(OstreeRepo) repo = NULL;
+  g_autoptr(GOptionContext) context = g_option_context_new ("NAME DOMAIN PATH COOKIE_NAME- Remote one cookie from remote");
 
   if (!ostree_option_context_parse (context, option_entries, &argc, &argv,
                                     OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
@@ -61,36 +53,13 @@ ot_remote_builtin_delete_cookie (int argc, char **argv, GCancellable *cancellabl
       return FALSE;
     }
 
-  remote_name = argv[1];
-  domain = argv[2];
-  path = argv[3];
-  cookie_name = argv[4];
+  const char *remote_name = argv[1];
+  const char *domain = argv[2];
+  const char *path = argv[3];
+  const char *cookie_name = argv[4];
+  g_autofree char *cookie_file = g_strdup_printf ("%s.cookies.txt", remote_name);
+  if (!ot_delete_cookie_at (ostree_repo_get_dfd (repo), cookie_file, domain, path, cookie_name, error))
+    return FALSE;
 
-  cookie_file = g_strdup_printf ("%s.cookies.txt", remote_name);
-  jar_path = g_build_filename (gs_file_get_path_cached (repo->repodir), cookie_file, NULL);
-
-  jar = soup_cookie_jar_text_new (jar_path, FALSE);
-  cookies = soup_cookie_jar_all_cookies (jar);
-
-  while (cookies != NULL)
-    {
-      SoupCookie *cookie = cookies->data;
-
-      if (!strcmp (domain, soup_cookie_get_domain (cookie)) &&
-          !strcmp (path, soup_cookie_get_path (cookie)) &&
-          !strcmp (cookie_name, soup_cookie_get_name (cookie)))
-        {
-          soup_cookie_jar_delete_cookie (jar, cookie);
-
-          found = TRUE;
-        }
-
-      soup_cookie_free (cookie);
-      cookies = g_slist_delete_link (cookies, cookies);
-    }
-
-  if (!found)
-    g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED, "Cookie not found in jar");
-
-  return found;
+  return TRUE;
 }

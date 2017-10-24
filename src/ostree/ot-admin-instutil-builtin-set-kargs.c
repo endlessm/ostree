@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -35,6 +34,11 @@ static gboolean opt_merge;
 static char **opt_replace;
 static char **opt_append;
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-admin-instutil.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { "import-proc-cmdline", 0, 0, G_OPTION_ARG_NONE, &opt_proc_cmdline, "Import current /proc/cmdline", NULL },
   { "merge", 0, 0, G_OPTION_ARG_NONE, &opt_merge, "Merge with previous command line", NULL },
@@ -51,7 +55,7 @@ ot_admin_instutil_builtin_set_kargs (int argc, char **argv, GCancellable *cancel
   g_autoptr(GPtrArray) deployments = NULL;
   OstreeDeployment *first_deployment = NULL;
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeSysroot *sysroot = NULL;
+  g_autoptr(OstreeSysroot) sysroot = NULL;
   __attribute__((cleanup(_ostree_kernel_args_cleanup))) OstreeKernelArgs *kargs = NULL;
 
   context = g_option_context_new ("ARGS - set new kernel command line arguments");
@@ -59,9 +63,6 @@ ot_admin_instutil_builtin_set_kargs (int argc, char **argv, GCancellable *cancel
   if (!ostree_admin_option_context_parse (context, options, &argc, &argv,
                                           OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER | OSTREE_ADMIN_BUILTIN_FLAG_UNLOCKED,
                                           &sysroot, cancellable, error))
-    goto out;
-
-  if (!ostree_sysroot_load (sysroot, cancellable, error))
     goto out;
 
   deployments = ostree_sysroot_get_deployments (sysroot);

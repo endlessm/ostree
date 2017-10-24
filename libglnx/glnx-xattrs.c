@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <glnx-macros.h>
 #include <glnx-xattrs.h>
 #include <glnx-errors.h>
 #include <glnx-local-alloc.h>
@@ -83,19 +84,22 @@ read_xattr_name_array (const char *path,
 
   funcstr = fd != -1 ? "fgetxattr" : "lgetxattr";
 
-  p = xattrs;
-  while (p < xattrs+len)
+  for (p = xattrs; p < xattrs+len; p = p + strlen (p) + 1)
     {
       ssize_t bytes_read;
-      char *buf;
-      GBytes *bytes = NULL;
+      g_autofree char *buf = NULL;
+      g_autoptr(GBytes) bytes = NULL;
 
+    again:
       if (fd != -1)
         bytes_read = fgetxattr (fd, p, NULL, 0);
       else
         bytes_read = lgetxattr (path, p, NULL, 0);
       if (bytes_read < 0)
         {
+          if (errno == ENODATA)
+            continue;
+
           glnx_set_prefix_error_from_errno (error, "%s", funcstr);
           goto out;
         }
@@ -103,26 +107,30 @@ read_xattr_name_array (const char *path,
         continue;
 
       buf = g_malloc (bytes_read);
-      bytes = g_bytes_new_take (buf, bytes_read);
       if (fd != -1)
         r = fgetxattr (fd, p, buf, bytes_read);
       else
         r = lgetxattr (path, p, buf, bytes_read);
       if (r < 0)
         {
-          g_bytes_unref (bytes);
+          if (errno == ERANGE)
+            {
+              g_free (g_steal_pointer (&buf));
+              goto again;
+            }
+          else if (errno == ENODATA)
+            continue;
+
           glnx_set_prefix_error_from_errno (error, "%s", funcstr);
           goto out;
         }
-      
+
+      bytes = g_bytes_new_take (g_steal_pointer (&buf), bytes_read);
       g_variant_builder_add (builder, "(@ay@ay)",
                              g_variant_new_bytestring (p),
                              variant_new_ay_bytes (bytes));
-
-      p = p + strlen (p) + 1;
-      g_bytes_unref (bytes);
     }
-  
+
   ret = TRUE;
  out:
   return ret;
@@ -130,22 +138,29 @@ read_xattr_name_array (const char *path,
 
 static gboolean
 get_xattrs_impl (const char      *path,
+                 int              fd,
                  GVariant       **out_xattrs,
-                 GCancellable   *cancellable,
-                 GError        **error)
+                 GCancellable    *cancellable,
+                 GError         **error)
 {
   gboolean ret = FALSE;
-  ssize_t bytes_read;
-  glnx_free char *xattr_names = NULL;
-  glnx_free char *xattr_names_canonical = NULL;
+  ssize_t bytes_read, real_size;
+  g_autofree char *xattr_names = NULL;
+  g_autofree char *xattr_names_canonical = NULL;
   GVariantBuilder builder;
   gboolean builder_initialized = FALSE;
   g_autoptr(GVariant) ret_xattrs = NULL;
 
+  g_assert (path != NULL || fd != -1);
+
   g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ayay)"));
   builder_initialized = TRUE;
 
-  bytes_read = llistxattr (path, NULL, 0);
+ again:
+  if (path)
+    bytes_read = llistxattr (path, NULL, 0);
+  else
+    bytes_read = flistxattr (fd, NULL, 0);
 
   if (bytes_read < 0)
     {
@@ -158,15 +173,27 @@ get_xattrs_impl (const char      *path,
   else if (bytes_read > 0)
     {
       xattr_names = g_malloc (bytes_read);
-      if (llistxattr (path, xattr_names, bytes_read) < 0)
+      if (path)
+        real_size = llistxattr (path, xattr_names, bytes_read);
+      else
+        real_size = flistxattr (fd, xattr_names, bytes_read);
+      if (real_size < 0)
         {
+          if (errno == ERANGE)
+            {
+              g_free (xattr_names);
+              goto again;
+            }
           glnx_set_prefix_error_from_errno (error, "%s", "llistxattr");
           goto out;
         }
-      xattr_names_canonical = canonicalize_xattrs (xattr_names, bytes_read);
-      
-      if (!read_xattr_name_array (path, -1, xattr_names_canonical, bytes_read, &builder, error))
-        goto out;
+      else if (real_size > 0)
+        {
+          xattr_names_canonical = canonicalize_xattrs (xattr_names, real_size);
+
+          if (!read_xattr_name_array (path, fd, xattr_names_canonical, real_size, &builder, error))
+            goto out;
+        }
     }
 
   ret_xattrs = g_variant_builder_end (&builder);
@@ -201,52 +228,8 @@ glnx_fd_get_all_xattrs (int            fd,
                         GCancellable  *cancellable,
                         GError       **error)
 {
-  gboolean ret = FALSE;
-  ssize_t bytes_read;
-  glnx_free char *xattr_names = NULL;
-  glnx_free char *xattr_names_canonical = NULL;
-  GVariantBuilder builder;
-  gboolean builder_initialized = FALSE;
-  g_autoptr(GVariant) ret_xattrs = NULL;
-
-  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(ayay)"));
-  builder_initialized = TRUE;
-
-  bytes_read = flistxattr (fd, NULL, 0);
-
-  if (bytes_read < 0)
-    {
-      if (errno != ENOTSUP)
-        {
-          glnx_set_prefix_error_from_errno (error, "%s", "flistxattr");
-          goto out;
-        }
-    }
-  else if (bytes_read > 0)
-    {
-      xattr_names = g_malloc (bytes_read);
-      if (flistxattr (fd, xattr_names, bytes_read) < 0)
-        {
-          glnx_set_prefix_error_from_errno (error, "%s", "flistxattr");
-          goto out;
-        }
-      xattr_names_canonical = canonicalize_xattrs (xattr_names, bytes_read);
-      
-      if (!read_xattr_name_array (NULL, fd, xattr_names_canonical, bytes_read, &builder, error))
-        goto out;
-    }
-
-  ret_xattrs = g_variant_builder_end (&builder);
-  builder_initialized = FALSE;
-  g_variant_ref_sink (ret_xattrs);
-  
-  ret = TRUE;
-  if (out_xattrs)
-    *out_xattrs = g_steal_pointer (&ret_xattrs);
- out:
-  if (!builder_initialized)
-    g_variant_builder_clear (&builder);
-  return ret;
+  return get_xattrs_impl (NULL, fd, out_xattrs,
+                          cancellable, error);
 }
 
 /**
@@ -267,9 +250,9 @@ glnx_dfd_name_get_all_xattrs (int            dfd,
                               GCancellable  *cancellable,
                               GError       **error)
 {
-  if (dfd == AT_FDCWD || dfd == -1)
+  if (G_IN_SET(dfd, AT_FDCWD, -1))
     {
-      return get_xattrs_impl (name, out_xattrs, cancellable, error);
+      return get_xattrs_impl (name, -1, out_xattrs, cancellable, error);
     }
   else
     {
@@ -278,7 +261,7 @@ glnx_dfd_name_get_all_xattrs (int            dfd,
        * https://mail.gnome.org/archives/ostree-list/2014-February/msg00017.html
        */
       snprintf (buf, sizeof (buf), "/proc/self/fd/%d/%s", dfd, name);
-      return get_xattrs_impl (buf, out_xattrs, cancellable, error);
+      return get_xattrs_impl (buf, -1, out_xattrs, cancellable, error);
     }
 }
 
@@ -288,31 +271,22 @@ set_all_xattrs_for_path (const char    *path,
                          GCancellable  *cancellable,
                          GError       **error)
 {
-  gboolean ret = FALSE;
-  int i, n;
-
-  n = g_variant_n_children (xattrs);
-  for (i = 0; i < n; i++)
+  const guint n = g_variant_n_children (xattrs);
+  for (guint i = 0; i < n; i++)
     {
       const guint8* name;
       g_autoptr(GVariant) value = NULL;
-      const guint8* value_data;
-      gsize value_len;
-
       g_variant_get_child (xattrs, i, "(^&ay@ay)",
                            &name, &value);
-      value_data = g_variant_get_fixed_array (value, &value_len, 1);
-      
+
+      gsize value_len;
+      const guint8* value_data = g_variant_get_fixed_array (value, &value_len, 1);
+
       if (lsetxattr (path, (char*)name, (char*)value_data, value_len, 0) < 0)
-        {
-          glnx_set_prefix_error_from_errno (error, "%s", "lsetxattr");
-          goto out;
-        }
+        return glnx_throw_errno_prefix (error, "lsetxattr");
     }
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -333,7 +307,7 @@ glnx_dfd_name_set_all_xattrs (int            dfd,
                               GCancellable  *cancellable,
                               GError       **error)
 {
-  if (dfd == AT_FDCWD || dfd == -1)
+  if (G_IN_SET(dfd, AT_FDCWD, -1))
     {
       return set_all_xattrs_for_path (name, xattrs, cancellable, error);
     }
@@ -365,35 +339,22 @@ glnx_fd_set_all_xattrs (int            fd,
                         GCancellable  *cancellable,
                         GError       **error)
 {
-  gboolean ret = FALSE;
-  int i, n;
-
-  n = g_variant_n_children (xattrs);
-  for (i = 0; i < n; i++)
+  const guint n = g_variant_n_children (xattrs);
+  for (guint i = 0; i < n; i++)
     {
       const guint8* name;
-      const guint8* value_data;
       g_autoptr(GVariant) value = NULL;
-      gsize value_len;
-      int res;
-
       g_variant_get_child (xattrs, i, "(^&ay@ay)",
                            &name, &value);
-      value_data = g_variant_get_fixed_array (value, &value_len, 1);
-      
-      do
-        res = fsetxattr (fd, (char*)name, (char*)value_data, value_len, 0);
-      while (G_UNLIKELY (res == -1 && errno == EINTR));
-      if (G_UNLIKELY (res == -1))
-        {
-          glnx_set_prefix_error_from_errno (error, "%s", "fsetxattr");
-          goto out;
-        }
+
+      gsize value_len;
+      const guint8* value_data = g_variant_get_fixed_array (value, &value_len, 1);
+
+      if (TEMP_FAILURE_RETRY (fsetxattr (fd, (char*)name, (char*)value_data, value_len, 0)) < 0)
+        return glnx_throw_errno_prefix (error, "fsetxattr");
     }
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -413,35 +374,17 @@ glnx_lgetxattrat (int            dfd,
                   GError       **error)
 {
   char pathbuf[PATH_MAX];
-  GBytes *bytes = NULL;
-  ssize_t bytes_read, real_size;
-  guint8 *buf;
-
   snprintf (pathbuf, sizeof (pathbuf), "/proc/self/fd/%d/%s", dfd, subpath);
 
-  do
-    bytes_read = lgetxattr (pathbuf, attribute, NULL, 0);
-  while (G_UNLIKELY (bytes_read < 0 && errno == EINTR));
-  if (G_UNLIKELY (bytes_read < 0))
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
+  ssize_t bytes_read, real_size;
+  if (TEMP_FAILURE_RETRY (bytes_read = lgetxattr (pathbuf, attribute, NULL, 0)) < 0)
+    return glnx_null_throw_errno_prefix (error, "lgetxattr");
 
-  buf = g_malloc (bytes_read);
-  do
-    real_size = lgetxattr (pathbuf, attribute, buf, bytes_read);
-  while (G_UNLIKELY (real_size < 0 && errno == EINTR));
-  if (G_UNLIKELY (real_size < 0))
-    {
-      glnx_set_error_from_errno (error);
-      g_free (buf);
-      goto out;
-    }
+  g_autofree guint8 *buf = g_malloc (bytes_read);
+  if (TEMP_FAILURE_RETRY (real_size = lgetxattr (pathbuf, attribute, buf, bytes_read)) < 0)
+    return glnx_null_throw_errno_prefix (error, "lgetxattr");
 
-  bytes = g_bytes_new_take (buf, real_size);
- out:
-  return bytes;
+  return g_bytes_new_take (g_steal_pointer (&buf), real_size);
 }
 
 /**
@@ -457,33 +400,16 @@ glnx_fgetxattr_bytes (int            fd,
                       const char    *attribute,
                       GError       **error)
 {
-  GBytes *bytes = NULL;
   ssize_t bytes_read, real_size;
-  guint8 *buf;
 
-  do
-    bytes_read = fgetxattr (fd, attribute, NULL, 0);
-  while (G_UNLIKELY (bytes_read < 0 && errno == EINTR));
-  if (G_UNLIKELY (bytes_read < 0))
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
+  if (TEMP_FAILURE_RETRY (bytes_read = fgetxattr (fd, attribute, NULL, 0)) < 0)
+    return glnx_null_throw_errno_prefix (error, "fgetxattr");
 
-  buf = g_malloc (bytes_read);
-  do
-    real_size = fgetxattr (fd, attribute, buf, bytes_read);
-  while (G_UNLIKELY (real_size < 0 && errno == EINTR));
-  if (G_UNLIKELY (real_size < 0))
-    {
-      glnx_set_error_from_errno (error);
-      g_free (buf);
-      goto out;
-    }
+  g_autofree guint8 *buf = g_malloc (bytes_read);
+  if (TEMP_FAILURE_RETRY (real_size = fgetxattr (fd, attribute, buf, bytes_read)) < 0)
+    return glnx_null_throw_errno_prefix (error, "fgetxattr");
 
-  bytes = g_bytes_new_take (buf, real_size);
- out:
-  return bytes;
+  return g_bytes_new_take (g_steal_pointer (&buf), real_size);
 }
 
 /**
@@ -508,18 +434,10 @@ glnx_lsetxattrat (int            dfd,
                   GError       **error)
 {
   char pathbuf[PATH_MAX];
-  int res;
-
   snprintf (pathbuf, sizeof (pathbuf), "/proc/self/fd/%d/%s", dfd, subpath);
 
-  do
-    res = lsetxattr (subpath, attribute, value, len, flags);
-  while (G_UNLIKELY (res == -1 && errno == EINTR));
-  if (G_UNLIKELY (res == -1))
-    {
-      glnx_set_error_from_errno (error);
-      return FALSE;
-    }
+  if (TEMP_FAILURE_RETRY (lsetxattr (subpath, attribute, value, len, flags)) < 0)
+    return glnx_throw_errno_prefix (error, "lsetxattr");
 
   return TRUE;
 }

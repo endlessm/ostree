@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -21,8 +20,12 @@
 #pragma once
 
 #include "ostree-core.h"
+#include <sys/stat.h>
 
 G_BEGIN_DECLS
+
+/* It's what gzip does, 9 is too slow */
+#define OSTREE_ARCHIVE_DEFAULT_COMPRESSION_LEVEL (6)
 
 /* This file contains private implementation data format definitions
  * read by multiple implementation .c files.
@@ -85,7 +88,17 @@ _ostree_make_temporary_symlink_at (int             tmp_dirfd,
                                    GCancellable   *cancellable,
                                    GError        **error);
 
-GFileInfo * _ostree_header_gfile_info_new (mode_t mode, uid_t uid, gid_t gid);
+GFileInfo * _ostree_stbuf_to_gfileinfo (const struct stat *stbuf);
+gboolean _ostree_gfileinfo_equal (GFileInfo *a, GFileInfo *b);
+GFileInfo * _ostree_mode_uidgid_to_gfileinfo (mode_t mode, uid_t uid, gid_t gid);
+
+static inline void
+_ostree_checksum_inplace_from_bytes_v (GVariant *csum_v, char *buf)
+{
+  const guint8*csum = ostree_checksum_bytes_peek (csum_v);
+  g_assert (csum);
+  ostree_checksum_inplace_from_bytes (csum, buf);
+}
 
 /* XX/checksum-2.extension, but let's just use 256 for a
  * bit of overkill.
@@ -122,6 +135,19 @@ static inline char * _ostree_get_commitpartial_path (const char *checksum)
 }
 
 gboolean
+_ostree_validate_bareuseronly_mode (guint32     mode,
+                                    const char *checksum,
+                                    GError    **error);
+static inline gboolean
+_ostree_validate_bareuseronly_mode_finfo (GFileInfo  *finfo,
+                                          const char *checksum,
+                                          GError    **error)
+{
+  const guint32 content_mode = g_file_info_get_attribute_uint32 (finfo, "unix::mode");
+  return _ostree_validate_bareuseronly_mode (content_mode, checksum, error);
+}
+
+gboolean
 _ostree_parse_delta_name (const char  *delta_name,
                           char        **out_from,
                           char        **out_to,
@@ -136,11 +162,62 @@ _ostree_loose_path (char              *buf,
 #define _OSTREE_METADATA_GPGSIGS_NAME "ostree.gpgsigs"
 #define _OSTREE_METADATA_GPGSIGS_TYPE G_VARIANT_TYPE ("aay")
 
+static inline gboolean
+_ostree_repo_mode_is_bare (OstreeRepoMode mode)
+{
+  return
+    mode == OSTREE_REPO_MODE_BARE ||
+    mode == OSTREE_REPO_MODE_BARE_USER ||
+    mode == OSTREE_REPO_MODE_BARE_USER_ONLY;
+}
+
 GVariant *
 _ostree_detached_metadata_append_gpg_sig (GVariant   *existing_metadata,
                                           GBytes     *signature_bytes);
 
 GFile *
 _ostree_get_default_sysroot_path (void);
+
+_OSTREE_PUBLIC
+gboolean
+_ostree_raw_file_to_archive_stream (GInputStream       *input,
+                                    GFileInfo          *file_info,
+                                    GVariant           *xattrs,
+                                    guint               compression_level,
+                                    GInputStream      **out_input,
+                                    GCancellable       *cancellable,
+                                    GError            **error);
+
+#ifndef OSTREE_ENABLE_EXPERIMENTAL_API
+gboolean ostree_validate_collection_id (const char *collection_id, GError **error);
+#endif /* !OSTREE_ENABLE_EXPERIMENTAL_API */
+
+gboolean
+_ostree_compare_timestamps (const char   *current_rev,
+                            guint64       current_ts,
+                            const char   *new_rev,
+                            guint64       new_ts,
+                            GError      **error);
+
+#if (defined(OSTREE_COMPILATION) || GLIB_CHECK_VERSION(2, 44, 0)) && !defined(OSTREE_ENABLE_EXPERIMENTAL_API)
+#include <libglnx.h>
+#include "ostree-ref.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeCollectionRef, ostree_collection_ref_free)
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC (OstreeCollectionRefv, ostree_collection_ref_freev, NULL)
+
+#include "ostree-repo-finder.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinder, g_object_unref)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderResult, ostree_repo_finder_result_free)
+G_DEFINE_AUTO_CLEANUP_FREE_FUNC (OstreeRepoFinderResultv, ostree_repo_finder_result_freev, NULL)
+
+#include "ostree-repo-finder-avahi.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderAvahi, g_object_unref)
+
+#include "ostree-repo-finder-config.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderConfig, g_object_unref)
+
+#include "ostree-repo-finder-mount.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderMount, g_object_unref)
+#endif
 
 G_END_DECLS

@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -85,7 +84,8 @@ gboolean ostree_sysroot_upgrader_check_timestamps (OstreeRepo     *repo,
 
 typedef enum {
   OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_NONE = 0,
-  OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_ALLOW_OLDER = (1 << 0)
+  OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_ALLOW_OLDER = (1 << 0),
+  OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_SYNTHETIC = (1 << 1) /* Don't actually do a pull, just check timestamps/changed */
 } OstreeSysrootUpgraderPullFlags;
 
 _OSTREE_PUBLIC

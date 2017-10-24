@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2013 Stef Walter <stefw@redhat.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -27,6 +26,11 @@
 #include "ostree.h"
 #include "otutil.h"
 
+/* ATTENTION:
+ * Please remember to update the bash-completion script (bash/ostree) and
+ * man page (man/ostree-reset.xml) when changing the option list.
+ */
+
 static GOptionEntry options[] = {
   { NULL }
 };
@@ -38,13 +42,14 @@ ostree_builtin_reset (int           argc,
                       GError      **error)
 {
   g_autoptr(GOptionContext) context = NULL;
-  glnx_unref_object OstreeRepo *repo = NULL;
+  g_autoptr(OstreeRepo) repo = NULL;
   g_autoptr(GHashTable) known_refs = NULL;
   gboolean ret = FALSE;
   const char *ref;
   const char *target = NULL;
   g_autofree char *checksum = NULL;
 
+  /* FIXME: Add support for collection–refs. */
   context = g_option_context_new ("REF COMMIT - Reset a REF to a previous COMMIT");
 
   if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))

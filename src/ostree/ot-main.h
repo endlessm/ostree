@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -33,8 +32,9 @@ typedef enum {
 
 typedef enum {
   OSTREE_ADMIN_BUILTIN_FLAG_NONE = 0,
-  OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER = 1 << 0,
-  OSTREE_ADMIN_BUILTIN_FLAG_UNLOCKED = 1 << 1
+  OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER = (1 << 0),
+  OSTREE_ADMIN_BUILTIN_FLAG_UNLOCKED = (1 << 1),
+  OSTREE_ADMIN_BUILTIN_FLAG_NO_SYSROOT = (1 << 2),
 } OstreeAdminBuiltinFlags;
 
 typedef struct {
@@ -45,6 +45,14 @@ typedef struct {
 int ostree_run (int argc, char **argv, OstreeCommand *commands, GError **error);
 
 int ostree_usage (OstreeCommand *commands, gboolean is_error);
+
+gboolean ostree_parse_sysroot_or_repo_option (GOptionContext *context,
+                                              const char *sysroot_path,
+                                              const char *repo_path,
+                                              OstreeSysroot **out_sysroot,
+                                              OstreeRepo **out_repo,
+                                              GCancellable *cancellable,
+                                              GError **error);
 
 gboolean ostree_option_context_parse (GOptionContext *context,
                                       const GOptionEntry *main_entries,

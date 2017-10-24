@@ -23,8 +23,10 @@
 #include <string.h>
 
 #include <glnx-dirfd.h>
+#include <glnx-fdio.h>
 #include <glnx-errors.h>
 #include <glnx-local-alloc.h>
+#include <glnx-shutil.h>
 
 /**
  * glnx_opendirat_with_errno:
@@ -67,10 +69,7 @@ glnx_opendirat (int             dfd,
 {
   int ret = glnx_opendirat_with_errno (dfd, path, follow);
   if (ret == -1)
-    {
-      glnx_set_prefix_error_from_errno (error, "%s", "openat");
-      return FALSE;
-    }
+    return glnx_throw_errno_prefix (error, "opendir(%s)", path);
   *out_fd = ret;
   return TRUE;
 }
@@ -86,7 +85,7 @@ typedef struct GLnxRealDirfdIterator GLnxRealDirfdIterator;
 /**
  * glnx_dirfd_iterator_init_at:
  * @dfd: File descriptor, may be AT_FDCWD or -1
- * @path: Path, may be relative to @df
+ * @path: Path, may be relative to @dfd
  * @follow: If %TRUE and the last component of @path is a symlink, follow it
  * @out_dfd_iter: (out caller-allocates): A directory iterator, will be initialized
  * @error: Error
@@ -100,24 +99,19 @@ glnx_dirfd_iterator_init_at (int                     dfd,
                              GLnxDirFdIterator      *out_dfd_iter,
                              GError                **error)
 {
-  gboolean ret = FALSE;
   glnx_fd_close int fd = -1;
-  
   if (!glnx_opendirat (dfd, path, follow, &fd, error))
-    goto out;
+    return FALSE;
 
-  if (!glnx_dirfd_iterator_init_take_fd (fd, out_dfd_iter, error))
-    goto out;
-  fd = -1; /* Transfer ownership */
+  if (!glnx_dirfd_iterator_init_take_fd (&fd, out_dfd_iter, error))
+    return FALSE;
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
  * glnx_dirfd_iterator_init_take_fd:
- * @dfd: File descriptor - ownership is taken
+ * @dfd: File descriptor - ownership is taken, and the value is set to -1
  * @dfd_iter: A directory iterator
  * @error: Error
  *
@@ -125,28 +119,20 @@ glnx_dirfd_iterator_init_at (int                     dfd,
  * iteration.
  */
 gboolean
-glnx_dirfd_iterator_init_take_fd (int                dfd,
+glnx_dirfd_iterator_init_take_fd (int               *dfd,
                                   GLnxDirFdIterator *dfd_iter,
                                   GError           **error)
 {
-  gboolean ret = FALSE;
   GLnxRealDirfdIterator *real_dfd_iter = (GLnxRealDirfdIterator*) dfd_iter;
-  DIR *d = NULL;
-
-  d = fdopendir (dfd);
+  DIR *d = fdopendir (*dfd);
   if (!d)
-    {
-      glnx_set_prefix_error_from_errno (error, "%s", "fdopendir");
-      goto out;
-    }
+    return glnx_throw_errno_prefix (error, "fdopendir");
 
-  real_dfd_iter->fd = dfd;
+  real_dfd_iter->fd = glnx_steal_fd (dfd);
   real_dfd_iter->d = d;
   real_dfd_iter->initialized = TRUE;
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -166,31 +152,25 @@ glnx_dirfd_iterator_next_dent (GLnxDirFdIterator  *dfd_iter,
                                GCancellable       *cancellable,
                                GError             **error)
 {
-  gboolean ret = FALSE;
   GLnxRealDirfdIterator *real_dfd_iter = (GLnxRealDirfdIterator*) dfd_iter;
 
   g_return_val_if_fail (out_dent, FALSE);
   g_return_val_if_fail (dfd_iter->initialized, FALSE);
 
   if (g_cancellable_set_error_if_cancelled (cancellable, error))
-    goto out;
+    return FALSE;
 
   do
     {
       errno = 0;
       *out_dent = readdir (real_dfd_iter->d);
       if (*out_dent == NULL && errno != 0)
-        {
-          glnx_set_prefix_error_from_errno (error, "%s", "fdopendir");
-          goto out;
-        }
+        return glnx_throw_errno_prefix (error, "readdir");
     } while (*out_dent &&
              (strcmp ((*out_dent)->d_name, ".") == 0 ||
               strcmp ((*out_dent)->d_name, "..") == 0));
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -210,13 +190,12 @@ glnx_dirfd_iterator_next_dent_ensure_dtype (GLnxDirFdIterator  *dfd_iter,
                                             GCancellable       *cancellable,
                                             GError            **error)
 {
-  gboolean ret = FALSE;
   struct dirent *ret_dent;
 
   g_return_val_if_fail (out_dent, FALSE);
 
   if (!glnx_dirfd_iterator_next_dent (dfd_iter, out_dent, cancellable, error))
-    goto out;
+    return FALSE;
 
   ret_dent = *out_dent;
 
@@ -226,18 +205,13 @@ glnx_dirfd_iterator_next_dent_ensure_dtype (GLnxDirFdIterator  *dfd_iter,
       if (ret_dent->d_type == DT_UNKNOWN)
         {
           struct stat stbuf;
-          if (TEMP_FAILURE_RETRY (fstatat (dfd_iter->fd, ret_dent->d_name, &stbuf, AT_SYMLINK_NOFOLLOW)) != 0)
-            {
-              glnx_set_error_from_errno (error);
-              goto out;
-            }
+          if (!glnx_fstatat (dfd_iter->fd, ret_dent->d_name, &stbuf, AT_SYMLINK_NOFOLLOW, error))
+            return FALSE;
           ret_dent->d_type = IFTODT (stbuf.st_mode);
         }
     }
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 /**
@@ -293,13 +267,10 @@ glnx_gen_temp_name (gchar *tmpl)
 {
   size_t len;
   char *XXXXXX;
-  int count;
+  int i;
   static const char letters[] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   static const int NLETTERS = sizeof (letters) - 1;
-  glong value;
-  GTimeVal tv;
-  static int counter = 0;
 
   g_return_if_fail (tmpl != NULL);
   len = strlen (tmpl);
@@ -307,53 +278,43 @@ glnx_gen_temp_name (gchar *tmpl)
 
   XXXXXX = tmpl + (len - 6);
 
-  /* Get some more or less random data.  */
-  g_get_current_time (&tv);
-  value = (tv.tv_usec ^ tv.tv_sec) + counter++;
-
-  for (count = 0; count < 100; value += 7777, ++count)
-    {
-      glong v = value;
-
-      /* Fill in the random bits.  */
-      XXXXXX[0] = letters[v % NLETTERS];
-      v /= NLETTERS;
-      XXXXXX[1] = letters[v % NLETTERS];
-      v /= NLETTERS;
-      XXXXXX[2] = letters[v % NLETTERS];
-      v /= NLETTERS;
-      XXXXXX[3] = letters[v % NLETTERS];
-      v /= NLETTERS;
-      XXXXXX[4] = letters[v % NLETTERS];
-      v /= NLETTERS;
-      XXXXXX[5] = letters[v % NLETTERS];
-    }
+  for (i = 0; i < 6; i++)
+    XXXXXX[i] = letters[g_random_int_range(0, NLETTERS)];
 }
 
 /**
  * glnx_mkdtempat:
  * @dfd: Directory fd
- * @tmpl: (type filename): template directory name, last 6 characters will be replaced
- * @mode: permissions to create the temporary directory with
+ * @tmpl: (type filename): Initial template directory name, last 6 characters will be replaced
+ * @mode: permissions with which to create the temporary directory
+ * @out_tmpdir: (out caller-allocates): Initialized tempdir structure
  * @error: Error
  *
- * Similar to g_mkdtemp_full, but using openat.
+ * Somewhat similar to g_mkdtemp_full(), but fd-relative, and returns a
+ * structure that uses autocleanups.  Note that the supplied @dfd lifetime
+ * must match or exceed that of @out_tmpdir in order to remove the directory.
  */
 gboolean
-glnx_mkdtempat (int dfd,
-                gchar *tmpl,
-                int mode,
-                GError **error)
+glnx_mkdtempat (int dfd, const char *tmpl, int mode,
+                GLnxTmpDir *out_tmpdir, GError **error)
 {
-  int count;
+  g_return_val_if_fail (tmpl != NULL, FALSE);
+  g_return_val_if_fail (out_tmpdir != NULL, FALSE);
+  g_return_val_if_fail (!out_tmpdir->initialized, FALSE);
 
-  g_return_val_if_fail (tmpl != NULL, -1);
+  dfd = glnx_dirfd_canonicalize (dfd);
 
-  for (count = 0; count < 100; count++)
+  g_autofree char *path = g_strdup (tmpl);
+  for (int count = 0; count < 100; count++)
     {
-      glnx_gen_temp_name (tmpl);
+      glnx_gen_temp_name (path);
 
-      if (mkdirat (dfd, tmpl, mode) == -1)
+      /* Ideally we could use openat(O_DIRECTORY | O_CREAT | O_EXCL) here
+       * to create and open the directory atomically, but that’s not supported by
+       * current kernel versions: http://www.openwall.com/lists/oss-security/2014/11/26/14
+       * (Tested on kernel 4.10.10-200.fc25.x86_64). For the moment, accept a
+       * TOCTTOU race here. */
+      if (mkdirat (dfd, path, mode) == -1)
         {
           if (errno == EEXIST)
             continue;
@@ -361,14 +322,112 @@ glnx_mkdtempat (int dfd,
           /* Any other error will apply also to other names we might
            *  try, and there are 2^32 or so of them, so give up now.
            */
-          glnx_set_prefix_error_from_errno (error, "%s", "mkdirat");
+          return glnx_throw_errno_prefix (error, "mkdirat");
+        }
+
+      /* And open it */
+      glnx_fd_close int ret_dfd = -1;
+      if (!glnx_opendirat (dfd, path, FALSE, &ret_dfd, error))
+        {
+          /* If we fail to open, let's try to clean up */
+          (void)unlinkat (dfd, path, AT_REMOVEDIR);
           return FALSE;
         }
 
+      /* Return the initialized directory struct */
+      out_tmpdir->initialized = TRUE;
+      out_tmpdir->src_dfd = dfd; /* referenced; see above docs */
+      out_tmpdir->fd = glnx_steal_fd (&ret_dfd);
+      out_tmpdir->path = g_steal_pointer (&path);
       return TRUE;
     }
 
+  /* Failure */
   g_set_error (error, G_IO_ERROR, G_IO_ERROR_EXISTS,
-               "mkstempat ran out of combinations to try.");
+               "glnx_mkdtempat ran out of combinations to try");
   return FALSE;
+}
+
+/**
+ * glnx_mkdtemp:
+ * @tmpl: (type filename): Source template directory name, last 6 characters will be replaced
+ * @mode: permissions to create the temporary directory with
+ * @out_tmpdir: (out caller-allocates): Return location for tmpdir data
+ * @error: Return location for a #GError, or %NULL
+ *
+ * Similar to glnx_mkdtempat(), but will use g_get_tmp_dir() as the parent
+ * directory to @tmpl.
+ *
+ * Returns: %TRUE on success, %FALSE otherwise
+ * Since: UNRELEASED
+ */
+gboolean
+glnx_mkdtemp (const gchar   *tmpl,
+              int      mode,
+              GLnxTmpDir *out_tmpdir,
+              GError **error)
+{
+  g_autofree char *path = g_build_filename (g_get_tmp_dir (), tmpl, NULL);
+  return glnx_mkdtempat (AT_FDCWD, path, mode,
+                         out_tmpdir, error);
+}
+
+static gboolean
+_glnx_tmpdir_free (GLnxTmpDir *tmpd,
+                   gboolean    delete_dir,
+                   GCancellable *cancellable,
+                   GError    **error)
+{
+  /* Support being passed NULL so we work nicely in a GPtrArray */
+  if (!(tmpd && tmpd->initialized))
+    return TRUE;
+  g_assert_cmpint (tmpd->fd, !=, -1);
+  (void) close (tmpd->fd);
+  tmpd->fd = -1;
+  g_assert (tmpd->path);
+  g_assert_cmpint (tmpd->src_dfd, !=, -1);
+  g_autofree char *path = tmpd->path; /* Take ownership */
+  tmpd->initialized = FALSE;
+  if (delete_dir)
+    {
+      if (!glnx_shutil_rm_rf_at (tmpd->src_dfd, path, cancellable, error))
+        return FALSE;
+    }
+  return TRUE;
+}
+
+/**
+ * glnx_tmpdir_delete:
+ * @tmpf: Temporary dir
+ * @cancellable: Cancellable
+ * @error: Error
+ *
+ * Deallocate a tmpdir, closing the fd and recursively deleting the path. This
+ * is normally called indirectly via glnx_tmpdir_cleanup() by the autocleanup
+ * attribute, but you can also invoke this directly.
+ *
+ * If an error occurs while deleting the filesystem path, @tmpf will still have
+ * been deallocated and should not be reused.
+ *
+ * See also `glnx_tmpdir_unset` to avoid deleting the path.
+ */
+gboolean
+glnx_tmpdir_delete (GLnxTmpDir *tmpf, GCancellable *cancellable, GError **error)
+{
+  return _glnx_tmpdir_free (tmpf, TRUE, cancellable, error);
+}
+
+/**
+ * glnx_tmpdir_unset:
+ * @tmpf: Temporary dir
+ * @cancellable: Cancellable
+ * @error: Error
+ *
+ * Deallocate a tmpdir, but do not delete the filesystem path.  See also
+ * `glnx_tmpdir_delete()`.
+ */
+void
+glnx_tmpdir_unset (GLnxTmpDir *tmpf)
+{
+  (void) _glnx_tmpdir_free (tmpf, FALSE, NULL, NULL);
 }

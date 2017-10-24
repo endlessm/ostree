@@ -21,11 +21,14 @@ set -euo pipefail
 
 . $(dirname $0)/libtest.sh
 
+skip "We don't really have a use case for committing user. xattrs right now. See also https://github.com/ostreedev/ostree/issues/758"
+
+# Dead code below
 skip_without_user_xattrs
 
 echo "1..2"
 
-setup_test_repository "archive-z2"
+setup_test_repository "archive"
 
 cd ${test_tmpdir}
 ${CMD_PREFIX} ostree --repo=repo checkout test2 test2-checkout1

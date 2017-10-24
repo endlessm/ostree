@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,9 +21,15 @@
 
 #pragma once
 
+#include <sys/stat.h>
+
 #include "ostree-core.h"
 #include "ostree-types.h"
 #include "ostree-async-progress.h"
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+#include "ostree-ref.h"
+#include "ostree-repo-finder.h"
+#endif
 #include "ostree-sepolicy.h"
 #include "ostree-gpg-verify-result.h"
 
@@ -60,6 +65,13 @@ gboolean      ostree_repo_open   (OstreeRepo     *self,
                                   GError        **error);
 
 _OSTREE_PUBLIC
+OstreeRepo*
+ostree_repo_open_at (int           dfd,
+                     const char   *path,
+                     GCancellable *cancellable,
+                     GError      **error);
+
+_OSTREE_PUBLIC
 void          ostree_repo_set_disable_fsync (OstreeRepo    *self,
                                              gboolean       disable_fsync);
 
@@ -85,12 +97,36 @@ gboolean      ostree_repo_create (OstreeRepo     *self,
                                   OstreeRepoMode  mode,
                                   GCancellable   *cancellable,
                                   GError        **error);
+_OSTREE_PUBLIC
+OstreeRepo *  ostree_repo_create_at (int             dfd,
+                                     const char     *path,
+                                     OstreeRepoMode  mode,
+                                     GVariant       *options,
+                                     GCancellable   *cancellable,
+                                     GError        **error);
+
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+
+_OSTREE_PUBLIC
+const gchar * ostree_repo_get_collection_id (OstreeRepo   *self);
+_OSTREE_PUBLIC
+gboolean      ostree_repo_set_collection_id (OstreeRepo   *self,
+                                             const gchar  *collection_id,
+                                             GError      **error);
+
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
 _OSTREE_PUBLIC
 GFile *       ostree_repo_get_path (OstreeRepo  *self);
 
 _OSTREE_PUBLIC
 int           ostree_repo_get_dfd (OstreeRepo  *self);
+
+_OSTREE_PUBLIC
+guint         ostree_repo_hash (OstreeRepo *self);
+_OSTREE_PUBLIC
+gboolean      ostree_repo_equal (OstreeRepo *a,
+                                 OstreeRepo *b);
 
 _OSTREE_PUBLIC
 OstreeRepoMode ostree_repo_get_mode (OstreeRepo  *self);
@@ -100,6 +136,11 @@ GKeyFile *    ostree_repo_get_config (OstreeRepo *self);
 
 _OSTREE_PUBLIC
 GKeyFile *    ostree_repo_copy_config (OstreeRepo *self);
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_reload_config (OstreeRepo *self,
+                                         GCancellable *cancellable,
+                                         GError    **error);
 
 _OSTREE_PUBLIC
 gboolean      ostree_repo_remote_add (OstreeRepo     *self,
@@ -118,6 +159,10 @@ gboolean      ostree_repo_remote_delete (OstreeRepo     *self,
 /**
  * OstreeRepoRemoteChange:
  * The remote change operation.
+ * @OSTREE_REPO_REMOTE_CHANGE_ADD: Add a remote
+ * @OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS: Like above, but do nothing if the remote exists
+ * @OSTREE_REPO_REMOTE_CHANGE_DELETE: Delete a remote
+ * @OSTREE_REPO_REMOTE_CHANGE_DELETE_IF_EXISTS: Delete a remote, do nothing if the remote does not exist
  */
 typedef enum {
   OSTREE_REPO_REMOTE_CHANGE_ADD,
@@ -286,6 +331,15 @@ void          ostree_repo_transaction_set_ref     (OstreeRepo *self,
                                                    const char *ref,
                                                    const char *checksum);
 
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+
+_OSTREE_PUBLIC
+void          ostree_repo_transaction_set_collection_ref (OstreeRepo                *self,
+                                                          const OstreeCollectionRef *ref,
+                                                          const char                *checksum);
+
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
+
 _OSTREE_PUBLIC
 gboolean      ostree_repo_set_ref_immediate (OstreeRepo *self,
                                              const char *remote,
@@ -293,6 +347,25 @@ gboolean      ostree_repo_set_ref_immediate (OstreeRepo *self,
                                              const char *checksum,
                                              GCancellable  *cancellable,
                                              GError       **error);
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_set_alias_ref_immediate (OstreeRepo *self,
+                                                   const char *remote,
+                                                   const char *ref,
+                                                   const char *target,
+                                                   GCancellable  *cancellable,
+                                                   GError       **error);
+
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_set_collection_ref_immediate (OstreeRepo                 *self,
+                                                        const OstreeCollectionRef  *ref,
+                                                        const char                 *checksum,
+                                                        GCancellable               *cancellable,
+                                                        GError                    **error);
+
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
 _OSTREE_PUBLIC
 gboolean      ostree_repo_has_object (OstreeRepo           *self,
@@ -398,6 +471,17 @@ gboolean      ostree_repo_resolve_rev_ext (OstreeRepo                    *self,
                                            char                         **out_rev,
                                            GError                       **error);
 
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+_OSTREE_PUBLIC
+gboolean      ostree_repo_resolve_collection_ref (OstreeRepo                    *self,
+                                                  const OstreeCollectionRef     *ref,
+                                                  gboolean                       allow_noent,
+                                                  OstreeRepoResolveRevExtFlags   flags,
+                                                  char                         **out_rev,
+                                                  GCancellable                  *cancellable,
+                                                  GError                       **error);
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
+
 _OSTREE_PUBLIC
 gboolean      ostree_repo_list_refs (OstreeRepo       *self,
                                      const char       *refspec_prefix,
@@ -408,9 +492,13 @@ gboolean      ostree_repo_list_refs (OstreeRepo       *self,
 /**
  * OstreeRepoListRefsExtFlags:
  * @OSTREE_REPO_LIST_REFS_EXT_NONE: No flags.
+ * @OSTREE_REPO_LIST_REFS_EXT_ALIASES: Only list aliases.  Since: 2017.10
+ * @OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES: Exclude remote refs.  Since: 2017.11
  */
 typedef enum {
   OSTREE_REPO_LIST_REFS_EXT_NONE = 0,
+  OSTREE_REPO_LIST_REFS_EXT_ALIASES = (1 << 0),
+  OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES = (1 << 1),
 } OstreeRepoListRefsExtFlags;
 
 _OSTREE_PUBLIC
@@ -427,6 +515,15 @@ gboolean ostree_repo_remote_list_refs (OstreeRepo       *self,
                                        GHashTable      **out_all_refs,
                                        GCancellable     *cancellable,
                                        GError          **error);
+
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+_OSTREE_PUBLIC
+gboolean ostree_repo_remote_list_collection_refs (OstreeRepo    *self,
+                                                  const char    *remote_name,
+                                                  GHashTable   **out_all_refs,
+                                                  GCancellable  *cancellable,
+                                                  GError       **error);
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
 _OSTREE_PUBLIC
 gboolean      ostree_repo_load_variant (OstreeRepo  *self,
@@ -531,11 +628,15 @@ typedef OstreeRepoCommitFilterResult (*OstreeRepoCommitFilter) (OstreeRepo    *r
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE: No special flags
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS: Do not process extended attributes
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES: Generate size information.
+ * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS: Canonicalize permissions for bare-user-only mode.
+ * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED: Emit an error if configured SELinux policy does not provide a label
  */
 typedef enum {
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE = 0,
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS = (1 << 0),
-  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES = (1 << 1)
+  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES = (1 << 1),
+  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS = (1 << 2),
+  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED = (1 << 3),
 } OstreeRepoCommitModifierFlags;
 
 /**
@@ -606,6 +707,31 @@ gboolean      ostree_repo_write_archive_to_mtree (OstreeRepo                   *
                                                   GError                      **error);
 
 /**
+ * OstreeRepoImportArchiveTranslatePathname:
+ * @repo: Repo
+ * @stbuf: Stat buffer
+ * @src_path: Path in the archive
+ * @user_data: User data
+ *
+ * Possibly change a pathname while importing an archive. If %NULL is returned,
+ * then @src_path will be used unchanged.  Otherwise, return a new pathname which
+ * will be freed via `g_free()`.
+ *
+ * This pathname translation will be performed *before* any processing from an
+ * active `OstreeRepoCommitModifier`. Will be invoked for all directory and file
+ * types, first with outer directories, then their sub-files and directories.
+ *
+ * Note that enabling pathname translation will always override the setting for
+ * `use_ostree_convention`.
+ *
+ * Since: 2017.11
+ */
+typedef char *(*OstreeRepoImportArchiveTranslatePathname) (OstreeRepo     *repo,
+                                                           const struct stat *stbuf,
+                                                           const char     *src_path,
+                                                           gpointer        user_data);
+
+/**
  * OstreeRepoImportArchiveOptions: (skip)
  *
  * An extensible options structure controlling archive import.  Ensure that
@@ -620,7 +746,9 @@ typedef struct {
   guint reserved : 28;
 
   guint unused_uint[8];
-  gpointer unused_ptrs[8];
+  OstreeRepoImportArchiveTranslatePathname translate_pathname;
+  gpointer translate_pathname_user_data;
+  gpointer unused_ptrs[6];
 } OstreeRepoImportArchiveOptions;
 
 _OSTREE_PUBLIC
@@ -643,6 +771,7 @@ typedef struct {
   guint disable_xattrs : 1;
   guint reserved : 31;
 
+  /* 4 byte hole on 64 bit arches */
   guint64 timestamp_secs;
 
   guint unused_uint[8];
@@ -717,11 +846,15 @@ typedef enum {
 /**
  * OstreeRepoCheckoutOverwriteMode:
  * @OSTREE_REPO_CHECKOUT_OVERWRITE_NONE: No special options
- * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES: When layering checkouts, overwrite earlier files, but keep earlier directories
+ * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES: When layering checkouts, unlink() and replace existing files, but do not modify existing directories
+ * @OSTREE_REPO_CHECKOUT_OVERWRITE_ADD_FILES: Only add new files/directories
+ * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_IDENTICAL: Like UNION_FILES, but error if files are not identical (requires hardlink checkouts)
  */
 typedef enum {
   OSTREE_REPO_CHECKOUT_OVERWRITE_NONE = 0,
-  OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES = 1
+  OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES = 1,
+  OSTREE_REPO_CHECKOUT_OVERWRITE_ADD_FILES = 2, /* Since: 2017.3 */
+  OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_IDENTICAL = 3, /* Since: 2017.11 */
 } OstreeRepoCheckoutOverwriteMode;
 
 _OSTREE_PUBLIC
@@ -752,14 +885,19 @@ typedef struct {
   gboolean enable_fsync;  /* Deprecated */
   gboolean process_whiteouts;
   gboolean no_copy_fallback;
-  gboolean unused_bools[7];
+  gboolean force_copy; /* Since: 2017.6 */
+  gboolean bareuseronly_dirs; /* Since: 2017.7 */
+  gboolean unused_bools[5];
+  /* 4 byte hole on 64 bit */
 
   const char *subpath;
 
   OstreeRepoDevInoCache *devino_to_csum_cache;
 
   int unused_ints[6];
-  gpointer unused_ptrs[7];
+  gpointer unused_ptrs[5];
+  OstreeSePolicy *sepolicy; /* Since: 2017.6 */
+  const char *sepolicy_prefix;
 } OstreeRepoCheckoutAtOptions;
 
 _OSTREE_PUBLIC
@@ -885,6 +1023,7 @@ gboolean ostree_repo_traverse_commit_union (OstreeRepo         *repo,
 
 struct _OstreeRepoCommitTraverseIter {
   gboolean initialized;
+  /* 4 byte hole on 64 bit */
   gpointer dummy[10];
   char dummy_checksum_data[(OSTREE_SHA256_STRING_LEN+1)*2];
 };
@@ -970,18 +1109,45 @@ gboolean ostree_repo_prune (OstreeRepo        *self,
                             GCancellable      *cancellable,
                             GError           **error);
 
+struct _OstreeRepoPruneOptions {
+  OstreeRepoPruneFlags flags;
+
+  /* 4 byte hole on 64 bit */
+
+  GHashTable *reachable; /* Set<GVariant> (object names) */
+
+  gboolean unused_bools[6];
+  int unused_ints[6];
+  gpointer unused_ptrs[7];
+};
+
+typedef struct _OstreeRepoPruneOptions OstreeRepoPruneOptions;
+
+_OSTREE_PUBLIC
+gboolean ostree_repo_prune_from_reachable (OstreeRepo             *self,
+                                           OstreeRepoPruneOptions *options,
+                                           gint              *out_objects_total,
+                                           gint              *out_objects_pruned,
+                                           guint64           *out_pruned_object_size_total,
+                                           GCancellable           *cancellable,
+                                           GError              **error);
+
 /**
  * OstreeRepoPullFlags:
  * @OSTREE_REPO_PULL_FLAGS_NONE: No special options for pull
- * @OSTREE_REPO_PULL_FLAGS_MIRROR: Write out refs suitable for mirrors
+ * @OSTREE_REPO_PULL_FLAGS_MIRROR: Write out refs suitable for mirrors and fetch all refs if none requested
  * @OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY: Fetch only the commit metadata
- * @OSTREE_REPO_PULL_FLAGS_UNTRUSTED: Don't trust local remote
+ * @OSTREE_REPO_PULL_FLAGS_UNTRUSTED: Do verify checksums of local (filesystem-accessible) repositories (defaults on for HTTP)
+ * @OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES: Since 2017.7.  Reject writes of content objects with modes outside of 0775.
+ * @OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP: Don't verify checksums of objects HTTP repositories (Since: 2017.12)
  */
 typedef enum {
   OSTREE_REPO_PULL_FLAGS_NONE,
   OSTREE_REPO_PULL_FLAGS_MIRROR = (1 << 0),
   OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY = (1 << 1),
-  OSTREE_REPO_PULL_FLAGS_UNTRUSTED = (1 << 2)
+  OSTREE_REPO_PULL_FLAGS_UNTRUSTED = (1 << 2),
+  OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES = (1 << 3),
+  OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP = (1 << 4),
 } OstreeRepoPullFlags;
 
 _OSTREE_PUBLIC
@@ -1011,6 +1177,51 @@ gboolean ostree_repo_pull_with_options (OstreeRepo             *self,
                                         OstreeAsyncProgress    *progress,
                                         GCancellable           *cancellable,
                                         GError                **error);
+
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+
+_OSTREE_PUBLIC
+void ostree_repo_find_remotes_async (OstreeRepo                         *self,
+                                     const OstreeCollectionRef * const  *refs,
+                                     GVariant                           *options,
+                                     OstreeRepoFinder                  **finders,
+                                     OstreeAsyncProgress                *progress,
+                                     GCancellable                       *cancellable,
+                                     GAsyncReadyCallback                 callback,
+                                     gpointer                            user_data);
+_OSTREE_PUBLIC
+OstreeRepoFinderResult **ostree_repo_find_remotes_finish (OstreeRepo    *self,
+                                                          GAsyncResult  *result,
+                                                          GError       **error);
+
+_OSTREE_PUBLIC
+void ostree_repo_pull_from_remotes_async (OstreeRepo                           *self,
+                                          const OstreeRepoFinderResult * const *results,
+                                          GVariant                             *options,
+                                          OstreeAsyncProgress                  *progress,
+                                          GCancellable                         *cancellable,
+                                          GAsyncReadyCallback                   callback,
+                                          gpointer                              user_data);
+_OSTREE_PUBLIC
+gboolean ostree_repo_pull_from_remotes_finish (OstreeRepo    *self,
+                                               GAsyncResult  *result,
+                                               GError       **error);
+
+_OSTREE_PUBLIC
+OstreeRemote *ostree_repo_resolve_keyring_for_collection (OstreeRepo    *self,
+                                                          const gchar   *collection_id,
+                                                          GCancellable  *cancellable,
+                                                          GError       **error);
+
+_OSTREE_PUBLIC
+gboolean ostree_repo_list_collection_refs (OstreeRepo                 *self,
+                                           const char                 *match_collection_id,
+                                           GHashTable                 **out_all_refs,
+                                           OstreeRepoListRefsExtFlags flags,
+                                           GCancellable               *cancellable,
+                                           GError                     **error);
+
+#endif /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
 _OSTREE_PUBLIC
 void ostree_repo_pull_default_console_progress_changed (OstreeAsyncProgress *progress,
@@ -1096,6 +1307,32 @@ gboolean ostree_repo_regenerate_summary (OstreeRepo     *self,
                                          GCancellable   *cancellable,
                                          GError        **error);
 
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+
+/**
+ * OSTREE_REPO_METADATA_REF:
+ *
+ * The name of a ref which is used to store metadata for the entire repository,
+ * such as its expected update time (`ostree.summary.expires`), name, or new
+ * GPG keys. Metadata is stored on contentless commits in the ref, and hence is
+ * signed with the commits.
+ *
+ * This supersedes the additional metadata dictionary in the `summary` file
+ * (see ostree_repo_regenerate_summary()), as the use of a ref means that the
+ * metadata for multiple upstream repositories can be included in a single mirror
+ * repository, disambiguating the refs using collection IDs. In order to support
+ * peer to peer redistribution of repository metadata, repositories must set a
+ * collection ID (ostree_repo_set_collection_id()).
+ *
+ * Users of OSTree may place arbitrary metadata in commits on this ref, but the
+ * keys must be namespaced by product or developer. For example,
+ * `exampleos.end-of-life`. The `ostree.` prefix is reserved.
+ *
+ * Since: 2017.8
+ */
+#define OSTREE_REPO_METADATA_REF "ostree-metadata"
+
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
 G_END_DECLS
 

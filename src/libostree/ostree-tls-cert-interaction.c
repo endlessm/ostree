@@ -1,5 +1,4 @@
-/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
- *
+/*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
  * This library is free software; you can redistribute it and/or
@@ -24,6 +23,8 @@ struct _OstreeTlsCertInteraction
 {
   GTlsInteraction parent_instance;
 
+  char *cert_path;
+  char *key_path;
   GTlsCertificate *cert;
 };
 
@@ -44,6 +45,14 @@ request_certificate (GTlsInteraction              *interaction,
                      GError                      **error)
 {
   OstreeTlsCertInteraction *self = (OstreeTlsCertInteraction*)interaction;
+
+  if (!self->cert)
+    {
+      self->cert = g_tls_certificate_new_from_files (self->cert_path, self->key_path, error);
+      if (!self->cert)
+        return G_TLS_INTERACTION_FAILED;
+    }
+
   g_tls_connection_set_certificate (connection, self->cert);
   return G_TLS_INTERACTION_HANDLED;
 }
@@ -61,9 +70,11 @@ _ostree_tls_cert_interaction_class_init (OstreeTlsCertInteractionClass *klass)
 }
 
 OstreeTlsCertInteraction *
-_ostree_tls_cert_interaction_new (GTlsCertificate *cert)
+_ostree_tls_cert_interaction_new (const char *cert_path,
+                                  const char *key_path)
 {
   OstreeTlsCertInteraction *self = g_object_new (OSTREE_TYPE_TLS_CERT_INTERACTION, NULL);
-  self->cert = g_object_ref (cert);
+  self->cert_path = g_strdup (cert_path);
+  self->key_path = g_strdup (key_path);
   return self;
 }

@@ -74,6 +74,16 @@ Boston, MA 02111-1307, USA.
             </varlistentry>
 
             <varlistentry>
+              <term><option>--localcache-repo</option></term>
+
+              <listitem><para>
+                Like git's <literal>clone --reference</literal>.  Reuse the provided
+                OSTree repo as a local object cache when doing HTTP fetches.
+                May be specified multiple times.
+              </para></listitem>
+            </varlistentry>
+
+            <varlistentry>
                 <term><option>--untrusted</option></term>
 
                 <listitem><para>
@@ -93,7 +103,12 @@ Boston, MA 02111-1307, USA.
                 <term><option>--mirror</option></term>
 
                 <listitem><para>
-                    Write refs suitable for a mirror.
+                    Write refs suitable for a mirror, i.e. refs are stored in the
+                    <literal>heads/</literal> directory rather than the
+                    <literal>remotes/</literal> directory. This makes the target repo
+                    suitable to be exported for other clients to pull from as an ostree
+                    remote. If no specific refs are specified, all refs will be fetched (the
+                    remote must have a summary file present).
                 </para></listitem>
             </varlistentry>
 
@@ -122,12 +137,15 @@ Boston, MA 02111-1307, USA.
 	  This command can retrieve just a specific commit, or go all
 	  the way to performing a full mirror of the remote
 	  repository.  If no <literal>BRANCH</literal> is specified,
-	  all branches are retrieved.
+	  all configured branches are retrieved.
         </para>
 
 	<para>
-	  A special syntax in the <literal>@</literal> character allows
-	  specifying a specific commit to retrieve from a branch.  This
+    A special syntax in the <literal>@</literal> character allows
+    specifying a specific commit to retrieve from a branch.  The
+    use cases for this are somewhat similar to pulling a specific
+    git tag; one could e.g. script a system upgrade to a known-good
+    version, rather than the latest from the content provider.
 	</para>
 
     </refsect1>
@@ -139,7 +157,7 @@ Boston, MA 02111-1307, USA.
 
 	<para>Perform a complete mirror of the remote.  (This is
 	likely most useful if your repository is also
-	<literal>archive-z2</literal> mode)</para>
+	<literal>archive</literal> mode)</para>
 
         <para><command>$ ostree --repo=repo pull remote_name exampleos/x86_64/standard</command></para>
 
