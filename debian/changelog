@@ -1,5 +1,6 @@
 ostree (2017.12-1xenial1) UNRELEASED; urgency=medium
 
+  [Dan Nicholson]
   * Backport to xenial (T18830)
     - Drop debhelper compat back to 9 since 10 is not in xenial.
       + debian/compat: Drop back to debhelper 9.
@@ -12,6 +13,9 @@ ostree (2017.12-1xenial1) UNRELEASED; urgency=medium
   * Add Endless specific ostree_repo_delete_compat_signature and
     ostree_repo_get_commit_sizes ABIs to symbols file. These are
     specified to the 2016.3 version like all older symbols.
+
+  [Philip Withnall]
+  * Add new symbols for OstreeRepoFinderOverride
 
  -- Dan Nicholson <nicholson@endlessm.com>  Tue, 24 Oct 2017 11:17:43 +0000
 
