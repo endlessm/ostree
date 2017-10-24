@@ -1,4 +1,4 @@
-ostree (2017.12-1xenial1) UNRELEASED; urgency=medium
+ostree (2017.12-1xenial1) xenial; urgency=medium
 
   * Backport to xenial (T18830)
     - Drop debhelper compat back to 9 since 10 is not in xenial.
@@ -12,8 +12,11 @@ ostree (2017.12-1xenial1) UNRELEASED; urgency=medium
   * Add Endless specific ostree_repo_delete_compat_signature and
     ostree_repo_get_commit_sizes ABIs to symbols file. These are
     specified to the 2016.3 version like all older symbols.
+  * Enable experimental API and update symbols file. (T19082)
+  * Remove patches that are on our main branch or aren't needed since we
+    generate our own tarball.
 
- -- Dan Nicholson <nicholson@endlessm.com>  Tue, 24 Oct 2017 11:17:43 +0000
+ -- Dan Nicholson <nicholson@endlessm.com>  Tue, 24 Oct 2017 13:58:51 +0000
 
 ostree (2017.12-1) unstable; urgency=medium
 
