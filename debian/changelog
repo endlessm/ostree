@@ -1,3 +1,13 @@
+ostree (2017.12-0endless2) unstable; urgency=medium
+
+  * Pull in upstream patches before 2017.13 release
+    - https://github.com/ostreedev/ostree/pull/1281
+    - https://github.com/ostreedev/ostree/pull/1293
+    - https://github.com/ostreedev/ostree/pull/1301
+    - https://github.com/ostreedev/ostree/pull/1303
+
+ -- Philip Withnall <withnall@endlessm.com>  Tue, 24 Oct 2017 19:08:00 +0100
+
 ostree (2017.12-0endless1) unstable; urgency=medium
 
   * Resync Debian packaging changes
