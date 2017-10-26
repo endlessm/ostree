@@ -28,10 +28,12 @@ if [ "$failed" -gt 0 ]; then
 fi
 
 pkill --full "gpg-agent --homedir /var/tmp/tap-test\\.[^/]+/.*" || :
+pkill --full '\.libs/ostree-trivial-httpd' || :
 
-if pgrep lt-ostree || pgrep --full "gpg-agent --homedir /var/tmp/tap-test."; then \
+if pgrep lt-ostree || pgrep --full '\.libs/ostree-trivial-httpd' || pgrep --full "gpg-agent --homedir /var/tmp/tap-test."; then \
     echo "WARNING: daemon processes were leaked"
     pgrep gpg-agent | xargs --no-run-if-empty ps ww
+    pgrep --full '\.libs/ostree-trivial-httpd' | xargs --no-run-if-empty ps ww
     pgrep lt-ostree | xargs --no-run-if-empty ps ww
 fi
 
