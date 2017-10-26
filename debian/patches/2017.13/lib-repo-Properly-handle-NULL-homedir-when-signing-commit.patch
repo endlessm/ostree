@@ -1,0 +1,31 @@
+From: Dan Nicholson <nicholson@endlessm.com>
+Date: Tue, 24 Oct 2017 19:27:17 +0000
+Subject: lib/repo: Properly handle NULL homedir when signing commit
+
+Without this, ostree_repo_sign_commit throws a critical message when no
+homedir is provided:
+
+(ostree gpg-sign:5034): GLib-GIO-CRITICAL **: g_file_new_for_path: assertion 'path != NULL' failed
+
+Closes: #1305
+Approved by: cgwalters
+Origin: upstream, 2017.13, commit:63ce86d5977ebfbedd2cdfba1e4f6bd400a3a1b8
+---
+ src/libostree/ostree-repo.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/libostree/ostree-repo.c b/src/libostree/ostree-repo.c
+index 1e336e9..0632ee2 100644
+--- a/src/libostree/ostree-repo.c
++++ b/src/libostree/ostree-repo.c
+@@ -4119,7 +4119,9 @@ ostree_repo_sign_commit (OstreeRepo     *self,
+    * pass the homedir so that the signing key can be imported, allowing
+    * subkey signatures to be recognised. */
+   g_autoptr(GError) local_error = NULL;
+-  g_autoptr(GFile) verify_keydir = g_file_new_for_path (homedir);
++  g_autoptr(GFile) verify_keydir = NULL;
++  if (homedir != NULL)
++    verify_keydir = g_file_new_for_path (homedir);
+   g_autoptr(OstreeGpgVerifyResult) result
+     =_ostree_repo_gpg_verify_with_metadata (self, commit_data, old_metadata,
+                                             NULL, verify_keydir, NULL,

@@ -4,6 +4,19 @@ ostree (2017.12-2) UNRELEASED; urgency=medium
     in particular for architecture-specific builds. Note that it remains
     in Build-Depends (not Build-Depends-Indep) because it is also needed
     for gtkdocize during dh_autoreconf.
+  * d/p/2017.13/lib-core-Init-struct-stat-buffer.patch,
+    d/p/2017.13/lib-sysroot-Fix-pointer-going-out-of-scope-in-unlock-code.patch,
+    d/p/2017.13/lib-deploy-Ignore-FIFREEZE-FITHAW-errors-when-already-in-.patch,
+    d/p/2017.13/lib-deploy-Use-_exit-for-FIFREEZE-watchdog.patch,
+    d/p/2017.13/lib-deltas-Check-cancellable-during-processing.patch,
+    d/p/2017.13/lib-utils-Check-for-invalid-UTF-8-in-filenames.patch,
+    d/p/2017.13/Cope-with-xattr-syscalls-raising-EOPNOTSUPP.patch,
+    d/p/2017.13/lib-sysroot-Fix-error-handling-when-mounting-overlayfs-fa.patch,
+    d/p/2017.13/lib-repo-Properly-handle-NULL-homedir-when-signing-commit.patch,
+    d/p/2017.13/lib-repo-Fix-loading-commitstate-with-parent-repos.patch:
+    Add various bugfix patches from upstream
+  * d/p/2017.13/tests-Add-test-pull-bareuseronly.patch:
+    Add more test coverage from upstream
 
  -- Simon McVittie <smcv@debian.org>  Mon, 16 Oct 2017 10:13:54 +0100
 

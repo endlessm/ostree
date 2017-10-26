@@ -1,0 +1,33 @@
+From: Colin Walters <walters@verbum.org>
+Date: Wed, 4 Oct 2017 10:24:21 -0400
+Subject: lib/sysroot: Fix pointer going out of scope in unlock code
+
+Fixes Coverity CID #1457317
+
+Closes: #1249
+Approved by: jlebon
+Origin: upstream, 2017.13, commit:351ffdb9778436b193ba9d2fbeebe2358e55004f
+---
+ src/libostree/ostree-sysroot.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libostree/ostree-sysroot.c b/src/libostree/ostree-sysroot.c
+index fe61a12..2ee5eb5 100644
+--- a/src/libostree/ostree-sysroot.c
++++ b/src/libostree/ostree-sysroot.c
+@@ -1698,6 +1698,7 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
+     return FALSE;
+ 
+   const char *ovl_options = NULL;
++  static const char hotfix_ovl_options[] = "lowerdir=usr,upperdir=.usr-ovl-upper,workdir=.usr-ovl-work";
+   switch (unlocked_state)
+     {
+     case OSTREE_DEPLOYMENT_UNLOCKED_NONE:
+@@ -1705,7 +1706,6 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
+       break;
+     case OSTREE_DEPLOYMENT_UNLOCKED_HOTFIX:
+       {
+-        const char hotfix_ovl_options[] = "lowerdir=usr,upperdir=.usr-ovl-upper,workdir=.usr-ovl-work";
+         /* Create the overlayfs directories in the deployment root
+          * directly for hotfixes.  The ostree-prepare-root.c helper
+          * is also set up to detect and mount these.

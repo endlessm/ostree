@@ -1,0 +1,28 @@
+From: Colin Walters <walters@verbum.org>
+Date: Thu, 12 Oct 2017 10:46:25 -0400
+Subject: lib/deltas: Check cancellable during processing
+
+Let's react to `Ctrl-C` faster here. Noticed while I was doing an update on my
+desktop and playing with cancellation.
+
+Closes: #1266
+Approved by: jlebon
+Origin: upstream, 2017.13, commit:a1986b1a8083ef4f840973f1c73d932a52e43644
+---
+ src/libostree/ostree-repo-static-delta-processing.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/libostree/ostree-repo-static-delta-processing.c b/src/libostree/ostree-repo-static-delta-processing.c
+index 844de2c..78bf7e1 100644
+--- a/src/libostree/ostree-repo-static-delta-processing.c
++++ b/src/libostree/ostree-repo-static-delta-processing.c
+@@ -229,6 +229,9 @@ _ostree_static_delta_part_execute (OstreeRepo      *repo,
+       state->oplen--;
+       state->opdata++;
+ 
++      if (g_cancellable_set_error_if_cancelled (cancellable, error))
++        goto out;
++
+       switch (opcode)
+         {
+         case OSTREE_STATIC_DELTA_OP_OPEN_SPLICE_AND_CLOSE:

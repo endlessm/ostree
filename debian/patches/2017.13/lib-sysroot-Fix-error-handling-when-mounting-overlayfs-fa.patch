@@ -1,0 +1,57 @@
+From: Colin Walters <walters@verbum.org>
+Date: Mon, 16 Oct 2017 15:29:38 -0400
+Subject: lib/sysroot: Fix error handling when mounting overlayfs fails
+
+This isn't perfect, but at least we fix an error-overwrite error, and in
+practice `ostree admin unlock` isn't wrapped by `rpm-ostree` yet, so spew to
+stderr is OK.
+
+Closes: https://github.com/ostreedev/ostree/issues/1273
+
+Closes: #1279
+Approved by: guyshapiro
+Origin: upstream, 2017.13, commit:464965e6b4897f9c6d4487ca10eb5bc60ad9a670
+---
+ src/libostree/ostree-sysroot.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/src/libostree/ostree-sysroot.c b/src/libostree/ostree-sysroot.c
+index 2ee5eb5..16f76f7 100644
+--- a/src/libostree/ostree-sysroot.c
++++ b/src/libostree/ostree-sysroot.c
+@@ -22,6 +22,7 @@
+ #include "otutil.h"
+ #include <sys/file.h>
+ #include <sys/mount.h>
++#include <err.h>
+ #include <sys/wait.h>
+ 
+ #include "ostree.h"
+@@ -1763,11 +1764,15 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
+       return glnx_throw_errno_prefix (error, "fork");
+     else if (mount_child == 0)
+       {
+-        /* Child process.  Do NOT use any GLib API here. */
++        /* Child process. Do NOT use any GLib API here; it's not generally fork() safe.
++         *
++         * TODO: report errors across a pipe (or use the journal?) rather than
++         * spewing to stderr.
++         */
+         if (fchdir (deployment_dfd) < 0)
+-          exit (EXIT_FAILURE);
++          err (1, "fchdir");
+         if (mount ("overlay", "/usr", "overlay", 0, ovl_options) < 0)
+-          exit (EXIT_FAILURE);
++          err (1, "mount");
+         exit (EXIT_SUCCESS);
+       }
+     else
+@@ -1778,7 +1783,7 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
+         if (TEMP_FAILURE_RETRY (waitpid (mount_child, &estatus, 0)) < 0)
+           return glnx_throw_errno_prefix (error, "waitpid() on mount helper");
+         if (!g_spawn_check_exit_status (estatus, error))
+-          return glnx_throw_errno_prefix (error, "overlayfs mount helper");
++          return glnx_prefix_error (error, "Failed overlayfs mount");
+       }
+   }
+ 
