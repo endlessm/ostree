@@ -11,4 +11,5 @@ dist/Add-missing-test-libglnx-shutil.patch
 2017.13/lib-sysroot-Fix-error-handling-when-mounting-overlayfs-fa.patch
 2017.13/tests-Add-test-pull-bareuseronly.patch
 2017.13/lib-repo-Properly-handle-NULL-homedir-when-signing-commit.patch
+2017.13/fdio-allow-NULL-for-fstatat_allow_noent-stbuf.patch
 2017.13/lib-repo-Fix-loading-commitstate-with-parent-repos.patch

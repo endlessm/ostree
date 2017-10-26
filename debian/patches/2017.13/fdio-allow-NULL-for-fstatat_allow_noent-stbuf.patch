@@ -1,0 +1,60 @@
+From: Jonathan Lebon <jlebon@redhat.com>
+Date: Fri, 6 Oct 2017 21:26:41 +0000
+Subject: fdio: allow NULL for fstatat_allow_noent stbuf
+
+Often, the caller doesn't actually care about the details of the stat
+struct itself, but just whether the entry exists or not. It does work
+to just pass `NULL` directly to glibc in a quick test, but given that
+the argument is tagged as `__nonnull` and that the documentation does
+not explicitly specify this is supported, let's do this safely.
+
+Origin: upstream (submodule libglnx), 2017.13, commit:5362f6bc3ff3e30f379e767b203d15c9e56d6f08
+---
+ libglnx/glnx-fdio.h               |  5 +++--
+ libglnx/tests/test-libglnx-fdio.c | 10 ++++++++++
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/libglnx/glnx-fdio.h b/libglnx/glnx-fdio.h
+index 518135c..1aa0c43 100644
+--- a/libglnx/glnx-fdio.h
++++ b/libglnx/glnx-fdio.h
+@@ -299,7 +299,7 @@ glnx_fstatat (int           dfd,
+  * glnx_fstatat_allow_noent:
+  * @dfd: Directory FD to stat beneath
+  * @path: Path to stat beneath @dfd
+- * @buf: (out caller-allocates): Return location for stat details
++ * @buf: (out caller-allocates) (allow-none): Return location for stat details
+  * @flags: Flags to pass to fstatat()
+  * @error: Return location for a #GError, or %NULL
+  *
+@@ -318,7 +318,8 @@ glnx_fstatat_allow_noent (int               dfd,
+                           int               flags,
+                           GError          **error)
+ {
+-  if (TEMP_FAILURE_RETRY (fstatat (dfd, path, out_buf, flags)) != 0)
++  struct stat stbuf;
++  if (TEMP_FAILURE_RETRY (fstatat (dfd, path, out_buf ?: &stbuf, flags)) != 0)
+     {
+       if (errno != ENOENT)
+         {
+diff --git a/libglnx/tests/test-libglnx-fdio.c b/libglnx/tests/test-libglnx-fdio.c
+index bf973b9..350294c 100644
+--- a/libglnx/tests/test-libglnx-fdio.c
++++ b/libglnx/tests/test-libglnx-fdio.c
+@@ -161,6 +161,16 @@ test_fstatat (void)
+     return;
+   g_assert_cmpint (errno, ==, ENOENT);
+   g_assert_no_error (local_error);
++
++  /* test NULL parameter for stat */
++  if (!glnx_fstatat_allow_noent (AT_FDCWD, ".", NULL, 0, error))
++    return;
++  g_assert_cmpint (errno, ==, 0);
++  g_assert_no_error (local_error);
++  if (!glnx_fstatat_allow_noent (AT_FDCWD, "nosuchfile", NULL, 0, error))
++    return;
++  g_assert_cmpint (errno, ==, ENOENT);
++  g_assert_no_error (local_error);
+ }
+ 
+ static void
