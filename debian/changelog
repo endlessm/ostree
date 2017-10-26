@@ -1,4 +1,4 @@
-ostree (2017.12-2) UNRELEASED; urgency=medium
+ostree (2017.12-2) unstable; urgency=medium
 
   * Disable gtk-doc if we are not going to build libostree-doc,
     in particular for architecture-specific builds. Note that it remains
@@ -27,7 +27,7 @@ ostree (2017.12-2) UNRELEASED; urgency=medium
   * d/test.sh: Don't repeat build-time tests if they fail once. They seem
     to be somewhat reliable now.
 
- -- Simon McVittie <smcv@debian.org>  Mon, 16 Oct 2017 10:13:54 +0100
+ -- Simon McVittie <smcv@debian.org>  Fri, 27 Oct 2017 00:19:45 +0100
 
 ostree (2017.12-1) unstable; urgency=medium
 
