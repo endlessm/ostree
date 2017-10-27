@@ -1,3 +1,11 @@
+ostree (2017.12-3) UNRELEASED; urgency=medium
+
+  * d/control: Require dh-exec 0.23~, for build-profile support.
+    Strictly speaking we might only need 0.15, but I'm not going to
+    test versions older than the jessie backport.
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 27 Oct 2017 14:43:58 +0100
+
 ostree (2017.12-2) unstable; urgency=medium
 
   * Disable gtk-doc if we are not going to build libostree-doc,
