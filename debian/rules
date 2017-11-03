@@ -4,6 +4,7 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 # Some tests assert that we will see English strings
 export LC_ALL=C.UTF-8
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
 
 %:
 	dh $@ --parallel --with=autoreconf,gir,systemd
@@ -29,6 +30,16 @@ configure_options += --enable-man
 else
 configure_options += --disable-gtk-doc
 configure_options += --disable-man
+endif
+
+# rofiles-fuse causes a kernel hang on the Xenial armhf kernel somewhere
+# in the splice system call. This is almost certainly a FUSE issue in
+# the kernel, but just disable it for now until it can be reliably
+# reproduced and fixed.
+#
+# https://phabricator.endlessm.com/T18830
+ifeq ($(DEB_HOST_ARCH),armhf)
+configure_options += --disable-rofiles-fuse
 endif
 
 override_dh_auto_configure:
