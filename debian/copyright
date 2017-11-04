@@ -17,7 +17,7 @@ Copyright:
  © 2013 Javier Martinez <javier.martinez@collabora.co.uk>
  © 2013 Jeremy Whiting <jeremy.whiting@collabora.com>
  © 2013-2016 Sjoerd Simons <sjoerd.simons@collabora.co.uk>
- © 2014-2016 Alexander Larsson <alexl@redhat.com>
+ © 2014-2017 Alexander Larsson <alexl@redhat.com>
  © 2014 Owen Taylor <otaylor@redhat.com>
  © 2015 Dan Nicholson <nicholson@endlessm.com>
  © 2015 Canonical Ltd.
@@ -29,10 +29,14 @@ Files:
  libglnx/glnx-fdio.*
  libglnx/glnx-missing-syscall.h
  libglnx/glnx-missing.h
+ src/libotutil/ot-variant-builder.c
 Copyright:
+ © 2007-2008 Ryan Lortie
  © 2010-2011 Lennart Poettering
+ © 2010 Codethink Ltd.
  © 2014-2015 Colin Walters <walters@verbum.org>
  © 2016 Zbigniew Jędrzejewski-Szmek
+ © 2017 Alexander Larsson <alexl@redhat.com>
 License: LGPL-2.1+
 
 Files:
