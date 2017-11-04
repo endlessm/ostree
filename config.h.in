@@ -30,8 +30,9 @@
 /* Define if we have avahi-client.pc and avahi-glib.pc */
 #undef HAVE_AVAHI
 
-/* Define to 1 if you have the declaration of `', and to 0 if you don't. */
-#undef HAVE_DECL_
+/* Define to 1 if you have the declaration of `memfd_create', and to 0 if you
+   don't. */
+#undef HAVE_DECL_MEMFD_CREATE
 
 /* Define to 1 if you have the declaration of `renameat2', and to 0 if you
    don't. */

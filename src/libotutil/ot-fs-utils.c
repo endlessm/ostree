@@ -22,6 +22,7 @@
 #include "ot-fs-utils.h"
 #include "libglnx.h"
 #include <sys/xattr.h>
+#include <sys/mman.h>
 #include <gio/gunixinputstream.h>
 #include <gio/gunixoutputstream.h>
 
@@ -35,6 +36,9 @@ ot_fdrel_to_gfile (int dfd, const char *path)
   return g_file_new_for_path (abspath);
 }
 
+/* Wraps readlinkat(), and sets the `symlink-target` property
+ * of @target_info.
+ */
 gboolean
 ot_readlinkat_gfile_info (int             dfd,
                           const char     *path,
@@ -52,7 +56,6 @@ ot_readlinkat_gfile_info (int             dfd,
 
   return TRUE;
 }
-
 
 /**
  * ot_openat_read_stream:
@@ -76,16 +79,10 @@ ot_openat_read_stream (int             dfd,
                        GCancellable   *cancellable,
                        GError        **error)
 {
-  int fd = -1;
-  int flags = O_RDONLY | O_NOCTTY | O_CLOEXEC;
-
-  if (!follow)
-    flags |= O_NOFOLLOW;
-
-  if (TEMP_FAILURE_RETRY (fd = openat (dfd, path, flags, 0)) < 0)
-    return glnx_throw_errno_prefix (error, "openat(%s)", path);
-
-  *out_istream = g_unix_input_stream_new (fd, TRUE);
+  glnx_autofd int fd = -1;
+  if (!glnx_openat_rdonly (dfd, path, follow, &fd, error))
+    return FALSE;
+  *out_istream = g_unix_input_stream_new (glnx_steal_fd (&fd), TRUE);
   return TRUE;
 }
 
@@ -130,7 +127,7 @@ ot_dfd_iter_init_allow_noent (int dfd,
                               gboolean *out_exists,
                               GError **error)
 {
-  glnx_fd_close int fd = glnx_opendirat_with_errno (dfd, path, TRUE);
+  glnx_autofd int fd = glnx_opendirat_with_errno (dfd, path, TRUE);
   if (fd < 0)
     {
       if (errno != ENOENT)
@@ -144,22 +141,57 @@ ot_dfd_iter_init_allow_noent (int dfd,
   return TRUE;
 }
 
-GBytes *
-ot_file_mapat_bytes (int dfd,
-                     const char *path,
-                     GError **error)
+typedef struct {
+  gpointer addr;
+  gsize len;
+} MapData;
+
+static void
+map_data_destroy (gpointer data)
 {
-  glnx_fd_close int fd = openat (dfd, path, O_RDONLY | O_CLOEXEC);
-  g_autoptr(GMappedFile) mfile = NULL;
+  MapData *mdata = data;
+  (void) munmap (mdata->addr, mdata->len);
+  g_free (mdata);
+}
 
-  if (fd < 0)
-    return glnx_null_throw_errno_prefix (error, "openat(%s)", path);
-
-  mfile = g_mapped_file_new_from_fd (fd, FALSE, error);
-  if (!mfile)
+/* Return a newly-allocated GBytes that refers to the contents of the file
+ * starting at offset @start. If the file is large enough, mmap() may be used.
+ */
+GBytes *
+ot_fd_readall_or_mmap (int           fd,
+                       goffset       start,
+                       GError      **error)
+{
+  struct stat stbuf;
+  if (!glnx_fstat (fd, &stbuf, error))
     return FALSE;
 
-  return g_mapped_file_get_bytes (mfile);
+  /* http://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access */
+  if (start > stbuf.st_size)
+    return g_bytes_new_static (NULL, 0);
+  const gsize len = stbuf.st_size - start;
+  if (len > 16*1024)
+    {
+      /* The reason we don't use g_mapped_file_new_from_fd() here
+       * is it doesn't support passing an offset, which is actually
+       * used by the static delta code.
+       */
+      gpointer map = mmap (NULL, len, PROT_READ, MAP_PRIVATE, fd, start);
+      if (map == (void*)-1)
+        return glnx_null_throw_errno_prefix (error, "mmap");
+
+      MapData *mdata = g_new (MapData, 1);
+      mdata->addr = map;
+      mdata->len = len;
+
+      return g_bytes_new_with_free_func (map, len, map_data_destroy, mdata);
+    }
+
+  /* Fall through to plain read into a malloc buffer */
+  if (lseek (fd, start, SEEK_SET) < 0)
+    return glnx_null_throw_errno_prefix (error, "lseek");
+  /* Not cancellable since this should be small */
+  return glnx_fd_readall_bytes (fd, NULL, error);
 }
 
 /* Given an input stream, splice it to an anonymous file (O_TMPFILE).

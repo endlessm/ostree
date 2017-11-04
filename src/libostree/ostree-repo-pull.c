@@ -105,11 +105,12 @@ typedef struct {
   GVariant         *summary;
   GHashTable       *summary_deltas_checksums;
   GHashTable       *ref_original_commits; /* Maps checksum to commit, used by timestamp checks */
+  GHashTable       *gpg_verified_commits; /* Set<checksum> of commits that have been verified */
   GPtrArray        *static_delta_superblocks;
   GHashTable       *expected_commit_sizes; /* Maps commit checksum to known size */
   GHashTable       *commit_to_depth; /* Maps commit checksum maximum depth */
   GHashTable       *scanned_metadata; /* Maps object name to itself */
-  GHashTable       *fetched_detached_metadata; /* Set<checksum> */
+  GHashTable       *fetched_detached_metadata; /* Map<checksum,GVariant> */
   GHashTable       *requested_metadata; /* Maps object name to itself */
   GHashTable       *requested_content; /* Maps checksum to itself */
   GHashTable       *requested_fallback_content; /* Maps checksum to itself */
@@ -142,6 +143,7 @@ typedef struct {
   guint64           start_time;
 
   gboolean          is_mirror;
+  gboolean          trusted_http_direct;
   gboolean          is_commit_only;
   OstreeRepoImportFlags importflags;
 
@@ -191,6 +193,13 @@ typedef struct {
   OstreeCollectionRef *requested_ref;  /* (nullable) */
 } ScanObjectQueueData;
 
+static void
+variant_or_null_unref (gpointer data)
+{
+  if (data)
+    g_variant_unref (data);
+}
+
 static void start_fetch (OtPullData *pull_data, FetchObjectData *fetch);
 static void start_fetch_deltapart (OtPullData *pull_data,
                                    FetchStaticDeltaData *fetch);
@@ -209,15 +218,23 @@ static void queue_scan_one_metadata_object_c (OtPullData                *pull_da
                                               guint                      recursion_depth,
                                               const OstreeCollectionRef *ref);
 
-static gboolean scan_one_metadata_object_c (OtPullData                 *pull_data,
-                                            const guchar               *csum,
-                                            OstreeObjectType            objtype,
-                                            const char                 *path,
-                                            guint                       recursion_depth,
-                                            const OstreeCollectionRef  *ref,
-                                            GCancellable               *cancellable,
-                                            GError                    **error);
+static gboolean scan_one_metadata_object (OtPullData                 *pull_data,
+                                          const char                 *checksum,
+                                          OstreeObjectType            objtype,
+                                          const char                 *path,
+                                          guint                       recursion_depth,
+                                          const OstreeCollectionRef  *ref,
+                                          GCancellable               *cancellable,
+                                          GError                    **error);
 static void scan_object_queue_data_free (ScanObjectQueueData *scan_data);
+static gboolean
+gpg_verify_unwritten_commit (OtPullData         *pull_data,
+                             const char         *checksum,
+                             GVariant           *commit,
+                             GVariant           *detached_metadata,
+                             GCancellable       *cancellable,
+                             GError            **error);
+
 
 static gboolean
 update_progress (gpointer user_data)
@@ -450,6 +467,11 @@ scan_object_queue_data_free (ScanObjectQueueData *scan_data)
   g_free (scan_data);
 }
 
+/* Called out of the main loop to process the "scan object queue", which is a
+ * queue of metadata objects (commits and dirtree, but not dirmeta) to parse to
+ * look for further objects. Basically wraps execution of
+ * `scan_one_metadata_object()`.
+ */
 static gboolean
 idle_worker (gpointer user_data)
 {
@@ -464,14 +486,11 @@ idle_worker (gpointer user_data)
       return G_SOURCE_REMOVE;
     }
 
-  scan_one_metadata_object_c (pull_data,
-                              scan_data->csum,
-                              scan_data->objtype,
-                              scan_data->path,
-                              scan_data->recursion_depth,
-                              scan_data->requested_ref,
-                              pull_data->cancellable,
-                              &error);
+  char checksum[OSTREE_SHA256_STRING_LEN+1];
+  ostree_checksum_inplace_from_bytes (scan_data->csum, checksum);
+  scan_one_metadata_object (pull_data, checksum, scan_data->objtype,
+                            scan_data->path, scan_data->recursion_depth,
+                            scan_data->requested_ref, pull_data->cancellable, &error);
   check_outstanding_requests_handle_error (pull_data, &error);
   scan_object_queue_data_free (scan_data);
 
@@ -544,7 +563,7 @@ write_commitpartial_for (OtPullData *pull_data,
                          GError **error)
 {
   g_autofree char *commitpartial_path = _ostree_get_commitpartial_path (checksum);
-  glnx_fd_close int fd = openat (pull_data->repo->repo_dir_fd, commitpartial_path, O_EXCL | O_CREAT | O_WRONLY | O_CLOEXEC | O_NOCTTY, 0644);
+  glnx_autofd int fd = openat (pull_data->repo->repo_dir_fd, commitpartial_path, O_EXCL | O_CREAT | O_WRONLY | O_CLOEXEC | O_NOCTTY, 0644);
   if (fd == -1)
     {
       if (errno != EEXIST)
@@ -844,7 +863,7 @@ fetch_ref_contents (OtPullData                 *pull_data,
     {
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
       if (!ostree_repo_resolve_collection_ref (pull_data->remote_repo_local,
-                                               ref, TRUE  /* ignore enoent */,
+                                               ref, FALSE,
                                                OSTREE_REPO_RESOLVE_REV_EXT_NONE,
                                                &ret_contents, cancellable, error))
         return FALSE;
@@ -855,7 +874,7 @@ fetch_ref_contents (OtPullData                 *pull_data,
   else if (pull_data->remote_repo_local != NULL)
     {
       if (!ostree_repo_resolve_rev_ext (pull_data->remote_repo_local,
-                                        ref->ref_name, TRUE  /* ignore enoent */,
+                                        ref->ref_name, FALSE,
                                         OSTREE_REPO_RESOLVE_REV_EXT_NONE,
                                         &ret_contents, error))
         return FALSE;
@@ -874,14 +893,13 @@ fetch_ref_contents (OtPullData                 *pull_data,
                                                   filename, &ret_contents,
                                                   cancellable, error))
         return FALSE;
+
+      g_strchomp (ret_contents);
     }
 
-  /* Validate and return. */
-  if (ret_contents != NULL)
-    g_strchomp (ret_contents);
+  g_assert (ret_contents);
 
-  if (ret_contents == NULL ||
-      !ostree_validate_checksum_string (ret_contents, error))
+  if (!ostree_validate_checksum_string (ret_contents, error))
     return glnx_prefix_error (error, "Fetching checksum for ref (%s, %s)",
                               ref->collection_id ? ref->collection_id : "(empty)",
                               ref->ref_name);
@@ -987,13 +1005,8 @@ content_fetch_on_write_complete (GObject        *object,
   checksum_obj = ostree_object_to_string (checksum, objtype);
   g_debug ("write of %s complete", checksum_obj);
 
-  if (strcmp (checksum, expected_checksum) != 0)
-    {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                   "Corrupted content object; checksum expected='%s' actual='%s'",
-                   expected_checksum, checksum);
-      goto out;
-    }
+  if (!_ostree_compare_object_checksum (objtype, expected_checksum, checksum, error))
+    goto out;
 
   pull_data->n_fetched_content++;
   /* Was this a delta fallback? */
@@ -1017,17 +1030,18 @@ content_fetch_on_complete (GObject        *object,
   GError **error = &local_error;
   GCancellable *cancellable = NULL;
   guint64 length;
+  g_auto(GLnxTmpfile) tmpf = { 0, };
+  g_autoptr(GInputStream) tmpf_input = NULL;
   g_autoptr(GFileInfo) file_info = NULL;
   g_autoptr(GVariant) xattrs = NULL;
   g_autoptr(GInputStream) file_in = NULL;
   g_autoptr(GInputStream) object_input = NULL;
-  g_auto(OtCleanupUnlinkat) tmp_unlinker = { _ostree_fetcher_get_dfd (fetcher), NULL };
   const char *checksum;
   g_autofree char *checksum_obj = NULL;
   OstreeObjectType objtype;
   gboolean free_fetch_data = TRUE;
 
-  if (!_ostree_fetcher_request_to_tmpfile_finish (fetcher, result, &tmp_unlinker.path, error))
+  if (!_ostree_fetcher_request_to_tmpfile_finish (fetcher, result, &tmpf, error))
     goto out;
 
   ostree_object_name_deserialize (fetch_data->object, &checksum, &objtype);
@@ -1039,47 +1053,30 @@ content_fetch_on_complete (GObject        *object,
   const gboolean verifying_bareuseronly =
     (pull_data->importflags & _OSTREE_REPO_IMPORT_FLAGS_VERIFY_BAREUSERONLY) > 0;
 
-  /* If we're mirroring and writing into an archive repo, and both checksum and
-   * bareuseronly are turned off, we can directly copy the content rather than
-   * paying the cost of exploding it, checksumming, and re-gzip.
+  /* See comments where we set this variable; this is implementing
+   * the --trusted-http/OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP flags.
    */
-  const gboolean mirroring_into_archive =
-    pull_data->is_mirror && pull_data->repo->mode == OSTREE_REPO_MODE_ARCHIVE;
-  const gboolean import_trusted = !verifying_bareuseronly &&
-    (pull_data->importflags & _OSTREE_REPO_IMPORT_FLAGS_TRUSTED) > 0;
-  if (mirroring_into_archive && import_trusted)
+  if (pull_data->trusted_http_direct)
     {
-      gboolean have_object;
-      if (!ostree_repo_has_object (pull_data->repo, OSTREE_OBJECT_TYPE_FILE, checksum,
-                                   &have_object,
-                                   cancellable, error))
+      g_assert (!verifying_bareuseronly);
+      if (!_ostree_repo_commit_tmpf_final (pull_data->repo, checksum, objtype,
+                                           &tmpf, cancellable, error))
         goto out;
-
-      if (!have_object)
-        {
-          if (!_ostree_repo_commit_path_final (pull_data->repo, checksum, objtype,
-                                               &tmp_unlinker,
-                                               cancellable, error))
-            goto out;
-        }
       pull_data->n_fetched_content++;
     }
   else
     {
+      struct stat stbuf;
+      if (!glnx_fstat (tmpf.fd, &stbuf, error))
+        goto out;
       /* Non-mirroring path */
+      tmpf_input = g_unix_input_stream_new (glnx_steal_fd (&tmpf.fd), TRUE);
 
       /* If it appears corrupted, we'll delete it below */
-      if (!ostree_content_file_parse_at (TRUE, _ostree_fetcher_get_dfd (fetcher),
-                                         tmp_unlinker.path, FALSE,
-                                         &file_in, &file_info, &xattrs,
-                                         cancellable, error))
+      if (!ostree_content_stream_parse (TRUE, tmpf_input, stbuf.st_size, FALSE,
+                                        &file_in, &file_info, &xattrs,
+                                        cancellable, error))
         goto out;
-
-      /* Also, delete it now that we've opened it, we'll hold
-       * a reference to the fd.  If we fail to validate or write, then
-       * the temp space will be cleaned up.
-       */
-      ot_cleanup_unlinkat (&tmp_unlinker);
 
       if (verifying_bareuseronly)
         {
@@ -1160,13 +1157,12 @@ meta_fetch_on_complete (GObject           *object,
   FetchObjectData *fetch_data = user_data;
   OtPullData *pull_data = fetch_data->pull_data;
   g_autoptr(GVariant) metadata = NULL;
-  g_auto(OtCleanupUnlinkat) tmp_unlinker = { _ostree_fetcher_get_dfd (fetcher), NULL };
+  g_auto(GLnxTmpfile) tmpf = { 0, };
   const char *checksum;
   g_autofree char *checksum_obj = NULL;
   OstreeObjectType objtype;
   g_autoptr(GError) local_error = NULL;
   GError **error = &local_error;
-  glnx_fd_close int fd = -1;
   gboolean free_fetch_data = TRUE;
 
   ostree_object_name_deserialize (fetch_data->object, &checksum, &objtype);
@@ -1174,7 +1170,7 @@ meta_fetch_on_complete (GObject           *object,
   g_debug ("fetch of %s%s complete", checksum_obj,
            fetch_data->is_detached_meta ? " (detached)" : "");
 
-  if (!_ostree_fetcher_request_to_tmpfile_finish (fetcher, result, &tmp_unlinker.path, error))
+  if (!_ostree_fetcher_request_to_tmpfile_finish (fetcher, result, &tmpf, error))
     {
       if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
         {
@@ -1185,7 +1181,7 @@ meta_fetch_on_complete (GObject           *object,
 
               /* Now that we've at least tried to fetch it, we can proceed to
                * scan/fetch the commit object */
-              g_hash_table_add (pull_data->fetched_detached_metadata, g_strdup (checksum));
+              g_hash_table_insert (pull_data->fetched_detached_metadata, g_strdup (checksum), NULL);
 
               if (!fetch_data->object_is_stored)
                 enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path, FALSE, FALSE, fetch_data->requested_ref);
@@ -1217,25 +1213,17 @@ meta_fetch_on_complete (GObject           *object,
   if (objtype == OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT)
     goto out;
 
-  if (!glnx_openat_rdonly (_ostree_fetcher_get_dfd (fetcher), tmp_unlinker.path, TRUE, &fd, error))
-    goto out;
-
-  /* Now delete it, keeping the fd open as the last reference; see comment in
-   * corresponding content fetch path.
-   */
-  ot_cleanup_unlinkat (&tmp_unlinker);
-
   if (fetch_data->is_detached_meta)
     {
-      if (!ot_util_variant_map_fd (fd, 0, G_VARIANT_TYPE ("a{sv}"),
-                                   FALSE, &metadata, error))
+      if (!ot_variant_read_fd (tmpf.fd, 0, G_VARIANT_TYPE ("a{sv}"),
+                               FALSE, &metadata, error))
         goto out;
 
       if (!ostree_repo_write_commit_detached_metadata (pull_data->repo, checksum, metadata,
                                                        pull_data->cancellable, error))
         goto out;
 
-      g_hash_table_add (pull_data->fetched_detached_metadata, g_strdup (checksum));
+      g_hash_table_insert (pull_data->fetched_detached_metadata, g_strdup (checksum), g_steal_pointer (&metadata));
 
       if (!fetch_data->object_is_stored)
         enqueue_one_object_request (pull_data, checksum, objtype, fetch_data->path, FALSE, FALSE, fetch_data->requested_ref);
@@ -1244,13 +1232,40 @@ meta_fetch_on_complete (GObject           *object,
     }
   else
     {
-      if (!ot_util_variant_map_fd (fd, 0, ostree_metadata_variant_type (objtype),
-                                   FALSE, &metadata, error))
+      if (!ot_variant_read_fd (tmpf.fd, 0, ostree_metadata_variant_type (objtype),
+                               FALSE, &metadata, error))
         goto out;
 
-      /* Write the commitpartial file now while we're still fetching data */
+      /* For commit objects, compute the hash and check the GPG signature before
+       * writing to the repo, and also write the .commitpartial to say that
+       * we're still processing this commit.
+       */
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
         {
+          /* Verify checksum */
+          OtChecksum hasher = { 0, };
+          ot_checksum_init (&hasher);
+          { g_autoptr(GBytes) bytes = g_variant_get_data_as_bytes (metadata);
+            ot_checksum_update_bytes (&hasher, bytes);
+          }
+          char hexdigest[OSTREE_SHA256_STRING_LEN+1];
+          ot_checksum_get_hexdigest (&hasher, hexdigest, sizeof (hexdigest));
+
+          if (!_ostree_compare_object_checksum (objtype, checksum, hexdigest, error))
+            goto out;
+
+          /* Do GPG verification. `detached_data` may be NULL if no detached
+           * metadata was found during pull; that's handled by
+           * gpg_verify_unwritten_commit(). If we ever change the pull code to
+           * not always fetch detached metadata, this bit will have to learn how
+           * to look up from the disk state as well, or insert the on-disk
+           * metadata into this hash.
+           */
+          GVariant *detached_data = g_hash_table_lookup (pull_data->fetched_detached_metadata, checksum);
+          if (!gpg_verify_unwritten_commit (pull_data, checksum, metadata, detached_data,
+                                            pull_data->cancellable, error))
+            goto out;
+
           if (!write_commitpartial_for (pull_data, checksum, error))
             goto out;
         }
@@ -1313,27 +1328,20 @@ static_deltapart_fetch_on_complete (GObject           *object,
   OstreeFetcher *fetcher = (OstreeFetcher *)object;
   FetchStaticDeltaData *fetch_data = user_data;
   OtPullData *pull_data = fetch_data->pull_data;
-  g_autofree char *temp_path = NULL;
+  g_auto(GLnxTmpfile) tmpf = { 0, };
   g_autoptr(GInputStream) in = NULL;
   g_autoptr(GVariant) part = NULL;
   g_autoptr(GError) local_error = NULL;
   GError **error = &local_error;
-  glnx_fd_close int fd = -1;
   gboolean free_fetch_data = TRUE;
 
   g_debug ("fetch static delta part %s complete", fetch_data->expected_checksum);
 
-  if (!_ostree_fetcher_request_to_tmpfile_finish (fetcher, result, &temp_path, error))
+  if (!_ostree_fetcher_request_to_tmpfile_finish (fetcher, result, &tmpf, error))
     goto out;
 
-  if (!glnx_openat_rdonly (_ostree_fetcher_get_dfd (fetcher), temp_path, TRUE, &fd, error))
-    goto out;
-
-  /* From here on, if we fail to apply the delta, we'll re-fetch it */
-  if (!glnx_unlinkat (_ostree_fetcher_get_dfd (fetcher), temp_path, 0, error))
-    goto out;
-
-  in = g_unix_input_stream_new (fd, FALSE);
+  /* Transfer ownership of the fd */
+  in = g_unix_input_stream_new (glnx_steal_fd (&tmpf.fd), TRUE);
 
   /* TODO - make async */
   if (!_ostree_static_delta_part_open (in, NULL, 0, fetch_data->expected_checksum,
@@ -1377,6 +1385,14 @@ process_verify_result (OtPullData            *pull_data,
   if (!ostree_gpg_verify_result_require_valid_signature (result, error))
     return FALSE;
 
+
+  /* We now check both *before* writing the commit, and after. Because the
+   * behavior used to be only verifiying after writing, we need to handle
+   * the case of "written but not verified". But we also don't want to check
+   * twice, as that'd result in duplicate signals.
+   */
+  g_hash_table_add (pull_data->gpg_verified_commits, g_strdup (checksum));
+
   return TRUE;
 }
 
@@ -1390,24 +1406,15 @@ gpg_verify_unwritten_commit (OtPullData         *pull_data,
 {
   if (pull_data->gpg_verify)
     {
-      g_autoptr(OstreeGpgVerifyResult) result = NULL;
+      /* Shouldn't happen, but see comment in process_verify_result() */
+      if (g_hash_table_contains (pull_data->gpg_verified_commits, checksum))
+        return TRUE;
+
       g_autoptr(GBytes) signed_data = g_variant_get_data_as_bytes (commit);
-
-      if (!detached_metadata)
-        {
-          g_set_error (error, OSTREE_GPG_ERROR, OSTREE_GPG_ERROR_NO_SIGNATURE,
-                       "Commit %s: no detached metadata found for GPG verification",
-                       checksum);
-          return FALSE;
-        }
-
-      result = _ostree_repo_gpg_verify_with_metadata (pull_data->repo,
-                                                      signed_data,
-                                                      detached_metadata,
-                                                      pull_data->remote_name,
-                                                      NULL, NULL,
-                                                      cancellable,
-                                                      error);
+      g_autoptr(OstreeGpgVerifyResult) result =
+        _ostree_repo_gpg_verify_with_metadata (pull_data->repo, signed_data,
+                                               detached_metadata, pull_data->remote_name,
+                                               NULL, NULL, cancellable, error);
       if (!process_verify_result (pull_data, checksum, result, error))
         return FALSE;
     }
@@ -1431,6 +1438,10 @@ static char *
 get_real_remote_repo_collection_id (OstreeRepo  *repo,
                                     const gchar *remote_name)
 {
+  /* remote_name == NULL can happen for pull-local */
+  if (!remote_name)
+    return NULL;
+
   g_autofree gchar *remote_collection_id = NULL;
   if (!ostree_repo_get_remote_option (repo, remote_name, "collection-id", NULL,
                                       &remote_collection_id, NULL) ||
@@ -1586,7 +1597,11 @@ scan_commit_object (OtPullData                 *pull_data,
                            GINT_TO_POINTER (depth));
     }
 
-  if (pull_data->gpg_verify)
+  /* See comment in process_verify_result() - we now gpg check before writing,
+   * but also ensure we've done it here if not already.
+   */
+  if (pull_data->gpg_verify &&
+      !g_hash_table_contains (pull_data->gpg_verified_commits, checksum))
     {
       g_autoptr(OstreeGpgVerifyResult) result = NULL;
 
@@ -1753,18 +1768,21 @@ queue_scan_one_metadata_object_c (OtPullData                *pull_data,
   ensure_idle_queued (pull_data);
 }
 
+/* Called out of the main loop to look at metadata objects which can have
+ * further references (commit, dirtree). See also idle_worker() which drives
+ * execution of this function.
+ */
 static gboolean
-scan_one_metadata_object_c (OtPullData                 *pull_data,
-                            const guchar                 *csum,
-                            OstreeObjectType            objtype,
-                            const char                 *path,
-                            guint                       recursion_depth,
-                            const OstreeCollectionRef  *ref,
-                            GCancellable               *cancellable,
-                            GError                    **error)
+scan_one_metadata_object (OtPullData                 *pull_data,
+                          const char                 *checksum,
+                          OstreeObjectType            objtype,
+                          const char                 *path,
+                          guint                       recursion_depth,
+                          const OstreeCollectionRef  *ref,
+                          GCancellable               *cancellable,
+                          GError                    **error)
 {
-  g_autofree char *tmp_checksum = ostree_checksum_from_bytes (csum);
-  g_autoptr(GVariant) object = ostree_object_name_serialize (tmp_checksum, objtype);
+  g_autoptr(GVariant) object = ostree_object_name_serialize (checksum, objtype);
 
   /* It may happen that we've already looked at this object (think shared
    * dirtree subtrees), if that's the case, we're done */
@@ -1774,7 +1792,7 @@ scan_one_metadata_object_c (OtPullData                 *pull_data,
   gboolean is_requested = g_hash_table_lookup (pull_data->requested_metadata, object) != NULL;
   /* Determine if we already have the object */
   gboolean is_stored;
-  if (!ostree_repo_has_object (pull_data->repo, objtype, tmp_checksum, &is_stored,
+  if (!ostree_repo_has_object (pull_data->repo, objtype, checksum, &is_stored,
                                cancellable, error))
     return FALSE;
 
@@ -1784,19 +1802,19 @@ scan_one_metadata_object_c (OtPullData                 *pull_data,
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
         {
           /* mark as partial to ensure we scan the commit below */
-          if (!write_commitpartial_for (pull_data, tmp_checksum, error))
+          if (!write_commitpartial_for (pull_data, checksum, error))
             return FALSE;
         }
 
       if (!_ostree_repo_import_object (pull_data->repo, pull_data->remote_repo_local,
-                                       objtype, tmp_checksum, pull_data->importflags,
+                                       objtype, checksum, pull_data->importflags,
                                        cancellable, error))
         return FALSE;
       /* The import API will fetch both the commit and detached metadata, so
        * add it to the hash to avoid re-fetching it below.
        */
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
-        g_hash_table_add (pull_data->fetched_detached_metadata, g_strdup (tmp_checksum));
+        g_hash_table_insert (pull_data->fetched_detached_metadata, g_strdup (checksum), NULL);
       pull_data->n_imported_metadata++;
       is_stored = TRUE;
       is_requested = TRUE;
@@ -1809,7 +1827,7 @@ scan_one_metadata_object_c (OtPullData                 *pull_data,
           OstreeRepo *refd_repo = pull_data->localcache_repos->pdata[i];
           gboolean localcache_repo_has_obj;
 
-          if (!ostree_repo_has_object (refd_repo, objtype, tmp_checksum,
+          if (!ostree_repo_has_object (refd_repo, objtype, checksum,
                                        &localcache_repo_has_obj, cancellable, error))
             return FALSE;
           if (!localcache_repo_has_obj)
@@ -1817,16 +1835,16 @@ scan_one_metadata_object_c (OtPullData                 *pull_data,
           if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
             {
               /* mark as partial to ensure we scan the commit below */
-              if (!write_commitpartial_for (pull_data, tmp_checksum, error))
+              if (!write_commitpartial_for (pull_data, checksum, error))
                 return FALSE;
             }
           if (!_ostree_repo_import_object (pull_data->repo, refd_repo,
-                                           objtype, tmp_checksum, pull_data->importflags,
+                                           objtype, checksum, pull_data->importflags,
                                            cancellable, error))
             return FALSE;
           /* See comment above */
           if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
-            g_hash_table_add (pull_data->fetched_detached_metadata, g_strdup (tmp_checksum));
+            g_hash_table_insert (pull_data->fetched_detached_metadata, g_strdup (checksum), NULL);
           is_stored = TRUE;
           is_requested = TRUE;
           pull_data->n_imported_metadata++;
@@ -1841,18 +1859,18 @@ scan_one_metadata_object_c (OtPullData                 *pull_data,
       g_hash_table_add (pull_data->requested_metadata, g_variant_ref (object));
 
       do_fetch_detached = (objtype == OSTREE_OBJECT_TYPE_COMMIT);
-      enqueue_one_object_request (pull_data, tmp_checksum, objtype, path, do_fetch_detached, FALSE, ref);
+      enqueue_one_object_request (pull_data, checksum, objtype, path, do_fetch_detached, FALSE, ref);
     }
   else if (is_stored && objtype == OSTREE_OBJECT_TYPE_COMMIT)
     {
       /* Even though we already have the commit, we always try to (re)fetch the
        * detached metadata before scanning it, in case new signatures appear.
        * https://github.com/projectatomic/rpm-ostree/issues/630 */
-      if (!g_hash_table_contains (pull_data->fetched_detached_metadata, tmp_checksum))
-        enqueue_one_object_request (pull_data, tmp_checksum, objtype, path, TRUE, TRUE, ref);
+      if (!g_hash_table_contains (pull_data->fetched_detached_metadata, checksum))
+        enqueue_one_object_request (pull_data, checksum, objtype, path, TRUE, TRUE, ref);
       else
         {
-          if (!scan_commit_object (pull_data, tmp_checksum, recursion_depth, ref,
+          if (!scan_commit_object (pull_data, checksum, recursion_depth, ref,
                                    pull_data->cancellable, error))
             return FALSE;
 
@@ -1862,7 +1880,7 @@ scan_one_metadata_object_c (OtPullData                 *pull_data,
     }
   else if (is_stored && objtype == OSTREE_OBJECT_TYPE_DIR_TREE)
     {
-      if (!scan_dirtree_object (pull_data, tmp_checksum, path, recursion_depth,
+      if (!scan_dirtree_object (pull_data, checksum, path, recursion_depth,
                                 pull_data->cancellable, error))
         return FALSE;
 
@@ -1975,6 +1993,8 @@ start_fetch (OtPullData *pull_data,
   else
     expected_max_size = 0;
 
+  if (!is_meta && pull_data->trusted_http_direct)
+    flags |= OSTREE_FETCHER_REQUEST_LINKABLE;
   _ostree_fetcher_request_to_tmpfile (pull_data->fetcher, mirrorlist,
                                       obj_subpath, flags, expected_max_size,
                                       is_meta ? OSTREE_REPO_PULL_METADATA_PRIORITY
@@ -2441,34 +2461,28 @@ on_superblock_fetched (GObject   *src,
     }
   else
     {
-      g_autofree gchar *delta = NULL;
-      g_autofree guchar *ret_csum = NULL;
-      guchar *summary_csum;
-      g_autoptr (GInputStream) summary_is = NULL;
       g_autoptr(GVariant) delta_superblock = NULL;
+      g_autofree gchar *delta = g_strconcat (from_revision ? from_revision : "", from_revision ? "-" : "", to_revision, NULL);
+      const guchar *expected_summary_digest = g_hash_table_lookup (pull_data->summary_deltas_checksums, delta);
+      guint8 actual_summary_digest[OSTREE_SHA256_DIGEST_LEN];
 
-      summary_is = g_memory_input_stream_new_from_data (g_bytes_get_data (delta_superblock_data, NULL),
-                                                        g_bytes_get_size (delta_superblock_data),
-                                                        NULL);
-
-      if (!ot_gio_checksum_stream (summary_is, &ret_csum, pull_data->cancellable, error))
-        goto out;
-
-      delta = g_strconcat (from_revision ? from_revision : "", from_revision ? "-" : "", to_revision, NULL);
-      summary_csum = g_hash_table_lookup (pull_data->summary_deltas_checksums, delta);
+      g_auto(OtChecksum) hasher = { 0, };
+      ot_checksum_init (&hasher);
+      ot_checksum_update_bytes (&hasher, delta_superblock_data);
+      ot_checksum_get_digest (&hasher, actual_summary_digest, sizeof (actual_summary_digest));
 
       /* At this point we've GPG verified the data, so in theory
        * could trust that they provided the right data, but let's
        * make this a hard error.
        */
-      if (pull_data->gpg_verify_summary && !summary_csum)
+      if (pull_data->gpg_verify_summary && !expected_summary_digest)
         {
           g_set_error (error, OSTREE_GPG_ERROR, OSTREE_GPG_ERROR_NO_SIGNATURE,
                        "GPG verification enabled, but no summary signatures found (use gpg-verify-summary=false in remote config to disable)");
           goto out;
         }
 
-      if (summary_csum && memcmp (summary_csum, ret_csum, 32))
+      if (expected_summary_digest && memcmp (expected_summary_digest, actual_summary_digest, sizeof (actual_summary_digest)))
         {
           g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED, "Invalid checksum for static delta %s", delta);
           goto out;
@@ -2520,7 +2534,7 @@ _ostree_repo_load_cache_summary_if_same_sig (OstreeRepo        *self,
     return TRUE;
 
   const char *summary_cache_sig_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote, ".sig");
-  glnx_fd_close int prev_fd = -1;
+  glnx_autofd int prev_fd = -1;
   if (!ot_openat_ignore_enoent (self->cache_dir_fd, summary_cache_sig_file, &prev_fd, error))
     return FALSE;
   if (prev_fd < 0)
@@ -2533,7 +2547,7 @@ _ostree_repo_load_cache_summary_if_same_sig (OstreeRepo        *self,
   if (g_bytes_compare (old_sig_contents, summary_sig) == 0)
     {
       const char *summary_cache_file = glnx_strjoina (_OSTREE_SUMMARY_CACHE_DIR, "/", remote);
-      glnx_fd_close int summary_fd = -1;
+      glnx_autofd int summary_fd = -1;
       GBytes *summary_data;
 
 
@@ -3031,7 +3045,7 @@ initiate_delta_request (OtPullData *pull_data,
 
   _ostree_fetcher_request_to_membuf (pull_data->fetcher,
                                      pull_data->content_mirrorlist,
-                                     delta_name, 0,
+                                     delta_name, OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
                                      OSTREE_MAX_METADATA_SIZE,
                                      0, pull_data->cancellable,
                                      on_superblock_fetched, fdata);
@@ -3302,10 +3316,12 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   pull_data->ref_original_commits = g_hash_table_new_full (ostree_collection_ref_hash, ostree_collection_ref_equal,
                                                            (GDestroyNotify)NULL,
                                                            (GDestroyNotify)g_variant_unref);
+  pull_data->gpg_verified_commits = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                           (GDestroyNotify)g_free, NULL);
   pull_data->scanned_metadata = g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
                                                        (GDestroyNotify)g_variant_unref, NULL);
   pull_data->fetched_detached_metadata = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                       (GDestroyNotify)g_free, NULL);
+                                                                (GDestroyNotify)g_free, (GDestroyNotify)variant_or_null_unref);
   pull_data->requested_content = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                         (GDestroyNotify)g_free, NULL);
   pull_data->requested_fallback_content = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -3532,8 +3548,12 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     g_autofree char *first_scheme = _ostree_fetcher_uri_get_scheme (first_uri);
 
   /* NB: we don't support local mirrors in mirrorlists, so if this passes, it
-   * means that we're not using mirrorlists (see also fetch_mirrorlist()) */
-  if (g_str_equal (first_scheme, "file"))
+   * means that we're not using mirrorlists (see also fetch_mirrorlist())
+   * Also, we explicitly disable the "local repo" path if static deltas
+   * were explicitly requested to be required; this is going to happen
+   * most often for testing deltas without setting up a HTTP server.
+   */
+  if (g_str_equal (first_scheme, "file") && !pull_data->require_static_deltas)
     {
       g_autofree char *path = _ostree_fetcher_uri_get_path (first_uri);
       g_autoptr(GFile) remote_repo_path = g_file_new_for_path (path);
@@ -3583,6 +3603,11 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
        */
       if ((flags & OSTREE_REPO_PULL_FLAGS_UNTRUSTED) == 0)
         pull_data->importflags |= _OSTREE_REPO_IMPORT_FLAGS_TRUSTED;
+
+      /* Shouldn't be referenced in this path, but just in case.  See below
+       * for more information.
+       */
+      pull_data->trusted_http_direct = FALSE;
     }
   else
     {
@@ -3593,6 +3618,18 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
        */
       if (flags & OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP)
         pull_data->importflags |= _OSTREE_REPO_IMPORT_FLAGS_TRUSTED;
+
+      const gboolean verifying_bareuseronly =
+        (pull_data->importflags & _OSTREE_REPO_IMPORT_FLAGS_VERIFY_BAREUSERONLY) > 0;
+      /* If we're mirroring and writing into an archive repo, and both checksum and
+       * bareuseronly are turned off, we can directly copy the content rather than
+       * paying the cost of exploding it, checksumming, and re-gzip.
+       */
+      const gboolean mirroring_into_archive =
+        pull_data->is_mirror && pull_data->repo->mode == OSTREE_REPO_MODE_ARCHIVE;
+      const gboolean import_trusted = !verifying_bareuseronly &&
+        (pull_data->importflags & _OSTREE_REPO_IMPORT_FLAGS_TRUSTED) > 0;
+      pull_data->trusted_http_direct = mirroring_into_archive && import_trusted;
     }
 
   /* We can't use static deltas if pulling into an archive repo. */
@@ -3824,6 +3861,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
       while (g_variant_iter_loop (collection_refs_iter, "(&s&s&s)", &collection_id, &ref_name, &checksum))
         {
+          if (!ostree_validate_rev (ref_name, error))
+            goto out;
           g_hash_table_insert (requested_refs_to_fetch,
                                ostree_collection_ref_new (collection_id, ref_name),
                                (*checksum != '\0') ? g_strdup (checksum) : NULL);
@@ -4248,6 +4287,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   g_clear_pointer (&pull_data->fetched_detached_metadata, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->summary_deltas_checksums, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->ref_original_commits, (GDestroyNotify) g_hash_table_unref);
+  g_clear_pointer (&pull_data->gpg_verified_commits, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_content, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_fallback_content, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_metadata, (GDestroyNotify) g_hash_table_unref);

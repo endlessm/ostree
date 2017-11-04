@@ -630,6 +630,7 @@ typedef OstreeRepoCommitFilterResult (*OstreeRepoCommitFilter) (OstreeRepo    *r
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES: Generate size information.
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS: Canonicalize permissions for bare-user-only mode.
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED: Emit an error if configured SELinux policy does not provide a label
+ * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME: Delete added files/directories after commit; Since: 2017.13
  */
 typedef enum {
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE = 0,
@@ -637,6 +638,7 @@ typedef enum {
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES = (1 << 1),
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS = (1 << 2),
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED = (1 << 3),
+  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME = (1 << 4),
 } OstreeRepoCommitModifierFlags;
 
 /**
@@ -846,7 +848,7 @@ typedef enum {
 /**
  * OstreeRepoCheckoutOverwriteMode:
  * @OSTREE_REPO_CHECKOUT_OVERWRITE_NONE: No special options
- * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES: When layering checkouts, unlink() and replace existing files, but do not modify existing directories
+ * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES: When layering checkouts, unlink() and replace existing files, but do not modify existing directories (unless whiteouts are enabled, then directories are replaced)
  * @OSTREE_REPO_CHECKOUT_OVERWRITE_ADD_FILES: Only add new files/directories
  * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_IDENTICAL: Like UNION_FILES, but error if files are not identical (requires hardlink checkouts)
  */
@@ -908,6 +910,9 @@ _OSTREE_PUBLIC
 OstreeRepoDevInoCache * ostree_repo_devino_cache_ref (OstreeRepoDevInoCache *cache);
 _OSTREE_PUBLIC
 void ostree_repo_devino_cache_unref (OstreeRepoDevInoCache *cache);
+
+_OSTREE_PUBLIC
+void ostree_repo_checkout_at_options_set_devino (OstreeRepoCheckoutAtOptions *opts, OstreeRepoDevInoCache *cache);
 
 _OSTREE_PUBLIC
 gboolean ostree_repo_checkout_at (OstreeRepo                         *self,

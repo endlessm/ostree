@@ -25,10 +25,10 @@
 #include <gio/gfiledescriptorbased.h>
 
 #include <string.h>
-#include <sys/mman.h>
 
 #include "otutil.h"
 
+/* Create a new GVariant empty GVariant of type a{sv} */
 GVariant *
 ot_gvariant_new_empty_string_dict (void)
 {
@@ -37,170 +37,69 @@ ot_gvariant_new_empty_string_dict (void)
   return g_variant_builder_end (&builder);
 }
 
+
+/* Create a new GVariant of type ay from the raw @data pointer */
 GVariant *
 ot_gvariant_new_bytearray (const guchar   *data,
                            gsize           len)
 {
-  gpointer data_copy;
-  GVariant *ret;
-
-  data_copy = g_memdup (data, len);
-  ret = g_variant_new_from_data (G_VARIANT_TYPE ("ay"), data_copy,
+  gpointer data_copy = g_memdup (data, len);
+  GVariant *ret = g_variant_new_from_data (G_VARIANT_TYPE ("ay"), data_copy,
                                  len, FALSE, g_free, data_copy);
   return ret;
 }
 
+/* Convert a GBytes into a GVariant of type ay (byte array) */
 GVariant *
 ot_gvariant_new_ay_bytes (GBytes *bytes)
 {
   gsize size;
-  gconstpointer data;
-  data = g_bytes_get_data (bytes, &size);
+  gconstpointer data = g_bytes_get_data (bytes, &size);
   g_bytes_ref (bytes);
   return g_variant_new_from_data (G_VARIANT_TYPE ("ay"), data, size,
                                   TRUE, (GDestroyNotify)g_bytes_unref, bytes);
 }
 
-GHashTable *
-ot_util_variant_asv_to_hash_table (GVariant *variant)
-{
-  GHashTable *ret;
-  GVariantIter *viter;
-  char *key;
-  GVariant *value;
-  
-  ret = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
-  viter = g_variant_iter_new (variant);
-  while (g_variant_iter_next (viter, "{s@v}", &key, &value))
-    g_hash_table_replace (ret, key, g_variant_ref_sink (value));
-  
-  g_variant_iter_free (viter);
-  
-  return ret;
-}
-
-GVariant *
-ot_util_variant_take_ref (GVariant *variant)
-{
-  return g_variant_take_ref (variant);
-}
-
+/* Create a GVariant in @out_variant that is backed by
+ * the data from @fd, starting at @start.  If the data is
+ * large enough, mmap() may be used.  @trusted is used
+ * by the GVariant core; see g_variant_new_from_data().
+ */
 gboolean
-ot_util_variant_map_at (int dfd,
-                        const char *path,
-                        const GVariantType *type,
-                        OtVariantMapFlags flags,
-                        GVariant **out_variant,
-                        GError  **error)
+ot_variant_read_fd (int                    fd,
+                    goffset                start,
+                    const GVariantType    *type,
+                    gboolean               trusted,
+                    GVariant             **out_variant,
+                    GError               **error)
 {
-  glnx_fd_close int fd = -1;
-  const gboolean trusted = (flags & OT_VARIANT_MAP_TRUSTED) > 0;
+  g_autoptr(GBytes) bytes = ot_fd_readall_or_mmap (fd, start, error);
+  if (!bytes)
+    return FALSE;
 
-  fd = openat (dfd, path, O_RDONLY | O_CLOEXEC);
-  if (fd < 0)
-    {
-      if (errno == ENOENT && (flags & OT_VARIANT_MAP_ALLOW_NOENT) > 0)
-        {
-          *out_variant = NULL;
-          return TRUE;
-        }
-      else
-        {
-          glnx_set_error_from_errno (error);
-          g_prefix_error (error, "Opening %s: ", path);
-          return FALSE;
-        }
-    }
-
-  return ot_util_variant_map_fd (fd, 0, type, trusted, out_variant, error);
+  *out_variant = g_variant_ref_sink (g_variant_new_from_bytes (type, bytes, trusted));
+  return TRUE;
 }
 
-typedef struct {
-  gpointer addr;
-  gsize len;
-} VariantMapData;
-
-static void
-variant_map_data_destroy (gpointer data)
-{
-  VariantMapData *mdata = data;
-  (void) munmap (mdata->addr, mdata->len);
-  g_free (mdata);
-}
-
-gboolean
-ot_util_variant_map_fd (int                    fd,
-                        goffset                start,
-                        const GVariantType    *type,
-                        gboolean               trusted,
-                        GVariant             **out_variant,
-                        GError               **error)
-{
-  gboolean ret = FALSE;
-  gpointer map;
-  struct stat stbuf;
-  VariantMapData *mdata = NULL;
-  gsize len;
-
-  if (fstat (fd, &stbuf) != 0)
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
-
-  len = stbuf.st_size - start;
-  map = mmap (NULL, len, PROT_READ, MAP_PRIVATE, fd, start);
-  if (!map)
-    {
-      glnx_set_error_from_errno (error);
-      goto out;
-    }
-
-  mdata = g_new (VariantMapData, 1);
-  mdata->addr = map;
-  mdata->len = len;
-
-  ret = TRUE;
-  *out_variant = g_variant_ref_sink (g_variant_new_from_data (type, map, len, trusted,
-                                                              variant_map_data_destroy, mdata));
- out:
-  return ret;
-}
-
-GInputStream *
-ot_variant_read (GVariant             *variant)
-{
-  GMemoryInputStream *ret = NULL;
-
-  ret = (GMemoryInputStream*)g_memory_input_stream_new_from_data (g_variant_get_data (variant),
-                                                                  g_variant_get_size (variant),
-                                                                  NULL);
-  g_object_set_data_full ((GObject*)ret, "ot-variant-data",
-                          g_variant_ref (variant), (GDestroyNotify) g_variant_unref);
-  return (GInputStream*)ret;
-}
-
+/* GVariants are immutable; this function allows generating an open builder
+ * for a new variant, inherting the data from @variant.
+ */
 GVariantBuilder *
 ot_util_variant_builder_from_variant (GVariant            *variant,
                                       const GVariantType  *type)
 {
-  GVariantBuilder *builder = NULL;
-  
-  builder = g_variant_builder_new (type);
-  
+  GVariantBuilder *builder = g_variant_builder_new (type);
+
   if (variant != NULL)
     {
-      gint i, n;
-
-      n = g_variant_n_children (variant);
-      for (i = 0; i < n; i++)
+      const int n = g_variant_n_children (variant);
+      for (int i = 0; i < n; i++)
         {
-          GVariant *child = g_variant_get_child_value (variant, i);
+          g_autoptr(GVariant) child = g_variant_get_child_value (variant, i);
           g_variant_builder_add_value (builder, child);
-          g_variant_unref (child);
         }
     }
-    
+
   return builder;
 }
 
@@ -221,28 +120,23 @@ ot_variant_bsearch_str (GVariant   *array,
                         const char *str,
                         int        *out_pos)
 {
-  gsize imax, imin;
-  gsize imid = -1;
-  gsize n;
-
-  n = g_variant_n_children (array);
+  const gsize n = g_variant_n_children (array);
   if (n == 0)
     return FALSE;
 
-  imax = n - 1;
-  imin = 0;
+  gsize imax = n - 1;
+  gsize imin = 0;
+  gsize imid = -1;
   while (imax >= imin)
     {
-      g_autoptr(GVariant) child = NULL;
       const char *cur;
-      int cmp;
 
       imid = (imin + imax) / 2;
 
-      child = g_variant_get_child_value (array, imid);
+      g_autoptr(GVariant) child = g_variant_get_child_value (array, imid);
       g_variant_get_child (child, 0, "&s", &cur, NULL);
 
-      cmp = strcmp (cur, str);
+      int cmp = strcmp (cur, str);
       if (cmp < 0)
         imin = imid + 1;
       else if (cmp > 0)

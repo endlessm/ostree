@@ -32,30 +32,12 @@ GVariant *ot_gvariant_new_ay_bytes (GBytes *bytes);
 
 GVariant *ot_gvariant_new_empty_string_dict (void);
 
-GHashTable *ot_util_variant_asv_to_hash_table (GVariant *variant);
-
-GVariant * ot_util_variant_take_ref (GVariant *variant);
-
-typedef enum {
-  OT_VARIANT_MAP_TRUSTED = (1 << 0),
-  OT_VARIANT_MAP_ALLOW_NOENT = (1 << 1)
-} OtVariantMapFlags;
-
-gboolean ot_util_variant_map_at (int dfd,
-                                 const char *path,
-                                 const GVariantType *type,
-                                 OtVariantMapFlags flags,
-                                 GVariant **out_variant,
-                                 GError  **error);
-
-gboolean ot_util_variant_map_fd (int                  fd,
-                                 goffset              offset,
-                                 const GVariantType  *type,
-                                 gboolean             trusted,
-                                 GVariant           **out_variant,
-                                 GError             **error);
-
-GInputStream *ot_variant_read (GVariant             *variant);
+gboolean ot_variant_read_fd (int                  fd,
+                             goffset              offset,
+                             const GVariantType  *type,
+                             gboolean             trusted,
+                             GVariant           **out_variant,
+                             GError             **error);
 
 GVariantBuilder *ot_util_variant_builder_from_variant (GVariant            *variant,
                                                        const GVariantType  *type);

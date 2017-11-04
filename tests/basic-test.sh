@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-echo "1..$((73 + ${extra_basic_tests:-0}))"
+echo "1..$((77 + ${extra_basic_tests:-0}))"
 
 CHECKOUT_U_ARG=""
 CHECKOUT_H_ARGS="-H"
@@ -178,6 +178,43 @@ assert_file_has_content four '4'
 echo "ok cwd contents"
 
 cd ${test_tmpdir}
+rm checkout-test2-l -rf
+$OSTREE checkout ${CHECKOUT_H_ARGS} test2 $test_tmpdir/checkout-test2-l
+date > $test_tmpdir/checkout-test2-l/newdatefile.txt
+$OSTREE commit ${COMMIT_ARGS} --link-checkout-speedup --consume -b test2 --tree=dir=$test_tmpdir/checkout-test2-l
+assert_not_has_dir $test_tmpdir/checkout-test2-l
+$OSTREE fsck
+# Some of the later tests are sensitive to state
+$OSTREE reset test2 test2^
+$OSTREE prune --refs-only
+echo "ok consume (nom nom nom)"
+
+# Test adopt
+cd ${test_tmpdir}
+rm checkout-test2-l -rf
+$OSTREE checkout ${CHECKOUT_H_ARGS} test2 $test_tmpdir/checkout-test2-l
+echo 'a file to consume 🍔' > $test_tmpdir/checkout-test2-l/eatme.txt
+# Save a link to it for device/inode comparison
+ln $test_tmpdir/checkout-test2-l/eatme.txt $test_tmpdir/eatme-savedlink.txt
+$OSTREE commit ${COMMIT_ARGS} --link-checkout-speedup --consume -b test2 --tree=dir=$test_tmpdir/checkout-test2-l
+$OSTREE fsck
+# Adoption isn't implemented for bare-user yet
+eatme_objpath=$(ostree_file_path_to_object_path repo test2 /eatme.txt)
+if grep -q '^mode=bare$' repo/config || is_bare_user_only_repo repo; then
+    assert_files_hardlinked ${test_tmpdir}/eatme-savedlink.txt ${eatme_objpath}
+else
+    if files_are_hardlinked ${test_tmpdir}/eatme-savedlink.txt ${eatme_objpath}; then
+        fatal "bare-user adopted?"
+    fi
+fi
+assert_not_has_dir $test_tmpdir/checkout-test2-l
+# Some of the later tests are sensitive to state
+$OSTREE reset test2 test2^
+$OSTREE prune --refs-only
+rm -f ${test_tmpdir}/eatme-savedlink.txt
+echo "ok adopt"
+
+cd ${test_tmpdir}
 $OSTREE commit ${COMMIT_ARGS} -b test2-no-parent -s '' $test_tmpdir/checkout-test2-4
 assert_streq $($OSTREE log test2-no-parent |grep '^commit' | wc -l) "1"
 $OSTREE commit ${COMMIT_ARGS} -b test2-no-parent -s '' --parent=none $test_tmpdir/checkout-test2-4
@@ -227,6 +264,33 @@ if $OSTREE ls ${orphaned_rev} 2>err.txt; then
 fi
 assert_file_has_content err.txt "No such metadata object"
 echo "ok commit orphaned"
+
+cd ${test_tmpdir}
+# in bare-user-only mode, we canonicalize ownership to 0:0, so checksums won't
+# match -- we could add a --ignore-ownership option I suppose?
+if is_bare_user_only_repo repo; then
+    echo "ok # SKIP checksums won't match up in bare-user-only"
+else
+    $OSTREE fsck
+    CHECKSUM_FLAG=
+    if [ -n "${OSTREE_NO_XATTRS:-}" ]; then
+        CHECKSUM_FLAG=--ignore-xattrs
+    fi
+    rm -rf checksum-test
+    $OSTREE checkout test2 checksum-test
+    find checksum-test/ -type f | while read fn; do
+        checksum=$($CMD_PREFIX ostree checksum $CHECKSUM_FLAG $fn)
+        objpath=repo/objects/${checksum::2}/${checksum:2}.file
+        assert_has_file $objpath
+        # running `ostree checksum` on the obj might not necessarily match, let's
+        # just check that they have the same content to confirm that it's
+        # (probably) the originating file
+        object_content_checksum=$(sha256sum $objpath | cut -f1 -d' ')
+        checkout_content_checksum=$(sha256sum $fn | cut -f1 -d' ')
+        assert_streq "$object_content_checksum" "$checkout_content_checksum"
+    done
+    echo "ok checksum CLI"
+fi
 
 cd ${test_tmpdir}
 $OSTREE diff test2^ test2 > diff-test2
@@ -333,6 +397,14 @@ echo "ok commit from ref with modifier"
 
 $OSTREE commit ${COMMIT_ARGS} -b trees/test2 -s 'ref with / in it' --tree=ref=test2
 echo "ok commit ref with /"
+
+mkdir badutf8
+echo "invalid utf8 filename" > badutf8/$(printf '\x80')
+if $OSTREE commit ${COMMIT_ARGS} -b badutf8 --tree=dir=badutf8 2>err.txt; then
+    assert_not_reached "commit filename with invalid UTF-8"
+fi
+assert_file_has_content err.txt "Invalid UTF-8 in filename"
+echo "ok commit bad UTF-8"
 
 old_rev=$($OSTREE rev-parse test2)
 $OSTREE ls -R -C test2
@@ -500,6 +572,12 @@ for x in $(seq 3); do
     for v in COPYING LICENSE; do
         assert_file_has_content union-identical-test/usr/share/licenses/${v} GPL
     done
+done
+# now checkout the first pkg in force copy mode to make sure we can checksum
+rm union-identical-test -rf
+$OSTREE checkout --force-copy union-identical-pkg1 union-identical-test
+for x in 2 3; do
+    $OSTREE checkout ${CHECKOUT_H_ARGS} --union-identical union-identical-pkg${x} union-identical-test
 done
 echo "ok checkout union identical merges"
 
@@ -800,6 +878,20 @@ if touch overlay/baz/.wh.cow && touch overlay/.wh.deeper; then
     assert_not_has_dir overlay-co/deeper
     assert_has_file overlay-co/anewdir/blah
     assert_has_file overlay-co/anewfile
+
+    # And test replacing a directory wholesale with a symlink as well as a regular file
+    mkdir overlay
+    echo baz to file > overlay/baz
+    ln -s anewfile overlay/anewdir
+    $OSTREE --repo=repo commit ${COMMIT_ARGS} -b overlay-dir-convert --tree=dir=overlay
+    rm overlay -rf
+
+    rm overlay-co -rf
+    for branch in test2 overlay-dir-convert; do
+        $OSTREE --repo=repo checkout --union --whiteouts ${branch} overlay-co
+    done
+    assert_has_file overlay-co/baz
+    test -L overlay-co/anewdir
 
     echo "ok whiteouts enabled"
 

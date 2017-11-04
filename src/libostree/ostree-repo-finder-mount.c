@@ -23,6 +23,7 @@
 #include "config.h"
 
 #include <gio/gio.h>
+#include <gio/gunixmounts.h>
 #include <glib.h>
 #include <glib-object.h>
 #include <libglnx.h>
@@ -235,8 +236,7 @@ scan_repo (int                 dfd,
     {
       g_debug ("Ignoring repository ‘%s’ on mount ‘%s’ as it’s on a different file system from the mount",
                path, mount_name);
-      g_propagate_error (error, g_steal_pointer (&local_error));
-      return FALSE;
+      return glnx_throw (error, "Repository is on a different file system from the mount");
     }
 
   /* Exclude repositories which resolve to @parent_repo. */
@@ -245,8 +245,7 @@ scan_repo (int                 dfd,
     {
       g_debug ("Ignoring repository ‘%s’ on mount ‘%s’ as it is the same as the one we are resolving",
                path, mount_name);
-      g_propagate_error (error, g_steal_pointer (&local_error));
-      return FALSE;
+      return glnx_throw (error, "Repository is the same as the one we are resolving");
     }
 
   /* List the repo’s refs and return them. */
@@ -328,9 +327,9 @@ ostree_repo_finder_mount_resolve_async (OstreeRepoFinder                  *finde
       g_autofree gchar *mount_name = NULL;
       g_autoptr(GFile) mount_root = NULL;
       g_autofree gchar *mount_root_path = NULL;
-      glnx_fd_close int mount_root_dfd = -1;
+      glnx_autofd int mount_root_dfd = -1;
       struct stat mount_root_stbuf;
-      glnx_fd_close int repos_dfd = -1;
+      glnx_autofd int repos_dfd = -1;
       gsize i;
       g_autoptr(GHashTable) repo_to_refs = NULL;  /* (element-type UriAndKeyring GHashTable) */
       GHashTable *supported_ref_to_checksum;  /* (element-type OstreeCollectionRef utf8) */
@@ -356,6 +355,23 @@ ostree_repo_finder_mount_resolve_async (OstreeRepoFinder                  *finde
                    mount_name, mount_root_path, local_error->message);
           continue;
         }
+
+#if GLIB_CHECK_VERSION(2, 55, 0)
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS  /* remove once GLIB_VERSION_MAX_ALLOWED ≥ 2.56 */
+      g_autoptr(GUnixMountEntry) mount_entry = g_unix_mount_at (mount_root_path, NULL);
+
+      if (mount_entry != NULL &&
+          (g_unix_is_system_fs_type (g_unix_mount_get_fs_type (mount_entry)) ||
+           g_unix_is_system_device_path (g_unix_mount_get_device_path (mount_entry))))
+        {
+          g_debug ("Ignoring mount ‘%s’ as its file system type (%s) or device "
+                   "path (%s) indicate it’s a system mount.",
+                   mount_name, g_unix_mount_get_fs_type (mount_entry),
+                   g_unix_mount_get_device_path (mount_entry));
+          continue;
+        }
+G_GNUC_END_IGNORE_DEPRECATIONS
+#endif  /* GLib 2.56.0 */
 
       /* stat() the mount root so we can later check whether the resolved
        * repositories for individual refs are on the same device (to avoid the
