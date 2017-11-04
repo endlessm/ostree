@@ -6,6 +6,7 @@ ostree (2017.13-1) UNRELEASED; urgency=medium
   * d/control: Require dh-exec 0.23~, for build-profile support.
     Strictly speaking we might only need 0.15, but I'm not going to
     test versions older than the jessie backport.
+  * Set Rules-Requires-Root to no
 
  -- Simon McVittie <smcv@debian.org>  Fri, 27 Oct 2017 14:43:58 +0100
 

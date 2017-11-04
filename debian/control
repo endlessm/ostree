@@ -43,6 +43,7 @@ Build-Depends:
  zlib1g-dev,
 Build-Depends-Indep:
  libglib2.0-doc,
+Rules-Requires-Root: no
 Standards-Version: 4.1.0
 Homepage: https://github.com/ostreedev/ostree/
 Vcs-Git: https://anonscm.debian.org/git/collab-maint/ostree.git
