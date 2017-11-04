@@ -8,6 +8,7 @@ ostree (2017.13-1) UNRELEASED; urgency=medium
     Strictly speaking we might only need 0.15, but I'm not going to
     test versions older than the jessie backport.
   * Set Rules-Requires-Root to no
+  * Standards-Version: 4.1.1 (no changes required)
 
  -- Simon McVittie <smcv@debian.org>  Fri, 27 Oct 2017 14:43:58 +0100
 
