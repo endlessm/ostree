@@ -1,4 +1,4 @@
-ostree (2017.13-1) UNRELEASED; urgency=medium
+ostree (2017.13-1) unstable; urgency=medium
 
   * New upstream release
     - d/patches: Drop all patches
@@ -10,7 +10,7 @@ ostree (2017.13-1) UNRELEASED; urgency=medium
   * Set Rules-Requires-Root to no
   * Standards-Version: 4.1.1 (no changes required)
 
- -- Simon McVittie <smcv@debian.org>  Fri, 27 Oct 2017 14:43:58 +0100
+ -- Simon McVittie <smcv@debian.org>  Sat, 04 Nov 2017 14:05:06 +0000
 
 ostree (2017.12-2) unstable; urgency=medium
 
