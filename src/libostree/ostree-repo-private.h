@@ -366,19 +366,10 @@ _ostree_repo_commit_tmpf_final (OstreeRepo        *self,
                                 GError           **error);
 
 gboolean
-_ostree_repo_commit_path_final (OstreeRepo        *self,
-                                const char        *checksum,
-                                OstreeObjectType   objtype,
-                                OtCleanupUnlinkat *tmp_path,
-                                GCancellable      *cancellable,
-                                GError           **error);
-
-gboolean
 _ostree_repo_open_content_bare (OstreeRepo          *self,
                                 const char          *checksum,
                                 guint64              content_len,
                                 GLnxTmpfile         *out_tmpf,
-                                gboolean            *out_have_object,
                                 GCancellable        *cancellable,
                                 GError             **error);
 

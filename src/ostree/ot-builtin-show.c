@@ -58,7 +58,10 @@ do_print_variant_generic (const GVariantType *type,
 {
   g_autoptr(GVariant) variant = NULL;
 
-  if (!ot_util_variant_map_at (AT_FDCWD, filename, type, TRUE, &variant, error))
+  glnx_autofd int fd = -1;
+  if (!glnx_openat_rdonly (AT_FDCWD, filename, TRUE, &fd, error))
+    return FALSE;
+  if (!ot_variant_read_fd (fd, 0, type, FALSE, &variant, error))
     return FALSE;
 
   ot_dump_variant (variant);
@@ -223,12 +226,12 @@ print_if_found (OstreeRepo        *repo,
 }
 
 gboolean
-ostree_builtin_show (int argc, char **argv, GCancellable *cancellable, GError **error)
+ostree_builtin_show (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
-  g_autoptr(GOptionContext) context = g_option_context_new ("OBJECT - Output a metadata object");
+  g_autoptr(GOptionContext) context = g_option_context_new ("OBJECT");
 
   g_autoptr(OstreeRepo) repo = NULL;
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &repo, cancellable, error))
     return FALSE;
 
   if (argc <= 1)

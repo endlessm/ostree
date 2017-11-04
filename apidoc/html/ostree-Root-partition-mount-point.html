@@ -365,6 +365,11 @@ perform locking externally.</p>
 <a name="ostree-sysroot-new"></a><h3>ostree_sysroot_new ()</h3>
 <pre class="programlisting"><a class="link" href="ostree-Root-partition-mount-point.html#OstreeSysroot" title="OstreeSysroot"><span class="returnvalue">OstreeSysroot</span></a> *
 ostree_sysroot_new (<em class="parameter"><code><span class="type">GFile</span> *path</code></em>);</pre>
+<p>Create a new <a class="link" href="ostree-Root-partition-mount-point.html#OstreeSysroot" title="OstreeSysroot"><span class="type">OstreeSysroot</span></a> object for the sysroot at <em class="parameter"><code>path</code></em>
+. If <em class="parameter"><code>path</code></em>
+ is <code class="literal">NULL</code>,
+the current visible root file system is used, equivalent to
+<a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-new-default" title="ostree_sysroot_new_default ()"><code class="function">ostree_sysroot_new_default()</code></a>.</p>
 <div class="refsect3">
 <a name="ostree-sysroot-new.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -375,7 +380,8 @@ ostree_sysroot_new (<em class="parameter"><code><span class="type">GFile</span> 
 </colgroup>
 <tbody><tr>
 <td class="parameter_name"><p>path</p></td>
-<td class="parameter_description"><p> Path to a system root directory, or <code class="literal">NULL</code>. </p></td>
+<td class="parameter_description"><p> Path to a system root directory, or <code class="literal">NULL</code> to use the
+current visible root file system. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr></tbody>
 </table></div>
@@ -1007,7 +1013,8 @@ ostree_sysroot_get_repo (<em class="parameter"><code><a class="link" href="ostre
                          <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
                          <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Retrieve the OSTree repository in sysroot <em class="parameter"><code>self</code></em>
-.</p>
+. The repo is guaranteed to be open
+(see <a class="link" href="ostree-OstreeRepo.html#ostree-repo-open" title="ostree_repo_open ()"><code class="function">ostree_repo_open()</code></a>).</p>
 <div class="refsect3">
 <a name="ostree-sysroot-get-repo.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -1026,7 +1033,7 @@ ostree_sysroot_get_repo (<em class="parameter"><code><a class="link" href="ostre
 <td class="parameter_name"><p>out_repo</p></td>
 <td class="parameter_description"><p> Repository in sysroot <em class="parameter"><code>self</code></em>
 . </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>
@@ -1040,6 +1047,10 @@ ostree_sysroot_get_repo (<em class="parameter"><code><a class="link" href="ostre
 </tr>
 </tbody>
 </table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-sysroot-get-repo.returns"></a><h4>Returns</h4>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> otherwise</p>
 </div>
 </div>
 <hr>

@@ -61,7 +61,7 @@
  */
 gboolean
 glnx_make_lock_file(int dfd, const char *p, int operation, GLnxLockFile *out_lock, GError **error) {
-        glnx_fd_close int fd = -1;
+        glnx_autofd int fd = -1;
         g_autofree char *t = NULL;
         int r;
 
@@ -119,8 +119,7 @@ glnx_make_lock_file(int dfd, const char *p, int operation, GLnxLockFile *out_loc
                 if (st.st_nlink > 0)
                         break;
 
-                (void) close(fd);
-                fd = -1;
+                glnx_close_fd (&fd);
         }
 
         /* Note that if this is not AT_FDCWD, the caller takes responsibility
@@ -174,9 +173,7 @@ void glnx_release_lock_file(GLnxLockFile *f) {
                 f->path = NULL;
         }
 
-        if (f->fd != -1)
-                (void) close (f->fd);
-        f->fd = -1;
+        glnx_close_fd (&f->fd);
         f->operation = 0;
         f->initialized = FALSE;
 }

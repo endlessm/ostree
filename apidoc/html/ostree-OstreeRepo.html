@@ -769,6 +769,14 @@
 </tr>
 <tr>
 <td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-checkout-at-options-set-devino" title="ostree_repo_checkout_at_options_set_devino ()">ostree_repo_checkout_at_options_set_devino</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
 <span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
@@ -1105,6 +1113,10 @@
 <tr>
 <td class="datatype_keyword">enum</td>
 <td class="function_name"><a class="link" href="ostree-OstreeRepo.html#OstreeRepoCommitModifierFlags" title="enum OstreeRepoCommitModifierFlags">OstreeRepoCommitModifierFlags</a></td>
+</tr>
+<tr>
+<td class="datatype_keyword"> </td>
+<td class="function_name"><a class="link" href="ostree-OstreeRepo.html#OstreeRepoCheckoutAtOptions" title="OstreeRepoCheckoutAtOptions">OstreeRepoCheckoutAtOptions</a></td>
 </tr>
 <tr>
 <td class="datatype_keyword">enum</td>
@@ -2187,6 +2199,8 @@ respectively.</p>
  is
 set to <em class="parameter"><code>NULL</code></em>
 .  In either case the function still returns <code class="literal">TRUE</code>.</p>
+<p>This method does not verify the signature of the downloaded summary file.
+Use <a class="link" href="ostree-OstreeRepo.html#ostree-repo-verify-summary" title="ostree_repo_verify_summary ()"><code class="function">ostree_repo_verify_summary()</code></a> for that.</p>
 <p>Parse the summary data into a <span class="type">GVariant</span> using <code class="function">g_variant_new_from_bytes()</code>
 with <a class="link" href="ostree-Core-repository-independent-functions.html#OSTREE-SUMMARY-GVARIANT-FORMAT:CAPS" title="OSTREE_SUMMARY_GVARIANT_FORMAT"><span class="type">OSTREE_SUMMARY_GVARIANT_FORMAT</span></a> as the format string.</p>
 <div class="refsect3">
@@ -2759,6 +2773,37 @@ that happened during this transaction. </p></td>
 ostree_repo_abort_transaction (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
                                <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Abort the active transaction; any staged objects and ref changes will be
+discarded. You *must* invoke this if you have chosen not to invoke
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-transaction" title="ostree_repo_commit_transaction ()"><code class="function">ostree_repo_commit_transaction()</code></a>. Calling this function when not in a
+transaction will do nothing and return successfully.</p>
+<div class="refsect3">
+<a name="ostree-repo-abort-transaction.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>An <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
 </div>
 <hr>
 <div class="refsect2">
@@ -3275,6 +3320,39 @@ ostree_repo_write_metadata_finish (<em class="parameter"><code><a class="link" h
                                    <em class="parameter"><code><span class="type">GAsyncResult</span> *result</code></em>,
                                    <em class="parameter"><code><span class="type">guchar</span> **out_csum</code></em>,
                                    <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Complete a call to <a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-metadata-async" title="ostree_repo_write_metadata_async ()"><code class="function">ostree_repo_write_metadata_async()</code></a>.</p>
+<div class="refsect3">
+<a name="ostree-repo-write-metadata-finish.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>result</p></td>
+<td class="parameter_description"><p>Result</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>out_csum</p></td>
+<td class="parameter_description"><p> Binary checksum value. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> guint8]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
 </div>
 <hr>
 <div class="refsect2">
@@ -4768,6 +4846,7 @@ should avoid further mutation of the cache.</p>
 </tbody>
 </table></div>
 </div>
+<p class="since">Since: 2017.13</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -5322,6 +5401,44 @@ data will be deleted.</p>
 </div>
 <hr>
 <div class="refsect2">
+<a name="ostree-repo-checkout-at-options-set-devino"></a><h3>ostree_repo_checkout_at_options_set_devino ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+ostree_repo_checkout_at_options_set_devino
+                               (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepoCheckoutAtOptions" title="OstreeRepoCheckoutAtOptions"><span class="type">OstreeRepoCheckoutAtOptions</span></a> *opts</code></em>,
+                                <em class="parameter"><code><span class="type">OstreeRepoDevInoCache</span> *cache</code></em>);</pre>
+<p>This function simply assigns <em class="parameter"><code>cache</code></em>
+ to the <code class="literal">devino_to_csum_cache</code> member of
+<em class="parameter"><code>opts</code></em>
+; it's only useful for introspection.</p>
+<p>Note that cache does *not* have its refcount incremented - the lifetime of
+<em class="parameter"><code>cache</code></em>
+ must be equal to or greater than that of <em class="parameter"><code>opts</code></em>
+.</p>
+<div class="refsect3">
+<a name="ostree-repo-checkout-at-options-set-devino.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>opts</p></td>
+<td class="parameter_description"><p>Checkout options</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cache</p></td>
+<td class="parameter_description"><p> Devino cache. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
 <a name="ostree-repo-checkout-tree"></a><h3>ostree_repo_checkout_tree ()</h3>
 <pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_repo_checkout_tree (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
@@ -5468,7 +5585,7 @@ cache.</p>
 <a name="ostree-repo-checkout-at"></a><h3>ostree_repo_checkout_at ()</h3>
 <pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_repo_checkout_at (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
-                         <em class="parameter"><code><span class="type">OstreeRepoCheckoutAtOptions</span> *options</code></em>,
+                         <em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepoCheckoutAtOptions" title="OstreeRepoCheckoutAtOptions"><span class="type">OstreeRepoCheckoutAtOptions</span></a> *options</code></em>,
                          <em class="parameter"><code><span class="type">int</span> destination_dfd</code></em>,
                          <em class="parameter"><code>const <span class="type">char</span> *destination_path</code></em>,
                          <em class="parameter"><code>const <span class="type">char</span> *commit</code></em>,
@@ -7622,9 +7739,48 @@ in bytes, counting only content objects.</p></td>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-MODIFIER-FLAGS-CONSUME:CAPS"></a>OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME</p></td>
+<td class="enum_member_description">
+<p>Delete added files/directories after commit; Since: 2017.13</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
 </tbody>
 </table></div>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="OstreeRepoCheckoutAtOptions"></a><h3>OstreeRepoCheckoutAtOptions</h3>
+<pre class="programlisting">typedef struct {
+  OstreeRepoCheckoutMode mode;
+  OstreeRepoCheckoutOverwriteMode overwrite_mode;
+
+  gboolean enable_uncompressed_cache;  /* Deprecated */
+  gboolean enable_fsync;  /* Deprecated */
+  gboolean process_whiteouts;
+  gboolean no_copy_fallback;
+  gboolean force_copy; /* Since: 2017.6 */
+  gboolean bareuseronly_dirs; /* Since: 2017.7 */
+  gboolean unused_bools[5];
+  /* 4 byte hole on 64 bit */
+
+  const char *subpath;
+
+  OstreeRepoDevInoCache *devino_to_csum_cache;
+
+  int unused_ints[6];
+  gpointer unused_ptrs[5];
+  OstreeSePolicy *sepolicy; /* Since: 2017.6 */
+  const char *sepolicy_prefix;
+} OstreeRepoCheckoutAtOptions;
+</pre>
+<p>An extensible options structure controlling checkout.  Ensure that
+you have entirely zeroed the structure, then set just the desired
+options.  This is used by <a class="link" href="ostree-OstreeRepo.html#ostree-repo-checkout-at" title="ostree_repo_checkout_at ()"><code class="function">ostree_repo_checkout_at()</code></a> which
+supercedes previous separate enumeration usage in
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-checkout-tree" title="ostree_repo_checkout_tree ()"><code class="function">ostree_repo_checkout_tree()</code></a> and <a class="link" href="ostree-OstreeRepo.html#ostree-repo-checkout-tree-at" title="ostree_repo_checkout_tree_at ()"><code class="function">ostree_repo_checkout_tree_at()</code></a>.</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -7678,7 +7834,7 @@ in bytes, counting only content objects.</p></td>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-CHECKOUT-OVERWRITE-UNION-FILES:CAPS"></a>OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES</p></td>
 <td class="enum_member_description">
-<p>When layering checkouts, <code class="function">unlink()</code> and replace existing files, but do not modify existing directories</p>
+<p>When layering checkouts, <code class="function">unlink()</code> and replace existing files, but do not modify existing directories (unless whiteouts are enabled, then directories are replaced)</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>

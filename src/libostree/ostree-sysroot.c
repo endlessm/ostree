@@ -22,6 +22,7 @@
 #include "otutil.h"
 #include <sys/file.h>
 #include <sys/mount.h>
+#include <err.h>
 #include <sys/wait.h>
 
 #include "ostree.h"
@@ -201,7 +202,12 @@ ostree_sysroot_init (OstreeSysroot *self)
 
 /**
  * ostree_sysroot_new:
- * @path: (allow-none): Path to a system root directory, or %NULL
+ * @path: (allow-none): Path to a system root directory, or %NULL to use the
+ *   current visible root file system
+ *
+ * Create a new #OstreeSysroot object for the sysroot at @path. If @path is %NULL,
+ * the current visible root file system is used, equivalent to
+ * ostree_sysroot_new_default().
  *
  * Returns: (transfer full): An accessor object for an system root located at @path
  */
@@ -291,11 +297,7 @@ _ostree_sysroot_bump_mtime (OstreeSysroot *self,
 void
 ostree_sysroot_unload (OstreeSysroot  *self)
 {
-  if (self->sysroot_fd != -1)
-    {
-      (void) close (self->sysroot_fd);
-      self->sysroot_fd = -1;
-    }
+  glnx_close_fd (&self->sysroot_fd);
 }
 
 /**
@@ -633,7 +635,7 @@ parse_deployment (OstreeSysroot       *self,
                                                &treecsum, &deployserial, error))
     return FALSE;
 
-  glnx_fd_close int deployment_dfd = -1;
+  glnx_autofd int deployment_dfd = -1;
   if (!glnx_opendirat (self->sysroot_fd, relative_boot_link, TRUE,
                        &deployment_dfd, error))
     return FALSE;
@@ -981,11 +983,14 @@ ostree_sysroot_get_deployment_origin_path (GFile   *deployment_path)
 /**
  * ostree_sysroot_get_repo:
  * @self: Sysroot
- * @out_repo: (out): Repository in sysroot @self
+ * @out_repo: (out) (transfer full) (optional): Repository in sysroot @self
  * @cancellable: Cancellable
  * @error: Error
  *
- * Retrieve the OSTree repository in sysroot @self.
+ * Retrieve the OSTree repository in sysroot @self. The repo is guaranteed to be open
+ * (see ostree_repo_open()).
+ *
+ * Returns: %TRUE on success, %FALSE otherwise
  */
 gboolean
 ostree_sysroot_get_repo (OstreeSysroot         *self,
@@ -1125,7 +1130,7 @@ find_booted_deployment (OstreeSysroot       *self,
   if (root_stbuf.st_dev == self_stbuf.st_dev &&
       root_stbuf.st_ino == self_stbuf.st_ino)
     {
-      __attribute__((cleanup(_ostree_kernel_args_cleanup))) OstreeKernelArgs *kernel_args = NULL;
+      g_autoptr(OstreeKernelArgs) kernel_args = NULL;
       if (!parse_kernel_commandline (&kernel_args, cancellable, error))
         return FALSE;
 
@@ -1433,7 +1438,7 @@ ostree_sysroot_init_osname (OstreeSysroot       *self,
   if (mkdirat (self->sysroot_fd, deploydir, 0777) < 0)
     return glnx_throw_errno_prefix (error, "Creating %s", deploydir);
 
-  glnx_fd_close int dfd = -1;
+  glnx_autofd int dfd = -1;
   if (!glnx_opendirat (self->sysroot_fd, deploydir, TRUE, &dfd, error))
     return FALSE;
 
@@ -1615,7 +1620,7 @@ clone_deployment (OstreeSysroot  *sysroot,
   /* Copy the bootloader config options */
   OstreeBootconfigParser *bootconfig = ostree_deployment_get_bootconfig (merge_deployment);
   g_auto(GStrv) previous_args = g_strsplit (ostree_bootconfig_parser_get (bootconfig, "options"), " ", -1);
-  __attribute__((cleanup(_ostree_kernel_args_cleanup))) OstreeKernelArgs *kargs = _ostree_kernel_args_new ();
+  g_autoptr(OstreeKernelArgs) kargs = _ostree_kernel_args_new ();
   _ostree_kernel_args_append_argv (kargs, previous_args);
 
   /* Deploy the copy */
@@ -1689,7 +1694,7 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
     return FALSE;
 
   g_autofree char *deployment_path = ostree_sysroot_get_deployment_dirpath (self, deployment);
-  glnx_fd_close int deployment_dfd = -1;
+  glnx_autofd int deployment_dfd = -1;
   if (!glnx_opendirat (self->sysroot_fd, deployment_path, TRUE, &deployment_dfd, error))
     return FALSE;
 
@@ -1698,6 +1703,7 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
     return FALSE;
 
   const char *ovl_options = NULL;
+  static const char hotfix_ovl_options[] = "lowerdir=usr,upperdir=.usr-ovl-upper,workdir=.usr-ovl-work";
   switch (unlocked_state)
     {
     case OSTREE_DEPLOYMENT_UNLOCKED_NONE:
@@ -1705,7 +1711,6 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
       break;
     case OSTREE_DEPLOYMENT_UNLOCKED_HOTFIX:
       {
-        const char hotfix_ovl_options[] = "lowerdir=usr,upperdir=.usr-ovl-upper,workdir=.usr-ovl-work";
         /* Create the overlayfs directories in the deployment root
          * directly for hotfixes.  The ostree-prepare-root.c helper
          * is also set up to detect and mount these.
@@ -1763,11 +1768,15 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
       return glnx_throw_errno_prefix (error, "fork");
     else if (mount_child == 0)
       {
-        /* Child process.  Do NOT use any GLib API here. */
+        /* Child process. Do NOT use any GLib API here; it's not generally fork() safe.
+         *
+         * TODO: report errors across a pipe (or use the journal?) rather than
+         * spewing to stderr.
+         */
         if (fchdir (deployment_dfd) < 0)
-          exit (EXIT_FAILURE);
+          err (1, "fchdir");
         if (mount ("overlay", "/usr", "overlay", 0, ovl_options) < 0)
-          exit (EXIT_FAILURE);
+          err (1, "mount");
         exit (EXIT_SUCCESS);
       }
     else
@@ -1778,7 +1787,7 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
         if (TEMP_FAILURE_RETRY (waitpid (mount_child, &estatus, 0)) < 0)
           return glnx_throw_errno_prefix (error, "waitpid() on mount helper");
         if (!g_spawn_check_exit_status (estatus, error))
-          return glnx_throw_errno_prefix (error, "overlayfs mount helper");
+          return glnx_prefix_error (error, "Failed overlayfs mount");
       }
   }
 

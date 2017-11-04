@@ -228,8 +228,24 @@ create_file_copy_from_input_at (OstreeRepo     *repo,
               return glnx_throw_errno_prefix (error, "symlinkat");
             case OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES:
               {
-                /* Unioning?  Let's unlink and try again */
-                (void) unlinkat (destination_dfd, destination_name, 0);
+                /* For unioning, we further bifurcate a bit; for the "process whiteouts"
+                 * mode which is really "Docker/OCI", we need to match their semantics
+                 * and handle replacing a directory with a symlink.  See also equivalent
+                 * bits for regular files in checkout_file_hardlink().
+                 */
+                if (options->process_whiteouts)
+                  {
+                    if (!glnx_shutil_rm_rf_at (destination_dfd, destination_name, NULL, error))
+                      return FALSE;
+                  }
+                else
+                  {
+                    if (unlinkat (destination_dfd, destination_name, 0) < 0)
+                      {
+                        if (G_UNLIKELY (errno != ENOENT))
+                          return glnx_throw_errno_prefix (error, "unlinkat(%s)", destination_name);
+                      }
+                  }
                 if (symlinkat (target, destination_dfd, destination_name) < 0)
                   return glnx_throw_errno_prefix (error, "symlinkat");
               }
@@ -309,7 +325,17 @@ create_file_copy_from_input_at (OstreeRepo     *repo,
           /* Handled above */
           break;
         case OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES:
-          replace_mode = GLNX_LINK_TMPFILE_REPLACE;
+          /* Special case OCI/Docker - see similar code in checkout_file_hardlink()
+           * and above for symlinks.
+           */
+          if (options->process_whiteouts)
+            {
+              if (!glnx_shutil_rm_rf_at (destination_dfd, destination_name, NULL, error))
+                return FALSE;
+              /* Inherit the NOREPLACE default...we deleted whatever's there */
+            }
+          else
+            replace_mode = GLNX_LINK_TMPFILE_REPLACE;
           break;
         case OSTREE_REPO_CHECKOUT_OVERWRITE_ADD_FILES:
           replace_mode = GLNX_LINK_TMPFILE_NOREPLACE_IGNORE_EXIST;
@@ -374,7 +400,8 @@ hardlink_add_tmp_name (OstreeRepo              *self,
 
 static gboolean
 checkout_file_hardlink (OstreeRepo                          *self,
-                        OstreeRepoCheckoutAtOptions           *options,
+                        const char                          *checksum,
+                        OstreeRepoCheckoutAtOptions         *options,
                         const char                          *loose_path,
                         int                                  destination_dfd,
                         const char                          *destination_name,
@@ -436,10 +463,28 @@ checkout_file_hardlink (OstreeRepo                          *self,
             if (!glnx_fstatat (destination_dfd, destination_name, &dest_stbuf,
                                AT_SYMLINK_NOFOLLOW, error))
               return FALSE;
-            const gboolean is_identical =
+            gboolean is_identical =
               (src_stbuf.st_dev == dest_stbuf.st_dev &&
                src_stbuf.st_ino == dest_stbuf.st_ino);
+            if (!is_identical && (_ostree_stbuf_equal (&src_stbuf, &dest_stbuf)))
+              {
+                /* As a last resort, do a checksum comparison. This is the case currently
+                 * with rpm-ostree pkg layering where we overlay from the pkgcache repo onto
+                 * a tree checked out from the system repo. Once those are united, we
+                 * shouldn't hit this anymore. https://github.com/ostreedev/ostree/pull/1258
+                 * */
+                OstreeChecksumFlags flags = 0;
+                if (self->disable_xattrs)
+                    flags |= OSTREE_CHECKSUM_FLAGS_IGNORE_XATTRS;
 
+                g_autofree char *actual_checksum = NULL;
+                if (!ostree_checksum_file_at (destination_dfd, destination_name,
+                                              &dest_stbuf, OSTREE_OBJECT_TYPE_FILE,
+                                              flags, &actual_checksum, cancellable, error))
+                  return FALSE;
+
+                is_identical = g_str_equal (checksum, actual_checksum);
+              }
             if (is_identical)
               ret_result = HARDLINK_RESULT_SKIP_EXISTED;
             else if (options->overwrite_mode == OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES)
@@ -448,7 +493,15 @@ checkout_file_hardlink (OstreeRepo                          *self,
                 /* Make a link with a temp name */
                 if (!hardlink_add_tmp_name (self, srcfd, loose_path, tmpname, cancellable, error))
                   return FALSE;
-                /* Rename it into place */
+                /* For OCI/Docker mode, we need to handle replacing a directory with a regular
+                 * file.  See also the equivalent code for symlinks above.
+                 */
+                if (options->process_whiteouts)
+                  {
+                    if (!glnx_shutil_rm_rf_at (destination_dfd, destination_name, NULL, error))
+                      return FALSE;
+                  }
+                /* Rename it into place - for non-OCI this will overwrite files but not directories */
                 if (!glnx_renameat (self->tmp_dir_fd, tmpname, destination_dfd, destination_name, error))
                   return FALSE;
                 ret_result = HARDLINK_RESULT_LINKED;
@@ -563,6 +616,7 @@ checkout_one_file_at (OstreeRepo                        *repo,
                  the cache, which is in "bare" form */
               _ostree_loose_path (loose_path_buf, checksum, OSTREE_OBJECT_TYPE_FILE, OSTREE_REPO_MODE_BARE);
               if (!checkout_file_hardlink (current_repo,
+                                           checksum,
                                            options,
                                            loose_path_buf,
                                            destination_dfd, destination_name,
@@ -652,7 +706,7 @@ checkout_one_file_at (OstreeRepo                        *repo,
       }
       g_mutex_unlock (&repo->cache_lock);
 
-      if (!checkout_file_hardlink (repo, options, loose_path_buf,
+      if (!checkout_file_hardlink (repo, checksum, options, loose_path_buf,
                                    destination_dfd, destination_name,
                                    FALSE, &hardlink_res,
                                    cancellable, error))
@@ -782,7 +836,7 @@ checkout_tree_at_recurse (OstreeRepo                        *self,
       }
   }
 
-  glnx_fd_close int destination_dfd = -1;
+  glnx_autofd int destination_dfd = -1;
   if (!glnx_opendirat (destination_parent_fd, destination_name, TRUE,
                        &destination_dfd, error))
     return FALSE;
@@ -947,7 +1001,7 @@ checkout_tree_at (OstreeRepo                        *self,
        * exists.
        */
       int destination_dfd = destination_parent_fd;
-      glnx_fd_close int destination_dfd_owned = -1;
+      glnx_autofd int destination_dfd_owned = -1;
       if (strcmp (destination_name, ".") != 0)
         {
           if (mkdirat (destination_parent_fd, destination_name, 0700) < 0
@@ -1154,6 +1208,24 @@ ostree_repo_checkout_at (OstreeRepo                        *self,
     return FALSE;
 
   return TRUE;
+}
+
+/**
+ * ostree_repo_checkout_at_options_set_devino:
+ * @opts: Checkout options
+ * @cache: (transfer none) (nullable): Devino cache
+ *
+ * This function simply assigns @cache to the `devino_to_csum_cache` member of
+ * @opts; it's only useful for introspection.
+ *
+ * Note that cache does *not* have its refcount incremented - the lifetime of
+ * @cache must be equal to or greater than that of @opts.
+ */
+void
+ostree_repo_checkout_at_options_set_devino (OstreeRepoCheckoutAtOptions *opts,
+                                            OstreeRepoDevInoCache *cache)
+{
+  opts->devino_to_csum_cache = cache;
 }
 
 static guint

@@ -224,7 +224,7 @@ ostree_repo_static_delta_execute_offline (OstreeRepo                    *self,
   const char *dir_or_file_path = gs_file_get_path_cached (dir_or_file);
 
   /* First, try opening it as a directory */
-  glnx_fd_close int dfd = glnx_opendirat_with_errno (AT_FDCWD, dir_or_file_path, TRUE);
+  glnx_autofd int dfd = glnx_opendirat_with_errno (AT_FDCWD, dir_or_file_path, TRUE);
   if (dfd < 0)
     {
       if (errno != ENOTDIR)
@@ -241,13 +241,13 @@ ostree_repo_static_delta_execute_offline (OstreeRepo                    *self,
   else
     basename = g_strdup ("superblock");
 
-  glnx_fd_close int meta_fd = openat (dfd, basename, O_RDONLY | O_CLOEXEC);
+  glnx_autofd int meta_fd = openat (dfd, basename, O_RDONLY | O_CLOEXEC);
   if (meta_fd < 0)
     return glnx_throw_errno_prefix (error, "openat(%s)", basename);
 
   g_autoptr(GVariant) meta = NULL;
-  if (!ot_util_variant_map_fd (meta_fd, 0, G_VARIANT_TYPE (OSTREE_STATIC_DELTA_SUPERBLOCK_FORMAT),
-                               FALSE, &meta, error))
+  if (!ot_variant_read_fd (meta_fd, 0, G_VARIANT_TYPE (OSTREE_STATIC_DELTA_SUPERBLOCK_FORMAT),
+                           FALSE, &meta, error))
     return FALSE;
 
   /* Parsing OSTREE_STATIC_DELTA_SUPERBLOCK_FORMAT */
@@ -377,7 +377,7 @@ ostree_repo_static_delta_execute_offline (OstreeRepo                    *self,
       else
         {
           g_autofree char *relpath = g_strdup_printf ("%u", i); /* TODO avoid malloc here */
-          glnx_fd_close int part_fd = openat (dfd, relpath, O_RDONLY | O_CLOEXEC);
+          glnx_autofd int part_fd = openat (dfd, relpath, O_RDONLY | O_CLOEXEC);
           if (part_fd < 0)
             return glnx_throw_errno_prefix (error, "Opening deltapart '%s'", relpath);
 
@@ -448,8 +448,8 @@ _ostree_static_delta_part_open (GInputStream   *part_in,
           int part_fd = g_file_descriptor_based_get_fd ((GFileDescriptorBased*)part_in);
 
           /* No compression, no checksums - a fast path */
-          if (!ot_util_variant_map_fd (part_fd, 1, G_VARIANT_TYPE (OSTREE_STATIC_DELTA_PART_PAYLOAD_FORMAT_V0),
-                                       trusted, &ret_part, error))
+          if (!ot_variant_read_fd (part_fd, 1, G_VARIANT_TYPE (OSTREE_STATIC_DELTA_PART_PAYLOAD_FORMAT_V0),
+                                   trusted, &ret_part, error))
             return FALSE;
         }
       else
@@ -525,7 +525,7 @@ show_one_part (OstreeRepo                    *self,
   g_print ("PartMeta%u: nobjects=%u size=%" G_GUINT64_FORMAT " usize=%" G_GUINT64_FORMAT "\n",
            i, (guint)(g_variant_get_size (objects) / OSTREE_STATIC_DELTA_OBJTYPE_CSUM_LEN), size, usize);
 
-  glnx_fd_close gint part_fd = openat (self->repo_dir_fd, part_path, O_RDONLY | O_CLOEXEC);
+  glnx_autofd int part_fd = openat (self->repo_dir_fd, part_path, O_RDONLY | O_CLOEXEC);
   if (part_fd < 0)
     return glnx_throw_errno_prefix (error, "openat(%s)", part_path);
   g_autoptr(GInputStream) part_in = g_unix_input_stream_new (part_fd, FALSE);
@@ -767,9 +767,12 @@ _ostree_repo_static_delta_dump (OstreeRepo                    *self,
 
   superblock_path = _ostree_get_relative_static_delta_superblock_path (from, to);
 
-  if (!ot_util_variant_map_at (self->repo_dir_fd, superblock_path,
-                               (GVariantType*)OSTREE_STATIC_DELTA_SUPERBLOCK_FORMAT,
-                               OT_VARIANT_MAP_TRUSTED, &delta_superblock, error))
+  glnx_autofd int superblock_fd = -1;
+  if (!glnx_openat_rdonly (self->repo_dir_fd, superblock_path, TRUE, &superblock_fd, error))
+    return FALSE;
+  if (!ot_variant_read_fd (superblock_fd, 0,
+                           (GVariantType*)OSTREE_STATIC_DELTA_SUPERBLOCK_FORMAT,
+                           TRUE, &delta_superblock, error))
     return FALSE;
 
   g_print ("Delta: %s\n", delta_id);

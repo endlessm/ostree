@@ -58,7 +58,7 @@ typedef struct {
   GLnxTmpfile      tmpf;
   guint64          content_size;
   GOutputStream   *content_out;
-  GChecksum       *content_checksum;
+  OtChecksum       content_checksum;
   char             checksum[OSTREE_SHA256_STRING_LEN+1];
   char             *read_source_object;
   int               read_source_fd;
@@ -229,6 +229,9 @@ _ostree_static_delta_part_execute (OstreeRepo      *repo,
       state->oplen--;
       state->opdata++;
 
+      if (g_cancellable_set_error_if_cancelled (cancellable, error))
+        goto out;
+
       switch (opcode)
         {
         case OSTREE_STATIC_DELTA_OP_OPEN_SPLICE_AND_CLOSE:
@@ -277,7 +280,7 @@ _ostree_static_delta_part_execute (OstreeRepo      *repo,
  out:
   glnx_tmpfile_clear (&state->tmpf);
   g_clear_object (&state->content_out);
-  g_clear_pointer (&state->content_checksum, g_checksum_free);
+  ot_checksum_clear (&state->content_checksum);
   return ret;
 }
 
@@ -385,8 +388,8 @@ content_out_write (OstreeRepo                 *repo,
 {
   gsize bytes_written;
 
-  if (state->content_checksum)
-    g_checksum_update (state->content_checksum, buf, len);
+  if (state->content_checksum.initialized)
+    ot_checksum_update (&state->content_checksum, buf, len);
 
   /* Ignore bytes_written since we discard partial content */
   if (!g_output_stream_write_all (state->content_out,
@@ -501,14 +504,10 @@ handle_untrusted_content_checksum (OstreeRepo                 *repo,
                                    GError                    **error)
 {
   g_autoptr(GFileInfo) finfo = _ostree_mode_uidgid_to_gfileinfo (state->mode, state->uid, state->gid);
-  g_autoptr(GVariant) header = _ostree_file_header_new (finfo, state->xattrs);
+  g_autoptr(GBytes) header = _ostree_file_header_new (finfo, state->xattrs);
 
-  state->content_checksum = g_checksum_new (G_CHECKSUM_SHA256);
-
-  gsize bytes_written;
-  if (!_ostree_write_variant_with_size (NULL, header, 0, &bytes_written, state->content_checksum,
-                                        cancellable, error))
-    return FALSE;
+  ot_checksum_init (&state->content_checksum);
+  ot_checksum_update_bytes (&state->content_checksum, header);
 
   return TRUE;
 }
@@ -582,18 +581,20 @@ dispatch_open_splice_and_close (OstreeRepo                 *repo,
 
       /* Fast path for regular files to bare repositories */
       if (S_ISREG (state->mode) &&
-          (repo->mode == OSTREE_REPO_MODE_BARE ||
-           repo->mode == OSTREE_REPO_MODE_BARE_USER))
+          _ostree_repo_mode_is_bare (repo->mode))
         {
-          if (!_ostree_repo_open_content_bare (repo, state->checksum,
-                                               state->content_size,
-                                               &state->tmpf,
-                                               &state->have_obj,
-                                               cancellable, error))
+          if (!ostree_repo_has_object (repo, OSTREE_OBJECT_TYPE_FILE, state->checksum,
+                                       &state->have_obj, cancellable, error))
             goto out;
 
           if (!state->have_obj)
             {
+              if (!_ostree_repo_open_content_bare (repo, state->checksum,
+                                                   state->content_size,
+                                                   &state->tmpf,
+                                                   cancellable, error))
+                goto out;
+
               state->content_out = g_unix_output_stream_new (state->tmpf.fd, FALSE);
               if (!handle_untrusted_content_checksum (repo, state, cancellable, error))
                 goto out;
@@ -684,14 +685,19 @@ dispatch_open (OstreeRepo                 *repo,
   if (state->stats_only)
     return TRUE; /* Early return */
 
-  if (!_ostree_repo_open_content_bare (repo, state->checksum,
-                                       state->content_size,
-                                       &state->tmpf,
-                                       &state->have_obj,
-                                       cancellable, error))
+  if (!ostree_repo_has_object (repo, OSTREE_OBJECT_TYPE_FILE, state->checksum,
+                               &state->have_obj, cancellable, error))
     return FALSE;
+
   if (!state->have_obj)
-    state->content_out = g_unix_output_stream_new (state->tmpf.fd, FALSE);
+    {
+      if (!_ostree_repo_open_content_bare (repo, state->checksum,
+                                           state->content_size,
+                                           &state->tmpf,
+                                           cancellable, error))
+        return FALSE;
+      state->content_out = g_unix_output_stream_new (state->tmpf.fd, FALSE);
+    }
 
   if (!handle_untrusted_content_checksum (repo, state, cancellable, error))
     return FALSE;
@@ -705,7 +711,7 @@ dispatch_write (OstreeRepo                 *repo,
                GCancellable               *cancellable,
                GError                    **error)
 {
-  GLNX_AUTO_PREFIX_ERROR("opcode open-splice-and-close", error);
+  GLNX_AUTO_PREFIX_ERROR("opcode write", error);
   guint64 content_size;
   guint64 content_offset;
 
@@ -721,15 +727,13 @@ dispatch_write (OstreeRepo                 *repo,
     {
       if (state->read_source_fd != -1)
         {
-          if (lseek (state->read_source_fd, content_offset, SEEK_SET) == -1)
-            return glnx_throw_errno_prefix (error, "lseek");
           while (content_size > 0)
             {
               char buf[4096];
               gssize bytes_read;
 
               do
-                bytes_read = read (state->read_source_fd, buf, MIN(sizeof(buf), content_size));
+                bytes_read = pread (state->read_source_fd, buf, MIN(sizeof(buf), content_size), content_offset);
               while (G_UNLIKELY (bytes_read == -1 && errno == EINTR));
               if (bytes_read == -1)
                 return glnx_throw_errno_prefix (error, "read");
@@ -741,6 +745,7 @@ dispatch_write (OstreeRepo                 *repo,
                 return FALSE;
 
               content_size -= bytes_read;
+              content_offset += bytes_read;
             }
         }
       else
@@ -766,11 +771,7 @@ dispatch_set_read_source (OstreeRepo                 *repo,
   GLNX_AUTO_PREFIX_ERROR("opcode set-read-source", error);
   guint64 source_offset;
 
-  if (state->read_source_fd != -1)
-    {
-      (void) close (state->read_source_fd);
-      state->read_source_fd = -1;
-    }
+  glnx_close_fd (&state->read_source_fd);
 
   if (!read_varuint64 (state, &source_offset, error))
     return FALSE;
@@ -803,12 +804,7 @@ dispatch_unset_read_source (OstreeRepo                 *repo,
   if (state->stats_only)
     return TRUE; /* Early return */
 
-  if (state->read_source_fd != -1)
-    {
-      (void) close (state->read_source_fd);
-      state->read_source_fd = -1;
-    }
-
+  glnx_close_fd (&state->read_source_fd);
   g_clear_pointer (&state->read_source_object, g_free);
 
   return TRUE;
@@ -820,16 +816,17 @@ dispatch_close (OstreeRepo                 *repo,
                 GCancellable               *cancellable,
                 GError                    **error)
 {
-  GLNX_AUTO_PREFIX_ERROR("opcode open-splice-and-close", error);
+  GLNX_AUTO_PREFIX_ERROR("opcode close", error);
 
   if (state->content_out)
     {
       if (!g_output_stream_flush (state->content_out, cancellable, error))
         return FALSE;
 
-      if (state->content_checksum)
+      if (state->content_checksum.initialized)
         {
-          const char *actual_checksum = g_checksum_get_string (state->content_checksum);
+          char actual_checksum[OSTREE_SHA256_STRING_LEN+1];
+          ot_checksum_get_hexdigest (&state->content_checksum, actual_checksum, sizeof (actual_checksum));
 
           if (strcmp (actual_checksum, state->checksum) != 0)
             return glnx_throw (error, "Corrupted object %s (actual checksum is %s)",
@@ -848,7 +845,7 @@ dispatch_close (OstreeRepo                 *repo,
     return FALSE;
 
   g_clear_pointer (&state->xattrs, g_variant_unref);
-  g_clear_pointer (&state->content_checksum, g_checksum_free);
+  ot_checksum_clear (&state->content_checksum);
 
   state->checksum_index++;
   state->output_target = NULL;

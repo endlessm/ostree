@@ -137,6 +137,7 @@ host_triplet = @host@
 @ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-avahi.h \
 @ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-config.h \
 @ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-mount.h \
+@ENABLE_EXPERIMENTAL_API_TRUE@	src/libostree/ostree-repo-finder-override.h \
 @ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
 
 subdir = apidoc

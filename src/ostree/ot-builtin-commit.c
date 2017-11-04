@@ -50,6 +50,7 @@ static char *opt_tar_pathname_filter;
 static gboolean opt_no_xattrs;
 static char *opt_selinux_policy;
 static gboolean opt_canonical_permissions;
+static gboolean opt_consume;
 static char **opt_trees;
 static gint opt_owner_uid = -1;
 static gint opt_owner_gid = -1;
@@ -102,6 +103,7 @@ static GOptionEntry options[] = {
   { "skip-if-unchanged", 0, 0, G_OPTION_ARG_NONE, &opt_skip_if_unchanged, "If the contents are unchanged from previous commit, do nothing", NULL },
   { "statoverride", 0, 0, G_OPTION_ARG_FILENAME, &opt_statoverride_file, "File containing list of modifications to make to permissions", "PATH" },
   { "skip-list", 0, 0, G_OPTION_ARG_FILENAME, &opt_skiplist_file, "File containing list of files to skip", "PATH" },
+  { "consume", 0, 0, G_OPTION_ARG_NONE, &opt_consume, "Consume (delete) content after commit (for local directories)", NULL },
   { "table-output", 0, 0, G_OPTION_ARG_NONE, &opt_table_output, "Output more information in a KEY: VALUE format", NULL },
   { "gpg-sign", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_key_ids, "GPG Key ID to sign the commit with", "KEY-ID"},
   { "gpg-homedir", 0, 0, G_OPTION_ARG_FILENAME, &opt_gpg_homedir, "GPG Homedir to use when looking for keyrings", "HOMEDIR"},
@@ -405,7 +407,7 @@ fill_bindings (OstreeRepo    *repo,
 }
 
 gboolean
-ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError **error)
+ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
   g_autoptr(OstreeRepo) repo = NULL;
@@ -429,9 +431,9 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
   struct CommitFilterData filter_data = { 0, };
   g_autofree char *commit_body = NULL;
 
-  context = g_option_context_new ("[PATH] - Commit a new revision");
+  context = g_option_context_new ("[PATH]");
 
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &repo, cancellable, error))
     goto out;
 
   if (!ostree_ensure_repo_writable (repo, error))
@@ -476,6 +478,8 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
 
   if (opt_no_xattrs)
     flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS;
+  if (opt_consume)
+    flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME;
   if (opt_canonical_permissions)
     flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS;
   if (opt_generate_sizes)
@@ -497,7 +501,7 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
                                                   &filter_data, NULL);
       if (opt_selinux_policy)
         {
-          glnx_fd_close int rootfs_dfd = -1;
+          glnx_autofd int rootfs_dfd = -1;
           if (!glnx_opendirat (AT_FDCWD, opt_selinux_policy, TRUE, &rootfs_dfd, error))
             {
               g_prefix_error (error, "selinux-policy: ");
