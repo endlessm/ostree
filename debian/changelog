@@ -1,3 +1,11 @@
+ostree (2017.12-1xenial2) xenial; urgency=medium
+
+  * Pull in upstream patches for GIR fixes
+    - https://github.com/ostreedev/ostree/pull/1322
+    - https://github.com/ostreedev/ostree/pull/1337
+
+ -- Philip Withnall <withnall@endlessm.com>  Tue, 14 Nov 2017 18:38:00 +0000
+
 ostree (2017.12-1xenial1) xenial; urgency=medium
 
   [Dan Nicholson]

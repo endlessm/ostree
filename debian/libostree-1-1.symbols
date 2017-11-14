@@ -23,6 +23,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2017.12@LIBOSTREE_2017.12 2017.12
  LIBOSTREE_2017.12_EXPERIMENTAL@LIBOSTREE_2017.12_EXPERIMENTAL 2017.12
  LIBOSTREE_2017.13_EXPERIMENTAL@LIBOSTREE_2017.13_EXPERIMENTAL 2017.12-1xenial1
+ LIBOSTREE_2017.14_EXPERIMENTAL@LIBOSTREE_2017.14_EXPERIMENTAL 2017.12-1xenial2
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
@@ -148,6 +149,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_remote_get_name@LIBOSTREE_2017.7_EXPERIMENTAL 2017.7
  ostree_remote_ref@LIBOSTREE_2017.6_EXPERIMENTAL 2017.6
  ostree_remote_unref@LIBOSTREE_2017.6_EXPERIMENTAL 2017.6
+ ostree_remote_get_type@LIBOSTREE_2017.14_EXPERIMENTAL 2017.12-1xenial2
  ostree_repo_abort_transaction@LIBOSTREE_2016.3 2016.4
  ostree_repo_add_gpg_signature_summary@LIBOSTREE_2016.3 2016.4
  ostree_repo_append_gpg_signature@LIBOSTREE_2016.3 2016.4
