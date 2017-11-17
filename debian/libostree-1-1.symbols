@@ -153,6 +153,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_abort_transaction@LIBOSTREE_2016.3 2016.4
  ostree_repo_add_gpg_signature_summary@LIBOSTREE_2016.3 2016.4
  ostree_repo_append_gpg_signature@LIBOSTREE_2016.3 2016.4
+ ostree_repo_auto_lock_cleanup@LIBOSTREE_2017.14_EXPERIMENTAL 2017.12-0endless4
+ ostree_repo_auto_lock_push@LIBOSTREE_2017.14_EXPERIMENTAL 2017.12-0endless4
  ostree_repo_checkout_at@LIBOSTREE_2016.8 2016.8
  ostree_repo_checkout_gc@LIBOSTREE_2016.3 2016.4
  ostree_repo_checkout_tree@LIBOSTREE_2016.3 2016.4
@@ -251,6 +253,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_load_object_stream@LIBOSTREE_2016.3 2016.4
  ostree_repo_load_variant@LIBOSTREE_2016.3 2016.4
  ostree_repo_load_variant_if_exists@LIBOSTREE_2016.3 2016.4
+ ostree_repo_lock_pop@LIBOSTREE_2017.14_EXPERIMENTAL 2017.12-0endless4
+ ostree_repo_lock_push@LIBOSTREE_2017.14_EXPERIMENTAL 2017.12-0endless4
  ostree_repo_mode_from_string@LIBOSTREE_2016.3 2016.4
  ostree_repo_new@LIBOSTREE_2016.3 2016.4
  ostree_repo_new_default@LIBOSTREE_2016.3 2016.4
