@@ -93,6 +93,7 @@ global:
 LIBOSTREE_2017.14_EXPERIMENTAL {
 global:
   ostree_remote_get_type;
+  ostree_remote_get_url;
   ostree_repo_auto_lock_cleanup;
   ostree_repo_auto_lock_push;
   ostree_repo_lock_pop;
