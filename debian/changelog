@@ -1,3 +1,10 @@
+ostree (2017.12-0endless5) master; urgency=medium
+
+  * Add symbol for ostree_remote_get_url (T20078)
+    - https://github.com/ostreedev/ostree/pull/102
+
+ -- Joaquim Rocha <jrocha@endlessm.com>  Wed, 29 Nov 2017 12:42:32 +0200
+
 ostree (2017.12-0endless4) master; urgency=medium
 
   * Add symbols for new repo locking APIs (T16736)
