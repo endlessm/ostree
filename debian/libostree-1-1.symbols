@@ -159,6 +159,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_raw_file_to_content_stream@LIBOSTREE_2016.3 2016.4
  ostree_remote_get_name@LIBOSTREE_2017.7_EXPERIMENTAL 2017.8
  ostree_remote_get_type@LIBOSTREE_2017.14_EXPERIMENTAL 2017.14
+ ostree_remote_get_url@LIBOSTREE_2017.14_EXPERIMENTAL 2017.14
  ostree_remote_ref@LIBOSTREE_2017.6_EXPERIMENTAL 2017.8
  ostree_remote_unref@LIBOSTREE_2017.6_EXPERIMENTAL 2017.8
  ostree_repo_abort_transaction@LIBOSTREE_2016.3 2016.4
