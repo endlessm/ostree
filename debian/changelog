@@ -1,4 +1,4 @@
-ostree (2017.14-1) UNRELEASED; urgency=medium
+ostree (2017.14-1) unstable; urgency=medium
 
   * New upstream release
     - d/libostree-1-1.symbols: Update
@@ -6,7 +6,7 @@ ostree (2017.14-1) UNRELEASED; urgency=medium
   * d/p/tests-Don-t-assume-uid-primary-gid.patch:
     Add patch to fix automated test failure when uid != primary gid
 
- -- Simon McVittie <smcv@debian.org>  Fri, 08 Dec 2017 19:16:17 +0000
+ -- Simon McVittie <smcv@debian.org>  Sun, 10 Dec 2017 19:42:36 +0000
 
 ostree (2017.13-1) unstable; urgency=medium
 
