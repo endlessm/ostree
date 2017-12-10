@@ -539,7 +539,20 @@ gboolean      ostree_repo_load_variant_if_exists (OstreeRepo  *self,
                                                   GVariant     **out_variant,
                                                   GError       **error);
 
+/**
+ * OstreeRepoCommitState:
+ * @OSTREE_REPO_COMMIT_STATE_NORMAL: Commit is complete. This is the default.
+ *    (Since: 2017.14.)
+ * @OSTREE_REPO_COMMIT_STATE_PARTIAL: One or more objects are missing from the
+ *    local copy of the commit, but metadata is present. (Since: 2015.7.)
+ *
+ * Flags representing the state of a commit in the local repository, as returned
+ * by ostree_repo_load_commit().
+ *
+ * Since: 2015.7
+ */
 typedef enum {
+  OSTREE_REPO_COMMIT_STATE_NORMAL = 0,
   OSTREE_REPO_COMMIT_STATE_PARTIAL = (1 << 0),
 } OstreeRepoCommitState;
 
@@ -631,6 +644,7 @@ typedef OstreeRepoCommitFilterResult (*OstreeRepoCommitFilter) (OstreeRepo    *r
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS: Canonicalize permissions for bare-user-only mode.
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED: Emit an error if configured SELinux policy does not provide a label
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME: Delete added files/directories after commit; Since: 2017.13
+ * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL: If a devino cache hit is found, skip modifier filters (non-directories only); Since: 2017.14
  */
 typedef enum {
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE = 0,
@@ -639,6 +653,7 @@ typedef enum {
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS = (1 << 2),
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED = (1 << 3),
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME = (1 << 4),
+  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL = (1 << 5),
 } OstreeRepoCommitModifierFlags;
 
 /**

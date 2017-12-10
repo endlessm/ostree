@@ -8,7 +8,7 @@
 <link rel="up" href="reference.html" title="API Reference">
 <link rel="prev" href="ostree-Progress-notification-system-for-asynchronous-operations.html" title="Progress notification system for asynchronous operations">
 <link rel="next" href="ostree-Simple-upgrade-class.html" title="Simple upgrade class">
-<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.26 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -173,7 +173,7 @@ ostree_sepolicy_new (<em class="parameter"><code><span class="type">GFile</span>
 </div>
 <div class="refsect3">
 <a name="ostree-sepolicy-new.returns"></a><h4>Returns</h4>
-<p> An accessor object for SELinux policy in root located at <em class="parameter"><code>path</code></em>
+<p>An accessor object for SELinux policy in root located at <em class="parameter"><code>path</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
@@ -214,7 +214,7 @@ ostree_sepolicy_new_at (<em class="parameter"><code><span class="type">int</span
 </div>
 <div class="refsect3">
 <a name="ostree-sepolicy-new-at.returns"></a><h4>Returns</h4>
-<p> An accessor object for SELinux policy in root located at <em class="parameter"><code>rootfs_dfd</code></em>
+<p>An accessor object for SELinux policy in root located at <em class="parameter"><code>rootfs_dfd</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
@@ -226,7 +226,7 @@ ostree_sepolicy_new_at (<em class="parameter"><code><span class="type">int</span
 ostree_sepolicy_get_path (<em class="parameter"><code><a class="link" href="ostree-SELinux-policy-management.html#OstreeSePolicy" title="OstreeSePolicy"><span class="type">OstreeSePolicy</span></a> *self</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-sepolicy-get-path.returns"></a><h4>Returns</h4>
-<p> Path to rootfs. </p>
+<p>Path to rootfs. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
 </div>
@@ -237,7 +237,7 @@ ostree_sepolicy_get_path (<em class="parameter"><code><a class="link" href="ostr
 ostree_sepolicy_get_name (<em class="parameter"><code><a class="link" href="ostree-SELinux-policy-management.html#OstreeSePolicy" title="OstreeSePolicy"><span class="type">OstreeSePolicy</span></a> *self</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-sepolicy-get-name.returns"></a><h4>Returns</h4>
-<p> Type of current policy. </p>
+<p>Type of current policy. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
 </div>
@@ -283,7 +283,7 @@ will be returned.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_label</p></td>
-<td class="parameter_description"><p> Return location for security context. </p></td>
+<td class="parameter_description"><p>Return location for security context. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 <tr>
@@ -307,7 +307,7 @@ will be returned.</p>
 ostree_sepolicy_get_csum (<em class="parameter"><code><a class="link" href="ostree-SELinux-policy-management.html#OstreeSePolicy" title="OstreeSePolicy"><span class="type">OstreeSePolicy</span></a> *self</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-sepolicy-get-csum.returns"></a><h4>Returns</h4>
-<p> Checksum of current policy. </p>
+<p>Checksum of current policy. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
 </div>
@@ -346,7 +346,7 @@ ostree_sepolicy_restorecon (<em class="parameter"><code><a class="link" href="os
 </tr>
 <tr>
 <td class="parameter_name"><p>info</p></td>
-<td class="parameter_description"><p> File attributes. </p></td>
+<td class="parameter_description"><p>File attributes. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -361,7 +361,7 @@ ostree_sepolicy_restorecon (<em class="parameter"><code><a class="link" href="os
 </tr>
 <tr>
 <td class="parameter_name"><p>out_new_label</p></td>
-<td class="parameter_description"><p> New label, or <code class="literal">NULL</code> if unchanged. </p></td>
+<td class="parameter_description"><p>New label, or <code class="literal">NULL</code> if unchanged. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -447,8 +447,6 @@ ostree_sepolicy_fscreatecon_cleanup (<em class="parameter"><code><span class="ty
 <a name="ostree-SELinux-policy-management.other_details"></a><h2>Types and Values</h2>
 <div class="refsect2">
 <a name="OstreeSePolicy"></a><h3>OstreeSePolicy</h3>
-<pre class="programlisting">typedef struct OstreeSePolicy OstreeSePolicy;
-</pre>
 </div>
 <hr>
 <div class="refsect2">
@@ -484,6 +482,6 @@ ostree_sepolicy_fscreatecon_cleanup (<em class="parameter"><code><span class="ty
 </div>
 </div>
 <div class="footer">
-<hr>Generated by GTK-Doc V1.25</div>
+<hr>Generated by GTK-Doc V1.26</div>
 </body>
 </html>

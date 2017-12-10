@@ -8,7 +8,7 @@
 <link rel="up" href="reference.html" title="API Reference">
 <link rel="prev" href="reference.html" title="API Reference">
 <link rel="next" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">
-<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.26 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -590,7 +590,7 @@ ostree_checksum_to_bytes (<em class="parameter"><code>const <span class="type">c
 </div>
 <div class="refsect3">
 <a name="ostree-checksum-to-bytes.returns"></a><h4>Returns</h4>
-<p> Binary checksum from <em class="parameter"><code>checksum</code></em>
+<p>Binary checksum from <em class="parameter"><code>checksum</code></em>
 of length 32; free with <code class="function">g_free()</code>. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32]</span></p>
 </div>
@@ -617,7 +617,7 @@ ostree_checksum_to_bytes_v (<em class="parameter"><code>const <span class="type"
 </div>
 <div class="refsect3">
 <a name="ostree-checksum-to-bytes-v.returns"></a><h4>Returns</h4>
-<p> New <span class="type">GVariant</span> of type ay with length 32. </p>
+<p>New <span class="type">GVariant</span> of type ay with length 32. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -636,14 +636,14 @@ ostree_checksum_from_bytes (<em class="parameter"><code>const <span class="type"
 </colgroup>
 <tbody><tr>
 <td class="parameter_name"><p>csum</p></td>
-<td class="parameter_description"><p> An binary checksum of length 32. </p></td>
+<td class="parameter_description"><p>An binary checksum of length 32. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32]</span></td>
 </tr></tbody>
 </table></div>
 </div>
 <div class="refsect3">
 <a name="ostree-checksum-from-bytes.returns"></a><h4>Returns</h4>
-<p> String form of <em class="parameter"><code>csum</code></em>
+<p>String form of <em class="parameter"><code>csum</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
@@ -670,7 +670,7 @@ ostree_checksum_from_bytes_v (<em class="parameter"><code><span class="type">GVa
 </div>
 <div class="refsect3">
 <a name="ostree-checksum-from-bytes-v.returns"></a><h4>Returns</h4>
-<p> String form of <em class="parameter"><code>csum_bytes</code></em>
+<p>String form of <em class="parameter"><code>csum_bytes</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
@@ -696,7 +696,7 @@ ostree_checksum_inplace_from_bytes (<em class="parameter"><code>const <span clas
 <tbody>
 <tr>
 <td class="parameter_name"><p>csum</p></td>
-<td class="parameter_description"><p> An binary checksum of length 32. </p></td>
+<td class="parameter_description"><p>An binary checksum of length 32. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32]</span></td>
 </tr>
 <tr>
@@ -762,7 +762,7 @@ ostree_checksum_bytes_peek (<em class="parameter"><code><span class="type">GVari
 </div>
 <div class="refsect3">
 <a name="ostree-checksum-bytes-peek.returns"></a><h4>Returns</h4>
-<p> Binary checksum data in <em class="parameter"><code>bytes</code></em>
+<p>Binary checksum data in <em class="parameter"><code>bytes</code></em>
 ; do not free.  If <em class="parameter"><code>bytes</code></em>
 does not have the correct length, return <code class="literal">NULL</code>. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> guint8]</span></p>
@@ -800,7 +800,7 @@ ostree_checksum_bytes_peek_validate (<em class="parameter"><code><span class="ty
 </div>
 <div class="refsect3">
 <a name="ostree-checksum-bytes-peek-validate.returns"></a><h4>Returns</h4>
-<p> Binary checksum data. </p>
+<p>Binary checksum data. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> guint8]</span></p>
 </div>
 </div>
@@ -819,14 +819,14 @@ ostree_checksum_b64_from_bytes (<em class="parameter"><code>const <span class="t
 </colgroup>
 <tbody><tr>
 <td class="parameter_name"><p>csum</p></td>
-<td class="parameter_description"><p> An binary checksum of length 32. </p></td>
+<td class="parameter_description"><p>An binary checksum of length 32. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32]</span></td>
 </tr></tbody>
 </table></div>
 </div>
 <div class="refsect3">
 <a name="ostree-checksum-b64-from-bytes.returns"></a><h4>Returns</h4>
-<p> Modified base64 encoding of <em class="parameter"><code>csum</code></em>
+<p>Modified base64 encoding of <em class="parameter"><code>csum</code></em>
 </p>
 <p>The "modified" term refers to the fact that instead of '/', the '_'
 character is used. </p>
@@ -855,7 +855,7 @@ ostree_checksum_b64_to_bytes (<em class="parameter"><code>const <span class="typ
 </div>
 <div class="refsect3">
 <a name="ostree-checksum-b64-to-bytes.returns"></a><h4>Returns</h4>
-<p> Binary version of <em class="parameter"><code>checksum</code></em>
+<p>Binary version of <em class="parameter"><code>checksum</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32]</span></p>
 </div>
@@ -884,7 +884,7 @@ character is used.</p>
 <tbody>
 <tr>
 <td class="parameter_name"><p>csum</p></td>
-<td class="parameter_description"><p> An binary checksum of length 32. </p></td>
+<td class="parameter_description"><p>An binary checksum of length 32. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32]</span></td>
 </tr>
 <tr>
@@ -917,7 +917,7 @@ ostree_checksum_b64_inplace_to_bytes (<em class="parameter"><code>const <span cl
 <tbody>
 <tr>
 <td class="parameter_name"><p>checksum</p></td>
-<td class="parameter_description"><p> An binary checksum of length 32. </p></td>
+<td class="parameter_description"><p>An binary checksum of length 32. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32]</span></td>
 </tr>
 <tr>
@@ -1060,12 +1060,12 @@ will be "gnome-ostree/buildmaster".</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_remote</p></td>
-<td class="parameter_description"><p> The remote name, or <code class="literal">NULL</code> if the refspec refs to a local ref. </p></td>
+<td class="parameter_description"><p>The remote name, or <code class="literal">NULL</code> if the refspec refs to a local ref. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_ref</p></td>
-<td class="parameter_description"><p> Name of ref. </p></td>
+<td class="parameter_description"><p>Name of ref. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -1174,7 +1174,7 @@ ostree_object_name_serialize (<em class="parameter"><code>const <span class="typ
 </div>
 <div class="refsect3">
 <a name="ostree-object-name-serialize.returns"></a><h4>Returns</h4>
-<p> A new floating <span class="type">GVariant</span> containing checksum string and objtype. </p>
+<p>A new floating <span class="type">GVariant</span> containing checksum string and objtype. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20floating"><span class="acronym">transfer floating</span></a>]</span></p>
 </div>
 </div>
@@ -1205,13 +1205,13 @@ only valid for the lifetime of <em class="parameter"><code>variant</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_checksum</p></td>
-<td class="parameter_description"><p> Pointer into string memory of <em class="parameter"><code>variant</code></em>
+<td class="parameter_description"><p>Pointer into string memory of <em class="parameter"><code>variant</code></em>
 with checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_objtype</p></td>
-<td class="parameter_description"><p> Return object type. </p></td>
+<td class="parameter_description"><p>Return object type. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 </tbody>
@@ -1277,12 +1277,12 @@ ostree_object_from_string (<em class="parameter"><code>const <span class="type">
 </tr>
 <tr>
 <td class="parameter_name"><p>out_checksum</p></td>
-<td class="parameter_description"><p> Parsed checksum. </p></td>
+<td class="parameter_description"><p>Parsed checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_objtype</p></td>
-<td class="parameter_description"><p> Parsed object type. </p></td>
+<td class="parameter_description"><p>Parsed object type. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 </tbody>
@@ -1335,17 +1335,17 @@ converts an object content stream back into components.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_input</p></td>
-<td class="parameter_description"><p> The raw file content stream. </p></td>
+<td class="parameter_description"><p>The raw file content stream. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_file_info</p></td>
-<td class="parameter_description"><p> Normal metadata. </p></td>
+<td class="parameter_description"><p>Normal metadata. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_xattrs</p></td>
-<td class="parameter_description"><p> Extended attributes. </p></td>
+<td class="parameter_description"><p>Extended attributes. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -1402,17 +1402,17 @@ converts an object content stream back into components.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_input</p></td>
-<td class="parameter_description"><p> The raw file content stream. </p></td>
+<td class="parameter_description"><p>The raw file content stream. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_file_info</p></td>
-<td class="parameter_description"><p> Normal metadata. </p></td>
+<td class="parameter_description"><p>Normal metadata. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_xattrs</p></td>
-<td class="parameter_description"><p> Extended attributes. </p></td>
+<td class="parameter_description"><p>Extended attributes. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -1475,17 +1475,17 @@ converts an object content stream back into components.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_input</p></td>
-<td class="parameter_description"><p> The raw file content stream. </p></td>
+<td class="parameter_description"><p>The raw file content stream. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_file_info</p></td>
-<td class="parameter_description"><p> Normal metadata. </p></td>
+<td class="parameter_description"><p>Normal metadata. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_xattrs</p></td>
-<td class="parameter_description"><p> Extended attributes. </p></td>
+<td class="parameter_description"><p>Extended attributes. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -1535,12 +1535,12 @@ OSTREE_OBJECT_TYPE_FILE stream suitable for ostree pull.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>xattrs</p></td>
-<td class="parameter_description"><p> Optional extended attributes. </p></td>
+<td class="parameter_description"><p>Optional extended attributes. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_input</p></td>
-<td class="parameter_description"><p> Serialized object stream. </p></td>
+<td class="parameter_description"><p>Serialized object stream. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -1594,17 +1594,17 @@ the least compression, and &lt;0 giving the default level (currently 6).</p></li
 </tr>
 <tr>
 <td class="parameter_name"><p>xattrs</p></td>
-<td class="parameter_description"><p> Optional extended attributes. </p></td>
+<td class="parameter_description"><p>Optional extended attributes. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>options</p></td>
-<td class="parameter_description"><p> A GVariant <code class="literal">a{sv}</code> with an extensible set of flags. </p></td>
+<td class="parameter_description"><p>A GVariant <code class="literal">a{sv}</code> with an extensible set of flags. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_input</p></td>
-<td class="parameter_description"><p> Serialized object stream. </p></td>
+<td class="parameter_description"><p>Serialized object stream. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -1657,17 +1657,17 @@ for writing data to an <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" 
 </tr>
 <tr>
 <td class="parameter_name"><p>xattrs</p></td>
-<td class="parameter_description"><p> Optional extended attributes. </p></td>
+<td class="parameter_description"><p>Optional extended attributes. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_input</p></td>
-<td class="parameter_description"><p> Serialized object stream. </p></td>
+<td class="parameter_description"><p>Serialized object stream. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_length</p></td>
-<td class="parameter_description"><p> Length of stream. </p></td>
+<td class="parameter_description"><p>Length of stream. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -1712,12 +1712,12 @@ ostree_checksum_file_from_input (<em class="parameter"><code><span class="type">
 </tr>
 <tr>
 <td class="parameter_name"><p>xattrs</p></td>
-<td class="parameter_description"><p> Optional extended attributes. </p></td>
+<td class="parameter_description"><p>Optional extended attributes. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>in</p></td>
-<td class="parameter_description"><p> File content, should be <code class="literal">NULL</code> for symbolic links. </p></td>
+<td class="parameter_description"><p>File content, should be <code class="literal">NULL</code> for symbolic links. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -1727,7 +1727,7 @@ ostree_checksum_file_from_input (<em class="parameter"><code><span class="type">
 </tr>
 <tr>
 <td class="parameter_name"><p>out_csum</p></td>
-<td class="parameter_description"><p> Return location for binary checksum. </p></td>
+<td class="parameter_description"><p>Return location for binary checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32]</span></td>
 </tr>
 <tr>
@@ -1775,7 +1775,7 @@ ostree_checksum_file (<em class="parameter"><code><span class="type">GFile</span
 </tr>
 <tr>
 <td class="parameter_name"><p>out_csum</p></td>
-<td class="parameter_description"><p> Return location for binary checksum. </p></td>
+<td class="parameter_description"><p>Return location for binary checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32]</span></td>
 </tr>
 <tr>
@@ -1823,9 +1823,12 @@ allocated buffer.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>path</p></td>
-<td class="parameter_description"><p>Subpath
-<em class="parameter"><code>stbuf</code></em>
-(allow-none): Optional stat buffer</p></td>
+<td class="parameter_description"><p>Subpath</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>stbuf (allow-none)</p></td>
+<td class="parameter_description"><p>Optional stat buffer</p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 <tr>
@@ -1835,9 +1838,12 @@ allocated buffer.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>flags</p></td>
-<td class="parameter_description"><p>Flags
-<em class="parameter"><code>out_checksum</code></em>
-(out) (transfer full): Return location for hex checksum</p></td>
+<td class="parameter_description"><p>Flags</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>out_checksum (out) (transfer full)</p></td>
+<td class="parameter_description"><p>Return location for hex checksum</p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 <tr>
@@ -1942,7 +1948,7 @@ ostree_checksum_file_async_finish (<em class="parameter"><code><span class="type
 </tr>
 <tr>
 <td class="parameter_name"><p>out_csum</p></td>
-<td class="parameter_description"><p> Return location for binary checksum. </p></td>
+<td class="parameter_description"><p>Return location for binary checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32]</span></td>
 </tr>
 <tr>
@@ -1976,7 +1982,7 @@ ostree_create_directory_metadata (<em class="parameter"><code><span class="type"
 </tr>
 <tr>
 <td class="parameter_name"><p>xattrs</p></td>
-<td class="parameter_description"><p> Optional extended attributes. </p></td>
+<td class="parameter_description"><p>Optional extended attributes. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 </tbody>
@@ -1984,7 +1990,7 @@ ostree_create_directory_metadata (<em class="parameter"><code><span class="type"
 </div>
 <div class="refsect3">
 <a name="ostree-create-directory-metadata.returns"></a><h4>Returns</h4>
-<p> A new <span class="type">GVariant</span> containing <a class="link" href="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-DIR-META:CAPS"><code class="literal">OSTREE_OBJECT_TYPE_DIR_META</code></a>. </p>
+<p>A new <span class="type">GVariant</span> containing <a class="link" href="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-DIR-META:CAPS"><code class="literal">OSTREE_OBJECT_TYPE_DIR_META</code></a>. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -2492,6 +2498,6 @@ Unix epoch in UTC, big-endian) when the commit was committed</p></li></ul></div>
 </div>
 </div>
 <div class="footer">
-<hr>Generated by GTK-Doc V1.25</div>
+<hr>Generated by GTK-Doc V1.26</div>
 </body>
 </html>

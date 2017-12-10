@@ -1918,8 +1918,9 @@ ostree_repo_create (OstreeRepo     *self,
                            g_variant_new_variant (g_variant_new_string (self->collection_id)));
 
   glnx_autofd int repo_dir_fd = -1;
+  g_autoptr(GVariant) options = g_variant_ref_sink (g_variant_builder_end (builder));
   if (!repo_create_at_internal (AT_FDCWD, repopath, mode,
-                                g_variant_builder_end (builder),
+                                options,
                                 &repo_dir_fd,
                                 cancellable, error))
     return FALSE;
@@ -4903,7 +4904,16 @@ _ostree_repo_try_lock_tmpdir (int            tmpdir_dfd,
     }
   else
     {
-      did_lock = TRUE;
+      /* It's possible that we got a lock after seeing the directory, but
+       * another process deleted the tmpdir, so verify it still exists.
+       */
+      struct stat stbuf;
+      if (!glnx_fstatat_allow_noent (tmpdir_dfd, tmpdir_name, &stbuf, AT_SYMLINK_NOFOLLOW, error))
+        return FALSE;
+      if (errno == 0 && S_ISDIR (stbuf.st_mode))
+        did_lock = TRUE;
+      else
+        glnx_release_lock_file (file_lock_out);
     }
 
   *out_did_lock = did_lock;
@@ -4954,7 +4964,8 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
       if (!glnx_opendirat (dfd_iter.fd, dent->d_name, FALSE,
                            &target_dfd, &local_error))
         {
-          if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY))
+          if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY) ||
+              g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
             continue;
           else
             {
@@ -4978,6 +4989,8 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
       (void)futimens (target_dfd, NULL);
 
       /* We found an existing tmpdir which we managed to lock */
+      g_debug ("Reusing tmpdir %s", dent->d_name);
+      reusing_dir = TRUE;
       ret_tmpdir.src_dfd = tmpdir_dfd;
       ret_tmpdir.fd = glnx_steal_fd (&target_dfd);
       ret_tmpdir.path = g_strdup (dent->d_name);
@@ -5000,8 +5013,18 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
                                          error))
         return FALSE;
       if (!did_lock)
-        continue;
+        {
+          /* We raced and someone else already locked the newly created
+           * directory. Free the resources here and then mark it as
+           * uninitialized so glnx_tmpdir_cleanup doesn't delete the directory
+           * when new_tmpdir goes out of scope.
+           */
+          glnx_tmpdir_unset (&new_tmpdir);
+          new_tmpdir.initialized = FALSE;
+          continue;
+        }
 
+      g_debug ("Using new tmpdir %s", new_tmpdir.path);
       ret_tmpdir = new_tmpdir; /* Transfer ownership */
       new_tmpdir.initialized = FALSE;
     }

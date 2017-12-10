@@ -4,7 +4,7 @@ dnl update libostree-released.sym from libostree-devel.sym, and update the check
 dnl in test-symbols.sh, and also set is_release_build=yes below.  Then make
 dnl another post-release commit to bump the version, and set is_release_build=no.
 m4_define([year_version], [2017])
-m4_define([release_version], [13])
+m4_define([release_version], [14])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -30,23 +30,24 @@ AC_SUBST([PACKAGE_VERSION], [package_version])
 
 AS_IF([echo "$CFLAGS" | grep -q -E -e '-Werror($| )'], [], [
 CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
-        -pipe \
-        -Wall \
-	-Werror=empty-body \
-	-Werror=strict-prototypes \
-	-Werror=missing-prototypes \
-	-Werror=implicit-function-declaration \
-        "-Werror=format=2 -Werror=format-security -Werror=format-nonliteral" \
-	-Werror=pointer-arith -Werror=init-self \
-        -Werror=missing-declarations \
-        -Werror=return-type \
-        -Werror=switch \
-        -Werror=overflow \
-        -Werror=int-conversion \
-        -Werror=parenthesis \
-        -Werror=incompatible-pointer-types \
-        -Werror=misleading-indentation \
-	-Werror=missing-include-dirs -Werror=aggregate-return \
+  -pipe \
+  -Wall \
+  -Werror=empty-body \
+  -Werror=strict-prototypes \
+  -Werror=missing-prototypes \
+  -Werror=implicit-function-declaration \
+  "-Werror=format=2 -Werror=format-security -Werror=format-nonliteral" \
+  -Werror=pointer-arith -Werror=init-self \
+  -Werror=missing-declarations \
+  -Werror=return-type \
+  -Werror=switch \
+  -Werror=overflow \
+  -Werror=int-conversion \
+  -Werror=parenthesis \
+  -Werror=undef \
+  -Werror=incompatible-pointer-types \
+  -Werror=misleading-indentation \
+  -Werror=missing-include-dirs -Werror=aggregate-return \
   -Werror=unused-result \
 ])])
 AC_SUBST(WARN_CFLAGS)
@@ -83,6 +84,9 @@ AC_SUBST([OSTREE_FEATURES])
 GLIB_TESTS
 LIBGLNX_CONFIGURE
 
+dnl These bits attempt to mirror https://github.com/coreutils/gnulib/blob/e369b04cca4da1534c98628b8ee4648bfca2bb3a/m4/parse-datetime.m4#L27
+AC_CHECK_FUNCS([nanotime clock_gettime])
+AC_STRUCT_TIMEZONE
 AC_CHECK_HEADER([sys/xattr.h],,[AC_MSG_ERROR([You must have sys/xattr.h from glibc])])
 
 AS_IF([test "$YACC" != "bison -y"], [AC_MSG_ERROR([bison not found but required])])
@@ -499,7 +503,7 @@ AS_IF([test x$with_grub2_mkconfig_path = x], [
   dnl on some 'grub'.  We default to grub2-mkconfig.
   AC_CHECK_PROGS(GRUB2_MKCONFIG, [grub2-mkconfig grub-mkconfig], [grub2-mkconfig])
 ],[GRUB2_MKCONFIG=$with_grub2_mkconfig_path])
-AC_DEFINE_UNQUOTED([GRUB2_MKCONFIG_PATH], ["$GRUB2_MKCONFIG"], [The system grub2-mkconfig executible name])
+AC_DEFINE_UNQUOTED([GRUB2_MKCONFIG_PATH], ["$GRUB2_MKCONFIG"], [The system grub2-mkconfig executable name])
 
 AC_ARG_WITH(static-compiler,
             AS_HELP_STRING([--with-static-compiler],
