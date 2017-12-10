@@ -167,6 +167,7 @@ _ostree_fetcher_finalize (GObject *object)
 {
   OstreeFetcher *self = OSTREE_FETCHER (object);
 
+  curl_multi_cleanup (self->multi);
   g_free (self->remote_name);
   g_free (self->cookie_jar_path);
   g_free (self->proxy);
@@ -177,7 +178,6 @@ _ostree_fetcher_finalize (GObject *object)
   g_clear_pointer (&self->timer_event, (GDestroyNotify)destroy_and_unref_source);
   if (self->mainctx)
     g_main_context_unref (self->mainctx);
-  curl_multi_cleanup (self->multi);
 
   G_OBJECT_CLASS (_ostree_fetcher_parent_class)->finalize (object);
 }
@@ -788,8 +788,13 @@ initiate_next_curl_request (FetcherRequest *req,
   curl_easy_setopt (req->easy, CURLOPT_PROGRESSFUNCTION, prog_cb);
   curl_easy_setopt (req->easy, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt (req->easy, CURLOPT_CONNECTTIMEOUT, 30L);
-  curl_easy_setopt (req->easy, CURLOPT_LOW_SPEED_LIMIT, 1L);
-  curl_easy_setopt (req->easy, CURLOPT_LOW_SPEED_TIME, 30L);
+  /* We used to set CURLOPT_LOW_SPEED_LIMIT and CURLOPT_LOW_SPEED_TIME
+   * here, but see https://github.com/ostreedev/ostree/issues/878#issuecomment-347228854
+   * basically those options don't play well with HTTP2 at the moment
+   * where we can have lots of outstanding requests.  Further,
+   * we could implement that functionality at a higher level
+   * more consistently too.
+   */
 
   /* closure bindings -> task */
   curl_easy_setopt (req->easy, CURLOPT_PRIVATE, task);

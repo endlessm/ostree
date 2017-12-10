@@ -278,7 +278,7 @@ ostree_validate_remote_name (const char  *remote_name,
 
 /**
  * ostree_validate_collection_id:
- * @rev: (nullable): A collection ID
+ * @collection_id: (nullable): A collection ID
  * @error: Error
  *
  * Check whether the given @collection_id is valid. Return an error if it is
@@ -2204,7 +2204,7 @@ _ostree_compare_timestamps (const char   *current_rev,
   g_autofree char *current_ts_str = g_date_time_format (current_dt, "%c");
   g_autofree char *new_ts_str = g_date_time_format (new_dt, "%c");
 
-  return glnx_throw (error, "Upgrade target revision '%s' with timestamp '%s' is chronologically older than current revision '%s' with timestamp '%s'",
+  return glnx_throw (error, "Upgrade target revision '%s' with timestamp '%s' is chronologically older than current revision '%s' with timestamp '%s'; use --allow-downgrade to permit",
                      new_rev, new_ts_str, current_rev, current_ts_str);
 }
 

@@ -38,16 +38,31 @@
 #include "ostree-checksum-input-stream.h"
 #include "ostree-varint.h"
 
-/* In most cases, we write into a staging dir for commit, but we also allow
- * direct writes into objects/ for e.g. hardlink imports.
+/* If fsync is enabled and we're in a txn, we write into a staging dir for
+ * commit, but we also allow direct writes into objects/ for e.g. hardlink
+ * imports.
  */
 static int
 commit_dest_dfd (OstreeRepo *self)
 {
-  if (self->in_transaction)
+  if (self->in_transaction && !self->disable_fsync)
     return self->commit_stagedir.fd;
   else
     return self->objects_dir_fd;
+}
+
+/* If we don't have O_TMPFILE, or for symlinks we'll create temporary
+ * files.  If we have a txn, use the staging dir to ensure that
+ * things are consistently locked against concurrent cleanup, and
+ * in general we have all of our data in one place.
+ */
+static int
+commit_tmp_dfd (OstreeRepo *self)
+{
+  if (self->in_transaction)
+    return self->commit_stagedir.fd;
+  else
+    return self->tmp_dir_fd;
 }
 
 /* The objects/ directory has a two-character directory prefix for checksums
@@ -404,46 +419,116 @@ add_size_index_to_metadata (OstreeRepo        *self,
   return g_variant_ref_sink (g_variant_builder_end (builder));
 }
 
+typedef struct {
+  gboolean initialized;
+  GLnxTmpfile tmpf;
+  char *expected_checksum;
+  OtChecksum checksum;
+  guint64 content_len;
+  guint64 bytes_written;
+  guint uid;
+  guint gid;
+  guint mode;
+  GVariant *xattrs;
+} OstreeRealRepoBareContent;
+G_STATIC_ASSERT (sizeof (OstreeRepoBareContent) >= sizeof (OstreeRealRepoBareContent));
+
 /* Create a tmpfile for writing a bare file.  Currently just used
  * by the static delta code, but will likely later be extended
  * to be used also by the dfd_iter commit path.
  */
 gboolean
-_ostree_repo_open_content_bare (OstreeRepo          *self,
-                                const char          *checksum,
-                                guint64              content_len,
-                                GLnxTmpfile         *out_tmpf,
-                                GCancellable        *cancellable,
-                                GError             **error)
+_ostree_repo_bare_content_open (OstreeRepo            *self,
+                                const char            *expected_checksum,
+                                guint64                content_len,
+                                guint                  uid,
+                                guint                  gid,
+                                guint                  mode,
+                                GVariant              *xattrs,
+                                OstreeRepoBareContent *out_regwrite,
+                                GCancellable          *cancellable,
+                                GError               **error)
 {
-  return glnx_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_WRONLY|O_CLOEXEC,
-                                        out_tmpf, error);
+  OstreeRealRepoBareContent *real = (OstreeRealRepoBareContent*) out_regwrite;
+  g_assert (!real->initialized);
+  real->initialized = TRUE;
+  g_assert (S_ISREG (mode));
+  if (!glnx_open_tmpfile_linkable_at (commit_tmp_dfd (self), ".", O_WRONLY|O_CLOEXEC,
+                                      &real->tmpf, error))
+    return FALSE;
+  ot_checksum_init (&real->checksum);
+  real->expected_checksum = g_strdup (expected_checksum);
+  real->content_len = content_len;
+  real->bytes_written = 0;
+  real->uid = uid;
+  real->gid = gid;
+  real->mode = mode;
+  real->xattrs = xattrs ? g_variant_ref (xattrs) : NULL;
+
+  /* Initialize the checksum with the header info */
+  g_autoptr(GFileInfo) finfo = _ostree_mode_uidgid_to_gfileinfo (mode, uid, gid);
+  g_autoptr(GBytes) header = _ostree_file_header_new (finfo, xattrs);
+  ot_checksum_update_bytes (&real->checksum, header);
+
+  return TRUE;
 }
 
-/* Used by static deltas, which have a separate "push" flow for
- * regfile objects distinct from the "pull" model used by
- * write_content_object().
- */
 gboolean
-_ostree_repo_commit_trusted_content_bare (OstreeRepo          *self,
-                                          const char          *checksum,
-                                          GLnxTmpfile         *tmpf,
-                                          guint32              uid,
-                                          guint32              gid,
-                                          guint32              mode,
-                                          GVariant            *xattrs,
-                                          GCancellable        *cancellable,
-                                          GError             **error)
+_ostree_repo_bare_content_write (OstreeRepo                 *repo,
+                                 OstreeRepoBareContent      *barewrite,
+                                 const guint8               *buf,
+                                 size_t                      len,
+                                 GCancellable               *cancellable,
+                                 GError                    **error)
 {
-  /* I don't think this is necessary, but a similar check was here previously,
-   * keeping it for extra redundancy.
-   */
-  if (!tmpf->initialized || tmpf->fd == -1)
-    return TRUE;
+  OstreeRealRepoBareContent *real = (OstreeRealRepoBareContent*) barewrite;
+  g_assert (real->initialized);
+  ot_checksum_update (&real->checksum, buf, len);
+  if (glnx_loop_write (real->tmpf.fd, buf, len) < 0)
+    return glnx_throw_errno_prefix (error, "write");
+  return TRUE;
+}
 
-  return commit_loose_regfile_object (self, checksum,
-                                      tmpf, uid, gid, mode, xattrs,
-                                      cancellable, error);
+gboolean
+_ostree_repo_bare_content_commit (OstreeRepo                 *self,
+                                  OstreeRepoBareContent      *barewrite,
+                                  char                       *checksum_buf,
+                                  size_t                      buflen,
+                                  GCancellable               *cancellable,
+                                  GError                    **error)
+{
+  OstreeRealRepoBareContent *real = (OstreeRealRepoBareContent*) barewrite;
+  g_assert (real->initialized);
+  ot_checksum_get_hexdigest (&real->checksum, checksum_buf, buflen);
+
+  if (real->expected_checksum &&
+      !_ostree_compare_object_checksum (OSTREE_OBJECT_TYPE_FILE,
+                                        real->expected_checksum, checksum_buf,
+                                        error))
+    return FALSE;
+
+  if (!commit_loose_regfile_object (self, checksum_buf,
+                                    &real->tmpf, real->uid, real->gid,
+                                    real->mode, real->xattrs,
+                                    cancellable, error))
+    return FALSE;
+
+  /* Let's have a guarantee that after commit the object is cleaned up */
+  _ostree_repo_bare_content_cleanup (barewrite);
+  return TRUE;
+}
+
+void
+_ostree_repo_bare_content_cleanup (OstreeRepoBareContent *regwrite)
+{
+  OstreeRealRepoBareContent *real = (OstreeRealRepoBareContent*) regwrite;
+  if (!real->initialized)
+    return;
+  glnx_tmpfile_clear (&real->tmpf);
+  ot_checksum_clear (&real->checksum);
+  g_clear_pointer (&real->expected_checksum, (GDestroyNotify)g_free);
+  g_clear_pointer (&real->xattrs, (GDestroyNotify)g_variant_unref);
+  real->initialized = FALSE;
 }
 
 /* Allocate an O_TMPFILE, write everything from @input to it, but
@@ -459,7 +544,7 @@ create_regular_tmpfile_linkable_with_content (OstreeRepo *self,
                                               GError **error)
 {
   g_auto(GLnxTmpfile) tmpf = { 0, };
-  if (!glnx_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_WRONLY|O_CLOEXEC,
+  if (!glnx_open_tmpfile_linkable_at (commit_tmp_dfd (self), ".", O_WRONLY|O_CLOEXEC,
                                       &tmpf, error))
     return FALSE;
 
@@ -597,7 +682,7 @@ write_content_object (OstreeRepo         *self,
    *
    * We use GLnxTmpfile for regular files, and OtCleanupUnlinkat for symlinks.
    */
-  g_auto(OtCleanupUnlinkat) tmp_unlinker = { self->tmp_dir_fd, NULL };
+  g_auto(OtCleanupUnlinkat) tmp_unlinker = { commit_tmp_dfd (self), NULL };
   g_auto(GLnxTmpfile) tmpf = { 0, };
   goffset unpacked_size = 0;
   gboolean indexable = FALSE;
@@ -606,7 +691,7 @@ write_content_object (OstreeRepo         *self,
     {
       /* This will not be hit for bare-user or archive */
       g_assert (self->mode == OSTREE_REPO_MODE_BARE || self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY);
-      if (!_ostree_make_temporary_symlink_at (self->tmp_dir_fd,
+      if (!_ostree_make_temporary_symlink_at (commit_tmp_dfd (self),
                                               g_file_info_get_symlink_target (file_info),
                                               &tmp_unlinker.path,
                                               cancellable, error))
@@ -629,7 +714,7 @@ write_content_object (OstreeRepo         *self,
       if (self->generate_sizes)
         indexable = TRUE;
 
-      if (!glnx_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_WRONLY|O_CLOEXEC,
+      if (!glnx_open_tmpfile_linkable_at (commit_tmp_dfd (self), ".", O_WRONLY|O_CLOEXEC,
                                           &tmpf, error))
         return FALSE;
       temp_out = g_unix_output_stream_new (tmpf.fd, FALSE);
@@ -719,14 +804,14 @@ write_content_object (OstreeRepo         *self,
            * Note, this does not apply for bare-user repos, as they store symlinks
            * as regular files.
            */
-          if (G_UNLIKELY (fchownat (self->tmp_dir_fd, tmp_unlinker.path,
+          if (G_UNLIKELY (fchownat (tmp_unlinker.dfd, tmp_unlinker.path,
                                     uid, gid, AT_SYMLINK_NOFOLLOW) == -1))
             return glnx_throw_errno_prefix (error, "fchownat");
 
           if (xattrs != NULL)
             {
-              ot_security_smack_reset_dfd_name (self->tmp_dir_fd, tmp_unlinker.path);
-              if (!glnx_dfd_name_set_all_xattrs (self->tmp_dir_fd, tmp_unlinker.path,
+              ot_security_smack_reset_dfd_name (tmp_unlinker.dfd, tmp_unlinker.path);
+              if (!glnx_dfd_name_set_all_xattrs (tmp_unlinker.dfd, tmp_unlinker.path,
                                                  xattrs, cancellable, error))
                 return FALSE;
             }
@@ -968,7 +1053,7 @@ write_metadata_object (OstreeRepo         *self,
 
   /* Write the metadata to a temporary file */
   g_auto(GLnxTmpfile) tmpf = { 0, };
-  if (!glnx_open_tmpfile_linkable_at (self->tmp_dir_fd, ".", O_WRONLY|O_CLOEXEC,
+  if (!glnx_open_tmpfile_linkable_at (commit_tmp_dfd (self), ".", O_WRONLY|O_CLOEXEC,
                                       &tmpf, error))
     return FALSE;
   if (!glnx_try_fallocate (tmpf.fd, 0, len, error))
@@ -1350,8 +1435,40 @@ rename_pending_loose_objects (OstreeRepo        *self,
         return glnx_throw_errno_prefix (error, "fsync");
     }
 
-  if (!glnx_tmpdir_delete (&self->commit_stagedir, cancellable, error))
+  return TRUE;
+}
+
+/* Try to lock a transaction stage directory created by
+ * ostree_repo_prepare_transaction().
+ */
+static gboolean
+cleanup_txn_dir (OstreeRepo   *self,
+                 int           dfd,
+                 const char   *path,
+                 GCancellable *cancellable,
+                 GError      **error)
+{
+  g_auto(GLnxLockFile) lockfile = { 0, };
+  gboolean did_lock;
+
+  /* Try to lock, but if we don't get it, move on */
+  if (!_ostree_repo_try_lock_tmpdir (dfd, path, &lockfile, &did_lock, error))
     return FALSE;
+  if (!did_lock)
+    return TRUE; /* Note early return */
+
+  /* If however this is the staging directory for the *current*
+   * boot, then don't delete it now - we may end up reusing it, as
+   * is the point.
+   */
+  if (g_str_has_prefix (path, self->stagedir_prefix))
+    return TRUE; /* Note early return */
+
+  /* But, crucially we can now clean up staging directories
+   * from *other* boots.
+   */
+  if (!glnx_shutil_rm_rf_at (dfd, path, cancellable, error))
+    return glnx_prefix_error (error, "Removing %s", path);
 
   return TRUE;
 }
@@ -1376,15 +1493,9 @@ cleanup_tmpdir (OstreeRepo        *self,
 
   while (TRUE)
     {
-      guint64 delta;
       struct dirent *dent;
-      struct stat stbuf;
-      g_auto(GLnxLockFile) lockfile = { 0, };
-      gboolean did_lock;
-
       if (!glnx_dirfd_iterator_next_dent (&dfd_iter, &dent, cancellable, error))
         return FALSE;
-
       if (dent == NULL)
         break;
 
@@ -1394,55 +1505,39 @@ cleanup_tmpdir (OstreeRepo        *self,
       if (strcmp (dent->d_name, "cache") == 0)
         continue;
 
+      struct stat stbuf;
       if (!glnx_fstatat_allow_noent (dfd_iter.fd, dent->d_name, &stbuf, AT_SYMLINK_NOFOLLOW, error))
         return FALSE;
       if (errno == ENOENT) /* Did another cleanup win? */
         continue;
 
-      /* First, if it's a directory which needs locking, but it's
-       * busy, skip it.
-       */
+      /* Handle transaction tmpdirs */
       if (_ostree_repo_is_locked_tmpdir (dent->d_name))
         {
-          if (!_ostree_repo_try_lock_tmpdir (dfd_iter.fd, dent->d_name,
-                                             &lockfile, &did_lock, error))
+          if (!cleanup_txn_dir (self, dfd_iter.fd, dent->d_name, cancellable, error))
             return FALSE;
-          if (!did_lock)
-            continue;
+          continue; /* We've handled this, move on */
         }
 
-      /* If however this is the staging directory for the *current*
-       * boot, then don't delete it now - we may end up reusing it, as
-       * is the point.
+      /* At this point we're looking at an unknown-origin file or directory in
+       * the tmpdir. This could be something like a temporary checkout dir (used
+       * by rpm-ostree), or (from older versions of libostree) a tempfile if we
+       * don't have O_TMPFILE for commits.
        */
-      if (g_str_has_prefix (dent->d_name, self->stagedir_prefix))
+
+      /* Ignore files from the future */
+      if (stbuf.st_mtime > curtime_secs)
         continue;
-      else if (g_str_has_prefix (dent->d_name, OSTREE_REPO_TMPDIR_STAGING))
+
+      /* We're pruning content based on the expiry, which
+       * defaults to a day.  That's what we were doing before we
+       * had locking...but in future we can be smarter here.
+       */
+      guint64 delta = curtime_secs - stbuf.st_mtime;
+      if (delta > self->tmp_expiry_seconds)
         {
-          /* But, crucially we can now clean up staging directories
-           * from *other* boots
-           */
           if (!glnx_shutil_rm_rf_at (dfd_iter.fd, dent->d_name, cancellable, error))
             return glnx_prefix_error (error, "Removing %s", dent->d_name);
-        }
-      else
-        {
-          /* Now we do time-based cleanup.  Ignore it if it's somehow
-           * in the future...
-           */
-          if (stbuf.st_mtime > curtime_secs)
-            continue;
-
-          /* Now, we're pruning content based on the expiry, which
-           * defaults to a day.  That's what we were doing before we
-           * had locking...but in future we can be smarter here.
-           */
-          delta = curtime_secs - stbuf.st_mtime;
-          if (delta > self->tmp_expiry_seconds)
-            {
-              if (!glnx_shutil_rm_rf_at (dfd_iter.fd, dent->d_name, cancellable, error))
-                return glnx_prefix_error (error, "Removing %s", dent->d_name);
-            }
         }
     }
 
@@ -1675,6 +1770,12 @@ ostree_repo_commit_transaction (OstreeRepo                  *self,
   if (!rename_pending_loose_objects (self, cancellable, error))
     return FALSE;
 
+  g_debug ("txn commit %s", glnx_basename (self->commit_stagedir.path));
+  if (!glnx_tmpdir_delete (&self->commit_stagedir, cancellable, error))
+    return FALSE;
+  glnx_release_lock_file (&self->commit_stagedir_lock);
+
+  /* This performs a global cleanup */
   if (!cleanup_tmpdir (self, cancellable, error))
     return FALSE;
 
@@ -1690,9 +1791,6 @@ ostree_repo_commit_transaction (OstreeRepo                  *self,
     if (!_ostree_repo_update_collection_refs (self, self->txn_collection_refs, cancellable, error))
       return FALSE;
   g_clear_pointer (&self->txn_collection_refs, g_hash_table_destroy);
-
-  glnx_tmpdir_unset (&self->commit_stagedir);
-  glnx_release_lock_file (&self->commit_stagedir_lock);
 
   self->in_transaction = FALSE;
 
@@ -2695,47 +2793,70 @@ write_directory_content_to_mtree_internal (OstreeRepo                  *self,
   g_assert (dir_enum != NULL || dfd_iter != NULL);
 
   GFileType file_type = g_file_info_get_file_type (child_info);
-
   const char *name = g_file_info_get_name (child_info);
-  g_ptr_array_add (path, (char*)name);
 
-  g_autofree char *child_relpath = ptrarray_path_join (path);
-
-  /* See if we have a devino hit; this is used below. Further, for bare-user
-   * repos we'll reload our file info from the object (specifically the
-   * ostreemeta xattr). The on-disk state is not normally what we want to
-   * commit. Basically we're making sure that we pick up "real" uid/gid and any
-   * xattrs there.
+  /* Load flags into boolean constants for ease of readability (we also need to
+   * NULL-check modifier)
    */
-  const char *loose_checksum = NULL;
-  g_autoptr(GVariant) source_xattrs = NULL;
-  if (dfd_iter != NULL && (file_type != G_FILE_TYPE_DIRECTORY))
-    {
-      guint32 dev = g_file_info_get_attribute_uint32 (child_info, "unix::device");
-      guint64 inode = g_file_info_get_attribute_uint64 (child_info, "unix::inode");
-      loose_checksum = devino_cache_lookup (self, modifier, dev, inode);
-      if (loose_checksum && self->mode == OSTREE_REPO_MODE_BARE_USER)
-        {
-          child_info = NULL;
-          if (!ostree_repo_load_file (self, loose_checksum, NULL, &child_info, &source_xattrs,
-                                      cancellable, error))
-            return FALSE;
-        }
-    }
-
-  g_autoptr(GFileInfo) modified_info = NULL;
-  OstreeRepoCommitFilterResult filter_result =
-    _ostree_repo_commit_modifier_apply (self, modifier, child_relpath, child_info, &modified_info);
-  const gboolean child_info_was_modified = !_ostree_gfileinfo_equal (child_info, modified_info);
-
+  const gboolean canonical_permissions = modifier &&
+    (modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS);
+  const gboolean devino_canonical = modifier &&
+    (modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL);
   /* We currently only honor the CONSUME flag in the dfd_iter case to avoid even
    * more complexity in this function, and it'd mostly only be useful when
    * operating on local filesystems anyways.
    */
   const gboolean delete_after_commit = dfd_iter && modifier &&
     (modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME);
-  const gboolean canonical_permissions = modifier &&
-    (modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS);
+
+  /* See if we have a devino hit; this is used below in a few places. */
+  const char *loose_checksum = NULL;
+  if (dfd_iter != NULL && (file_type != G_FILE_TYPE_DIRECTORY))
+    {
+      guint32 dev = g_file_info_get_attribute_uint32 (child_info, "unix::device");
+      guint64 inode = g_file_info_get_attribute_uint64 (child_info, "unix::inode");
+      loose_checksum = devino_cache_lookup (self, modifier, dev, inode);
+      if (loose_checksum && devino_canonical)
+        {
+          /* Go directly to checksum, do not pass Go, do not collect $200.
+           * In this mode the app is required to break hardlinks for any
+           * files it wants to modify.
+           */
+          if (!ostree_mutable_tree_replace_file (mtree, name, loose_checksum, error))
+            return FALSE;
+          if (delete_after_commit)
+            {
+              if (!glnx_shutil_rm_rf_at (dfd_iter->fd, name, cancellable, error))
+                return FALSE;
+            }
+          return TRUE; /* Early return */
+        }
+    }
+
+  /* Build the full path which we need for callbacks */
+  g_ptr_array_add (path, (char*)name);
+  g_autofree char *child_relpath = ptrarray_path_join (path);
+
+  /* For bare-user repos we'll reload our file info from the object
+   * (specifically the ostreemeta xattr), if it was checked out that way (via
+   * hardlink). The on-disk state is not normally what we want to commit.
+   * Basically we're making sure that we pick up "real" uid/gid and any xattrs
+   * there.
+   */
+  g_autoptr(GVariant) source_xattrs = NULL;
+  if (loose_checksum && self->mode == OSTREE_REPO_MODE_BARE_USER)
+    {
+      child_info = NULL;
+      if (!ostree_repo_load_file (self, loose_checksum, NULL, &child_info, &source_xattrs,
+                                  cancellable, error))
+        return FALSE;
+    }
+
+  /* Call the filter */
+  g_autoptr(GFileInfo) modified_info = NULL;
+  OstreeRepoCommitFilterResult filter_result =
+    _ostree_repo_commit_modifier_apply (self, modifier, child_relpath, child_info, &modified_info);
+  const gboolean child_info_was_modified = !_ostree_gfileinfo_equal (child_info, modified_info);
 
   if (filter_result != OSTREE_REPO_COMMIT_FILTER_ALLOW)
     {

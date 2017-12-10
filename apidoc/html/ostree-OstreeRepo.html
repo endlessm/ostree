@@ -8,7 +8,7 @@
 <link rel="up" href="reference.html" title="API Reference">
 <link rel="prev" href="ostree-Core-repository-independent-functions.html" title="Core repository-independent functions">
 <link rel="next" href="ostree-In-memory-modifiable-filesystem-tree.html" title="In-memory modifiable filesystem tree">
-<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.26 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -1243,7 +1243,7 @@ already extant repository.  If you want to create one, use <a class="link" href=
 </div>
 <div class="refsect3">
 <a name="ostree-repo-open-at.returns"></a><h4>Returns</h4>
-<p> An accessor object for an OSTree repository located at <em class="parameter"><code>dfd</code></em>
+<p>An accessor object for an OSTree repository located at <em class="parameter"><code>dfd</code></em>
 + <em class="parameter"><code>path</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
@@ -1271,7 +1271,7 @@ ostree_repo_new (<em class="parameter"><code><span class="type">GFile</span> *pa
 </div>
 <div class="refsect3">
 <a name="ostree-repo-new.returns"></a><h4>Returns</h4>
-<p> An accessor object for an OSTree repository located at <em class="parameter"><code>path</code></em>
+<p>An accessor object for an OSTree repository located at <em class="parameter"><code>path</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
@@ -1308,7 +1308,7 @@ instead of assuming "/".</p>
 </div>
 <div class="refsect3">
 <a name="ostree-repo-new-for-sysroot-path.returns"></a><h4>Returns</h4>
-<p> An accessor object for the OSTree repository located at <em class="parameter"><code>repo_path</code></em>
+<p>An accessor object for the OSTree repository located at <em class="parameter"><code>repo_path</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
@@ -1325,7 +1325,7 @@ Otherwise use the path in the OSTREE_REPO environment variable
 /ostree/repo.</p>
 <div class="refsect3">
 <a name="ostree-repo-new-default.returns"></a><h4>Returns</h4>
-<p> An accessor object for an OSTree repository located at /ostree/repo. </p>
+<p>An accessor object for an OSTree repository located at /ostree/repo. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -1523,7 +1523,7 @@ the mode or configuration (<code class="literal">repo/config</code>) of an exist
 </div>
 <div class="refsect3">
 <a name="ostree-repo-create-at.returns"></a><h4>Returns</h4>
-<p> A new OSTree repository reference. </p>
+<p>A new OSTree repository reference. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -1604,7 +1604,7 @@ that API. In general, you should avoid use of this API.</p>
 </div>
 <div class="refsect3">
 <a name="ostree-repo-get-path.returns"></a><h4>Returns</h4>
-<p> Path to repo. </p>
+<p>Path to repo. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
 </div>
@@ -1621,7 +1621,7 @@ ostree_repo_get_mode (<em class="parameter"><code><a class="link" href="ostree-O
 ostree_repo_get_config (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-repo-get-config.returns"></a><h4>Returns</h4>
-<p> The repository configuration; do not modify. </p>
+<p>The repository configuration; do not modify. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
 </div>
@@ -1734,7 +1734,7 @@ are the same repository on disk, <code class="literal">FALSE</code> otherwise</p
 ostree_repo_copy_config (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-repo-copy-config.returns"></a><h4>Returns</h4>
-<p> A newly-allocated copy of the repository config. </p>
+<p>A newly-allocated copy of the repository config. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -1786,7 +1786,7 @@ mapped as follows:</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>options</p></td>
-<td class="parameter_description"><p> GVariant of type a{sv}. </p></td>
+<td class="parameter_description"><p>GVariant of type a{sv}. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -1878,7 +1878,7 @@ options.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>sysroot</p></td>
-<td class="parameter_description"><p> System root. </p></td>
+<td class="parameter_description"><p>System root. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -1898,7 +1898,7 @@ options.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>options</p></td>
-<td class="parameter_description"><p> GVariant of type a{sv}. </p></td>
+<td class="parameter_description"><p>GVariant of type a{sv}. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -1939,7 +1939,7 @@ alphabetically.  If no remotes are available the function returns <code class="l
 </tr>
 <tr>
 <td class="parameter_name"><p>out_n_remotes</p></td>
-<td class="parameter_description"><p> Number of remotes available. </p></td>
+<td class="parameter_description"><p>Number of remotes available. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 </tbody>
@@ -1947,7 +1947,7 @@ alphabetically.  If no remotes are available the function returns <code class="l
 </div>
 <div class="refsect3">
 <a name="ostree-repo-remote-list.returns"></a><h4>Returns</h4>
-<p> a <code class="literal">NULL</code>-terminated
+<p>a <code class="literal">NULL</code>-terminated
 array of remote names. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> length=out_n_remotes][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
@@ -1985,7 +1985,7 @@ error if the provided remote does not exist.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_url</p></td>
-<td class="parameter_description"><p> Remote's URL. </p></td>
+<td class="parameter_description"><p>Remote's URL. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -2035,7 +2035,7 @@ not exist.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_gpg_verify</p></td>
-<td class="parameter_description"><p> Remote's GPG option. </p></td>
+<td class="parameter_description"><p>Remote's GPG option. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -2086,7 +2086,7 @@ remote does not exist.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_gpg_verify_summary</p></td>
-<td class="parameter_description"><p> Remote's GPG option. </p></td>
+<td class="parameter_description"><p>Remote's GPG option. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -2145,17 +2145,17 @@ from the remote named <em class="parameter"><code>name</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>source_stream</p></td>
-<td class="parameter_description"><p> a <span class="type">GInputStream</span>, or <code class="literal">NULL</code>. </p></td>
+<td class="parameter_description"><p>a <span class="type">GInputStream</span>, or <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>key_ids</p></td>
-<td class="parameter_description"><p> a <code class="literal">NULL</code>-terminated array of GPG key IDs, or <code class="literal">NULL</code>. </p></td>
+<td class="parameter_description"><p>a <code class="literal">NULL</code>-terminated array of GPG key IDs, or <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_imported</p></td>
-<td class="parameter_description"><p> return location for the number of imported
+<td class="parameter_description"><p>return location for the number of imported
 keys, or <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
@@ -2224,13 +2224,13 @@ with <a class="link" href="ostree-Core-repository-independent-functions.html#OST
 </tr>
 <tr>
 <td class="parameter_name"><p>out_summary</p></td>
-<td class="parameter_description"><p> return location for raw summary data, or
+<td class="parameter_description"><p>return location for raw summary data, or
 <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_signatures</p></td>
-<td class="parameter_description"><p> return location for raw summary
+<td class="parameter_description"><p>return location for raw summary
 signature data, or <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>]</span></td>
 </tr>
@@ -2291,18 +2291,18 @@ The following are currently defined:</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>options</p></td>
-<td class="parameter_description"><p> A GVariant a{sv} with an extensible set of flags. </p></td>
+<td class="parameter_description"><p>A GVariant a{sv} with an extensible set of flags. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_summary</p></td>
-<td class="parameter_description"><p> return location for raw summary data, or
+<td class="parameter_description"><p>return location for raw summary data, or
 <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_signatures</p></td>
-<td class="parameter_description"><p> return location for raw summary
+<td class="parameter_description"><p>return location for raw summary
 signature data, or <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>]</span></td>
 </tr>
@@ -2471,7 +2471,7 @@ to <code class="literal">NULL</code>.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_value</p></td>
-<td class="parameter_description"><p> location to store the list
+<td class="parameter_description"><p>location to store the list
 of strings. The list should be freed with
 <code class="function">g_strfreev()</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1]</span></td>
@@ -2533,13 +2533,13 @@ option name.  If an error is returned, <em class="parameter"><code>out_value</co
 </tr>
 <tr>
 <td class="parameter_name"><p>default_value</p></td>
-<td class="parameter_description"><p> Value returned if <em class="parameter"><code>option_name</code></em>
+<td class="parameter_description"><p>Value returned if <em class="parameter"><code>option_name</code></em>
 is not present. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_value</p></td>
-<td class="parameter_description"><p> Return location for value. </p></td>
+<td class="parameter_description"><p>Return location for value. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -2580,7 +2580,7 @@ called.</p>
 </div>
 <div class="refsect3">
 <a name="ostree-repo-get-parent.returns"></a><h4>Returns</h4>
-<p> Parent repository, or <code class="literal">NULL</code> if none. </p>
+<p>Parent repository, or <code class="literal">NULL</code> if none. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
 </div>
@@ -2702,7 +2702,7 @@ will not erase any data you  write during the transaction.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_transaction_resume</p></td>
-<td class="parameter_description"><p> Whether this transaction
+<td class="parameter_description"><p>Whether this transaction
 is resuming from a previous one.  This is a legacy state, now OSTree
 pulls use per-commit <code class="literal">state/.commitpartial</code> files. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
@@ -2748,7 +2748,7 @@ ostree_repo_commit_transaction (<em class="parameter"><code><a class="link" href
 </tr>
 <tr>
 <td class="parameter_name"><p>out_stats</p></td>
-<td class="parameter_description"><p> A set of statistics of things
+<td class="parameter_description"><p>A set of statistics of things
 that happened during this transaction. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
@@ -2837,7 +2837,7 @@ arguments.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>checksum</p></td>
-<td class="parameter_description"><p> The checksum to point it to. </p></td>
+<td class="parameter_description"><p>The checksum to point it to. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 </tbody>
@@ -2881,7 +2881,7 @@ be made to the repository.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>remote</p></td>
-<td class="parameter_description"><p> A remote for the ref. </p></td>
+<td class="parameter_description"><p>A remote for the ref. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -2891,7 +2891,7 @@ be made to the repository.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>checksum</p></td>
-<td class="parameter_description"><p> The checksum to point it to. </p></td>
+<td class="parameter_description"><p>The checksum to point it to. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 </tbody>
@@ -2927,7 +2927,7 @@ case where we're creating or overwriting an existing ref.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>remote</p></td>
-<td class="parameter_description"><p> A remote for the ref. </p></td>
+<td class="parameter_description"><p>A remote for the ref. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -2937,7 +2937,7 @@ case where we're creating or overwriting an existing ref.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>checksum</p></td>
-<td class="parameter_description"><p> The checksum to point it to, or <code class="literal">NULL</code> to unset. </p></td>
+<td class="parameter_description"><p>The checksum to point it to, or <code class="literal">NULL</code> to unset. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -2981,7 +2981,7 @@ ostree_repo_set_alias_ref_immediate (<em class="parameter"><code><a class="link"
 </tr>
 <tr>
 <td class="parameter_name"><p>remote</p></td>
-<td class="parameter_description"><p> A remote for the ref. </p></td>
+<td class="parameter_description"><p>A remote for the ref. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -2991,7 +2991,7 @@ ostree_repo_set_alias_ref_immediate (<em class="parameter"><code><a class="link"
 </tr>
 <tr>
 <td class="parameter_name"><p>target</p></td>
-<td class="parameter_description"><p> The ref target to point it to, or <code class="literal">NULL</code> to unset. </p></td>
+<td class="parameter_description"><p>The ref target to point it to, or <code class="literal">NULL</code> to unset. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -3161,7 +3161,7 @@ ostree_repo_has_object (<em class="parameter"><code><a class="link" href="ostree
 </tr>
 <tr>
 <td class="parameter_name"><p>out_have_object</p></td>
-<td class="parameter_description"><p> <code class="literal">TRUE</code> if repository contains object. </p></td>
+<td class="parameter_description"><p><code class="literal">TRUE</code> if repository contains object. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -3221,7 +3221,7 @@ computed checksum.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>expected_checksum</p></td>
-<td class="parameter_description"><p> If provided, validate content against this checksum. </p></td>
+<td class="parameter_description"><p>If provided, validate content against this checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -3231,7 +3231,7 @@ computed checksum.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_csum</p></td>
-<td class="parameter_description"><p> Binary checksum. </p></td>
+<td class="parameter_description"><p>Binary checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -3284,7 +3284,7 @@ the checksum <em class="parameter"><code>expected_checksum</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>expected_checksum</p></td>
-<td class="parameter_description"><p> If provided, validate content against this checksum. </p></td>
+<td class="parameter_description"><p>If provided, validate content against this checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -3342,7 +3342,7 @@ ostree_repo_write_metadata_finish (<em class="parameter"><code><a class="link" h
 </tr>
 <tr>
 <td class="parameter_name"><p>out_csum</p></td>
-<td class="parameter_description"><p> Binary checksum value. </p></td>
+<td class="parameter_description"><p>Binary checksum value. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> guint8]</span></td>
 </tr>
 <tr>
@@ -3387,7 +3387,7 @@ be returned as <em class="parameter"><code>out_csum</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>expected_checksum</p></td>
-<td class="parameter_description"><p> If provided, validate content against this checksum. </p></td>
+<td class="parameter_description"><p>If provided, validate content against this checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -3403,7 +3403,7 @@ be returned as <em class="parameter"><code>out_csum</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_csum</p></td>
-<td class="parameter_description"><p> Binary checksum. </p></td>
+<td class="parameter_description"><p>Binary checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> fixed-size=32][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -3634,7 +3634,7 @@ checksum <em class="parameter"><code>expected_checksum</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>expected_checksum</p></td>
-<td class="parameter_description"><p> If provided, validate content against this checksum. </p></td>
+<td class="parameter_description"><p>If provided, validate content against this checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -3698,7 +3698,7 @@ ostree_repo_write_content_finish (<em class="parameter"><code><a class="link" hr
 </tr>
 <tr>
 <td class="parameter_name"><p>out_csum</p></td>
-<td class="parameter_description"><p> A binary SHA256 checksum of the content object. </p></td>
+<td class="parameter_description"><p>A binary SHA256 checksum of the content object. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 <tr>
@@ -3749,7 +3749,7 @@ find the given refspec in local.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_rev</p></td>
-<td class="parameter_description"><p> A checksum,or <code class="literal">NULL</code> if <em class="parameter"><code>allow_noent</code></em>
+<td class="parameter_description"><p>A checksum,or <code class="literal">NULL</code> if <em class="parameter"><code>allow_noent</code></em>
 is true and it does not exist. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
@@ -3808,7 +3808,7 @@ local ref is specified but not found.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_rev</p></td>
-<td class="parameter_description"><p> A checksum,or <code class="literal">NULL</code> if <em class="parameter"><code>allow_noent</code></em>
+<td class="parameter_description"><p>A checksum,or <code class="literal">NULL</code> if <em class="parameter"><code>allow_noent</code></em>
 is true and it does not exist. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
@@ -3852,13 +3852,13 @@ refspecs which have <em class="parameter"><code>refspec_prefix</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>refspec_prefix</p></td>
-<td class="parameter_description"><p> Only list refs which match this prefix. </p></td>
+<td class="parameter_description"><p>Only list refs which match this prefix. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_all_refs</p></td>
-<td class="parameter_description"><p> Mapping from ref to checksum. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8 utf8]</span></td>
+<td class="parameter_description"><p>Mapping from ref to checksum. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8 utf8][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>
@@ -3908,13 +3908,13 @@ name.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>refspec_prefix</p></td>
-<td class="parameter_description"><p> Only list refs which match this prefix. </p></td>
+<td class="parameter_description"><p>Only list refs which match this prefix. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_all_refs</p></td>
-<td class="parameter_description"><p> Mapping from ref to checksum. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8 utf8]</span></td>
+<td class="parameter_description"><p>Mapping from ref to checksum. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8 utf8][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>flags</p></td>
@@ -3965,8 +3965,8 @@ ostree_repo_remote_list_refs (<em class="parameter"><code><a class="link" href="
 </tr>
 <tr>
 <td class="parameter_name"><p>out_all_refs</p></td>
-<td class="parameter_description"><p> Mapping from ref to checksum. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8 utf8]</span></td>
+<td class="parameter_description"><p>Mapping from ref to checksum. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8 utf8][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>
@@ -4022,7 +4022,7 @@ result in <em class="parameter"><code>out_variant</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_variant</p></td>
-<td class="parameter_description"><p> Metadata object. </p></td>
+<td class="parameter_description"><p>Metadata object. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 <tr>
@@ -4068,12 +4068,12 @@ means that only a sub-path of the commit is available.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_commit</p></td>
-<td class="parameter_description"><p> Commit. </p></td>
+<td class="parameter_description"><p>Commit. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_state</p></td>
-<td class="parameter_description"><p> Commit state. </p></td>
+<td class="parameter_description"><p>Commit state. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -4126,7 +4126,7 @@ exists, storing the result in <em class="parameter"><code>out_variant</code></em
 </tr>
 <tr>
 <td class="parameter_name"><p>out_variant</p></td>
-<td class="parameter_description"><p> Metadata. </p></td>
+<td class="parameter_description"><p>Metadata. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 <tr>
@@ -4172,17 +4172,17 @@ content (for regular files), the metadata, and extended attributes.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_input</p></td>
-<td class="parameter_description"><p> File content. </p></td>
+<td class="parameter_description"><p>File content. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_file_info</p></td>
-<td class="parameter_description"><p> File information. </p></td>
+<td class="parameter_description"><p>File information. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_xattrs</p></td>
-<td class="parameter_description"><p> Extended attributes. </p></td>
+<td class="parameter_description"><p>Extended attributes. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
@@ -4238,12 +4238,12 @@ repositories.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_input</p></td>
-<td class="parameter_description"><p> Stream for object. </p></td>
+<td class="parameter_description"><p>Stream for object. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_size</p></td>
-<td class="parameter_description"><p> Length of <em class="parameter"><code>out_input</code></em>
+<td class="parameter_description"><p>Length of <em class="parameter"><code>out_input</code></em>
 . </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
@@ -4300,7 +4300,7 @@ compression has been applied.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_size</p></td>
-<td class="parameter_description"><p> Size in bytes object occupies physically. </p></td>
+<td class="parameter_description"><p>Size in bytes object occupies physically. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -4495,7 +4495,7 @@ file structure to <em class="parameter"><code>mtree</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>modifier</p></td>
-<td class="parameter_description"><p> Optional commit modifier. </p></td>
+<td class="parameter_description"><p>Optional commit modifier. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -4691,12 +4691,12 @@ ostree_repo_commit_modifier_new (<em class="parameter"><code><a class="link" hre
 </tr>
 <tr>
 <td class="parameter_name"><p>commit_filter</p></td>
-<td class="parameter_description"><p> Function that can inspect individual files. </p></td>
+<td class="parameter_description"><p>Function that can inspect individual files. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>user_data</p></td>
-<td class="parameter_description"><p> User data. </p></td>
+<td class="parameter_description"><p>User data. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -4709,7 +4709,7 @@ ostree_repo_commit_modifier_new (<em class="parameter"><code><a class="link" hre
 </div>
 <div class="refsect3">
 <a name="ostree-repo-commit-modifier-new.returns"></a><h4>Returns</h4>
-<p> A new commit modifier. </p>
+<p>A new commit modifier. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -4801,7 +4801,7 @@ policy wins.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>sepolicy</p></td>
-<td class="parameter_description"><p> Policy to use for labeling. </p></td>
+<td class="parameter_description"><p>Policy to use for labeling. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 </tbody>
@@ -4874,7 +4874,7 @@ member of <code class="literal">OstreeRepoCheckoutAtOptions</code>, then call
 <code class="function">ostree_repo_commit_set_devino_cache()</code>.</p>
 <div class="refsect3">
 <a name="ostree-repo-devino-cache-new.returns"></a><h4>Returns</h4>
-<p> Newly allocated cache. </p>
+<p>Newly allocated cache. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -4937,7 +4937,7 @@ overlaying the resulting filesystem hierarchy into <em class="parameter"><code>m
 </tr>
 <tr>
 <td class="parameter_name"><p>modifier</p></td>
-<td class="parameter_description"><p> Optional modifier. </p></td>
+<td class="parameter_description"><p>Optional modifier. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -5003,7 +5003,7 @@ resulting filesystem hierarchy into <em class="parameter"><code>mtree</code></em
 </tr>
 <tr>
 <td class="parameter_name"><p>modifier</p></td>
-<td class="parameter_description"><p> Optional modifier. </p></td>
+<td class="parameter_description"><p>Optional modifier. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -5061,7 +5061,7 @@ file structure to <em class="parameter"><code>mtree</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>modifier</p></td>
-<td class="parameter_description"><p> Optional commit modifier. </p></td>
+<td class="parameter_description"><p>Optional commit modifier. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -5119,7 +5119,7 @@ the <em class="parameter"><code>mtree</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_file</p></td>
-<td class="parameter_description"><p> An <a class="link" href="ostree-ostree-repo-file.html#OstreeRepoFile" title="OstreeRepoFile"><span class="type">OstreeRepoFile</span></a> representing <em class="parameter"><code>mtree</code></em>
+<td class="parameter_description"><p>An <a class="link" href="ostree-ostree-repo-file.html#OstreeRepoFile" title="OstreeRepoFile"><span class="type">OstreeRepoFile</span></a> representing <em class="parameter"><code>mtree</code></em>
 's root. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
@@ -5170,22 +5170,22 @@ and <em class="parameter"><code>root_metadata_checksum</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>parent</p></td>
-<td class="parameter_description"><p> ASCII SHA256 checksum for parent, or <code class="literal">NULL</code> for none. </p></td>
+<td class="parameter_description"><p>ASCII SHA256 checksum for parent, or <code class="literal">NULL</code> for none. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>subject</p></td>
-<td class="parameter_description"><p> Subject. </p></td>
+<td class="parameter_description"><p>Subject. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>body</p></td>
-<td class="parameter_description"><p> Body. </p></td>
+<td class="parameter_description"><p>Body. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>metadata</p></td>
-<td class="parameter_description"><p> GVariant of type a{sv}, or <code class="literal">NULL</code> for none. </p></td>
+<td class="parameter_description"><p>GVariant of type a{sv}, or <code class="literal">NULL</code> for none. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -5195,7 +5195,7 @@ and <em class="parameter"><code>root_metadata_checksum</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_commit</p></td>
-<td class="parameter_description"><p> Resulting ASCII SHA256 checksum for commit. </p></td>
+<td class="parameter_description"><p>Resulting ASCII SHA256 checksum for commit. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -5246,22 +5246,22 @@ and <em class="parameter"><code>root_metadata_checksum</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>parent</p></td>
-<td class="parameter_description"><p> ASCII SHA256 checksum for parent, or <code class="literal">NULL</code> for none. </p></td>
+<td class="parameter_description"><p>ASCII SHA256 checksum for parent, or <code class="literal">NULL</code> for none. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>subject</p></td>
-<td class="parameter_description"><p> Subject. </p></td>
+<td class="parameter_description"><p>Subject. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>body</p></td>
-<td class="parameter_description"><p> Body. </p></td>
+<td class="parameter_description"><p>Body. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>metadata</p></td>
-<td class="parameter_description"><p> GVariant of type a{sv}, or <code class="literal">NULL</code> for none. </p></td>
+<td class="parameter_description"><p>GVariant of type a{sv}, or <code class="literal">NULL</code> for none. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -5276,7 +5276,7 @@ and <em class="parameter"><code>root_metadata_checksum</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_commit</p></td>
-<td class="parameter_description"><p> Resulting ASCII SHA256 checksum for commit. </p></td>
+<td class="parameter_description"><p>Resulting ASCII SHA256 checksum for commit. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -5328,7 +5328,7 @@ to <code class="literal">NULL</code>.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_metadata</p></td>
-<td class="parameter_description"><p> Metadata associated with commit in with format "a{sv}", or <code class="literal">NULL</code> if none exists. </p></td>
+<td class="parameter_description"><p>Metadata associated with commit in with format "a{sv}", or <code class="literal">NULL</code> if none exists. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 <tr>
@@ -5382,7 +5382,7 @@ data will be deleted.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>metadata</p></td>
-<td class="parameter_description"><p> Metadata to associate with commit in with format "a{sv}", or <code class="literal">NULL</code> to delete. </p></td>
+<td class="parameter_description"><p>Metadata to associate with commit in with format "a{sv}", or <code class="literal">NULL</code> to delete. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -5430,7 +5430,7 @@ ostree_repo_checkout_at_options_set_devino
 </tr>
 <tr>
 <td class="parameter_name"><p>cache</p></td>
-<td class="parameter_description"><p> Devino cache. </p></td>
+<td class="parameter_description"><p>Devino cache. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 </tbody>
@@ -5548,7 +5548,7 @@ cache.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>options</p></td>
-<td class="parameter_description"><p> Options. </p></td>
+<td class="parameter_description"><p>Options. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -5616,7 +5616,7 @@ cache.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>options</p></td>
-<td class="parameter_description"><p> Options. </p></td>
+<td class="parameter_description"><p>Options. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -5720,12 +5720,12 @@ ostree_repo_read_commit (<em class="parameter"><code><a class="link" href="ostre
 </tr>
 <tr>
 <td class="parameter_name"><p>out_root</p></td>
-<td class="parameter_description"><p> An <a class="link" href="ostree-ostree-repo-file.html#OstreeRepoFile" title="OstreeRepoFile"><span class="type">OstreeRepoFile</span></a> corresponding to the root. </p></td>
+<td class="parameter_description"><p>An <a class="link" href="ostree-ostree-repo-file.html#OstreeRepoFile" title="OstreeRepoFile"><span class="type">OstreeRepoFile</span></a> corresponding to the root. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_commit</p></td>
-<td class="parameter_description"><p> The resolved commit checksum. </p></td>
+<td class="parameter_description"><p>The resolved commit checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -5884,7 +5884,7 @@ repository, returning its result in <em class="parameter"><code>out_deltas</code
 </tr>
 <tr>
 <td class="parameter_name"><p>out_deltas</p></td>
-<td class="parameter_description"><p> String name of deltas (checksum-checksum.delta). </p></td>
+<td class="parameter_description"><p>String name of deltas (checksum-checksum.delta). </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>]</span></td>
 </tr>
 <tr>
@@ -5965,12 +5965,12 @@ for input files</p></li>
 </tr>
 <tr>
 <td class="parameter_name"><p>metadata</p></td>
-<td class="parameter_description"><p> Optional metadata. </p></td>
+<td class="parameter_description"><p>Optional metadata. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>params</p></td>
-<td class="parameter_description"><p> Parameters, see below. </p></td>
+<td class="parameter_description"><p>Parameters, see below. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -6048,7 +6048,7 @@ ostree_repo_traverse_new_reachable (<em class="parameter"><code><span class="typ
 <a class="link" href="ostree-Core-repository-independent-functions.html#ostree-object-name-deserialize" title="ostree_object_name_deserialize ()"><code class="function">ostree_object_name_deserialize()</code></a>.</p>
 <div class="refsect3">
 <a name="ostree-repo-traverse-new-reachable.returns"></a><h4>Returns</h4>
-<p> A new hash table. </p>
+<p>A new hash table. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> GVariant GVariant]</span></p>
 </div>
 </div>
@@ -6093,7 +6093,7 @@ from <em class="parameter"><code>commit_checksum</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_reachable</p></td>
-<td class="parameter_description"><p> Set of reachable objects. </p></td>
+<td class="parameter_description"><p>Set of reachable objects. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> GVariant GVariant]</span></td>
 </tr>
 <tr>
@@ -6211,17 +6211,17 @@ from <a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-traverse-it
 </tr>
 <tr>
 <td class="parameter_name"><p>out_name</p></td>
-<td class="parameter_description"><p> Name of current dir. </p></td>
+<td class="parameter_description"><p>Name of current dir. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_content_checksum</p></td>
-<td class="parameter_description"><p> Checksum of current content. </p></td>
+<td class="parameter_description"><p>Checksum of current content. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_meta_checksum</p></td>
-<td class="parameter_description"><p> Checksum of current metadata. </p></td>
+<td class="parameter_description"><p>Checksum of current metadata. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></td>
 </tr>
 </tbody>
@@ -6255,12 +6255,12 @@ called if <a class="link" href="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-ITER-R
 </tr>
 <tr>
 <td class="parameter_name"><p>out_name</p></td>
-<td class="parameter_description"><p> Name of current file. </p></td>
+<td class="parameter_description"><p>Name of current file. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_checksum</p></td>
-<td class="parameter_description"><p> Checksum of current file. </p></td>
+<td class="parameter_description"><p>Checksum of current file. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></td>
 </tr>
 </tbody>
@@ -6462,17 +6462,17 @@ deleting them.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_objects_total</p></td>
-<td class="parameter_description"><p> Number of objects found. </p></td>
+<td class="parameter_description"><p>Number of objects found. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_objects_pruned</p></td>
-<td class="parameter_description"><p> Number of objects deleted. </p></td>
+<td class="parameter_description"><p>Number of objects deleted. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_pruned_object_size_total</p></td>
-<td class="parameter_description"><p> Storage size in bytes of objects deleted. </p></td>
+<td class="parameter_description"><p>Storage size in bytes of objects deleted. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -6516,7 +6516,7 @@ deleted.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>commit</p></td>
-<td class="parameter_description"><p> ASCII SHA256 checksum for commit, or <code class="literal">NULL</code> for each
+<td class="parameter_description"><p>ASCII SHA256 checksum for commit, or <code class="literal">NULL</code> for each
 non existing commit. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
@@ -6575,17 +6575,17 @@ statistics on objects that would be deleted, without actually deleting them.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_objects_total</p></td>
-<td class="parameter_description"><p> Number of objects found. </p></td>
+<td class="parameter_description"><p>Number of objects found. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_objects_pruned</p></td>
-<td class="parameter_description"><p> Number of objects deleted. </p></td>
+<td class="parameter_description"><p>Number of objects deleted. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_pruned_object_size_total</p></td>
-<td class="parameter_description"><p> Storage size in bytes of objects deleted. </p></td>
+<td class="parameter_description"><p>Storage size in bytes of objects deleted. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -6653,7 +6653,7 @@ one around this call.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>refs_to_fetch</p></td>
-<td class="parameter_description"><p> Optional list of refs; if <code class="literal">NULL</code>, fetch all configured refs. </p></td>
+<td class="parameter_description"><p>Optional list of refs; if <code class="literal">NULL</code>, fetch all configured refs. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -6663,7 +6663,7 @@ one around this call.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>progress</p></td>
-<td class="parameter_description"><p> Progress. </p></td>
+<td class="parameter_description"><p>Progress. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -6720,7 +6720,7 @@ subpath.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>refs_to_fetch</p></td>
-<td class="parameter_description"><p> Optional list of refs; if <code class="literal">NULL</code>, fetch all configured refs. </p></td>
+<td class="parameter_description"><p>Optional list of refs; if <code class="literal">NULL</code>, fetch all configured refs. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -6730,7 +6730,7 @@ subpath.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>progress</p></td>
-<td class="parameter_description"><p> Progress. </p></td>
+<td class="parameter_description"><p>Progress. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -6808,7 +6808,7 @@ string to pull the latest commit for that ref</p></li>
 </tr>
 <tr>
 <td class="parameter_name"><p>progress</p></td>
-<td class="parameter_description"><p> Progress. </p></td>
+<td class="parameter_description"><p>Progress. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -6860,7 +6860,7 @@ and <em class="parameter"><code>user_data</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>user_data</p></td>
-<td class="parameter_description"><p> User data. </p></td>
+<td class="parameter_description"><p>User data. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 </tbody>
@@ -6904,7 +6904,7 @@ ostree_repo_sign_commit (<em class="parameter"><code><a class="link" href="ostre
 </tr>
 <tr>
 <td class="parameter_name"><p>homedir</p></td>
-<td class="parameter_description"><p> GPG home directory, or <code class="literal">NULL</code>. </p></td>
+<td class="parameter_description"><p>GPG home directory, or <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -6995,12 +6995,12 @@ ostree_repo_add_gpg_signature_summary (<em class="parameter"><code><a class="lin
 </tr>
 <tr>
 <td class="parameter_name"><p>key_id</p></td>
-<td class="parameter_description"><p> NULL-terminated array of GPG keys. </p></td>
+<td class="parameter_description"><p>NULL-terminated array of GPG keys. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>homedir</p></td>
-<td class="parameter_description"><p> GPG home directory, or <code class="literal">NULL</code>. </p></td>
+<td class="parameter_description"><p>GPG home directory, or <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -7053,7 +7053,7 @@ the verifications using GPG keys in the keyrings of all remotes.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>remote_name</p></td>
-<td class="parameter_description"><p> Name of remote. </p></td>
+<td class="parameter_description"><p>Name of remote. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
@@ -7068,12 +7068,12 @@ the verifications using GPG keys in the keyrings of all remotes.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>keyringdir</p></td>
-<td class="parameter_description"><p> Path to directory GPG keyrings; overrides built-in default if given. </p></td>
+<td class="parameter_description"><p>Path to directory GPG keyrings; overrides built-in default if given. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>extra_keyring</p></td>
-<td class="parameter_description"><p> Path to additional keyring file (not a directory). </p></td>
+<td class="parameter_description"><p>Path to additional keyring file (not a directory). </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
@@ -7091,7 +7091,7 @@ the verifications using GPG keys in the keyrings of all remotes.</p>
 </div>
 <div class="refsect3">
 <a name="ostree-repo-gpg-verify-data.returns"></a><h4>Returns</h4>
-<p> an <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a>, or <code class="literal">NULL</code> on error. </p>
+<p>an <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a>, or <code class="literal">NULL</code> on error. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -7129,12 +7129,12 @@ checksum <em class="parameter"><code>commit_checksum</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>keyringdir</p></td>
-<td class="parameter_description"><p> Path to directory GPG keyrings; overrides built-in default if given. </p></td>
+<td class="parameter_description"><p>Path to directory GPG keyrings; overrides built-in default if given. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>extra_keyring</p></td>
-<td class="parameter_description"><p> Path to additional keyring file (not a directory). </p></td>
+<td class="parameter_description"><p>Path to additional keyring file (not a directory). </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -7189,12 +7189,12 @@ ostree_repo_verify_commit_ext (<em class="parameter"><code><a class="link" href=
 </tr>
 <tr>
 <td class="parameter_name"><p>keyringdir</p></td>
-<td class="parameter_description"><p> Path to directory GPG keyrings; overrides built-in default if given. </p></td>
+<td class="parameter_description"><p>Path to directory GPG keyrings; overrides built-in default if given. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>extra_keyring</p></td>
-<td class="parameter_description"><p> Path to additional keyring file (not a directory). </p></td>
+<td class="parameter_description"><p>Path to additional keyring file (not a directory). </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -7212,7 +7212,7 @@ ostree_repo_verify_commit_ext (<em class="parameter"><code><a class="link" href=
 </div>
 <div class="refsect3">
 <a name="ostree-repo-verify-commit-ext.returns"></a><h4>Returns</h4>
-<p> an <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a>, or <code class="literal">NULL</code> on error. </p>
+<p>an <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a>, or <code class="literal">NULL</code> on error. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -7269,7 +7269,7 @@ configured for <em class="parameter"><code>remote</code></em>
 </div>
 <div class="refsect3">
 <a name="ostree-repo-verify-commit-for-remote.returns"></a><h4>Returns</h4>
-<p> an <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a>, or <code class="literal">NULL</code> on error. </p>
+<p>an <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a>, or <code class="literal">NULL</code> on error. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -7332,7 +7332,7 @@ ostree_repo_verify_summary (<em class="parameter"><code><a class="link" href="os
 </div>
 <div class="refsect3">
 <a name="ostree-repo-verify-summary.returns"></a><h4>Returns</h4>
-<p> an <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a>, or <code class="literal">NULL</code> on error. </p>
+<p>an <a class="link" href="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult" title="OstreeGpgVerifyResult"><span class="type">OstreeGpgVerifyResult</span></a>, or <code class="literal">NULL</code> on error. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -7374,7 +7374,7 @@ order.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>additional_metadata</p></td>
-<td class="parameter_description"><p> A GVariant of type a{sv}, or <code class="literal">NULL</code>. </p></td>
+<td class="parameter_description"><p>A GVariant of type a{sv}, or <code class="literal">NULL</code>. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -7396,8 +7396,6 @@ order.</p>
 <a name="ostree-OstreeRepo.other_details"></a><h2>Types and Values</h2>
 <div class="refsect2">
 <a name="OstreeRepo"></a><h3>OstreeRepo</h3>
-<pre class="programlisting">typedef struct OstreeRepo OstreeRepo;
-</pre>
 <p>Private instance structure.</p>
 </div>
 <hr>
@@ -7639,6 +7637,8 @@ in bytes, counting only content objects.</p></td>
 <hr>
 <div class="refsect2">
 <a name="OstreeRepoCommitState"></a><h3>enum OstreeRepoCommitState</h3>
+<p>Flags representing the state of a commit in the local repository, as returned
+by <a class="link" href="ostree-OstreeRepo.html#ostree-repo-load-commit" title="ostree_repo_load_commit ()"><code class="function">ostree_repo_load_commit()</code></a>.</p>
 <div class="refsect3">
 <a name="OstreeRepoCommitState.members"></a><h4>Members</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -7647,13 +7647,27 @@ in bytes, counting only content objects.</p></td>
 <col class="enum_members_description">
 <col width="200px" class="enum_members_annotations">
 </colgroup>
-<tbody><tr>
+<tbody>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-STATE-NORMAL:CAPS"></a>OSTREE_REPO_COMMIT_STATE_NORMAL</p></td>
+<td class="enum_member_description">
+<p>Commit is complete. This is the default.
+   (Since: 2017.14.)</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-STATE-PARTIAL:CAPS"></a>OSTREE_REPO_COMMIT_STATE_PARTIAL</p></td>
-<td> </td>
-<td> </td>
-</tr></tbody>
+<td class="enum_member_description">
+<p>One or more objects are missing from the
+   local copy of the commit, but metadata is present. (Since: 2015.7.)</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+</tbody>
 </table></div>
 </div>
+<p class="since">Since: 2015.7</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -7688,8 +7702,6 @@ in bytes, counting only content objects.</p></td>
 <hr>
 <div class="refsect2">
 <a name="OstreeRepoCommitModifier"></a><h3>OstreeRepoCommitModifier</h3>
-<pre class="programlisting">typedef struct OstreeRepoCommitModifier OstreeRepoCommitModifier;
-</pre>
 <p>A structure allowing control over commits.</p>
 </div>
 <hr>
@@ -7743,6 +7755,13 @@ in bytes, counting only content objects.</p></td>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-MODIFIER-FLAGS-CONSUME:CAPS"></a>OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME</p></td>
 <td class="enum_member_description">
 <p>Delete added files/directories after commit; Since: 2017.13</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-MODIFIER-FLAGS-DEVINO-CANONICAL:CAPS"></a>OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL</p></td>
+<td class="enum_member_description">
+<p>If a devino cache hit is found, skip modifier filters (non-directories only); Since: 2017.14</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
@@ -8092,6 +8111,6 @@ as - List of pack file checksums in which this object appears</p>
 </div>
 </div>
 <div class="footer">
-<hr>Generated by GTK-Doc V1.25</div>
+<hr>Generated by GTK-Doc V1.26</div>
 </body>
 </html>

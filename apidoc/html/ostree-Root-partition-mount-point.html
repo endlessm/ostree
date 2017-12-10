@@ -8,7 +8,7 @@
 <link rel="up" href="reference.html" title="API Reference">
 <link rel="prev" href="ostree-In-memory-modifiable-filesystem-tree.html" title="In-memory modifiable filesystem tree">
 <link rel="next" href="ostree-Progress-notification-system-for-asynchronous-operations.html" title="Progress notification system for asynchronous operations">
-<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.26 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -380,7 +380,7 @@ the current visible root file system is used, equivalent to
 </colgroup>
 <tbody><tr>
 <td class="parameter_name"><p>path</p></td>
-<td class="parameter_description"><p> Path to a system root directory, or <code class="literal">NULL</code> to use the
+<td class="parameter_description"><p>Path to a system root directory, or <code class="literal">NULL</code> to use the
 current visible root file system. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr></tbody>
@@ -388,7 +388,7 @@ current visible root file system. </p></td>
 </div>
 <div class="refsect3">
 <a name="ostree-sysroot-new.returns"></a><h4>Returns</h4>
-<p> An accessor object for an system root located at <em class="parameter"><code>path</code></em>
+<p>An accessor object for an system root located at <em class="parameter"><code>path</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
@@ -400,7 +400,7 @@ current visible root file system. </p></td>
 ostree_sysroot_new_default (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-sysroot-new-default.returns"></a><h4>Returns</h4>
-<p> An accessor for the current visible root / filesystem. </p>
+<p>An accessor for the current visible root / filesystem. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -411,7 +411,7 @@ ostree_sysroot_new_default (<em class="parameter"><code><span class="type">void<
 ostree_sysroot_get_path (<em class="parameter"><code><a class="link" href="ostree-Root-partition-mount-point.html#OstreeSysroot" title="OstreeSysroot"><span class="type">OstreeSysroot</span></a> *self</code></em>);</pre>
 <div class="refsect3">
 <a name="ostree-sysroot-get-path.returns"></a><h4>Returns</h4>
-<p> Path to rootfs. </p>
+<p>Path to rootfs. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
 </div>
@@ -530,7 +530,7 @@ be released if <em class="parameter"><code>self</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_acquired</p></td>
-<td class="parameter_description"><p> Whether or not the lock has been acquired. </p></td>
+<td class="parameter_description"><p>Whether or not the lock has been acquired. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -771,7 +771,7 @@ ostree_sysroot_get_deployments (<em class="parameter"><code><a class="link" href
 </div>
 <div class="refsect3">
 <a name="ostree-sysroot-get-deployments.returns"></a><h4>Returns</h4>
-<p> Ordered list of deployments. </p>
+<p>Ordered list of deployments. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> OstreeDeployment][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>]</span></p>
 </div>
 </div>
@@ -797,7 +797,7 @@ ostree_sysroot_get_booted_deployment (<em class="parameter"><code><a class="link
 </div>
 <div class="refsect3">
 <a name="ostree-sysroot-get-booted-deployment.returns"></a><h4>Returns</h4>
-<p> The currently booted deployment, or <code class="literal">NULL</code> if none. </p>
+<p>The currently booted deployment, or <code class="literal">NULL</code> if none. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
 </div>
@@ -832,7 +832,7 @@ ostree_sysroot_get_deployment_directory
 </div>
 <div class="refsect3">
 <a name="ostree-sysroot-get-deployment-directory.returns"></a><h4>Returns</h4>
-<p> Path to deployment root directory. </p>
+<p>Path to deployment root directory. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -869,7 +869,7 @@ or concatenate it with the full <a class="link" href="ostree-Root-partition-moun
 </div>
 <div class="refsect3">
 <a name="ostree-sysroot-get-deployment-dirpath.returns"></a><h4>Returns</h4>
-<p> Path to deployment root directory, relative to sysroot. </p>
+<p>Path to deployment root directory, relative to sysroot. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -896,7 +896,7 @@ ostree_sysroot_get_deployment_origin_path
 </div>
 <div class="refsect3">
 <a name="ostree-sysroot-get-deployment-origin-path.returns"></a><h4>Returns</h4>
-<p> Path to deployment origin file. </p>
+<p>Path to deployment origin file. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -999,7 +999,7 @@ has been invoked successfully.</p>
 </div>
 <div class="refsect3">
 <a name="ostree-sysroot-repo.returns"></a><h4>Returns</h4>
-<p> The OSTree repository in sysroot <em class="parameter"><code>self</code></em>
+<p>The OSTree repository in sysroot <em class="parameter"><code>self</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
@@ -1031,7 +1031,7 @@ ostree_sysroot_get_repo (<em class="parameter"><code><a class="link" href="ostre
 </tr>
 <tr>
 <td class="parameter_name"><p>out_repo</p></td>
-<td class="parameter_description"><p> Repository in sysroot <em class="parameter"><code>self</code></em>
+<td class="parameter_description"><p>Repository in sysroot <em class="parameter"><code>self</code></em>
 . </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>]</span></td>
 </tr>
@@ -1131,7 +1131,7 @@ values in <em class="parameter"><code>new_kargs</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>new_kargs</p></td>
-<td class="parameter_description"><p> Replace deployment's kernel arguments. </p></td>
+<td class="parameter_description"><p>Replace deployment's kernel arguments. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8]</span></td>
 </tr>
 <tr>
@@ -1277,7 +1277,7 @@ version will perform post-deployment cleanup by default.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>new_deployments</p></td>
-<td class="parameter_description"><p> List of new deployments. </p></td>
+<td class="parameter_description"><p>List of new deployments. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> OstreeDeployment]</span></td>
 </tr>
 <tr>
@@ -1328,7 +1328,7 @@ if for example you want to control pruning of the repository.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>new_deployments</p></td>
-<td class="parameter_description"><p> List of new deployments. </p></td>
+<td class="parameter_description"><p>List of new deployments. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> OstreeDeployment]</span></td>
 </tr>
 <tr>
@@ -1387,7 +1387,7 @@ this function will write the current origin of <em class="parameter"><code>deplo
 </tr>
 <tr>
 <td class="parameter_name"><p>new_origin</p></td>
-<td class="parameter_description"><p> Origin content. </p></td>
+<td class="parameter_description"><p>Origin content. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -1437,7 +1437,7 @@ way merge with <em class="parameter"><code>provided_merge_deployment</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>osname</p></td>
-<td class="parameter_description"><p> osname to use for merge deployment. </p></td>
+<td class="parameter_description"><p>osname to use for merge deployment. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -1447,22 +1447,22 @@ way merge with <em class="parameter"><code>provided_merge_deployment</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>origin</p></td>
-<td class="parameter_description"><p> Origin to use for upgrades. </p></td>
+<td class="parameter_description"><p>Origin to use for upgrades. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>provided_merge_deployment</p></td>
-<td class="parameter_description"><p> Use this deployment for merge path. </p></td>
+<td class="parameter_description"><p>Use this deployment for merge path. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>override_kernel_argv</p></td>
-<td class="parameter_description"><p> Use these as kernel arguments; if <code class="literal">NULL</code>, inherit options from provided_merge_deployment. </p></td>
+<td class="parameter_description"><p>Use these as kernel arguments; if <code class="literal">NULL</code>, inherit options from provided_merge_deployment. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_new_deployment</p></td>
-<td class="parameter_description"><p> The new deployment path. </p></td>
+<td class="parameter_description"><p>The new deployment path. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
@@ -1503,7 +1503,7 @@ the first one in the current deployment list which matches osname.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>osname</p></td>
-<td class="parameter_description"><p> Operating system group. </p></td>
+<td class="parameter_description"><p>Operating system group. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 </tbody>
@@ -1511,7 +1511,7 @@ the first one in the current deployment list which matches osname.</p>
 </div>
 <div class="refsect3">
 <a name="ostree-sysroot-get-merge-deployment.returns"></a><h4>Returns</h4>
-<p> Configuration merge deployment. </p>
+<p>Configuration merge deployment. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -1548,17 +1548,17 @@ we're not looking at the booted deployment.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>osname</p></td>
-<td class="parameter_description"><p> "stateroot" name. </p></td>
+<td class="parameter_description"><p>"stateroot" name. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_pending</p></td>
-<td class="parameter_description"><p> The pending deployment. </p></td>
+<td class="parameter_description"><p>The pending deployment. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_rollback</p></td>
-<td class="parameter_description"><p> The rollback deployment. </p></td>
+<td class="parameter_description"><p>The rollback deployment. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 </tbody>
@@ -1597,7 +1597,7 @@ ostree_sysroot_origin_new_from_refspec
 </div>
 <div class="refsect3">
 <a name="ostree-sysroot-origin-new-from-refspec.returns"></a><h4>Returns</h4>
-<p> A new config file which sets <em class="parameter"><code>refspec</code></em>
+<p>A new config file which sets <em class="parameter"><code>refspec</code></em>
 as an origin. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
@@ -1649,7 +1649,7 @@ later, instead.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>osname</p></td>
-<td class="parameter_description"><p> OS name. </p></td>
+<td class="parameter_description"><p>OS name. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -1659,7 +1659,7 @@ later, instead.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>merge_deployment</p></td>
-<td class="parameter_description"><p> Use this deployment for configuration merge. </p></td>
+<td class="parameter_description"><p>Use this deployment for configuration merge. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
 </tr>
 <tr>
@@ -1686,8 +1686,6 @@ later, instead.</p>
 <a name="ostree-Root-partition-mount-point.other_details"></a><h2>Types and Values</h2>
 <div class="refsect2">
 <a name="OstreeSysroot"></a><h3>OstreeSysroot</h3>
-<pre class="programlisting">typedef struct OstreeSysroot OstreeSysroot;
-</pre>
 </div>
 <hr>
 <div class="refsect2">
@@ -1738,6 +1736,6 @@ later, instead.</p>
 </div>
 </div>
 <div class="footer">
-<hr>Generated by GTK-Doc V1.25</div>
+<hr>Generated by GTK-Doc V1.26</div>
 </body>
 </html>

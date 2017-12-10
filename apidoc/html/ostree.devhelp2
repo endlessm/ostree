@@ -216,7 +216,7 @@
     <keyword type="struct" name="struct OstreeRepoTransactionStats" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats"/>
     <keyword type="enum" name="enum OstreeRepoResolveRevExtFlags" link="ostree-OstreeRepo.html#OstreeRepoResolveRevExtFlags"/>
     <keyword type="enum" name="enum OstreeRepoListRefsExtFlags" link="ostree-OstreeRepo.html#OstreeRepoListRefsExtFlags"/>
-    <keyword type="enum" name="enum OstreeRepoCommitState" link="ostree-OstreeRepo.html#OstreeRepoCommitState"/>
+    <keyword type="enum" name="enum OstreeRepoCommitState" link="ostree-OstreeRepo.html#OstreeRepoCommitState" since="2015.7"/>
     <keyword type="enum" name="enum OstreeRepoCommitFilterResult" link="ostree-OstreeRepo.html#OstreeRepoCommitFilterResult"/>
     <keyword type="typedef" name="OstreeRepoCommitModifier" link="ostree-OstreeRepo.html#OstreeRepoCommitModifier"/>
     <keyword type="enum" name="enum OstreeRepoCommitModifierFlags" link="ostree-OstreeRepo.html#OstreeRepoCommitModifierFlags"/>
@@ -404,6 +404,7 @@
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_ALIASES" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-ALIASES:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-EXCLUDE-REMOTES:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_NORMAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-STATE-NORMAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_PARTIAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-STATE-PARTIAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_ALLOW" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-FILTER-ALLOW:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_SKIP" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-FILTER-SKIP:CAPS"/>
@@ -413,6 +414,7 @@
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-CANONICAL-PERMISSIONS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-ERROR-ON-UNLABELED:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-CONSUME:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-DEVINO-CANONICAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_MODE_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-CHECKOUT-MODE-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_MODE_USER" link="ostree-OstreeRepo.html#OSTREE-REPO-CHECKOUT-MODE-USER:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_OVERWRITE_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-CHECKOUT-OVERWRITE-NONE:CAPS"/>
