@@ -2057,7 +2057,7 @@ start_fetch (OtPullData *pull_data,
   expected_max_size_p = (fetchtype != OSTREE_FETCH_OBJECT_CORE) ? NULL : g_hash_table_lookup (pull_data->expected_commit_sizes, expected_checksum);
   if (expected_max_size_p)
     expected_max_size = *expected_max_size_p;
-  else if (OSTREE_OBJECT_TYPE_IS_META (objtype) && fetchtype != OSTREE_FETCH_OBJECT_COMPAT_SIZES)
+  else if (OSTREE_OBJECT_TYPE_IS_META (objtype))
     expected_max_size = OSTREE_MAX_METADATA_SIZE;
   else
     expected_max_size = 0;
