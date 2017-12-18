@@ -63,7 +63,7 @@ ${CMD_PREFIX} ostree --repo=local remote add --set=gpg-verify=false origin \
     $(cat httpd-address)/ostree/gnomerepo
 ${CMD_PREFIX} ostree --repo=local pull origin main
 find local/objects -name '*.sig' | wc -l > sigcount
-assert_file_has_content sigcount "^1$"
+assert_file_has_content sigcount "^0$"
 
 echo "ok compat pull"
 
@@ -95,9 +95,9 @@ ${CMD_PREFIX} ostree --repo=local remote add --set=gpg-verify=false origin \
     $(cat httpd-address)/compat-repo
 ${CMD_PREFIX} ostree --repo=local pull origin main
 find local/objects -name '*.sig' | wc -l > sigcount
-assert_file_has_content sigcount "^1$"
+assert_file_has_content sigcount "^0$"
 find local/objects -name '*.sizes2' | wc -l > sizescount
-assert_file_has_content sizescount "^1$"
+assert_file_has_content sizescount "^0$"
 
 echo "ok compat pull from old repo"
 
