@@ -67,12 +67,13 @@ assert_file_has_content sigcount "^1$"
 
 echo "ok compat pull"
 
-# Test pulls from a repo containing a commit made with old ostree
+# Test pulls from a repo containing a commit made with old ostree.
+# Create a couple needed directories not tracked in git.
 cd ${test_tmpdir}
 rm -rf compat-repo
 cp -a ${test_srcdir}/compat-repo .
 chmod -R u+w compat-repo
-mkdir -p compat-repo/tmp
+mkdir -p compat-repo/tmp compat-repo/refs/remotes
 
 rm -rf local
 mkdir local
@@ -105,13 +106,15 @@ mkdir local
 ${CMD_PREFIX} ostree --repo=local init --mode=archive-z2
 ${CMD_PREFIX} ostree --repo=local remote add origin \
     $(cat httpd-address)/compat-repo
-${CMD_PREFIX} ostree --repo=local pull origin main
+if ${CMD_PREFIX} ostree --repo=local pull origin main; then
+    fatal "pulled commit verified unexpectedly"
+fi
 
-echo "ok compat pull from old repo with verification"
+echo "ok compat pull from old repo with verification fails"
 
-${CMD_PREFIX} ostree --repo=local refs --delete origin:main
-${CMD_PREFIX} ostree --repo=local prune --depth=-1 --refs-only
-find local/objects -type f | wc -l > objcount
+${CMD_PREFIX} ostree --repo=compat-repo refs --delete main
+${CMD_PREFIX} ostree --repo=compat-repo prune --depth=-1 --refs-only
+find compat-repo/objects -type f | wc -l > objcount
 assert_file_has_content objcount "^0$"
 
 echo "ok compat prune"

@@ -504,16 +504,13 @@ ${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo summary -u
 csum=$(${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo rev-parse main)
 objpath=objects/${csum::2}/${csum:2}.commitmeta
 remotesig=ostree-srv/gnomerepo/$objpath
-remotesig_compat=${remotesig%.commitmeta}.sig
 localsig=repo/$objpath
 mv $remotesig $remotesig.bak
-mv $remotesig_compat $remotesig_compat.bak
 if ${CMD_PREFIX} ostree --repo=repo --depth=0 pull origin main; then
     assert_not_reached "pull with gpg-verify unexpectedly succeeded?"
 fi
 # ok now check that we can pull correctly
 mv $remotesig.bak $remotesig
-mv $remotesig_compat.bak $remotesig_compat
 ${CMD_PREFIX} ostree --repo=repo pull origin main
 echo "ok pull signed commit"
 rm $localsig

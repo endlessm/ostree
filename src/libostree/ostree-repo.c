@@ -4997,29 +4997,6 @@ _ostree_repo_verify_commit_internal (OstreeRepo    *self,
                                                   error))
     return glnx_prefix_error_null (error, "Failed to read detached metadata");
 
-  /* Fall back to the compat signature file if no metadata */
-  if (!metadata)
-    {
-      g_autoptr(GBytes) signature = NULL;
-
-      if (!_ostree_repo_read_commit_compat_signature (self,
-                                                      commit_checksum,
-                                                      &signature,
-                                                      cancellable,
-                                                      error))
-        return glnx_prefix_error_null (error, "Failed to read compat signature");
-
-      /* Construct metadata variant from signature data */
-      if (signature != NULL)
-        {
-          g_autoptr(GVariant) tmp_metadata = NULL;
-
-          tmp_metadata = ot_gvariant_new_empty_string_dict ();
-          metadata = _ostree_detached_metadata_append_gpg_sig (tmp_metadata,
-                                                               signature);
-        }
-    }
-
   g_autoptr(GBytes) signed_data = g_variant_get_data_as_bytes (commit_variant);
 
   /* XXX This is a hackish way to indicate to use ALL remote-specific
