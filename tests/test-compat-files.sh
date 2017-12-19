@@ -71,9 +71,9 @@ mkdir local
 ${CMD_PREFIX} ostree --repo=local init --mode=archive-z2
 ${CMD_PREFIX} ostree --repo=local pull-local compat-repo main
 find local/objects -name '*.sig' | wc -l > sigcount
-assert_file_has_content sigcount "^1$"
+assert_file_has_content sigcount "^0$"
 find local/objects -name '*.sizes2' | wc -l > sizescount
-assert_file_has_content sizescount "^1$"
+assert_file_has_content sizescount "^0$"
 
 echo "ok compat pull-local from old repo"
 
