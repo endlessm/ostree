@@ -28,25 +28,16 @@ fi
 
 setup_test_repository "archive-z2"
 
-echo '1..7'
+echo '1..6'
 
 cd ${test_tmpdir}
 ${OSTREE} commit -b test2 -s "A GPG signed commit" -m "Signed commit body" \
     --gpg-sign=${TEST_GPG_KEYID_1} --gpg-homedir=${TEST_GPG_KEYHOME} \
     --tree=dir=files
 find repo/objects -name '*.sig' | wc -l > sigcount
-assert_file_has_content sigcount "^1$"
+assert_file_has_content sigcount "^0$"
 
-echo "ok compat sign"
-
-rm -rf local
-mkdir local
-${CMD_PREFIX} ostree --repo=local init
-${CMD_PREFIX} ostree --repo=local pull-local repo test2
-find local/objects -name '*.sig' | wc -l > sigcount
-assert_file_has_content sigcount "^1$"
-
-echo "ok compat pull-local"
+echo "ok commit sign no old signature"
 
 setup_fake_remote_repo1 "archive-z2"
 
