@@ -142,20 +142,7 @@ delete_signatures (OstreeRepo *repo,
 
           /* Avoid duplicates in the trash queue. */
           if (g_queue_find (&trash, link) == NULL)
-            {
-              g_autoptr(GBytes) sig_bytes = NULL;
-
-              g_queue_push_tail (&trash, link);
-
-              /* If this signature is in the compat file, delete it */
-              sig_bytes = g_variant_get_data_as_bytes (link->data);
-              if (!ostree_repo_delete_compat_signature (repo,
-                                                        commit_checksum,
-                                                        sig_bytes,
-                                                        cancellable,
-                                                        error))
-                goto out;
-            }
+            g_queue_push_tail (&trash, link);
         }
     }
 

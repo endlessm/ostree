@@ -153,7 +153,6 @@ global:
         ostree_repo_commit_traverse_iter_next;
         ostree_repo_copy_config;
         ostree_repo_create;
-        ostree_repo_delete_compat_signature;
         ostree_repo_delete_object;
         ostree_repo_devino_cache_get_type;
         ostree_repo_devino_cache_new;

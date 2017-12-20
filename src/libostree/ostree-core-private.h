@@ -159,11 +159,6 @@ _ostree_loose_path (char              *buf,
                     OstreeObjectType   objtype,
                     OstreeRepoMode     repo_mode);
 
-void
-_ostree_loose_path_with_extension (char        *buf,
-                                   const char  *checksum,
-                                   const char  *extension);
-
 #define _OSTREE_METADATA_GPGSIGS_NAME "ostree.gpgsigs"
 #define _OSTREE_METADATA_GPGSIGS_TYPE G_VARIANT_TYPE ("aay")
 
@@ -227,8 +222,5 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderMount, g_object_unref)
 #include "ostree-repo-finder-override.h"
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderOverride, g_object_unref)
 #endif
-
-/* array of (checksum, object type, archived size, unpacked size) for files */
-#define _OSTREE_COMPAT_SIZES_TYPE G_VARIANT_TYPE ("(a(suxx))")
 
 G_END_DECLS

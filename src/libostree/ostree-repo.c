@@ -3884,7 +3884,6 @@ ostree_repo_delete_object (OstreeRepo           *self,
   if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
     {
       char meta_loose[_OSTREE_LOOSE_PATH_MAX];
-      char compat_files_loose[2][_OSTREE_LOOSE_PATH_MAX];
 
       _ostree_loose_path (meta_loose, sha256, OSTREE_OBJECT_TYPE_COMMIT_META, self->mode);
 
@@ -3892,14 +3891,22 @@ ostree_repo_delete_object (OstreeRepo           *self,
         return FALSE;
 
       /* Delete optional compat objects */
-      _ostree_loose_path_with_extension (compat_files_loose[0], sha256, "sig");
-      _ostree_loose_path_with_extension (compat_files_loose[1], sha256, "sizes2");
-
-      for (gsize i = 0; i < G_N_ELEMENTS (compat_files_loose); i++)
+      const char compat_files_exts[][7] = { "sig", "sizes2" };
+      for (gsize i = 0; i < G_N_ELEMENTS (compat_files_exts); i++)
         {
-          const char *compat_loose = compat_files_loose[i];
+          const char *ext = compat_files_exts[i];
+          char *buf = meta_loose;
 
-          if (!ot_ensure_unlinked_at (self->objects_dir_fd, compat_loose, error))
+          /* Write the compat object loose name manually since there's no
+           * loose path API that handles arbitrary file extensions
+           */
+          *buf = sha256[0];
+          buf++;
+          *buf = sha256[1];
+          buf++;
+          snprintf (buf, _OSTREE_LOOSE_PATH_MAX - 2, "/%s.%s", sha256 + 2, ext);
+
+          if (!ot_ensure_unlinked_at (self->objects_dir_fd, meta_loose, error))
             return FALSE;
         }
     }
@@ -4695,14 +4702,6 @@ ostree_repo_sign_commit (OstreeRepo     *self,
                                                    error))
     return FALSE;
 
-  /* Also write compat signature file */
-  if (!_ostree_repo_write_commit_compat_signature (self,
-                                                   commit_checksum,
-                                                   signature,
-                                                   cancellable,
-                                                   error))
-    return FALSE;
-
   return TRUE;
 }
 
@@ -4996,29 +4995,6 @@ _ostree_repo_verify_commit_internal (OstreeRepo    *self,
                                                   cancellable,
                                                   error))
     return glnx_prefix_error_null (error, "Failed to read detached metadata");
-
-  /* Fall back to the compat signature file if no metadata */
-  if (!metadata)
-    {
-      g_autoptr(GBytes) signature = NULL;
-
-      if (!_ostree_repo_read_commit_compat_signature (self,
-                                                      commit_checksum,
-                                                      &signature,
-                                                      cancellable,
-                                                      error))
-        return glnx_prefix_error_null (error, "Failed to read compat signature");
-
-      /* Construct metadata variant from signature data */
-      if (signature != NULL)
-        {
-          g_autoptr(GVariant) tmp_metadata = NULL;
-
-          tmp_metadata = ot_gvariant_new_empty_string_dict ();
-          metadata = _ostree_detached_metadata_append_gpg_sig (tmp_metadata,
-                                                               signature);
-        }
-    }
 
   g_autoptr(GBytes) signed_data = g_variant_get_data_as_bytes (commit_variant);
 
@@ -5620,50 +5596,6 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
   *tmpdir_out = ret_tmpdir; /* Transfer ownership */
   ret_tmpdir.initialized = FALSE;
   *reusing_dir_out = reusing_dir;
-  return TRUE;
-}
-
-/**
- * ostree_repo_delete_compat_signature:
- * @self: Self
- * @commit_checksum: SHA256 of given commit to delete signature from
- * @signature: Signature data
- * @cancellable: A #GCancellable
- * @error: a #GError
- *
- * Delete a GPG signature from a commit's compat signature file.
- */
-gboolean
-ostree_repo_delete_compat_signature (OstreeRepo     *self,
-                                     const gchar    *commit_checksum,
-                                     GBytes         *signature,
-                                     GCancellable   *cancellable,
-                                     GError        **error)
-{
-  g_autoptr(GBytes) compat_sig = NULL;
-
-  if (!_ostree_repo_read_commit_compat_signature (self, commit_checksum,
-                                                  &compat_sig, cancellable,
-                                                  error))
-      return FALSE;
-
-  if (compat_sig == NULL)
-      return TRUE;
-
-  if (g_bytes_equal (compat_sig, signature))
-    {
-      char compat_sig_loose[_OSTREE_LOOSE_PATH_MAX];
-
-      _ostree_loose_path_with_extension (compat_sig_loose, commit_checksum,
-                                         "sig");
-
-      if (TEMP_FAILURE_RETRY (unlinkat (self->objects_dir_fd, compat_sig_loose, 0) < 0))
-        {
-          glnx_set_error_from_errno (error);
-          return FALSE;
-        }
-    }
-
   return TRUE;
 }
 

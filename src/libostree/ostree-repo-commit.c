@@ -2433,160 +2433,6 @@ ostree_repo_write_commit_detached_metadata (OstreeRepo      *self,
   return TRUE;
 }
 
-gboolean
-_ostree_repo_read_commit_compat_signature (OstreeRepo      *self,
-                                           const char      *checksum,
-                                           GBytes         **out_signature,
-                                           GCancellable    *cancellable,
-                                           GError         **error)
-{
-  gboolean ret = FALSE;
-  char signature_path[_OSTREE_LOOSE_PATH_MAX];
-  g_autoptr(GBytes) ret_signature = NULL;
-  g_autoptr(GError) temp_error = NULL;
-
-  _ostree_loose_path_with_extension (signature_path, checksum, "sig");
-  ret_signature = ot_file_mapat_bytes (self->objects_dir_fd,
-                                       signature_path, &temp_error);
-  if (temp_error && !g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-    {
-      g_propagate_error (error, temp_error);
-      g_prefix_error (error, "Unable to read existing compat signature: ");
-      goto out;
-    }
-
-  ret = TRUE;
-  ot_transfer_out_value (out_signature, &ret_signature);
- out:
-  return ret;
-}
-
-gboolean
-_ostree_repo_write_commit_compat_signature (OstreeRepo      *self,
-                                            const char      *checksum,
-                                            GBytes          *signature,
-                                            GCancellable    *cancellable,
-                                            GError         **error)
-{
-  char signature_path[_OSTREE_LOOSE_PATH_MAX];
-  gsize signature_size;
-  gconstpointer signature_buf = NULL;
-
-  if (!_ostree_repo_ensure_loose_objdir_at (self->objects_dir_fd, checksum,
-                                            cancellable, error))
-    return FALSE;
-
-  _ostree_loose_path_with_extension (signature_path, checksum, "sig");
-  signature_buf = g_bytes_get_data (signature, &signature_size);
-  if (signature_size == 0)
-    {
-      int res;
-
-      do
-        res = unlinkat (self->objects_dir_fd, signature_path, 0);
-      while (G_UNLIKELY (res == -1 && errno == EINTR));
-      if (G_UNLIKELY (res == -1 && errno != ENOENT))
-        {
-          glnx_set_error_from_errno (error);
-          g_prefix_error (error, "Unable to delete compat signature: ");
-          return FALSE;
-        }
-    }
-  else
-    {
-      if (!glnx_file_replace_contents_at (self->objects_dir_fd,
-                                          signature_path, signature_buf,
-                                          signature_size, 0,
-                                          cancellable, error))
-        {
-          g_prefix_error (error, "Failed to write compat signature: ");
-          return FALSE;
-        }
-    }
-
-  return TRUE;
-}
-
-gboolean
-_ostree_repo_read_commit_compat_sizes (OstreeRepo      *self,
-                                       const char      *checksum,
-                                       GVariant       **out_sizes,
-                                       GCancellable    *cancellable,
-                                       GError         **error)
-{
-  gboolean ret = FALSE;
-  char sizes_path[_OSTREE_LOOSE_PATH_MAX];
-  g_autoptr(GVariant) ret_sizes = NULL;
-  g_autoptr(GError) temp_error = NULL;
-
-  _ostree_loose_path_with_extension (sizes_path, checksum, "sizes2");
-  if (!ot_util_variant_map_at (self->objects_dir_fd, sizes_path,
-                               _OSTREE_COMPAT_SIZES_TYPE,
-                               TRUE, &ret_sizes, &temp_error) &&
-      !g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-    {
-      g_propagate_error (error, temp_error);
-      g_prefix_error (error, "Unable to read existing compat sizes: ");
-      goto out;
-    }
-
-  ret = TRUE;
-  ot_transfer_out_value (out_sizes, &ret_sizes);
- out:
-  return ret;
-}
-
-gboolean
-_ostree_repo_write_commit_compat_sizes (OstreeRepo      *self,
-                                        const char      *checksum,
-                                        GVariant        *sizes,
-                                        GCancellable    *cancellable,
-                                        GError         **error)
-{
-  char sizes_path[_OSTREE_LOOSE_PATH_MAX];
-  g_autoptr(GVariant) normalized = NULL;
-  gsize normalized_size = 0;
-
-  if (!_ostree_repo_ensure_loose_objdir_at (self->objects_dir_fd, checksum,
-                                            cancellable, error))
-    return FALSE;
-
-  if (sizes != NULL)
-    {
-      normalized = g_variant_get_normal_form (sizes);
-      normalized_size = g_variant_get_size (normalized);
-    }
-
-  _ostree_loose_path_with_extension (sizes_path, checksum, "sizes2");
-  if (normalized_size == 0)
-    {
-      int res;
-
-      do
-        res = unlinkat (self->objects_dir_fd, sizes_path, 0);
-      while (G_UNLIKELY (res == -1 && errno == EINTR));
-      if (G_UNLIKELY (res == -1 && errno != ENOENT))
-        {
-          glnx_set_error_from_errno (error);
-          g_prefix_error (error, "Unable to delete compat sizes: ");
-          return FALSE;
-        }
-    }
-  else
-    {
-      if (!glnx_file_replace_contents_at (self->objects_dir_fd, sizes_path,
-                                          g_variant_get_data (normalized),
-                                          normalized_size, 0,
-                                          cancellable, error))
-        {
-          g_prefix_error (error, "Unable to write compat sizes: ");
-          return FALSE;
-        }
-    }
-
-  return TRUE;
-}
-
 static GVariant *
 create_tree_variant_from_hashes (GHashTable            *file_checksums,
                                  GHashTable            *dir_contents_checksums,
@@ -3565,56 +3411,6 @@ copy_detached_metadata (OstreeRepo    *self,
   return TRUE;
 }
 
-static gboolean
-copy_compat_sizes (OstreeRepo    *self,
-                   OstreeRepo    *source,
-                   const char    *checksum,
-                   GCancellable  *cancellable,
-                   GError        **error)
-{
-  g_autoptr(GVariant) compat_sizes = NULL;
-
-  if (!_ostree_repo_read_commit_compat_sizes (source,
-                                              checksum, &compat_sizes,
-                                              cancellable, error))
-    return FALSE;
-
-  if (compat_sizes)
-    {
-      if (!_ostree_repo_write_commit_compat_sizes (self,
-                                                   checksum, compat_sizes,
-                                                   cancellable, error))
-        return FALSE;
-    }
-
-  return TRUE;
-}
-
-static gboolean
-copy_compat_signature (OstreeRepo    *self,
-                       OstreeRepo    *source,
-                       const char    *checksum,
-                       GCancellable  *cancellable,
-                       GError        **error)
-{
-  g_autoptr(GBytes) compat_signature = NULL;
-
-  if (!_ostree_repo_read_commit_compat_signature (source, checksum,
-                                                  &compat_signature,
-                                                  cancellable, error))
-    return FALSE;
-
-  if (compat_signature)
-    {
-      if (!_ostree_repo_write_commit_compat_signature (self, checksum,
-                                                       compat_signature,
-                                                       cancellable, error))
-        return FALSE;
-    }
-
-  return TRUE;
-}
-
 /* Try to import an object via reflink or just linkat(); returns a value in
  * @out_was_supported if we were able to do it or not.  In this path
  * we're not verifying the checksum.
@@ -3761,10 +3557,6 @@ import_one_object_direct (OstreeRepo    *dest_repo,
     {
       if (!copy_detached_metadata (dest_repo, src_repo, checksum, cancellable, error))
         return FALSE;
-      if (!copy_compat_sizes (dest_repo, src_repo, checksum, cancellable, error))
-        return FALSE;
-      if (!copy_compat_signature (dest_repo, src_repo, checksum, cancellable, error))
-        return FALSE;
     }
 
   *out_was_supported = TRUE;
@@ -3870,10 +3662,6 @@ _ostree_repo_import_object (OstreeRepo           *self,
         {
           /* FIXME - cleanup detached metadata if copy below fails */
           if (!copy_detached_metadata (self, source, checksum, cancellable, error))
-            return FALSE;
-          if (!copy_compat_sizes (self, source, checksum, cancellable, error))
-            return FALSE;
-          if (!copy_compat_signature (self, source, checksum, cancellable, error))
             return FALSE;
         }
 
