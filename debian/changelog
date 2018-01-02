@@ -2,6 +2,7 @@ ostree (2017.15-1) UNRELEASED; urgency=medium
 
   * New upstream release
     - d/libostree-1-1.symbols: Update
+  * d/rules: Stop forcing C.UTF-8 locale: the tests now do this internally
 
  -- Simon McVittie <smcv@debian.org>  Tue, 02 Jan 2018 14:06:18 +0000
 
