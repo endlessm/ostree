@@ -20,6 +20,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2017.12@LIBOSTREE_2017.12 2017.12
  LIBOSTREE_2017.13@LIBOSTREE_2017.13 2017.13
  LIBOSTREE_2017.14@LIBOSTREE_2017.14 2017.14
+ LIBOSTREE_2017.15@LIBOSTREE_2017.15 2017.15
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
@@ -43,6 +44,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_bootconfig_parser_set@LIBOSTREE_2016.3 2016.4
  ostree_bootconfig_parser_write@LIBOSTREE_2016.3 2016.4
  ostree_bootconfig_parser_write_at@LIBOSTREE_2016.3 2016.4
+ ostree_break_hardlink@LIBOSTREE_2017.15 2017.15
  ostree_chain_input_stream_get_type@LIBOSTREE_2016.3 2016.4
  ostree_chain_input_stream_new@LIBOSTREE_2016.3 2016.4
  ostree_check_version@LIBOSTREE_2017.4 2017.4
@@ -181,6 +183,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_file_tree_get_metadata_checksum@LIBOSTREE_2016.3 2016.4
  ostree_repo_file_tree_query_child@LIBOSTREE_2016.3 2016.4
  ostree_repo_file_tree_set_metadata@LIBOSTREE_2016.3 2016.4
+ ostree_repo_fsck_object@LIBOSTREE_2017.15 2017.15
  ostree_repo_get_config@LIBOSTREE_2016.3 2016.4
  ostree_repo_get_dfd@LIBOSTREE_2016.4 2016.4
  ostree_repo_get_disable_fsync@LIBOSTREE_2016.3 2016.3
@@ -209,6 +212,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_load_object_stream@LIBOSTREE_2016.3 2016.4
  ostree_repo_load_variant@LIBOSTREE_2016.3 2016.4
  ostree_repo_load_variant_if_exists@LIBOSTREE_2016.3 2016.4
+ ostree_repo_mark_commit_partial@LIBOSTREE_2017.15 2017.15
  ostree_repo_mode_from_string@LIBOSTREE_2016.3 2016.4
  ostree_repo_new@LIBOSTREE_2016.3 2016.4
  ostree_repo_new_default@LIBOSTREE_2016.3 2016.4
