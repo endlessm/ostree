@@ -107,6 +107,48 @@ OstreeRepo *  ostree_repo_create_at (int             dfd,
 
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
 
+/**
+ * OstreeRepoLockType:
+ * @OSTREE_REPO_LOCK_SHARED: A shared lock
+ * @OSTREE_REPO_LOCK_EXCLUSIVE: An exclusive lock
+ *
+ * The type of repository lock to acquire.
+ *
+ * Since: 2017.14
+ */
+typedef enum {
+  OSTREE_REPO_LOCK_SHARED,
+  OSTREE_REPO_LOCK_EXCLUSIVE
+} OstreeRepoLockType;
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_lock_push (OstreeRepo          *self,
+                                     OstreeRepoLockType   lock_type,
+                                     GCancellable        *cancellable,
+                                     GError             **error);
+_OSTREE_PUBLIC
+gboolean      ostree_repo_lock_pop (OstreeRepo    *self,
+                                    GCancellable  *cancellable,
+                                    GError       **error);
+
+/**
+ * OstreeRepoAutoLock: (skip)
+ *
+ * This is simply an alias to #OstreeRepo used for automatic lock cleanup.
+ * See ostree_repo_auto_lock_push() for its intended usage.
+ *
+ * Since: 2017.14
+ */
+typedef OstreeRepo OstreeRepoAutoLock;
+
+_OSTREE_PUBLIC
+OstreeRepoAutoLock * ostree_repo_auto_lock_push (OstreeRepo          *self,
+                                                 OstreeRepoLockType   lock_type,
+                                                 GCancellable        *cancellable,
+                                                 GError             **error);
+_OSTREE_PUBLIC
+void          ostree_repo_auto_lock_cleanup (OstreeRepoAutoLock *lock);
+
 _OSTREE_PUBLIC
 const gchar * ostree_repo_get_collection_id (OstreeRepo   *self);
 _OSTREE_PUBLIC
@@ -319,6 +361,12 @@ _OSTREE_PUBLIC
 gboolean      ostree_repo_abort_transaction (OstreeRepo     *self,
                                              GCancellable   *cancellable,
                                              GError        **error);
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_mark_commit_partial (OstreeRepo     *self,
+                                               const char     *checksum,
+                                               gboolean        is_partial,
+                                               GError        **error);
 
 _OSTREE_PUBLIC
 void          ostree_repo_transaction_set_refspec (OstreeRepo *self,
@@ -608,9 +656,16 @@ gboolean      ostree_repo_import_object_from_with_trust (OstreeRepo           *s
 _OSTREE_PUBLIC
 gboolean      ostree_repo_delete_object (OstreeRepo           *self,
                                          OstreeObjectType      objtype,
-                                         const char           *sha256, 
+                                         const char           *sha256,
                                          GCancellable         *cancellable,
                                          GError              **error);
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_fsck_object (OstreeRepo           *self,
+                                       OstreeObjectType      objtype,
+                                       const char           *sha256,
+                                       GCancellable         *cancellable,
+                                       GError              **error);
 
 /** 
  * OstreeRepoCommitFilterResult:

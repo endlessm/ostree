@@ -704,6 +704,7 @@ am__libostree_1_la_SOURCES_DIST =  \
 	src/libostree/ostree-repo-checkout.c \
 	src/libostree/ostree-repo-commit.c \
 	src/libostree/ostree-repo-pull.c \
+	src/libostree/ostree-repo-pull-private.h \
 	src/libostree/ostree-repo-libarchive.c \
 	src/libostree/ostree-repo-prune.c \
 	src/libostree/ostree-repo-refs.c \
@@ -1728,11 +1729,12 @@ am__EXEEXT_25 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-reset-nonlinear.sh tests/test-oldstyle-partial.sh \
 	tests/test-delta.sh tests/test-xattrs.sh \
 	tests/test-auto-summary.sh tests/test-prune.sh \
-	tests/test-refs.sh tests/test-demo-buildsystem.sh \
-	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
-	tests/test-pull-mirrorlist.sh tests/test-summary-update.sh \
-	tests/test-summary-view.sh $(am__EXEEXT_2) $(am__EXEEXT_22) \
-	$(am__append_68) $(am__append_71) $(am__EXEEXT_24)
+	tests/test-concurrency.py tests/test-refs.sh \
+	tests/test-demo-buildsystem.sh tests/test-switchroot.sh \
+	tests/test-pull-contenturl.sh tests/test-pull-mirrorlist.sh \
+	tests/test-summary-update.sh tests/test-summary-view.sh \
+	$(am__EXEEXT_2) $(am__EXEEXT_22) $(am__append_68) \
+	$(am__append_71) $(am__EXEEXT_24)
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_26 =  \
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_25)
 am__EXEEXT_27 = $(am__EXEEXT_2) $(am__EXEEXT_26)
@@ -2023,7 +2025,8 @@ AM_CPPFLAGS = -DDATADIR='"$(datadir)"' -DLIBEXECDIR='"$(libexecdir)"' \
 	'-DGLIB_VERSION_MAX_ALLOWED=G_ENCODE_VERSION(2,50)' \
 	-DSOUP_VERSION_MIN_REQUIRED=SOUP_VERSION_2_40 \
 	'-DSOUP_VERSION_MAX_ALLOWED=G_ENCODE_VERSION(2,48)'
-AM_CFLAGS = -std=gnu99 $(WARN_CFLAGS)
+# For strict aliasing, see https://bugzilla.gnome.org/show_bug.cgi?id=791622
+AM_CFLAGS = -std=gnu99 -fno-strict-aliasing $(WARN_CFLAGS)
 
 # Allow the distcheck install under $prefix test to pass
 AM_DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-man \
@@ -2315,6 +2318,7 @@ libostree_1_la_SOURCES = src/libostree/ostree-async-progress.c \
 	src/libostree/ostree-repo-checkout.c \
 	src/libostree/ostree-repo-commit.c \
 	src/libostree/ostree-repo-pull.c \
+	src/libostree/ostree-repo-pull-private.h \
 	src/libostree/ostree-repo-libarchive.c \
 	src/libostree/ostree-repo-prune.c \
 	src/libostree/ostree-repo-refs.c \
@@ -2547,11 +2551,12 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-reset-nonlinear.sh tests/test-oldstyle-partial.sh \
 	tests/test-delta.sh tests/test-xattrs.sh \
 	tests/test-auto-summary.sh tests/test-prune.sh \
-	tests/test-refs.sh tests/test-demo-buildsystem.sh \
-	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
-	tests/test-pull-mirrorlist.sh tests/test-summary-update.sh \
-	tests/test-summary-view.sh $(NULL) $(am__append_65) \
-	$(am__append_68) $(am__append_71) $(am__append_72)
+	tests/test-concurrency.py tests/test-refs.sh \
+	tests/test-demo-buildsystem.sh tests/test-switchroot.sh \
+	tests/test-pull-contenturl.sh tests/test-pull-mirrorlist.sh \
+	tests/test-summary-update.sh tests/test-summary-view.sh \
+	$(NULL) $(am__append_65) $(am__append_68) $(am__append_71) \
+	$(am__append_72)
 experimental_test_scripts = \
 	tests/test-create-usb.sh \
 	tests/test-find-remotes.sh \
@@ -7662,6 +7667,13 @@ tests/test-auto-summary.sh.log: tests/test-auto-summary.sh
 tests/test-prune.sh.log: tests/test-prune.sh
 	@p='tests/test-prune.sh'; \
 	b='tests/test-prune.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-concurrency.py.log: tests/test-concurrency.py
+	@p='tests/test-concurrency.py'; \
+	b='tests/test-concurrency.py'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

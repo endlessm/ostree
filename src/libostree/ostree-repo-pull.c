@@ -32,6 +32,7 @@
 
 #include "ostree-core-private.h"
 #include "ostree-repo-private.h"
+#include "ostree-repo-pull-private.h"
 #include "ostree-repo-static-delta-private.h"
 #include "ostree-metalink.h"
 #include "ostree-fetcher-util.h"
@@ -555,21 +556,6 @@ fetch_uri_contents_utf8_sync (OstreeFetcher  *fetcher,
   return fetch_mirrored_uri_contents_utf8_sync (fetcher, mirrorlist,
                                                 NULL, out_contents,
                                                 cancellable, error);
-}
-
-static gboolean
-write_commitpartial_for (OtPullData *pull_data,
-                         const char *checksum,
-                         GError **error)
-{
-  g_autofree char *commitpartial_path = _ostree_get_commitpartial_path (checksum);
-  glnx_autofd int fd = openat (pull_data->repo->repo_dir_fd, commitpartial_path, O_EXCL | O_CREAT | O_WRONLY | O_CLOEXEC | O_NOCTTY, 0644);
-  if (fd == -1)
-    {
-      if (errno != EEXIST)
-        return glnx_throw_errno_prefix (error, "open(%s)", commitpartial_path);
-    }
-  return TRUE;
 }
 
 static void
@@ -1266,7 +1252,7 @@ meta_fetch_on_complete (GObject           *object,
                                             pull_data->cancellable, error))
             goto out;
 
-          if (!write_commitpartial_for (pull_data, checksum, error))
+          if (!ostree_repo_mark_commit_partial (pull_data->repo, checksum, TRUE, error))
             goto out;
         }
 
@@ -1475,30 +1461,40 @@ get_remote_repo_collection_id (OtPullData *pull_data)
 }
 #endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
-/* Verify the ref and collection bindings.
+#endif  /* HAVE_LIBCURL_OR_LIBSOUP */
+
+/**
+ * _ostree_repo_verify_bindings:
+ * @collection_id: (nullable): Locally specified collection ID for the remote
+ *    the @commit was retrieved from, or %NULL if none is configured
+ * @ref_name: (nullable): Ref name the commit was retrieved using, or %NULL if
+ *    the commit was retrieved by checksum
+ * @commit: Commit data to check
+ * @error: Return location for a #GError, or %NULL
+ *
+ * Verify the ref and collection bindings.
  *
  * The ref binding is verified only if it exists. But if we have the
- * collection ID specified in the remote configuration then the ref
- * binding must exist, otherwise the verification will fail. Parts of
- * the verification can be skipped by passing NULL to the requested_ref
- * parameter (in case we requested a checksum directly, without looking it up
- * from a ref).
+ * collection ID specified in the remote configuration (@collection_id is
+ * non-%NULL) then the ref binding must exist, otherwise the verification will
+ * fail. Parts of the verification can be skipped by passing %NULL to the
+ * @ref_name parameter (in case we requested a checksum directly, without
+ * looking it up from a ref).
  *
  * The collection binding is verified only when we have collection ID
  * specified in the remote configuration. If it is specified, then the
  * binding must exist and must be equal to the remote repository
  * collection ID.
+ *
+ * Returns: %TRUE if bindings are correct, %FALSE otherwise
+ * Since: 2017.14
  */
-static gboolean
-verify_bindings (OtPullData                 *pull_data,
-                 GVariant                   *commit,
-                 const OstreeCollectionRef  *requested_ref,
-                 GError                    **error)
+gboolean
+_ostree_repo_verify_bindings (const char  *collection_id,
+                              const char  *ref_name,
+                              GVariant    *commit,
+                              GError     **error)
 {
-  g_autofree char *remote_collection_id = NULL;
-#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
-  remote_collection_id = get_remote_repo_collection_id (pull_data);
-#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
   g_autoptr(GVariant) metadata = g_variant_get_child_value (commit, 0);
   g_autofree const char **refs = NULL;
   if (!g_variant_lookup (metadata,
@@ -1510,17 +1506,17 @@ verify_bindings (OtPullData                 *pull_data,
        * we certainly will not verify the collection binding in the
        * commit.
        */
-      if (remote_collection_id == NULL)
+      if (collection_id == NULL)
         return TRUE;
 
       return glnx_throw (error,
-                         "expected commit metadata to have ref "
+                         "Expected commit metadata to have ref "
                          "binding information, found none");
     }
 
-  if (requested_ref != NULL)
+  if (ref_name != NULL)
     {
-      if (!g_strv_contains ((const char *const *) refs, requested_ref->ref_name))
+      if (!g_strv_contains ((const char *const *) refs, ref_name))
         {
           g_autoptr(GString) refs_dump = g_string_new (NULL);
           const char *refs_str;
@@ -1543,34 +1539,36 @@ verify_bindings (OtPullData                 *pull_data,
               refs_str = "no refs";
             }
 
-          return glnx_throw (error, "commit has no requested ref ‘%s’ "
+          return glnx_throw (error, "Commit has no requested ref ‘%s’ "
                              "in ref binding metadata (%s)",
-                             requested_ref->ref_name, refs_str);
+                             ref_name, refs_str);
         }
     }
 
-  if (remote_collection_id != NULL)
+  if (collection_id != NULL)
     {
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
-      const char *collection_id;
+      const char *collection_id_binding;
       if (!g_variant_lookup (metadata,
                              OSTREE_COMMIT_META_KEY_COLLECTION_BINDING,
                              "&s",
-                             &collection_id))
+                             &collection_id_binding))
         return glnx_throw (error,
-                           "expected commit metadata to have collection ID "
+                           "Expected commit metadata to have collection ID "
                            "binding information, found none");
-      if (!g_str_equal (collection_id, remote_collection_id))
+      if (!g_str_equal (collection_id_binding, collection_id))
         return glnx_throw (error,
-                           "commit has collection ID ‘%s’ in collection binding "
+                           "Commit has collection ID ‘%s’ in collection binding "
                            "metadata, while the remote it came from has "
                            "collection ID ‘%s’",
-                           collection_id, remote_collection_id);
+                           collection_id_binding, collection_id);
 #endif
     }
 
   return TRUE;
 }
+
+#ifdef HAVE_LIBCURL_OR_LIBSOUP
 
 /* Look at a commit object, and determine whether there are
  * more things to fetch.
@@ -1626,7 +1624,13 @@ scan_commit_object (OtPullData                 *pull_data,
   /* If ref is non-NULL then the commit we fetched was requested through the
    * branch, otherwise we requested a commit checksum without specifying a branch.
    */
-  if (!verify_bindings (pull_data, commit, ref, error))
+  g_autofree char *remote_collection_id = NULL;
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+  remote_collection_id = get_remote_repo_collection_id (pull_data);
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
+  if (!_ostree_repo_verify_bindings (remote_collection_id,
+                                     (ref != NULL) ? ref->ref_name : NULL,
+                                     commit, error))
     return glnx_prefix_error (error, "Commit %s", checksum);
 
   if (pull_data->timestamp_check)
@@ -1802,7 +1806,7 @@ scan_one_metadata_object (OtPullData                 *pull_data,
       if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
         {
           /* mark as partial to ensure we scan the commit below */
-          if (!write_commitpartial_for (pull_data, checksum, error))
+          if (!ostree_repo_mark_commit_partial (pull_data->repo, checksum, TRUE, error))
             return FALSE;
         }
 
@@ -1835,7 +1839,7 @@ scan_one_metadata_object (OtPullData                 *pull_data,
           if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
             {
               /* mark as partial to ensure we scan the commit below */
-              if (!write_commitpartial_for (pull_data, checksum, error))
+              if (!ostree_repo_mark_commit_partial (pull_data->repo, checksum, TRUE, error))
                 return FALSE;
             }
           if (!_ostree_repo_import_object (pull_data->repo, refd_repo,
@@ -2689,6 +2693,15 @@ _ostree_repo_remote_new_fetcher (OstreeRepo  *self,
 
   if (gzip)
     fetcher_flags |= OSTREE_FETCHER_FLAGS_TRANSFER_GZIP;
+
+  { gboolean http2 = TRUE;
+    if (!ostree_repo_get_remote_boolean_option (self, remote_name,
+                                                "http2", TRUE,
+                                                &http2, error))
+      goto out;
+    if (!http2)
+      fetcher_flags |= OSTREE_FETCHER_FLAGS_DISABLE_HTTP2;
+  }
 
   fetcher = _ostree_fetcher_new (self->tmp_dir_fd, remote_name, fetcher_flags);
 
@@ -4312,15 +4325,13 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     {
       GLNX_HASH_TABLE_FOREACH_V (requested_refs_to_fetch, const char*, checksum)
         {
-          g_autofree char *commitpartial_path = _ostree_get_commitpartial_path (checksum);
-          if (!ot_ensure_unlinked_at (pull_data->repo->repo_dir_fd, commitpartial_path, 0))
+          if (!ostree_repo_mark_commit_partial (pull_data->repo, checksum, FALSE, error))
             goto out;
         }
 
       GLNX_HASH_TABLE_FOREACH_V (commits_to_fetch, const char*, commit)
         {
-          g_autofree char *commitpartial_path = _ostree_get_commitpartial_path (commit);
-          if (!ot_ensure_unlinked_at (pull_data->repo->repo_dir_fd, commitpartial_path, 0))
+          if (!ostree_repo_mark_commit_partial (pull_data->repo, commit, FALSE, error))
             goto out;
         }
     }

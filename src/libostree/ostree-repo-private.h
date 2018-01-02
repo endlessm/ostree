@@ -82,6 +82,15 @@ typedef enum {
   OSTREE_REPO_SYSROOT_KIND_IS_SYSROOT_OSTREE, /* We match /ostree/repo */
 } OstreeRepoSysrootKind;
 
+typedef struct {
+  GHashTable *refs;  /* (element-type utf8 utf8) */
+  GHashTable *collection_refs;  /* (element-type OstreeCollectionRef utf8) */
+  OstreeRepoTransactionStats stats;
+  /* Implementation of min-free-space-percent */
+  gulong blocksize;
+  fsblkcnt_t max_blocks;
+} OstreeRepoTxn;
+
 /**
  * OstreeRepo:
  *
@@ -109,13 +118,9 @@ struct OstreeRepo {
   GWeakRef sysroot; /* Weak to avoid a circular ref; see also `is_system` */
   char *remotes_config_dir;
 
-  GHashTable *txn_refs;  /* (element-type utf8 utf8) */
-  GHashTable *txn_collection_refs;  /* (element-type OstreeCollectionRef utf8) */
-  GMutex txn_stats_lock;
-  OstreeRepoTransactionStats txn_stats;
-  /* Implementation of min-free-space-percent */
-  gulong txn_blocksize;
-  fsblkcnt_t max_txn_blocks;
+  GMutex txn_lock;
+  OstreeRepoTxn txn;
+  gboolean txn_locked;
 
   GMutex cache_lock;
   guint dirmeta_cache_refcount;
@@ -153,6 +158,7 @@ struct OstreeRepo {
   guint64 tmp_expiry_seconds;
   gchar *collection_id;
   gboolean add_remotes_config_dir; /* Add new remotes in remotes.d dir */
+  gint lock_timeout_seconds;
 
   OstreeRepo *parent_repo;
 };
@@ -431,6 +437,32 @@ _ostree_repo_get_remote_inherited (OstreeRepo  *self,
                                    GError     **error);
 
 #ifndef OSTREE_ENABLE_EXPERIMENTAL_API
+
+/* All the locking APIs below are duplicated in ostree-repo.h. Remove the ones
+ * here once it's no longer experimental.
+ */
+
+typedef enum {
+  OSTREE_REPO_LOCK_SHARED,
+  OSTREE_REPO_LOCK_EXCLUSIVE
+} OstreeRepoLockType;
+
+gboolean      ostree_repo_lock_push (OstreeRepo          *self,
+                                     OstreeRepoLockType   lock_type,
+                                     GCancellable        *cancellable,
+                                     GError             **error);
+gboolean      ostree_repo_lock_pop (OstreeRepo    *self,
+                                    GCancellable  *cancellable,
+                                    GError       **error);
+
+typedef OstreeRepo OstreeRepoAutoLock;
+
+OstreeRepoAutoLock * ostree_repo_auto_lock_push (OstreeRepo          *self,
+                                                 OstreeRepoLockType   lock_type,
+                                                 GCancellable        *cancellable,
+                                                 GError             **error);
+void          ostree_repo_auto_lock_cleanup (OstreeRepoAutoLock *lock);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoAutoLock, ostree_repo_auto_lock_cleanup)
 
 const gchar * ostree_repo_get_collection_id (OstreeRepo   *self);
 gboolean      ostree_repo_set_collection_id (OstreeRepo   *self,

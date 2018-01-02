@@ -52,6 +52,7 @@
     <keyword type="function" name="ostree_raw_file_to_archive_z2_stream ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-archive-z2-stream"/>
     <keyword type="function" name="ostree_raw_file_to_archive_z2_stream_with_options ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-archive-z2-stream-with-options" since="2017.3"/>
     <keyword type="function" name="ostree_raw_file_to_content_stream ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-content-stream"/>
+    <keyword type="function" name="ostree_break_hardlink ()" link="ostree-Core-repository-independent-functions.html#ostree-break-hardlink" since="2017.15"/>
     <keyword type="function" name="ostree_checksum_file_from_input ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file-from-input"/>
     <keyword type="function" name="ostree_checksum_file ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file"/>
     <keyword type="function" name="ostree_checksum_file_at ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file-at" since="2017.13"/>
@@ -128,6 +129,7 @@
     <keyword type="function" name="ostree_repo_set_cache_dir ()" link="ostree-OstreeRepo.html#ostree-repo-set-cache-dir"/>
     <keyword type="function" name="ostree_repo_sign_delta ()" link="ostree-OstreeRepo.html#ostree-repo-sign-delta"/>
     <keyword type="function" name="ostree_repo_has_object ()" link="ostree-OstreeRepo.html#ostree-repo-has-object"/>
+    <keyword type="function" name="ostree_repo_mark_commit_partial ()" link="ostree-OstreeRepo.html#ostree-repo-mark-commit-partial" since="2017.15"/>
     <keyword type="function" name="ostree_repo_write_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata"/>
     <keyword type="function" name="ostree_repo_write_metadata_async ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata-async"/>
     <keyword type="function" name="ostree_repo_write_metadata_finish ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata-finish"/>
@@ -153,6 +155,7 @@
     <keyword type="function" name="ostree_repo_import_archive_to_mtree ()" link="ostree-OstreeRepo.html#ostree-repo-import-archive-to-mtree"/>
     <keyword type="function" name="ostree_repo_export_tree_to_archive ()" link="ostree-OstreeRepo.html#ostree-repo-export-tree-to-archive"/>
     <keyword type="function" name="ostree_repo_delete_object ()" link="ostree-OstreeRepo.html#ostree-repo-delete-object"/>
+    <keyword type="function" name="ostree_repo_fsck_object ()" link="ostree-OstreeRepo.html#ostree-repo-fsck-object" since="2017.15"/>
     <keyword type="function" name="OstreeRepoCommitFilter ()" link="ostree-OstreeRepo.html#OstreeRepoCommitFilter"/>
     <keyword type="function" name="ostree_repo_commit_modifier_new ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-new"/>
     <keyword type="function" name="OstreeRepoCommitModifierXattrCallback ()" link="ostree-OstreeRepo.html#OstreeRepoCommitModifierXattrCallback"/>

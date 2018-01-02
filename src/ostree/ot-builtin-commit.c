@@ -37,11 +37,13 @@ static char *opt_body_file;
 static gboolean opt_editor;
 static char *opt_parent;
 static gboolean opt_orphan;
+static gboolean opt_no_bindings;
 static char **opt_bind_refs;
 static char *opt_branch;
 static char *opt_statoverride_file;
 static char *opt_skiplist_file;
 static char **opt_metadata_strings;
+static char **opt_metadata_variants;
 static char **opt_detached_metadata_strings;
 static gboolean opt_link_checkout_speedup;
 static gboolean opt_skip_if_unchanged;
@@ -89,9 +91,11 @@ static GOptionEntry options[] = {
   { "editor", 'e', 0, G_OPTION_ARG_NONE, &opt_editor, "Use an editor to write the commit message", NULL },
   { "branch", 'b', 0, G_OPTION_ARG_STRING, &opt_branch, "Branch", "BRANCH" },
   { "orphan", 0, 0, G_OPTION_ARG_NONE, &opt_orphan, "Create a commit without writing a ref", NULL },
+  { "no-bindings", 0, 0, G_OPTION_ARG_NONE, &opt_no_bindings, "Do not write any ref bindings", NULL },
   { "bind-ref", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_bind_refs, "Add a ref to ref binding commit metadata", "BRANCH" },
   { "tree", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_trees, "Overlay the given argument as a tree", "dir=PATH or tar=TARFILE or ref=COMMIT" },
   { "add-metadata-string", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_metadata_strings, "Add a key/value pair to metadata", "KEY=VALUE" },
+  { "add-metadata", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_metadata_variants, "Add a key/value pair to metadata, where the KEY is a string, an VALUE is g_variant_parse() formatted", "KEY=VALUE" },
   { "add-detached-metadata-string", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_detached_metadata_strings, "Add a key/value pair to detached metadata", "KEY=VALUE" },
   { "owner-uid", 0, 0, G_OPTION_ARG_INT, &opt_owner_uid, "Set file ownership user id", "UID" },
   { "owner-gid", 0, 0, G_OPTION_ARG_INT, &opt_owner_gid, "Set file ownership group id", "GID" },
@@ -321,13 +325,11 @@ commit_editor (OstreeRepo     *repo,
 }
 
 static gboolean
-parse_keyvalue_strings (char             **strings,
-                        GVariant         **out_metadata,
+parse_keyvalue_strings (GVariantBuilder   *builder,
+                        char             **strings,
+                        gboolean           is_gvariant_print,
                         GError           **error)
 {
-  g_autoptr(GVariantBuilder) builder =
-    g_variant_builder_new (G_VARIANT_TYPE ("a{sv}"));
-
   for (char ** iter = strings; *iter; iter++)
     {
       const char *s = *iter;
@@ -335,11 +337,19 @@ parse_keyvalue_strings (char             **strings,
       if (!eq)
         return glnx_throw (error, "Missing '=' in KEY=VALUE metadata '%s'", s);
       g_autofree char *key = g_strndup (s, eq - s);
-      g_variant_builder_add (builder, "{sv}", key,
-                             g_variant_new_string (eq + 1));
+      if (is_gvariant_print)
+        {
+          g_autoptr(GVariant) value = g_variant_parse (NULL, eq + 1, NULL, NULL, error);
+          if (!value)
+            return glnx_prefix_error (error, "Parsing %s", s);
+
+          g_variant_builder_add (builder, "{sv}", key, value);
+        }
+      else
+        g_variant_builder_add (builder, "{sv}", key,
+                               g_variant_new_string (eq + 1));
     }
 
-  *out_metadata = g_variant_ref_sink (g_variant_builder_end (builder));
   return TRUE;
 }
 
@@ -370,13 +380,11 @@ compare_strings (gconstpointer a, gconstpointer b)
 static void
 add_ref_binding (GVariantBuilder *metadata_builder)
 {
-  if (opt_orphan)
-    return;
-
-  g_assert_nonnull (opt_branch);
+  g_assert (opt_branch != NULL || opt_orphan);
 
   g_autoptr(GPtrArray) refs = g_ptr_array_new ();
-  g_ptr_array_add (refs, opt_branch);
+  if (opt_branch != NULL)
+    g_ptr_array_add (refs, opt_branch);
   for (char **iter = opt_bind_refs; iter != NULL && *iter != NULL; ++iter)
     g_ptr_array_add (refs, *iter);
   g_ptr_array_sort (refs, compare_strings);
@@ -458,17 +466,31 @@ ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocatio
         goto out;
     }
 
-  if (opt_metadata_strings)
+  if (opt_metadata_strings || opt_metadata_variants)
     {
-      if (!parse_keyvalue_strings (opt_metadata_strings,
-                                   &metadata, error))
+      g_autoptr(GVariantBuilder) builder =
+        g_variant_builder_new (G_VARIANT_TYPE ("a{sv}"));
+
+      if (opt_metadata_strings &&
+          !parse_keyvalue_strings (builder, opt_metadata_strings, FALSE, error))
+          goto out;
+
+      if (opt_metadata_variants &&
+          !parse_keyvalue_strings (builder, opt_metadata_variants, TRUE, error))
         goto out;
+
+      metadata = g_variant_ref_sink (g_variant_builder_end (builder));
     }
+
   if (opt_detached_metadata_strings)
     {
-      if (!parse_keyvalue_strings (opt_detached_metadata_strings,
-                                   &detached_metadata, error))
+      g_autoptr(GVariantBuilder) builder =
+        g_variant_builder_new (G_VARIANT_TYPE ("a{sv}"));
+
+      if (!parse_keyvalue_strings (builder, opt_detached_metadata_strings, FALSE, error))
         goto out;
+
+      detached_metadata = g_variant_ref_sink (g_variant_builder_end (builder));
     }
 
   if (!(opt_branch || opt_orphan))
@@ -725,9 +747,12 @@ ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocatio
     {
       gboolean update_summary;
       guint64 timestamp;
-      g_autoptr(GVariant) old_metadata = g_steal_pointer (&metadata);
 
-      fill_bindings (repo, old_metadata, &metadata);
+      if (!opt_no_bindings)
+        {
+          g_autoptr(GVariant) old_metadata = g_steal_pointer (&metadata);
+          fill_bindings (repo, old_metadata, &metadata);
+        }
 
       if (!opt_timestamp)
         {

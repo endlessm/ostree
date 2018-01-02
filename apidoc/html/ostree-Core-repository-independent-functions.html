@@ -294,6 +294,14 @@
 <span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
+<a class="link" href="ostree-Core-repository-independent-functions.html#ostree-break-hardlink" title="ostree_break_hardlink ()">ostree_break_hardlink</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
 <a class="link" href="ostree-Core-repository-independent-functions.html#ostree-checksum-file-from-input" title="ostree_checksum_file_from_input ()">ostree_checksum_file_from_input</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
@@ -1683,6 +1691,61 @@ for writing data to an <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" 
 </tbody>
 </table></div>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-break-hardlink"></a><h3>ostree_break_hardlink ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_break_hardlink (<em class="parameter"><code><span class="type">int</span> dfd</code></em>,
+                       <em class="parameter"><code>const <span class="type">char</span> *path</code></em>,
+                       <em class="parameter"><code><span class="type">gboolean</span> skip_xattrs</code></em>,
+                       <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                       <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>In many cases using libostree, a program may need to "break"
+hardlinks by performing a copy.  For example, in order to
+logically append to a file.</p>
+<p>This function performs full copying, including e.g. extended
+attributes and permissions of both regular files and symbolic links.</p>
+<p>If the file is not hardlinked, this function does nothing and
+returns successfully.</p>
+<p>This function does not perform synchronization via <code class="literal"><code class="function">fsync()</code></code> or
+<code class="literal"><code class="function">fdatasync()</code></code>; the idea is this will commonly be done as part
+of an <code class="literal"><a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-transaction" title="ostree_repo_commit_transaction ()"><code class="function">ostree_repo_commit_transaction()</code></a></code>, which itself takes
+care of synchronization.</p>
+<div class="refsect3">
+<a name="ostree-break-hardlink.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>dfd</p></td>
+<td class="parameter_description"><p>Directory fd</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>path</p></td>
+<td class="parameter_description"><p>Path relative to <em class="parameter"><code>dfd</code></em>
+</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>skip_xattrs</p></td>
+<td class="parameter_description"><p>Do not copy extended attributes</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2017.15</p>
 </div>
 <hr>
 <div class="refsect2">

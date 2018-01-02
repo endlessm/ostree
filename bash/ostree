@@ -963,6 +963,8 @@ _ostree_fsck() {
         --add-tombstones
         --delete
         --quiet -q
+        --verify-bindings
+        --verify-back-refs
     "
 
     local options_with_args="
