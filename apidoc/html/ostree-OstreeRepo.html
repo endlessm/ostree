@@ -412,6 +412,14 @@
 <span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-mark-commit-partial" title="ostree_repo_mark_commit_partial ()">ostree_repo_mark_commit_partial</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-metadata" title="ostree_repo_write_metadata ()">ostree_repo_write_metadata</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
@@ -605,6 +613,14 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-delete-object" title="ostree_repo_delete_object ()">ostree_repo_delete_object</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-fsck-object" title="ostree_repo_fsck_object ()">ostree_repo_fsck_object</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -2644,6 +2660,7 @@ entire objects directory. If your commit is composed of mostly hardlinks to
 existing ostree objects, then this will speed up considerably, so call it
 before you call <code class="function">ostree_write_directory_to_mtree()</code> or similar.  However,
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-devino-cache-new" title="ostree_repo_devino_cache_new ()"><code class="function">ostree_repo_devino_cache_new()</code></a> is better as it avoids scanning all objects.</p>
+<p>Multithreading: This function is *not* MT safe.</p>
 <div class="refsect3">
 <a name="ostree-repo-scan-hardlinks.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -2684,8 +2701,17 @@ ostree_repo_prepare_transaction (<em class="parameter"><code><a class="link" hre
 need to start a transaction. You can complete the transaction with
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-transaction" title="ostree_repo_commit_transaction ()"><code class="function">ostree_repo_commit_transaction()</code></a>, or abort the transaction with
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-abort-transaction" title="ostree_repo_abort_transaction ()"><code class="function">ostree_repo_abort_transaction()</code></a>.</p>
-<p>Currently, transactions are not atomic, and aborting a transaction
-will not erase any data you  write during the transaction.</p>
+<p>Currently, transactions may result in partial commits or data in the target
+repository if interrupted during <a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-transaction" title="ostree_repo_commit_transaction ()"><code class="function">ostree_repo_commit_transaction()</code></a>, and
+further writing refs is also not currently atomic.</p>
+<p>There can be at most one transaction active on a repo at a time per instance
+of <code class="literal">OstreeRepo</code>; however, it is safe to have multiple threads writing objects
+on a single <code class="literal">OstreeRepo</code> instance as long as their lifetime is bounded by the
+transaction.</p>
+<p>Multithreading: This function is *not* MT safe; only one transaction can be
+active at a time.</p>
+<p>This function takes a shared lock on the <em class="parameter"><code>self</code></em>
+ repository.</p>
 <div class="refsect3">
 <a name="ostree-repo-prepare-transaction.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -2732,6 +2758,10 @@ ostree_repo_commit_transaction (<em class="parameter"><code><a class="link" href
 <p>Complete the transaction. Any refs set with
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-transaction-set-ref" title="ostree_repo_transaction_set_ref ()"><code class="function">ostree_repo_transaction_set_ref()</code></a> or
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-transaction-set-refspec" title="ostree_repo_transaction_set_refspec ()"><code class="function">ostree_repo_transaction_set_refspec()</code></a> will be written out.</p>
+<p>Note that if multiple threads are performing writes, all such threads must
+have terminated before this function is invoked.</p>
+<p>Multithreading: This function is *not* MT safe; only one transaction can be
+active at a time.</p>
 <div class="refsect3">
 <a name="ostree-repo-commit-transaction.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -2816,6 +2846,7 @@ ostree_repo_transaction_set_refspec (<em class="parameter"><code><a class="link"
 <em class="parameter"><code>refspec</code></em>
  format as input instead of separate remote and name
 arguments.</p>
+<p>Multithreading: Since v2017.15 this function is MT safe.</p>
 <div class="refsect3">
 <a name="ostree-repo-transaction-set-refspec.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -2861,10 +2892,19 @@ remote.</p>
 <p>Otherwise, if <em class="parameter"><code>checksum</code></em>
  is <code class="literal">NULL</code>, then record that the ref should
 be deleted.</p>
-<p>The change will not be written out immediately, but when the transaction
-is completed with <a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-transaction" title="ostree_repo_commit_transaction ()"><code class="function">ostree_repo_commit_transaction()</code></a>. If the transaction
-is instead aborted with <a class="link" href="ostree-OstreeRepo.html#ostree-repo-abort-transaction" title="ostree_repo_abort_transaction ()"><code class="function">ostree_repo_abort_transaction()</code></a>, no changes will
-be made to the repository.</p>
+<p>The change will be written when the transaction is completed with
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-transaction" title="ostree_repo_commit_transaction ()"><code class="function">ostree_repo_commit_transaction()</code></a>; that function takes care of writing all of
+the objects (such as the commit referred to by <em class="parameter"><code>checksum</code></em>
+) before updating the
+refs. If the transaction is instead aborted with
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-abort-transaction" title="ostree_repo_abort_transaction ()"><code class="function">ostree_repo_abort_transaction()</code></a>, no changes to the ref will be made to the
+repository.</p>
+<p>Note however that currently writing *multiple* refs is not truly atomic; if
+the process or system is terminated during
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-transaction" title="ostree_repo_commit_transaction ()"><code class="function">ostree_repo_commit_transaction()</code></a>, it is possible that just some of the refs
+will have been updated. Your application should take care to handle this
+case.</p>
+<p>Multithreading: Since v2017.15 this function is MT safe.</p>
 <div class="refsect3">
 <a name="ostree-repo-transaction-set-ref.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -2911,6 +2951,7 @@ ostree_repo_set_ref_immediate (<em class="parameter"><code><a class="link" href=
 <p>This is like <a class="link" href="ostree-OstreeRepo.html#ostree-repo-transaction-set-ref" title="ostree_repo_transaction_set_ref ()"><code class="function">ostree_repo_transaction_set_ref()</code></a>, except it may be
 invoked outside of a transaction.  This is presently safe for the
 case where we're creating or overwriting an existing ref.</p>
+<p>Multithreading: This function is MT safe.</p>
 <div class="refsect3">
 <a name="ostree-repo-set-ref-immediate.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -3181,6 +3222,53 @@ ostree_repo_has_object (<em class="parameter"><code><a class="link" href="ostree
 <a name="ostree-repo-has-object.returns"></a><h4>Returns</h4>
 <p> <code class="literal">FALSE</code> if an unexpected error occurred, <code class="literal">TRUE</code> otherwise</p>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-mark-commit-partial"></a><h3>ostree_repo_mark_commit_partial ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_mark_commit_partial (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                 <em class="parameter"><code>const <span class="type">char</span> *checksum</code></em>,
+                                 <em class="parameter"><code><span class="type">gboolean</span> is_partial</code></em>,
+                                 <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Commits in "partial" state do not have all their child objects written. This
+occurs in various situations, such as during a pull, but also if a "subpath"
+pull is used, as well as "commit only" pulls.</p>
+<p>This function is used by <a class="link" href="ostree-OstreeRepo.html#ostree-repo-pull-with-options" title="ostree_repo_pull_with_options ()"><code class="function">ostree_repo_pull_with_options()</code></a>; you
+should use this if you are implementing a different type of transport.</p>
+<div class="refsect3">
+<a name="ostree-repo-mark-commit-partial.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>checksum</p></td>
+<td class="parameter_description"><p>Commit SHA-256</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>is_partial</p></td>
+<td class="parameter_description"><p>Whether or not this commit is partial</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2017.15</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -3836,6 +3924,11 @@ with their current values in <em class="parameter"><code>out_all_refs</code></em
 .  Otherwise, only list
 refspecs which have <em class="parameter"><code>refspec_prefix</code></em>
  as a prefix.</p>
+<p><em class="parameter"><code>out_all_refs</code></em>
+ will be returned as a mapping from refspecs (including the
+remote name) to checksums. If <em class="parameter"><code>refspec_prefix</code></em>
+ is non-<code class="literal">NULL</code>, it will be
+removed as a prefix from the hash table keys.</p>
 <div class="refsect3">
 <a name="ostree-repo-list-refs.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -3857,7 +3950,7 @@ refspecs which have <em class="parameter"><code>refspec_prefix</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_all_refs</p></td>
-<td class="parameter_description"><p>Mapping from ref to checksum. </p></td>
+<td class="parameter_description"><p>Mapping from refspec to checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8 utf8][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>]</span></td>
 </tr>
 <tr>
@@ -3889,9 +3982,12 @@ ostree_repo_list_refs_ext (<em class="parameter"><code><a class="link" href="ost
 with their current values in <em class="parameter"><code>out_all_refs</code></em>
 .  Otherwise, only list
 refspecs which have <em class="parameter"><code>refspec_prefix</code></em>
- as a prefix.  Differently from
-<a class="link" href="ostree-OstreeRepo.html#ostree-repo-list-refs" title="ostree_repo_list_refs ()"><code class="function">ostree_repo_list_refs()</code></a>, the prefix will not be removed from the ref
-name.</p>
+ as a prefix.</p>
+<p><em class="parameter"><code>out_all_refs</code></em>
+ will be returned as a mapping from refspecs (including the
+remote name) to checksums. Differently from <a class="link" href="ostree-OstreeRepo.html#ostree-repo-list-refs" title="ostree_repo_list_refs ()"><code class="function">ostree_repo_list_refs()</code></a>, the
+<em class="parameter"><code>refspec_prefix</code></em>
+ will not be removed from the refspecs in the hash table.</p>
 <div class="refsect3">
 <a name="ostree-repo-list-refs-ext.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -3913,7 +4009,7 @@ name.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_all_refs</p></td>
-<td class="parameter_description"><p>Mapping from ref to checksum. </p></td>
+<td class="parameter_description"><p>Mapping from refspec to checksum. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8 utf8][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>]</span></td>
 </tr>
 <tr>
@@ -4621,6 +4717,57 @@ is thrown if the object does not exist.</p>
 </tbody>
 </table></div>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-fsck-object"></a><h3>ostree_repo_fsck_object ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_fsck_object (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                         <em class="parameter"><code><a class="link" href="ostree-Core-repository-independent-functions.html#OstreeObjectType" title="enum OstreeObjectType"><span class="type">OstreeObjectType</span></a> objtype</code></em>,
+                         <em class="parameter"><code>const <span class="type">char</span> *sha256</code></em>,
+                         <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                         <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Verify consistency of the object; this performs checks only relevant to the
+immediate object itself, such as checksumming. This API call will not itself
+traverse metadata objects for example.</p>
+<div class="refsect3">
+<a name="ostree-repo-fsck-object.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>objtype</p></td>
+<td class="parameter_description"><p>Object type</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>sha256</p></td>
+<td class="parameter_description"><p>Checksum</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2017.15</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -6436,6 +6583,8 @@ history from the repository.</p>
 <p>Use the <a class="link" href="ostree-OstreeRepo.html#OSTREE-REPO-PRUNE-FLAGS-NO-PRUNE:CAPS"><code class="literal">OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE</code></a> to just determine
 statistics on objects that would be deleted, without actually
 deleting them.</p>
+<p>This function takes an exclusive lock on the <em class="parameter"><code>self</code></em>
+ repository.</p>
 <div class="refsect3">
 <a name="ostree-repo-prune.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -6500,6 +6649,8 @@ ostree_repo_prune_static_deltas (<em class="parameter"><code><a class="link" hre
 <p>Prune static deltas, if COMMIT is specified then delete static delta files only
 targeting that commit; otherwise any static delta of non existing commits are
 deleted.</p>
+<p>This function takes an exclusive lock on the <em class="parameter"><code>self</code></em>
+ repository.</p>
 <div class="refsect3">
 <a name="ostree-repo-prune-static-deltas.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -6554,6 +6705,8 @@ retain all commits from a production branch, but just GC some history from
 your dev branch.</p>
 <p>The <a class="link" href="ostree-OstreeRepo.html#OSTREE-REPO-PRUNE-FLAGS-NO-PRUNE:CAPS"><code class="literal">OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE</code></a> flag may be specified to just determine
 statistics on objects that would be deleted, without actually deleting them.</p>
+<p>This function takes an exclusive lock on the <em class="parameter"><code>self</code></em>
+ repository.</p>
 <div class="refsect3">
 <a name="ostree-repo-prune-from-reachable.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">

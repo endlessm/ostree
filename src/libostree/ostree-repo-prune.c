@@ -23,6 +23,7 @@
 
 #include "ostree-core-private.h"
 #include "ostree-repo-private.h"
+#include "ostree-autocleanups.h"
 #include "otutil.h"
 
 typedef struct {
@@ -34,16 +35,6 @@ typedef struct {
   guint n_unreachable_content;
   guint64 freed_bytes;
 } OtPruneData;
-
-static gboolean
-prune_commitpartial_file (OstreeRepo    *repo,
-                          const char    *checksum,
-                          GCancellable  *cancellable,
-                          GError       **error)
-{
-  g_autofree char *path = _ostree_get_commitpartial_path (checksum);
-  return ot_ensure_unlinked_at (repo->repo_dir_fd, path, error);
-}
 
 static gboolean
 maybe_prune_loose_object (OtPruneData        *data,
@@ -67,7 +58,7 @@ maybe_prune_loose_object (OtPruneData        *data,
 
           if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
             {
-              if (!prune_commitpartial_file (data->repo, checksum, cancellable, error))
+              if (!ostree_repo_mark_commit_partial (data->repo, checksum, FALSE, error))
                 return FALSE;
             }
 
@@ -160,12 +151,20 @@ _ostree_repo_prune_tmp (OstreeRepo *self,
  * Prune static deltas, if COMMIT is specified then delete static delta files only
  * targeting that commit; otherwise any static delta of non existing commits are
  * deleted.
+ *
+ * This function takes an exclusive lock on the @self repository.
  */
 gboolean
 ostree_repo_prune_static_deltas (OstreeRepo *self, const char *commit,
                                  GCancellable      *cancellable,
                                  GError           **error)
 {
+  g_autoptr(OstreeRepoAutoLock) lock =
+    ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable,
+                                error);
+  if (!lock)
+    return FALSE;
+
   g_autoptr(GPtrArray) deltas = NULL;
   if (!ostree_repo_list_static_delta_names (self, &deltas,
                                             cancellable, error))
@@ -286,6 +285,8 @@ repo_prune_internal (OstreeRepo        *self,
  * Use the %OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE to just determine
  * statistics on objects that would be deleted, without actually
  * deleting them.
+ *
+ * This function takes an exclusive lock on the @self repository.
  */
 gboolean
 ostree_repo_prune (OstreeRepo        *self,
@@ -297,6 +298,12 @@ ostree_repo_prune (OstreeRepo        *self,
                    GCancellable      *cancellable,
                    GError           **error)
 {
+  g_autoptr(OstreeRepoAutoLock) lock =
+    ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable,
+                                error);
+  if (!lock)
+    return FALSE;
+
   g_autoptr(GHashTable) objects = NULL;
   gboolean refs_only = flags & OSTREE_REPO_PRUNE_FLAGS_REFS_ONLY;
 
@@ -391,6 +398,8 @@ ostree_repo_prune (OstreeRepo        *self,
  *
  * The %OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE flag may be specified to just determine
  * statistics on objects that would be deleted, without actually deleting them.
+ *
+ * This function takes an exclusive lock on the @self repository.
  */
 gboolean
 ostree_repo_prune_from_reachable (OstreeRepo        *self,
@@ -401,6 +410,12 @@ ostree_repo_prune_from_reachable (OstreeRepo        *self,
                                   GCancellable      *cancellable,
                                   GError           **error)
 {
+  g_autoptr(OstreeRepoAutoLock) lock =
+    ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable,
+                                error);
+  if (!lock)
+    return FALSE;
+
   g_autoptr(GHashTable) objects = NULL;
 
   if (!ostree_repo_list_objects (self, OSTREE_REPO_LIST_OBJECTS_ALL | OSTREE_REPO_LIST_OBJECTS_NO_PARENTS,

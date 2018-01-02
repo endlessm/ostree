@@ -30,6 +30,8 @@
 static gboolean opt_quiet;
 static gboolean opt_delete;
 static gboolean opt_add_tombstones;
+static gboolean opt_verify_bindings;
+static gboolean opt_verify_back_refs;
 
 /* ATTENTION:
  * Please remember to update the bash-completion script (bash/ostree) and
@@ -40,122 +42,42 @@ static GOptionEntry options[] = {
   { "add-tombstones", 0, 0, G_OPTION_ARG_NONE, &opt_add_tombstones, "Add tombstones for missing commits", NULL },
   { "quiet", 'q', 0, G_OPTION_ARG_NONE, &opt_quiet, "Only print error messages", NULL },
   { "delete", 0, 0, G_OPTION_ARG_NONE, &opt_delete, "Remove corrupted objects", NULL },
+  { "verify-bindings", 0, 0, G_OPTION_ARG_NONE, &opt_verify_bindings, "Verify ref bindings", NULL },
+  { "verify-back-refs", 0, 0, G_OPTION_ARG_NONE, &opt_verify_back_refs, "Verify back-references (implies --verify-bindings)", NULL },
   { NULL }
 };
 
 static gboolean
-load_and_fsck_one_object (OstreeRepo            *repo,
-                          const char            *checksum,
-                          OstreeObjectType       objtype,
-                          gboolean              *out_found_corruption,
-                          GCancellable          *cancellable,
-                          GError               **error)
+fsck_one_object (OstreeRepo            *repo,
+                 const char            *checksum,
+                 OstreeObjectType       objtype,
+                 gboolean              *out_found_corruption,
+                 GCancellable          *cancellable,
+                 GError               **error)
 {
-  gboolean missing = FALSE;
-  g_autoptr(GVariant) metadata = NULL;
-  g_autoptr(GInputStream) input = NULL;
-  g_autoptr(GFileInfo) file_info = NULL;
-  g_autoptr(GVariant) xattrs = NULL;
   g_autoptr(GError) temp_error = NULL;
-
-  if (OSTREE_OBJECT_TYPE_IS_META (objtype))
+  if (!ostree_repo_fsck_object (repo, objtype, checksum, cancellable, &temp_error))
     {
-      if (!ostree_repo_load_variant (repo, objtype,
-                                     checksum, &metadata, &temp_error))
+      if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
         {
-          if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            {
-              g_clear_error (&temp_error);
-              g_printerr ("Object missing: %s.%s\n", checksum,
-                          ostree_object_type_to_string (objtype));
-              missing = TRUE;
-            }
-          else
-            {
-              g_propagate_error (error, g_steal_pointer (&temp_error));
-              return glnx_prefix_error (error, "Loading metadata object %s", checksum);
-            }
+          g_clear_error (&temp_error);
+          g_printerr ("Object missing: %s.%s\n", checksum,
+                      ostree_object_type_to_string (objtype));
+          *out_found_corruption = TRUE;
         }
       else
         {
-          if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
-            {
-              if (!ostree_validate_structureof_commit (metadata, error))
-                return glnx_prefix_error (error, "While validating commit metadata '%s'", checksum);
-            }
-          else if (objtype == OSTREE_OBJECT_TYPE_DIR_TREE)
-            {
-              if (!ostree_validate_structureof_dirtree (metadata, error))
-                return glnx_prefix_error (error, "While validating directory tree '%s'", checksum);
-            }
-          else if (objtype == OSTREE_OBJECT_TYPE_DIR_META)
-            {
-              if (!ostree_validate_structureof_dirmeta (metadata, error))
-                return glnx_prefix_error (error, "While validating directory metadata '%s'", checksum);
-            }
-
-          input = g_memory_input_stream_new_from_data (g_variant_get_data (metadata),
-                                                       g_variant_get_size (metadata),
-                                                       NULL);
-
-        }
-    }
-  else
-    {
-      guint32 mode;
-      g_assert (objtype == OSTREE_OBJECT_TYPE_FILE);
-      if (!ostree_repo_load_file (repo, checksum, &input, &file_info,
-                                  &xattrs, cancellable, &temp_error))
-        {
-          if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            {
-              g_clear_error (&temp_error);
-              g_printerr ("Object missing: %s.%s\n", checksum,
-                          ostree_object_type_to_string (objtype));
-              missing = TRUE;
-            }
-          else
-            {
-              g_propagate_error (error, g_steal_pointer (&temp_error));
-              return glnx_prefix_error (error, "Loading file object %s", checksum);
-            }
-        }
-      else
-        {
-          mode = g_file_info_get_attribute_uint32 (file_info, "unix::mode");
-          if (!ostree_validate_structureof_file_mode (mode, error))
-            return glnx_prefix_error (error, "While validating file '%s'", checksum);
-        }
-    }
-
-  if (missing)
-    {
-      *out_found_corruption = TRUE;
-    }
-  else
-    {
-      g_autofree guchar *computed_csum = NULL;
-      g_autofree char *tmp_checksum = NULL;
-
-      if (!ostree_checksum_file_from_input (file_info, xattrs, input,
-                                            objtype, &computed_csum,
-                                            cancellable, error))
-        return FALSE;
-
-      tmp_checksum = ostree_checksum_from_bytes (computed_csum);
-      if (strcmp (checksum, tmp_checksum) != 0)
-        {
-          g_autofree char *msg = g_strdup_printf ("corrupted object %s.%s; actual checksum: %s",
-                                               checksum, ostree_object_type_to_string (objtype),
-                                               tmp_checksum);
           if (opt_delete)
             {
-              g_printerr ("%s\n", msg);
+              g_printerr ("%s\n", temp_error->message);
               (void) ostree_repo_delete_object (repo, objtype, checksum, cancellable, NULL);
               *out_found_corruption = TRUE;
             }
           else
-            return glnx_throw (error, "%s", msg);
+            {
+              g_propagate_error (error, g_steal_pointer (&temp_error));
+              return FALSE;
+            }
         }
     }
 
@@ -189,8 +111,10 @@ fsck_reachable_objects_from_commits (OstreeRepo            *repo,
         return FALSE;
     }
 
+  g_auto(GLnxConsoleRef) console = { 0, };
+  glnx_console_lock (&console);
+
   const guint count = g_hash_table_size (reachable_objects);
-  const guint mod = count / 10;
   guint i = 0;
   g_hash_table_iter_init (&hash_iter, reachable_objects);
   while (g_hash_table_iter_next (&hash_iter, &key, &value))
@@ -201,13 +125,50 @@ fsck_reachable_objects_from_commits (OstreeRepo            *repo,
 
       ostree_object_name_deserialize (serialized_key, &checksum, &objtype);
 
-      if (!load_and_fsck_one_object (repo, checksum, objtype, out_found_corruption,
-                                     cancellable, error))
+      if (!fsck_one_object (repo, checksum, objtype, out_found_corruption,
+                            cancellable, error))
         return FALSE;
 
-      if (mod == 0 || (i % mod == 0))
-        g_print ("%u/%u objects\n", i + 1, count);
       i++;
+      glnx_console_progress_n_items ("fsck objects", i, count);
+    }
+
+  return TRUE;
+}
+
+/* Check that a given commit object is valid for the ref it was looked up via.
+ * @collection_id will be %NULL for normal refs, and non-%NULL for collection–refs. */
+static gboolean
+fsck_commit_for_ref (OstreeRepo    *repo,
+                     const char    *checksum,
+                     const char    *collection_id,
+                     const char    *ref_name,
+                     gboolean      *found_corruption,
+                     GCancellable  *cancellable,
+                     GError       **error)
+{
+  if (!fsck_one_object (repo, checksum, OSTREE_OBJECT_TYPE_COMMIT,
+                        found_corruption,
+                        cancellable, error))
+    return FALSE;
+
+  /* Check the commit exists. */
+  g_autoptr(GVariant) commit = NULL;
+  if (!ostree_repo_load_variant (repo, OSTREE_OBJECT_TYPE_COMMIT,
+                                 checksum, &commit, error))
+    {
+      if (collection_id != NULL)
+        return glnx_prefix_error (error, "Loading commit for ref (%s, %s)",
+                                  collection_id, ref_name);
+      else
+        return glnx_prefix_error (error, "Loading commit for ref %s", ref_name);
+    }
+
+  /* Check its bindings. */
+  if (opt_verify_bindings)
+    {
+      if (!ostree_cmd__private__ ()->ostree_repo_verify_bindings (collection_id, ref_name, commit, error))
+        return glnx_prefix_error (error, "Commit %s", checksum);
     }
 
   return TRUE;
@@ -237,12 +198,14 @@ ostree_builtin_fsck (int argc, char **argv, OstreeCommandInvocation *invocation,
   g_hash_table_iter_init (&hash_iter, all_refs);
   while (g_hash_table_iter_next (&hash_iter, &key, &value))
     {
-      const char *refname = key;
+      const char *refspec = key;
       const char *checksum = value;
-      g_autoptr(GVariant) commit = NULL;
-      if (!ostree_repo_load_variant (repo, OSTREE_OBJECT_TYPE_COMMIT,
-                                     checksum, &commit, error))
-        return glnx_prefix_error (error, "Loading commit for ref %s", refname);
+      g_autofree char *ref_name = NULL;
+      if (!ostree_parse_refspec (refspec, NULL, &ref_name, error))
+        return FALSE;
+      if (!fsck_commit_for_ref (repo, checksum, NULL, ref_name,
+                                &found_corruption, cancellable, error))
+        return FALSE;
     }
 
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
@@ -259,12 +222,9 @@ ostree_builtin_fsck (int argc, char **argv, OstreeCommandInvocation *invocation,
   while (g_hash_table_iter_next (&hash_iter, &key, &value))
     {
       const OstreeCollectionRef *ref = key;
-      const char *checksum = value;
-      g_autoptr(GVariant) commit = NULL;
-      if (!ostree_repo_load_variant (repo, OSTREE_OBJECT_TYPE_COMMIT,
-                                     checksum, &commit, error))
-        return glnx_prefix_error (error, "Loading commit for ref (%s, %s)",
-                                  ref->collection_id, ref->ref_name);
+      if (!fsck_commit_for_ref (repo, value, ref->collection_id, ref->ref_name,
+                                &found_corruption, cancellable, error))
+        return FALSE;
     }
 #endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
@@ -284,6 +244,9 @@ ostree_builtin_fsck (int argc, char **argv, OstreeCommandInvocation *invocation,
   if (opt_add_tombstones)
     tombstones = g_ptr_array_new_with_free_func (g_free);
 
+  if (opt_verify_back_refs)
+    opt_verify_bindings = TRUE;
+
   guint n_partial = 0;
   g_hash_table_iter_init (&hash_iter, objects);
   while (g_hash_table_iter_next (&hash_iter, &key, &value))
@@ -300,6 +263,77 @@ ostree_builtin_fsck (int argc, char **argv, OstreeCommandInvocation *invocation,
         {
           if (!ostree_repo_load_commit (repo, checksum, &commit, &commitstate, error))
             return FALSE;
+
+          /* If requested, check that all the refs listed in the ref-bindings
+           * for this commit resolve back to this commit. */
+          if (opt_verify_back_refs)
+            {
+              g_autoptr(GVariant) metadata = g_variant_get_child_value (commit, 0);
+
+              const char *collection_id = NULL;
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+              if (!g_variant_lookup (metadata,
+                                     OSTREE_COMMIT_META_KEY_COLLECTION_BINDING,
+                                     "&s",
+                                     &collection_id))
+                collection_id = NULL;
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
+
+              g_autofree const char **refs = NULL;
+              if (g_variant_lookup (metadata,
+                                    OSTREE_COMMIT_META_KEY_REF_BINDING,
+                                    "^a&s",
+                                    &refs))
+                {
+                  for (const char **iter = refs; *iter != NULL; ++iter)
+                    {
+                      g_autofree char *checksum_for_ref = NULL;
+
+#ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+                      if (collection_id != NULL)
+                        {
+                          const OstreeCollectionRef collection_ref = { (char *) collection_id, (char *) *iter };
+                          if (!ostree_repo_resolve_collection_ref (repo, &collection_ref,
+                                                                   TRUE,
+                                                                   OSTREE_REPO_RESOLVE_REV_EXT_NONE,
+                                                                   &checksum_for_ref,
+                                                                   cancellable,
+                                                                   error))
+                            return FALSE;
+                        }
+                      else
+#endif  /* OSTREE_ENABLE_EXPERIMENTAL_API */
+                        {
+                          if (!ostree_repo_resolve_rev (repo, *iter, TRUE,
+                                                        &checksum_for_ref, error))
+                            return FALSE;
+                        }
+
+                      if (checksum_for_ref == NULL)
+                        {
+                          if (collection_id != NULL)
+                            return glnx_throw (error,
+                                               "Collection–ref (%s, %s) in bindings for commit %s does not exist",
+                                               collection_id, *iter, checksum);
+                          else
+                            return glnx_throw (error,
+                                               "Ref ‘%s’ in bindings for commit %s does not exist",
+                                               *iter, checksum);
+                        }
+                      else if (g_strcmp0 (checksum_for_ref, checksum) != 0)
+                        {
+                          if (collection_id != NULL)
+                            return glnx_throw (error,
+                                               "Collection–ref (%s, %s) in bindings for commit %s does not resolve to that commit",
+                                               collection_id, *iter, checksum);
+                          else
+                            return glnx_throw (error,
+                                               "Ref ‘%s’ in bindings for commit %s does not resolve to that commit",
+                                               *iter, checksum);
+                        }
+                    }
+                }
+            }
 
           if (opt_add_tombstones)
             {

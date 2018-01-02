@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Stef Walter <stefw@redhat.com>
+ * Copyright © 2017 Endless Mobile, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -15,28 +15,18 @@
  * License along with this library; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
- *
- * Author: Stef Walter <stefw@redhat.com>
  */
 
 #pragma once
 
-#include <gio/gio.h>
-
 #include "ostree-core.h"
 
-typedef enum {
-  OSTREE_DUMP_NONE = (1 << 0),
-  OSTREE_DUMP_RAW = (1 << 1),
-  OSTREE_DUMP_UNSWAPPED = (1 << 2),
-} OstreeDumpFlags;
+G_BEGIN_DECLS
 
-void   ot_dump_variant    (GVariant *variant);
+gboolean
+_ostree_repo_verify_bindings (const char  *collection_id,
+                              const char  *ref_name,
+                              GVariant    *commit,
+                              GError     **error);
 
-void   ot_dump_object     (OstreeObjectType   objtype,
-                           const char        *checksum,
-                           GVariant          *variant,
-                           OstreeDumpFlags    flags);
-
-void   ot_dump_summary_bytes  (GBytes          *summary_bytes,
-                               OstreeDumpFlags  flags);
+G_END_DECLS

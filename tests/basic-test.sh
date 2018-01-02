@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-echo "1..$((77 + ${extra_basic_tests:-0}))"
+echo "1..$((78 + ${extra_basic_tests:-0}))"
 
 CHECKOUT_U_ARG=""
 CHECKOUT_H_ARGS="-H"
@@ -751,15 +751,31 @@ $OSTREE commit ${COMMIT_ARGS} -s sometest -b test2 checkout-test2
 echo "ok commit with directory filename"
 
 cd $test_tmpdir/checkout-test2
-$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Metadata string" --add-metadata-string=FOO=BAR --add-metadata-string=KITTENS=CUTE --add-detached-metadata-string=SIGNATURE=HANCOCK --tree=ref=test2
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Metadata string" --add-metadata-string=FOO=BAR \
+        --add-metadata-string=KITTENS=CUTE --add-detached-metadata-string=SIGNATURE=HANCOCK \
+        --add-metadata=SOMENUM='uint64 42' --tree=ref=test2
 cd ${test_tmpdir}
 $OSTREE show --print-metadata-key=FOO test2 > test2-meta
 assert_file_has_content test2-meta "BAR"
 $OSTREE show --print-metadata-key=KITTENS test2 > test2-meta
 assert_file_has_content test2-meta "CUTE"
+$OSTREE show --print-metadata-key=SOMENUM test2 > test2-meta
+assert_file_has_content test2-meta "uint64 3026418949592973312"
+$OSTREE show -B --print-metadata-key=SOMENUM test2 > test2-meta
+assert_file_has_content test2-meta "uint64 42"
 $OSTREE show --print-detached-metadata-key=SIGNATURE test2 > test2-meta
 assert_file_has_content test2-meta "HANCOCK"
 echo "ok metadata commit with strings"
+
+cd ${test_tmpdir}
+$OSTREE show --print-metadata-key=ostree.ref-binding test2 > test2-ref-binding
+assert_file_has_content test2-ref-binding 'test2'
+
+$OSTREE commit ${COMMIT_ARGS} -b test2-unbound --no-bindings --tree=dir=${test_tmpdir}/checkout-test2
+if $OSTREE show --print-metadata-key=ostree.ref-binding; then
+    fatal "ref bindings found with --no-bindings?"
+fi
+echo "ok refbinding"
 
 if ! skip_one_without_user_xattrs; then
     cd ${test_tmpdir}
