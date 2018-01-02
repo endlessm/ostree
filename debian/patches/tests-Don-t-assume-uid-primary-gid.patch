@@ -8,6 +8,7 @@ equals the user ID, particularly if another user earlier in the same
 range was created without a corresponding group or vice versa.
 
 Signed-off-by: Simon McVittie <smcv@collabora.com>
+Forwarded: https://github.com/ostreedev/ostree/pull/1390
 ---
  tests/test-basic-user.sh | 14 ++++++++------
  1 file changed, 8 insertions(+), 6 deletions(-)
