@@ -20,7 +20,6 @@ Build-Depends:
  e2fslibs-dev,
  elfutils,
  fuse,
- gjs [!sparc64],
  gobject-introspection,
  gtk-doc-tools <!nodoc>,
  libarchive-dev,
