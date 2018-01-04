@@ -2,6 +2,9 @@ ostree (2017.15-2) UNRELEASED; urgency=medium
 
   * d/p/2018.1/tests-Don-t-assume-uid-primary-gid.patch: Mark as applied
     upstream in 2018.1
+  * d/p/2018.1/tests-Assert-that-byte-order-[etc.].patch:
+    Add patch to fix test failures on big-endian machines
+    (Closes: #886218)
 
  -- Simon McVittie <smcv@debian.org>  Thu, 04 Jan 2018 12:58:50 +0000
 

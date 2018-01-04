@@ -1,0 +1,79 @@
+From: Simon McVittie <smcv@collabora.com>
+Date: Wed, 3 Jan 2018 08:23:10 +0000
+Subject: tests: Assert that byte-order is swapped on LE but not BE CPUs
+
+Closes: #1392
+Signed-off-by: Simon McVittie <smcv@collabora.com>
+Closes: #1393
+Approved by: cgwalters
+Applied-upstream: 2018.1, commit:https://github.com/ostreedev/ostree/commit/994cd66744e559c92644f36028c6c262605ad75a
+---
+ Makefile-tests.am      |  8 +++++++-
+ tests/basic-test.sh    | 14 +++++++++++++-
+ tests/get-byte-order.c | 12 ++++++++++++
+ 3 files changed, 32 insertions(+), 2 deletions(-)
+ create mode 100644 tests/get-byte-order.c
+
+diff --git a/Makefile-tests.am b/Makefile-tests.am
+index 2b33555..25a8d08 100644
+--- a/Makefile-tests.am
++++ b/Makefile-tests.am
+@@ -130,7 +130,13 @@ experimental_test_scripts = \
+ 	tests/test-summary-collections.sh \
+ 	tests/test-pull-collections.sh \
+ 	$(NULL)
+-test_extra_programs = $(NULL)
++test_extra_programs = \
++	tests/get-byte-order \
++	$(NULL)
++
++tests_get_byte_order_SOURCES = tests/get-byte-order.c
++tests_get_byte_order_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS)
++tests_get_byte_order_LDADD = $(GLIB_LIBS)
+ 
+ tests_repo_finder_mount_SOURCES = tests/repo-finder-mount.c
+ tests_repo_finder_mount_CFLAGS = $(common_tests_cflags)
+diff --git a/tests/basic-test.sh b/tests/basic-test.sh
+index 87cb9fa..c4eb9ca 100644
+--- a/tests/basic-test.sh
++++ b/tests/basic-test.sh
+@@ -759,8 +759,20 @@ $OSTREE show --print-metadata-key=FOO test2 > test2-meta
+ assert_file_has_content test2-meta "BAR"
+ $OSTREE show --print-metadata-key=KITTENS test2 > test2-meta
+ assert_file_has_content test2-meta "CUTE"
++
+ $OSTREE show --print-metadata-key=SOMENUM test2 > test2-meta
+-assert_file_has_content test2-meta "uint64 3026418949592973312"
++case "$("${test_builddir}/get-byte-order")" in
++    (4321)
++        assert_file_has_content test2-meta "uint64 42"
++        ;;
++    (1234)
++        assert_file_has_content test2-meta "uint64 3026418949592973312"
++        ;;
++    (*)
++        fatal "neither little-endian nor big-endian?"
++        ;;
++esac
++
+ $OSTREE show -B --print-metadata-key=SOMENUM test2 > test2-meta
+ assert_file_has_content test2-meta "uint64 42"
+ $OSTREE show --print-detached-metadata-key=SIGNATURE test2 > test2-meta
+diff --git a/tests/get-byte-order.c b/tests/get-byte-order.c
+new file mode 100644
+index 0000000..7e7ba31
+--- /dev/null
++++ b/tests/get-byte-order.c
+@@ -0,0 +1,12 @@
++/* Helper for OSTree tests: return host byte order */
++
++#include "config.h"
++
++#include <glib.h>
++
++int
++main (void)
++{
++  g_print ("%d\n", G_BYTE_ORDER);
++  return 0;
++}
