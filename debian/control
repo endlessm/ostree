@@ -9,6 +9,7 @@ Uploaders:
 Build-Depends:
  attr,
  autoconf,
+ avahi-glib,
  automake,
  bison,
  ca-certificates,
