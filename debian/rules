@@ -25,6 +25,7 @@ configure_options = \
 	--with-systemdsystemgeneratordir=/lib/systemd/system-generators \
 	--with-systemdsystemunitdir=/lib/systemd/system \
 	BASH_COMPLETIONSDIR=/usr/share/bash-completion/completions \
+	--with-avahi \
 	$(NULL)
 
 ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
