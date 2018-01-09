@@ -25,6 +25,8 @@ Build-Depends:
  gtk-doc-tools <!nodoc>,
  libarchive-dev,
  libattr1-dev,
+ libavahi-client-dev,
+ libavahi-glib-dev,
  libcap-dev,
  libfuse-dev,
  libgirepository1.0-dev,
