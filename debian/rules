@@ -16,6 +16,7 @@ configure_options = \
 	--enable-experimental-api \
 	--enable-installed-tests \
 	--libexecdir='$${prefix}/lib' \
+	--with-avahi \
 	--with-dracut \
 	--with-grub2 \
 	--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
