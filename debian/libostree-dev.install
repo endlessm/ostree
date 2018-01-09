@@ -1,0 +1,4 @@
+usr/include/*
+usr/lib/*/libostree-1.so
+usr/lib/*/pkgconfig
+usr/share/gir-1.0/OSTree-1.0.gir

@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -e
+exec 2>&1
+
+e=0
+
+tests="$(gnome-desktop-testing-runner -l libostree | while read t; do
+	t="${t%% *}"
+
+	case "$t" in
+		(libostree/test-local-pull.sh.test)
+			# frequently times out, https://bugs.debian.org/842606
+			# https://github.com/ostreedev/ostree/issues/605
+			continue
+			;;
+	esac
+
+	echo "$t"
+done)"
+
+gnome-desktop-testing-runner $tests

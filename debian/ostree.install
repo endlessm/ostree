@@ -1,0 +1,15 @@
+#!/usr/bin/dh-exec
+
+etc/dracut.conf.d/ostree.conf
+etc/ostree
+lib/systemd/system/ostree*.service
+lib/systemd/system-generators/ostree-system-generator
+usr/bin/ostree
+usr/bin/rofiles-fuse
+usr/lib/dracut/modules.d/98ostree		
+usr/lib/ostree/ostree-prepare-root		
+usr/lib/ostree/ostree-remount
+usr/lib/tmpfiles.d/ostree-tmpfiles.conf
+usr/share/bash-completion/completions/ostree
+usr/share/man <!nodoc>
+usr/share/ostree/trusted.gpg.d

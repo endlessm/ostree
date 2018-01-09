@@ -1,0 +1,8 @@
+/*.debhelper
+/*.substvars
+/gir1.2-ostree-1.0/
+/libostree-1-1/
+/libostree-dev/
+/libostree-doc/
+/ostree-grub2/
+/ostree/

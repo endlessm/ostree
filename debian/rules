@@ -1,0 +1,84 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+# Some tests assert that we will see English strings
+export LC_ALL=C.UTF-8
+
+%:
+	dh $@ --with=gir
+
+override_dh_auto_clean:
+	if [ -e Makefile ]; then dh_auto_clean; fi
+
+override_dh_autoreconf:
+	env NOCONFIGURE=1 dh_autoreconf ./autogen.sh
+
+configure_options = \
+	--enable-experimental-api \
+	--enable-installed-tests \
+	--enable-trivial-httpd-cmdline \
+	--libexecdir='$${prefix}/lib' \
+	--with-dracut \
+	--with-grub2 \
+	--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
+	--with-systemdsystemgeneratordir=/lib/systemd/system-generators \
+	--with-systemdsystemunitdir=/lib/systemd/system \
+	BASH_COMPLETIONSDIR=/usr/share/bash-completion/completions \
+	--with-avahi \
+	$(NULL)
+
+ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
+configure_options += --enable-gtk-doc
+configure_options += --enable-man
+else
+configure_options += --disable-gtk-doc
+configure_options += --disable-man
+endif
+
+override_dh_auto_configure:
+	dh_auto_configure -- $(configure_options)
+
+override_dh_auto_test-arch:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	debian/test.sh
+endif
+
+override_dh_auto_test-indep:
+	:
+
+override_dh_auto_install:
+	dh_auto_install
+ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
+	# docbook-xsl capitalizes the whole heading, including the macro
+	# used to represent a single quote... https://bugs.debian.org/821235
+	sed -i -e 's,\*(AQ,*(Aq,g' \
+		debian/tmp/usr/share/man/man1/ostree-remote.1 \
+		debian/tmp/usr/share/man/man1/ostree-static-delta.1 \
+		$(NULL)
+endif
+
+override_dh_install:
+	rm -f debian/tmp/usr/lib/*/*.la
+	rm -f debian/tmp/usr/lib/installed-tests/libostree/*.la
+	:
+	rm -f debian/tmp/etc/grub.d/15_ostree
+	rm -f debian/tmp/usr/lib/libostree/grub2-15_ostree
+	:
+	dh_install
+
+override_dh_missing:
+	dh_missing --fail-missing
+
+override_dh_makeshlibs:
+	# this is an LD_PRELOAD, not a real shared library
+	dh_makeshlibs -Xinstalled-tests/ostree/libreaddir-rand.so
+
+override_dh_fixperms-arch:
+	# dh_fixperms assumes *.js are for browsers and makes them 0644.
+	dh_fixperms -X'*.js'
+	find debian/tmp -type f -name '*.js' -print0 | \
+		xargs -0r chmod -v go=rX,u+rw,a-s
+
+override_dh_systemd_start:
+	dh_systemd_start --no-start

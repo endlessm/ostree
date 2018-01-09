@@ -1,0 +1,2 @@
+version=4
+https://github.com/ostreedev/ostree/releases .*/libostree-(\d\S*)\.tar\.xz
