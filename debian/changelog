@@ -1,3 +1,9 @@
+ostree (2017.15-3) UNRELEASED; urgency=medium
+
+  * Move Vcs-* to salsa.debian.org
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 15 Jan 2018 01:19:14 +0000
+
 ostree (2017.15-2) unstable; urgency=medium
 
   * d/p/2018.1/tests-Don-t-assume-uid-primary-gid.patch: Mark as applied
