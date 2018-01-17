@@ -1,0 +1,24 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Wed, 17 Jan 2018 14:25:26 +0000
+Subject: test-concurrency: Use Python 3 syntax for octal
+
+This also works in Python 2.7, and is a little clearer.
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ tests/test-concurrency.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/test-concurrency.py b/tests/test-concurrency.py
+index bdcc1d9..6fade24 100755
+--- a/tests/test-concurrency.py
++++ b/tests/test-concurrency.py
+@@ -33,7 +33,7 @@ def fatal(msg):
+ # different files with different checksums.
+ def mktree(dname, serial=0):
+     print('Creating tree', dname, file=sys.stderr)
+-    os.mkdir(dname, 0755)
++    os.mkdir(dname, 0o755)
+     for v in xrange(20):
+         with open('{}/{}'.format(dname, v), 'w') as f:
+             f.write('{} {} {}\n'.format(dname, serial, v))

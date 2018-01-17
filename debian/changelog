@@ -5,6 +5,11 @@ ostree (2018.1-1) UNRELEASED; urgency=medium
     - d/patches: Remove, applied upstream
     - d/libostree-1-1.symbols: Update
   * Move Vcs-* to salsa.debian.org
+    d/p/test-concurrency-Explicitly-use-floor-division.patch,
+    d/p/tests-bootloader-entries-crosscheck-Use-Python-3-friendly.patch:
+    Make tests compatible with Python 3
+  * d/control, d/p/debian/Use-Python-3-for-tests.patch:
+    Switch build-time tests and autopkgtests to Python 3
 
  -- Simon McVittie <smcv@debian.org>  Mon, 15 Jan 2018 01:19:14 +0000
 
