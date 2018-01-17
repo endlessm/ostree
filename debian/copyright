@@ -8,7 +8,7 @@ Copyright:
  © 1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald
  © 1999-2000, 2002-2005 Free Software Foundation, Inc.
  © 1999-2003 Ximian, Inc.
- © 2008-2017 Red Hat, Inc
+ © 2008-2018 Red Hat, Inc
  © 2011-2017 Colin Walters <walters@verbum.org>
  © 2017 Georges Basile Stavracas Neto
  © 2011 Avery Pennarun
@@ -22,6 +22,7 @@ Copyright:
  © 2015 Dan Nicholson <nicholson@endlessm.com>
  © 2015 Canonical Ltd.
  © 2017 Endless Mobile, Inc.
+ © 2018 Matthew Leeds
 License: LGPL-2+
 
 Files:
@@ -53,6 +54,21 @@ Copyright:
  2006-2008 xine project
  2012 Lucas De Marchi
 License: GPL-2+ with Autoconf exception
+
+Files:
+ gtk-doc.make
+Copyright:
+ 2003 James Henstridge
+ 2004-2007 Damon Chaplin
+ 2007-2017 Stefan Sauer
+License: GPL-3+
+
+Files:
+ buildutil/gtk-doc.m4
+Copyright:
+ 2003 James Henstridge
+ 2007-2017 Stefan Sauer
+License: GPL-3+ with Autoconf exception
 
 Files:
  bsdiff/*
@@ -102,6 +118,50 @@ Comment:
  On Debian systems, the full text of the GNU General Public
  License version 2 can be found in the file
  '/usr/share/common-licenses/GPL-2'.
+
+License: GPL-3+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+Comment:
+ On Debian systems, the full text of the GNU General Public
+ License version 3 can be found in the file
+ '/usr/share/common-licenses/GPL-3'.
+
+License: GPL-3+ with Autoconf exception
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ As a special exception, the above copyright owner gives unlimited
+ permission to copy, distribute and modify the configure scripts that
+ are the output of Autoconf when processing the Macro. You need not
+ follow the terms of the GNU General Public License when using or
+ distributing such scripts, even though portions of the text of the
+ Macro appear in them. The GNU General Public License (GPL) does govern
+ all other use of the material that constitutes the Autoconf Macro.
+Comment:
+ On Debian systems, the full text of the GNU General Public
+ License version 3 can be found in the file
+ '/usr/share/common-licenses/GPL-3'.
 
 License: LGPL-2+
  This program is free software: you can redistribute it and/or modify

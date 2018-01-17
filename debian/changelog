@@ -1,5 +1,8 @@
-ostree (2017.15-3) UNRELEASED; urgency=medium
+ostree (2018.1-1) UNRELEASED; urgency=medium
 
+  * New upstream release
+    - d/copyright: Update
+    - d/patches: Remove, applied upstream
   * Move Vcs-* to salsa.debian.org
 
  -- Simon McVittie <smcv@debian.org>  Mon, 15 Jan 2018 01:19:14 +0000
