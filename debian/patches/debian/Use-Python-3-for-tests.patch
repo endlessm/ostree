@@ -1,0 +1,45 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Wed, 17 Jan 2018 14:07:32 +0000
+Subject: Use Python 3 for tests
+
+Forwarded: not-needed
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ tests/bootloader-entries-crosscheck.py | 2 +-
+ tests/test-basic-user-only.sh          | 2 +-
+ tests/test-concurrency.py              | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tests/bootloader-entries-crosscheck.py b/tests/bootloader-entries-crosscheck.py
+index 5faa548..41f6956 100755
+--- a/tests/bootloader-entries-crosscheck.py
++++ b/tests/bootloader-entries-crosscheck.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/python3
+ #
+ # Copyright (C) 2015 Red Hat
+ #
+diff --git a/tests/test-basic-user-only.sh b/tests/test-basic-user-only.sh
+index 6a2ca25..662d32f 100755
+--- a/tests/test-basic-user-only.sh
++++ b/tests/test-basic-user-only.sh
+@@ -26,7 +26,7 @@ extra_basic_tests=5
+ . $(dirname $0)/basic-test.sh
+ 
+ $CMD_PREFIX ostree --version > version.yaml
+-python -c 'import yaml; yaml.safe_load(open("version.yaml"))'
++python3 -c 'import yaml; yaml.safe_load(open("version.yaml"))'
+ echo "ok yaml version"
+ 
+ # Reset things so we don't inherit a lot of state from earlier tests
+diff --git a/tests/test-concurrency.py b/tests/test-concurrency.py
+index 3a0ce10..3ec3681 100755
+--- a/tests/test-concurrency.py
++++ b/tests/test-concurrency.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # Copyright (C) 2017 Colin Walters <walters@verbum.org>
+ #
