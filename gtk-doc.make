@@ -1,4 +1,22 @@
 # -*- mode: makefile -*-
+#
+# gtk-doc.make - make rules for gtk-doc
+# Copyright (C) 2003 James Henstridge
+#               2004-2007 Damon Chaplin
+#               2007-2017 Stefan Sauer
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ####################################
 # Everything below here is generic #
@@ -150,6 +168,9 @@ sgml-build.stamp: setup-build.stamp $(DOC_MODULE)-decl.txt $(SCANOBJ_FILES) $(HF
 	$(AM_V_at)touch sgml-build.stamp
 
 sgml.stamp: sgml-build.stamp
+	@true
+
+$(DOC_MAIN_SGML_FILE): sgml-build.stamp
 	@true
 
 xml/gtkdocentities.ent: Makefile

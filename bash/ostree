@@ -783,6 +783,8 @@ _ostree_commit() {
     local options_with_args="
         --add-detached-metadata-string
         --add-metadata-string
+        --add-metadata
+        --keep-metadata
         --bind-ref
         --body -m
         --body-file -F

@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-echo "1..4"
+echo "1..6"
 
 . $(dirname $0)/libtest.sh
 
@@ -72,3 +72,18 @@ fi
 assert_file_has_content_literal err.txt "Loading commit for ref test2: No such metadata object"
 
 echo "ok missing commit"
+
+cd ${test_tmpdir}
+tar xf ${test_srcdir}/ostree-path-traverse.tar.gz
+if ${CMD_PREFIX} ostree --repo=ostree-path-traverse/repo fsck -q 2>err.txt; then
+    fatal "fsck unexpectedly succeeded"
+fi
+assert_file_has_content_literal err.txt '.dirtree: Invalid / in filename ../afile'
+echo "ok path traverse fsck"
+
+cd ${test_tmpdir}
+if ${CMD_PREFIX} ostree --repo=ostree-path-traverse/repo checkout pathtraverse-test pathtraverse-test 2>err.txt; then
+    fatal "checkout with path traversal unexpectedly succeeded"
+fi
+assert_file_has_content_literal err.txt 'Invalid / in filename ../afile'
+echo "ok path traverse checkout"
