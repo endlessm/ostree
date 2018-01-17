@@ -1,4 +1,4 @@
-ostree (2018.1-1) UNRELEASED; urgency=medium
+ostree (2018.1-1) unstable; urgency=medium
 
   * New upstream release
     - d/copyright: Update
@@ -11,7 +11,7 @@ ostree (2018.1-1) UNRELEASED; urgency=medium
   * d/control, d/p/debian/Use-Python-3-for-tests.patch:
     Switch build-time tests and autopkgtests to Python 3
 
- -- Simon McVittie <smcv@debian.org>  Mon, 15 Jan 2018 01:19:14 +0000
+ -- Simon McVittie <smcv@debian.org>  Wed, 17 Jan 2018 15:34:46 +0000
 
 ostree (2017.15-2) unstable; urgency=medium
 
