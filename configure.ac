@@ -3,8 +3,8 @@ dnl If doing a final release, remember to follow the instructions to
 dnl update libostree-released.sym from libostree-devel.sym, and update the checksum
 dnl in test-symbols.sh, and also set is_release_build=yes below.  Then make
 dnl another post-release commit to bump the version, and set is_release_build=no.
-m4_define([year_version], [2017])
-m4_define([release_version], [15])
+m4_define([year_version], [2018])
+m4_define([release_version], [1])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -43,7 +43,7 @@ CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
   -Werror=switch \
   -Werror=overflow \
   -Werror=int-conversion \
-  -Werror=parenthesis \
+  -Werror=parentheses \
   -Werror=undef \
   -Werror=incompatible-pointer-types \
   -Werror=misleading-indentation \
@@ -197,7 +197,7 @@ AM_COND_IF(BUILDOPT_TRIVIAL_HTTPD,
 )
 
 AS_IF([test x$with_curl = xyes && test x$with_soup = xno], [
-  AC_MSG_ERROR([Curl enabled, but libsoup is not; libsoup is needed for tests])
+  AC_MSG_WARN([Curl enabled, but libsoup is not; libsoup is needed for tests (make check, etc.)])
 ])
 AM_CONDITIONAL(USE_CURL_OR_SOUP, test x$with_curl != xno || test x$with_soup != xno)
 AS_IF([test x$with_curl != xno || test x$with_soup != xno],

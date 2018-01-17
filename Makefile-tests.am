@@ -116,6 +116,7 @@ _installed_or_uninstalled_test_scripts = \
 	tests/test-pull-mirrorlist.sh \
 	tests/test-summary-update.sh \
 	tests/test-summary-view.sh \
+	tests/test-no-initramfs.sh \
 	$(NULL)
 
 experimental_test_scripts = \
@@ -130,7 +131,13 @@ experimental_test_scripts = \
 	tests/test-summary-collections.sh \
 	tests/test-pull-collections.sh \
 	$(NULL)
-test_extra_programs = $(NULL)
+test_extra_programs = \
+	tests/get-byte-order \
+	$(NULL)
+
+tests_get_byte_order_SOURCES = tests/get-byte-order.c
+tests_get_byte_order_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS)
+tests_get_byte_order_LDADD = $(GLIB_LIBS)
 
 tests_repo_finder_mount_SOURCES = tests/repo-finder-mount.c
 tests_repo_finder_mount_CFLAGS = $(common_tests_cflags)
@@ -171,6 +178,7 @@ dist_installed_test_data = tests/archive-test.sh \
 	tests/pre-endian-deltas-repo-little.tar.xz \
 	tests/fah-deltadata-old.tar.xz \
 	tests/fah-deltadata-new.tar.xz \
+	tests/ostree-path-traverse.tar.gz \
 	tests/libtest-core.sh \
 	$(NULL)
 
@@ -373,6 +381,14 @@ check-local:
 else
 dist_test_scripts += $(_installed_or_uninstalled_test_scripts)
 test_programs += $(_installed_or_uninstalled_test_programs)
+endif
+
+if !USE_LIBSOUP
+no-soup-for-you-warning:
+	@echo "WARNING: $(PACKAGE) was built without libsoup, which is currently" 1>&2
+	@echo "WARNING: required for many unit tests." 1>&2
+	sleep 10
+check: no-soup-for-you-warning
 endif
 
 # Unfortunately the glib test data APIs don't actually handle

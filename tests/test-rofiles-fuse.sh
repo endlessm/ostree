@@ -26,7 +26,7 @@ skip_without_user_xattrs
 
 setup_test_repository "bare"
 
-echo "1..8"
+echo "1..11"
 
 cd ${test_tmpdir}
 mkdir mnt
@@ -117,3 +117,58 @@ echo "ok checkout copy fallback"
 
 # check that O_RDONLY|O_CREAT is handled correctly; used by flock(1) at least
 flock mnt/nonexistent-file echo "ok create file in ro mode"
+echo "ok flock"
+
+# And now with --copyup enabled
+
+copyup_reset() {
+    cd ${test_tmpdir}
+    fusermount -u mnt
+    rm checkout-test2 -rf
+    $OSTREE checkout -H test2 checkout-test2
+    rofiles-fuse --copyup checkout-test2 mnt
+}
+
+assert_test_file() {
+    t=$1
+    f=$2
+    if ! test ${t} "${f}"; then
+        ls -al "${f}"
+        fatal "Failed test ${t} ${f}"
+    fi
+}
+
+copyup_reset
+assert_file_has_content mnt/firstfile first
+echo "ok copyup mount"
+
+# Test O_TRUNC directly
+firstfile_orig_inode=$(stat -c %i checkout-test2/firstfile)
+echo -n truncating > mnt/firstfile
+assert_streq "$(cat mnt/firstfile)" truncating
+firstfile_new_inode=$(stat -c %i checkout-test2/firstfile)
+assert_not_streq "${firstfile_orig_inode}" "${firstfile_new_inode}"
+assert_test_file -f checkout-test2/firstfile
+
+copyup_reset
+firstfile_link_orig_inode=$(stat -c %i checkout-test2/firstfile-link)
+firstfile_orig_inode=$(stat -c %i checkout-test2/firstfile)
+# Now write via the symlink
+echo -n truncating > mnt/firstfile-link
+assert_streq "$(cat mnt/firstfile)" truncating
+firstfile_new_inode=$(stat -c %i checkout-test2/firstfile)
+firstfile_link_new_inode=$(stat -c %i checkout-test2/firstfile-link)
+assert_not_streq "${firstfile_orig_inode}" "${firstfile_new_inode}"
+assert_streq "${firstfile_link_orig_inode}" "${firstfile_link_new_inode}"
+assert_test_file -f checkout-test2/firstfile
+# Verify we didn't replace the link with a regfile somehow
+assert_test_file -L checkout-test2/firstfile-link
+
+# These both end up creating new files; in the sed case we'll then do a rename()
+copyup_reset
+echo "hello new file" > mnt/a-new-non-copyup-file
+assert_file_has_content_literal mnt/a-new-non-copyup-file "hello new file"
+sed -i -e s,first,second, mnt/firstfile
+assert_file_has_content_literal mnt/firstfile "second"
+
+echo "ok copyup"
