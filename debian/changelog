@@ -4,6 +4,8 @@ ostree (2018.2-1) UNRELEASED; urgency=medium
     - d/copyright: Update
     - d/libostree-1-1.symbols: Update
   * Mark patches as forwarded
+  * Add gnupg to build-time test dependencies (and ostree-tests
+    dependencies) as it is no longer transitively build-essential
 
  -- Simon McVittie <smcv@debian.org>  Mon, 19 Feb 2018 08:29:00 +0000
 
