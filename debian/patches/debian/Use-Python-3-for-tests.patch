@@ -2,7 +2,6 @@ From: Simon McVittie <smcv@debian.org>
 Date: Wed, 17 Jan 2018 14:07:32 +0000
 Subject: Use Python 3 for tests
 
-Forwarded: not-needed
 Signed-off-by: Simon McVittie <smcv@debian.org>
 ---
  tests/bootloader-entries-crosscheck.py | 2 +-
