@@ -1,4 +1,4 @@
-ostree (2018.2-1) UNRELEASED; urgency=medium
+ostree (2018.2-1) unstable; urgency=medium
 
   * New upstream release
     - d/copyright: Update
@@ -7,7 +7,7 @@ ostree (2018.2-1) UNRELEASED; urgency=medium
   * Add gnupg to build-time test dependencies (and ostree-tests
     dependencies) as it is no longer transitively build-essential
 
- -- Simon McVittie <smcv@debian.org>  Mon, 19 Feb 2018 08:29:00 +0000
+ -- Simon McVittie <smcv@debian.org>  Mon, 19 Feb 2018 09:01:47 +0000
 
 ostree (2018.1-1) unstable; urgency=medium
 
