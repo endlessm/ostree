@@ -2,6 +2,8 @@
 
 # Copyright (C) 2011 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -19,7 +21,7 @@
 
 set -euo pipefail
 
-echo "1..$((79 + ${extra_basic_tests:-0}))"
+echo "1..$((82 + ${extra_basic_tests:-0}))"
 
 CHECKOUT_U_ARG=""
 CHECKOUT_H_ARGS="-H"
@@ -39,6 +41,9 @@ else
         CHECKOUT_H_ARGS="-U -H"
     fi
 fi
+
+# This should be dynamic now
+assert_not_has_dir repo/uncompressed-objects-cache
 
 validate_checkout_basic() {
     (cd $1;
@@ -517,6 +522,35 @@ rm t -rf
 echo "ok checkout subpath"
 
 cd ${test_tmpdir}
+rm -rf checkout-test2-skiplist
+cat > test-skiplist.txt <<EOF
+/baz/saucer
+/yet/another/tree
+EOF
+$OSTREE checkout --skip-list test-skiplist.txt test2 checkout-test2-skiplist
+cd checkout-test2-skiplist
+! test -f baz/saucer
+! test -d yet/another/tree
+test -f baz/cow
+test -d baz/deeper
+echo "ok checkout skip-list"
+
+cd ${test_tmpdir}
+rm -rf checkout-test2-skiplist
+cat > test-skiplist.txt <<EOF
+/saucer
+/deeper
+EOF
+$OSTREE checkout --skip-list test-skiplist.txt --subpath /baz \
+  test2 checkout-test2-skiplist
+cd checkout-test2-skiplist
+! test -f saucer
+! test -d deeper
+test -f cow
+test -d another
+echo "ok checkout skip-list with subpath"
+
+cd ${test_tmpdir}
 $OSTREE checkout  --union test2 checkout-test2-union
 find checkout-test2-union | wc -l > union-files-count
 $OSTREE checkout  --union test2 checkout-test2-union
@@ -720,6 +754,16 @@ $OSTREE show test4 > show-output
 assert_file_has_content show-output "Third commit"
 assert_file_has_content show-output "commit $checksum"
 echo "ok show full output"
+
+grep -E -e '^ContentChecksum' show-output > previous-content-checksum.txt
+cd $test_tmpdir/checkout-test2
+checksum=$($OSTREE commit ${COMMIT_ARGS} -b test4 -s "Another commit with different subject")
+cd ${test_tmpdir}
+$OSTREE show test4 | grep -E -e '^ContentChecksum' > new-content-checksum.txt
+if ! diff -u previous-content-checksum.txt new-content-checksum.txt; then
+    fatal "content checksum differs"
+fi
+echo "ok content checksum"
 
 cd $test_tmpdir/checkout-test2
 checksum1=$($OSTREE commit ${COMMIT_ARGS} -b test5 -s "First commit")

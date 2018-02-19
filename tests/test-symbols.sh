@@ -2,6 +2,8 @@
 #
 # Copyright (C) 2016 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -52,7 +54,7 @@ echo 'ok documented symbols'
 
 # ONLY update this checksum in release commits!
 cat > released-sha256.txt <<EOF
-e880ade1f3b4cc7587dc1a7a30059ab1d5287484ee70843f1bb4f258fbec677c  ${released_syms}
+6f8beb8ec59190c74368b7f2b1aca7a382c9e4b1763b724037932f73ba6b29cd  ${released_syms}
 EOF
 sha256sum -c released-sha256.txt
 

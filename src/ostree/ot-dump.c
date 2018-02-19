@@ -2,6 +2,8 @@
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  * Copyright (C) 2013 Stef Walter <stefw@redhat.com>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -124,6 +126,8 @@ dump_commit (GVariant            *variant,
   str = format_timestamp (timestamp, &local_error);
   if (!str)
     errx (1, "Failed to read commit: %s", local_error->message);
+  g_autofree char *contents = ostree_commit_get_content_checksum (variant) ?: "<invalid commit>";
+  g_print ("ContentChecksum:  %s\n", contents);
   g_print ("Date:  %s\n", str);
 
   if ((version = ot_admin_checksum_version (variant)))

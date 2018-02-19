@@ -11,6 +11,8 @@
  *
  * Relicensed with permission to LGPLv2+.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -243,6 +245,17 @@ main(int argc, char *argv[])
       if (mount (".", root_mountpoint, NULL, MS_MOVE, NULL) < 0)
         err (EXIT_FAILURE, "failed to MS_MOVE %s to %s", deploy_path, root_mountpoint);
     }
+
+  /* The /sysroot mount needs to be private to avoid having a mount for e.g. /var/cache
+   * also propagate to /sysroot/ostree/deploy/$stateroot/var/cache
+   *
+   * Now in reality, today this is overridden by systemd: the *actual* way we fix this up
+   * is in ostree-remount.c.  But let's do it here to express the semantics we want
+   * at the very start (perhaps down the line systemd will have compile/runtime option
+   * to say that the initramfs environment did everything right from the start).
+   */
+  if (mount ("none", "sysroot", NULL, MS_PRIVATE, NULL) < 0)
+    err (EXIT_FAILURE, "remounting 'sysroot' private");
 
   if (getpid() == 1)
     {

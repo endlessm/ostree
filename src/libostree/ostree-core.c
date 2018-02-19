@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -152,15 +154,18 @@ ostree_validate_checksum_string (const char *sha256,
 /**
  * ostree_parse_refspec:
  * @refspec: A "refspec" string
- * @out_remote: (out) (allow-none): The remote name, or %NULL if the refspec refs to a local ref
- * @out_ref: (out) (allow-none): Name of ref
+ * @out_remote: (out) (nullable) (optional): Return location for the remote name,
+ *    or %NULL if the refspec refs to a local ref
+ * @out_ref: (out) (not nullable) (optional): Return location for the ref name
  * @error: Error
  *
- * Split a refspec like "gnome-ostree:gnome-ostree/buildmaster" into
- * two parts; @out_remote will be set to "gnome-ostree", and @out_ref
- * will be "gnome-ostree/buildmaster".
+ * Split a refspec like `gnome-ostree:gnome-ostree/buildmaster` or just
+ * `gnome-ostree/buildmaster` into two parts. In the first case, @out_remote
+ * will be set to `gnome-ostree`, and @out_ref to `gnome-ostree/buildmaster`.
+ * In the second case (a local ref), @out_remote will be %NULL, and @out_ref
+ * will be `gnome-ostree/buildmaster`. In both cases, %TRUE will be returned.
  *
- * If @refspec refers to a local ref, @out_remote will be %NULL.
+ * Returns: %TRUE on successful parsing, %FALSE otherwise
  */
 gboolean
 ostree_parse_refspec (const char   *refspec,
@@ -1682,6 +1687,26 @@ _ostree_stbuf_to_gfileinfo (const struct stat *stbuf)
 }
 
 /**
+ * _ostree_gfileinfo_to_stbuf:
+ * @file_info: File info
+ * @out_stbuf: (out): stat buffer
+ *
+ * Map GFileInfo data from @file_info onto @out_stbuf.
+ */
+void
+_ostree_gfileinfo_to_stbuf (GFileInfo    *file_info,
+                            struct stat  *out_stbuf)
+{
+  struct stat stbuf = {0,};
+  stbuf.st_mode = g_file_info_get_attribute_uint32 (file_info, "unix::mode");
+  stbuf.st_uid = g_file_info_get_attribute_uint32 (file_info, "unix::uid");
+  stbuf.st_gid = g_file_info_get_attribute_uint32 (file_info, "unix::gid");
+  if (S_ISREG (stbuf.st_mode))
+    stbuf.st_size = g_file_info_get_attribute_uint64 (file_info, "standard::size");
+  *out_stbuf = stbuf;
+}
+
+/**
  * _ostree_gfileinfo_equal:
  * @a: First file info
  * @b: Second file info
@@ -2344,6 +2369,51 @@ ostree_commit_get_timestamp (GVariant  *commit_variant)
   guint64 ret;
   g_variant_get_child (commit_variant, 5, "t", &ret);
   return GUINT64_FROM_BE (ret);
+}
+
+
+/**
+ * ostree_commit_get_content_checksum:
+ * @commit_variant: A commit object
+ *
+ * There are use cases where one wants a checksum just of the content of a
+ * commit. OSTree commits by default capture the current timestamp, and may have
+ * additional metadata, which means that re-committing identical content
+ * often results in a new checksum.
+ *
+ * By comparing checksums of content, it's possible to easily distinguish
+ * cases where nothing actually changed.
+ *
+ * The content checksums is simply defined as `SHA256(root dirtree_checksum || root_dirmeta_checksum)`,
+ * i.e. the SHA-256 of the root "dirtree" object's checksum concatenated with the
+ * root "dirmeta" checksum (both in binary form, not hexadecimal).
+ *
+ * Returns: (nullable): A SHA-256 hex string, or %NULL if @commit_variant is not well-formed
+ */
+gchar *
+ostree_commit_get_content_checksum (GVariant *commit_variant)
+{
+  g_auto(OtChecksum) checksum = { 0, };
+  ot_checksum_init (&checksum);
+
+  g_autoptr(GVariant) tree_contents_csum = NULL;
+  g_autoptr(GVariant) tree_meta_csum = NULL;
+
+  g_variant_get_child (commit_variant, 6, "@ay", &tree_contents_csum);
+  g_variant_get_child (commit_variant, 7, "@ay", &tree_meta_csum);
+
+  const guchar *bytes;
+  bytes = ostree_checksum_bytes_peek_validate (tree_contents_csum, NULL);
+  if (!bytes)
+    return NULL;
+  ot_checksum_update (&checksum, bytes, OSTREE_SHA256_DIGEST_LEN);
+  bytes = ostree_checksum_bytes_peek_validate (tree_meta_csum, NULL);
+  if (!bytes)
+    return NULL;
+  ot_checksum_update (&checksum, bytes, OSTREE_SHA256_DIGEST_LEN);
+  char hexdigest[OSTREE_SHA256_STRING_LEN+1];
+  ot_checksum_get_hexdigest (&checksum, hexdigest, sizeof (hexdigest));
+  return g_strdup (hexdigest);
 }
 
 /* Used in pull/deploy to validate we're not being downgraded */

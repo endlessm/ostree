@@ -4,7 +4,7 @@ dnl update libostree-released.sym from libostree-devel.sym, and update the check
 dnl in test-symbols.sh, and also set is_release_build=yes below.  Then make
 dnl another post-release commit to bump the version, and set is_release_build=no.
 m4_define([year_version], [2018])
-m4_define([release_version], [1])
+m4_define([release_version], [2])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -519,7 +519,7 @@ AC_ARG_WITH(static-compiler,
             AS_HELP_STRING([--with-static-compiler],
                            [Use the given compiler to build ostree-prepare-root statically linked (default: no)]),,
               [with_static_compiler=no])
-AM_CONDITIONAL(BUILDOPT_USE_STATIC_COMPILER, test x$with_static_compiler != xno)
+AM_CONDITIONAL(BUILDOPT_USE_STATIC_COMPILER, test "x$with_static_compiler" != xno)
 AC_SUBST(STATIC_COMPILER, $with_static_compiler)
 
 dnl for tests (but we can't use asan with gjs or any introspection,

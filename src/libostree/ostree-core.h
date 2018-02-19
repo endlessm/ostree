@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -517,6 +519,9 @@ _OSTREE_PUBLIC
 gchar *  ostree_commit_get_parent            (GVariant  *commit_variant);
 _OSTREE_PUBLIC
 guint64  ostree_commit_get_timestamp         (GVariant  *commit_variant);
+
+_OSTREE_PUBLIC
+gchar *  ostree_commit_get_content_checksum  (GVariant  *commit_variant);
 
 _OSTREE_PUBLIC
 gboolean ostree_check_version (guint required_year, guint required_release);

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -941,6 +943,34 @@ ostree_repo_checkout_tree (OstreeRepo               *self,
                            GError                  **error);
 
 /**
+ * OstreeRepoCheckoutFilterResult:
+ * @OSTREE_REPO_CHECKOUT_FILTER_ALLOW: Do checkout this object
+ * @OSTREE_REPO_CHECKOUT_FILTER_SKIP: Ignore this object
+ *
+ * Since: 2018.2
+ */
+typedef enum {
+  OSTREE_REPO_CHECKOUT_FILTER_ALLOW,
+  OSTREE_REPO_CHECKOUT_FILTER_SKIP
+} OstreeRepoCheckoutFilterResult;
+
+/**
+ * OstreeRepoCheckoutFilter:
+ * @repo: Repo
+ * @path: Path to file
+ * @stbuf: File information
+ * @user_data: User data
+ *
+ * Returns: #OstreeRepoCheckoutFilterResult saying whether or not to checkout this file
+ *
+ * Since: 2018.2
+ */
+typedef OstreeRepoCheckoutFilterResult (*OstreeRepoCheckoutFilter) (OstreeRepo    *repo,
+                                                                    const char    *path,
+                                                                    struct stat   *stbuf,
+                                                                    gpointer       user_data);
+
+/**
  * OstreeRepoCheckoutAtOptions:
  *
  * An extensible options structure controlling checkout.  Ensure that
@@ -967,7 +997,9 @@ typedef struct {
   OstreeRepoDevInoCache *devino_to_csum_cache;
 
   int unused_ints[6];
-  gpointer unused_ptrs[5];
+  gpointer unused_ptrs[3];
+  OstreeRepoCheckoutFilter filter; /* Since: 2018.2 */
+  gpointer filter_user_data; /* Since: 2018.2 */
   OstreeSePolicy *sepolicy; /* Since: 2017.6 */
   const char *sepolicy_prefix;
 } OstreeRepoCheckoutAtOptions;
