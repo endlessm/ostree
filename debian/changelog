@@ -1,3 +1,11 @@
+ostree (2018.2-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+    - d/copyright: Update
+    - d/libostree-1-1.symbols: Update
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 19 Feb 2018 08:29:00 +0000
+
 ostree (2018.1-1) unstable; urgency=medium
 
   * New upstream release

@@ -22,6 +22,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2017.14@LIBOSTREE_2017.14 2017.14
  LIBOSTREE_2017.15@LIBOSTREE_2017.15 2017.15
  LIBOSTREE_2018.1@LIBOSTREE_2018.1 2018.1
+ LIBOSTREE_2018.2@LIBOSTREE_2018.2 2018.2
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
@@ -70,6 +71,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_checksum_to_bytes_v@LIBOSTREE_2016.3 2016.4
  ostree_cmd__private__@LIBOSTREE_2016.3 2016.4
  ostree_cmp_checksum_bytes@LIBOSTREE_2016.3 2016.4
+ ostree_commit_get_content_checksum@LIBOSTREE_2018.2 2018.2
  ostree_commit_get_parent@LIBOSTREE_2016.3 2016.4
  ostree_commit_get_timestamp@LIBOSTREE_2016.3 2016.4
  ostree_content_file_parse@LIBOSTREE_2016.3 2016.4
