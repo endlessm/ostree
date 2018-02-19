@@ -7947,7 +7947,9 @@ by <a class="link" href="ostree-OstreeRepo.html#ostree-repo-load-commit" title="
   OstreeRepoDevInoCache *devino_to_csum_cache;
 
   int unused_ints[6];
-  gpointer unused_ptrs[5];
+  gpointer unused_ptrs[3];
+  OstreeRepoCheckoutFilter filter; /* Since: 2018.2 */
+  gpointer filter_user_data; /* Since: 2018.2 */
   OstreeSePolicy *sepolicy; /* Since: 2017.6 */
   const char *sepolicy_prefix;
 } OstreeRepoCheckoutAtOptions;

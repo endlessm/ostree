@@ -68,6 +68,7 @@
     <keyword type="function" name="ostree_validate_structureof_dirmeta ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-structureof-dirmeta"/>
     <keyword type="function" name="ostree_commit_get_parent ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-parent"/>
     <keyword type="function" name="ostree_commit_get_timestamp ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-timestamp"/>
+    <keyword type="function" name="ostree_commit_get_content_checksum ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-content-checksum"/>
     <keyword type="function" name="ostree_check_version ()" link="ostree-Core-repository-independent-functions.html#ostree-check-version"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-SIZE:CAPS"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_WARN_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-WARN-SIZE:CAPS"/>

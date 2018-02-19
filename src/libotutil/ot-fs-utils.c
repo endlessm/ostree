@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -218,4 +220,30 @@ ot_map_anonymous_tmpfile_from_content (GInputStream *instream,
   if (!mfile)
     return NULL;
   return g_mapped_file_get_bytes (mfile);
+}
+
+gboolean
+ot_parse_file_by_line (const char    *path,
+                       gboolean     (*cb)(const char*, void*, GError**),
+                       void          *cbdata,
+                       GCancellable  *cancellable,
+                       GError       **error)
+{
+  g_autofree char *contents =
+    glnx_file_get_contents_utf8_at (AT_FDCWD, path, NULL, cancellable, error);
+  if (!contents)
+    return FALSE;
+
+  g_auto(GStrv) lines = g_strsplit (contents, "\n", -1);
+  for (char **iter = lines; iter && *iter; iter++)
+    {
+      /* skip empty lines at least */
+      if (**iter == '\0')
+        continue;
+
+      if (!cb (*iter, cbdata, error))
+        return FALSE;
+    }
+
+  return TRUE;
 }

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -43,6 +45,15 @@ main(int argc, char *argv[])
   const char *remounts[] = { "/sysroot", "/var", NULL };
   struct stat stbuf;
   int i;
+
+  /* The /sysroot mount needs to be private to avoid having a mount for e.g. /var/cache
+   * also propagate to /sysroot/ostree/deploy/$stateroot/var/cache
+   *
+   * Today systemd remounts / (recursively) as shared, so we're undoing that as early
+   * as possible.  See also a copy of this in ostree-prepare-root.c.
+   */
+  if (mount ("none", "/sysroot", NULL, MS_REC | MS_PRIVATE, NULL) < 0)
+    perror ("warning: While remounting /sysroot MS_PRIVATE");
 
   if (path_is_on_readonly_fs ("/"))
     {

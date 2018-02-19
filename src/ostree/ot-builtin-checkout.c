@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -44,6 +46,9 @@ static gboolean opt_disable_fsync;
 static gboolean opt_require_hardlinks;
 static gboolean opt_force_copy;
 static gboolean opt_bareuseronly_dirs;
+static char *opt_skiplist_file;
+static char *opt_selinux_policy;
+static char *opt_selinux_prefix;
 
 static gboolean
 parse_fsync_cb (const char  *option_name,
@@ -55,7 +60,7 @@ parse_fsync_cb (const char  *option_name,
 
   if (!ot_parse_boolean (value, &val, error))
     return FALSE;
-    
+
   opt_disable_fsync = !val;
 
   return TRUE;
@@ -81,8 +86,33 @@ static GOptionEntry options[] = {
   { "require-hardlinks", 'H', 0, G_OPTION_ARG_NONE, &opt_require_hardlinks, "Do not fall back to full copies if hardlinking fails", NULL },
   { "force-copy", 'C', 0, G_OPTION_ARG_NONE, &opt_force_copy, "Never hardlink (but may reflink if available)", NULL },
   { "bareuseronly-dirs", 'M', 0, G_OPTION_ARG_NONE, &opt_bareuseronly_dirs, "Suppress mode bits outside of 0775 for directories (suid, world writable, etc.)", NULL },
+  { "skip-list", 0, 0, G_OPTION_ARG_FILENAME, &opt_skiplist_file, "File containing list of files to skip", "PATH" },
+  { "selinux-policy", 0, 0, G_OPTION_ARG_FILENAME, &opt_selinux_policy, "Set SELinux labels based on policy in root filesystem PATH (may be /); implies --force-copy", "PATH" },
+  { "selinux-prefix", 0, 0, G_OPTION_ARG_STRING, &opt_selinux_prefix, "When setting SELinux labels, prefix all paths by PREFIX", "PREFIX" },
   { NULL }
 };
+
+static gboolean
+handle_skiplist_line (const char  *line,
+                      void        *data,
+                      GError     **error)
+{
+  GHashTable *files = data;
+  g_hash_table_add (files, g_strdup (line));
+  return TRUE;
+}
+
+static OstreeRepoCheckoutFilterResult
+checkout_filter (OstreeRepo         *self,
+                 const char         *path,
+                 struct stat        *st_buf,
+                 gpointer            user_data)
+{
+  GHashTable *skiplist = user_data;
+  if (g_hash_table_contains (skiplist, path))
+    return OSTREE_REPO_CHECKOUT_FILTER_SKIP;
+  return OSTREE_REPO_CHECKOUT_FILTER_ALLOW;
+}
 
 static gboolean
 process_one_checkout (OstreeRepo           *repo,
@@ -100,9 +130,14 @@ process_one_checkout (OstreeRepo           *repo,
    * convenient infrastructure for testing C APIs with data.
    */
   if (opt_disable_cache || opt_whiteouts || opt_require_hardlinks ||
-      opt_union_add || opt_force_copy || opt_bareuseronly_dirs || opt_union_identical)
+      opt_union_add || opt_force_copy || opt_bareuseronly_dirs || opt_union_identical ||
+      opt_skiplist_file || opt_selinux_policy || opt_selinux_prefix)
     {
       OstreeRepoCheckoutAtOptions options = { 0, };
+
+      /* do this early so option checking also catches force copy conflicts */
+      if (opt_selinux_policy)
+        opt_force_copy = TRUE;
 
       if (opt_user_mode)
         options.mode = OSTREE_REPO_CHECKOUT_MODE_USER;
@@ -130,6 +165,11 @@ process_one_checkout (OstreeRepo           *repo,
           glnx_throw (error, "Cannot specify both --require-hardlinks and --force-copy");
           goto out;
         }
+      if (opt_selinux_prefix && !opt_selinux_policy)
+        {
+          glnx_throw (error, "Cannot specify --selinux-prefix without --selinux-policy");
+          goto out;
+        }
       else if (opt_union)
         options.overwrite_mode = OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES;
       else if (opt_union_add)
@@ -148,6 +188,34 @@ process_one_checkout (OstreeRepo           *repo,
         options.process_whiteouts = TRUE;
       if (subpath)
         options.subpath = subpath;
+
+      g_autoptr(OstreeSePolicy) policy = NULL;
+      if (opt_selinux_policy)
+        {
+          glnx_autofd int rootfs_dfd = -1;
+          if (!glnx_opendirat (AT_FDCWD, opt_selinux_policy, TRUE, &rootfs_dfd, error))
+            {
+              g_prefix_error (error, "selinux-policy: ");
+              goto out;
+            }
+          policy = ostree_sepolicy_new_at (rootfs_dfd, cancellable, error);
+          if (!policy)
+            goto out;
+          options.sepolicy = policy;
+          options.sepolicy_prefix = opt_selinux_prefix;
+        }
+
+      g_autoptr(GHashTable) skip_list =
+        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+      if (opt_skiplist_file)
+        {
+          if (!ot_parse_file_by_line (opt_skiplist_file, handle_skiplist_line, skip_list,
+                                      cancellable, error))
+            goto out;
+          options.filter = checkout_filter;
+          options.filter_user_data = skip_list;
+        }
+
       options.no_copy_fallback = opt_require_hardlinks;
       options.force_copy = opt_force_copy;
       options.bareuseronly_dirs = opt_bareuseronly_dirs;
@@ -199,7 +267,7 @@ process_one_checkout (OstreeRepo           *repo,
                                       cancellable, error))
         goto out;
     }
-                      
+
   ret = TRUE;
  out:
   return ret;
@@ -232,7 +300,7 @@ process_many_checkouts (OstreeRepo         *repo,
       if (!instream)
         goto out;
     }
-    
+
   datastream = g_data_input_stream_new (instream);
 
   while ((revision = g_data_input_stream_read_upto (datastream, "", 1, &len,

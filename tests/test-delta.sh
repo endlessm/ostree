@@ -2,6 +2,8 @@
 #
 # Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -123,8 +125,9 @@ fi
 
 ostree_repo_init temp-repo --mode=archive
 ${CMD_PREFIX} ostree --repo=temp-repo pull-local repo
-${CMD_PREFIX} ostree --repo=temp-repo static-delta generate --empty --to=${newrev} --filename=some.delta
-assert_has_file some.delta
+mkdir tmpsubdir
+${CMD_PREFIX} ostree --repo=temp-repo static-delta generate --empty --to=${newrev} --filename=tmpsubdir/some.delta
+assert_has_file tmpsubdir/some.delta
 ${CMD_PREFIX} ostree --repo=temp-repo static-delta list > delta-list.txt
 assert_file_has_content delta-list.txt 'No static deltas'
 rm temp-repo -rf

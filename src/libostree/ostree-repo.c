@@ -2,6 +2,8 @@
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  * Copyright (C) 2015 Red Hat, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -3026,18 +3028,6 @@ ostree_repo_open (OstreeRepo    *self,
 
   if (!ostree_repo_reload_config (self, cancellable, error))
     return FALSE;
-
-  /* TODO - delete this */
-  if (self->mode == OSTREE_REPO_MODE_ARCHIVE && self->enable_uncompressed_cache)
-    {
-      if (!glnx_shutil_mkdir_p_at (self->repo_dir_fd, "uncompressed-objects-cache", 0755,
-                                   cancellable, error))
-        return FALSE;
-      if (!glnx_opendirat (self->repo_dir_fd, "uncompressed-objects-cache", TRUE,
-                           &self->uncompressed_objects_dir_fd,
-                           error))
-        return FALSE;
-    }
 
   self->inited = TRUE;
   return TRUE;
