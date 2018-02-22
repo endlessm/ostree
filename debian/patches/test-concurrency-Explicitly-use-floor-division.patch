@@ -7,7 +7,7 @@ semantics for division when the division feature is imported from the
 future.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
-Forwarded: https://github.com/ostreedev/ostree/pull/1457
+Applied-upstream: 2018.3, commit:98b597b465a556f3ad5b16478d7edee3037fbd4d
 ---
  tests/test-concurrency.py | 9 +++++----
  1 file changed, 5 insertions(+), 4 deletions(-)

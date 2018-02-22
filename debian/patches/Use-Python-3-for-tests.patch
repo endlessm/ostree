@@ -3,6 +3,7 @@ Date: Wed, 17 Jan 2018 14:07:32 +0000
 Subject: Use Python 3 for tests
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/1463
 ---
  tests/bootloader-entries-crosscheck.py | 2 +-
  tests/test-basic-user-only.sh          | 2 +-

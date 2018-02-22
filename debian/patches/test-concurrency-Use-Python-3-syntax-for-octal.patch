@@ -5,7 +5,7 @@ Subject: test-concurrency: Use Python 3 syntax for octal
 This also works in Python 2.7, and is a little clearer.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
-Forwarded: https://github.com/ostreedev/ostree/pull/1457
+Applied-upstream: 2018.3, commit:9933de232304f47e2be09c72906cc5183d9bbfda
 ---
  tests/test-concurrency.py | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

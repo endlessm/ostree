@@ -6,7 +6,7 @@ This is a little clearer than a strcmp()-style negative/zero/positive
 return, and also works in Python 2.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
-Forwarded: https://github.com/ostreedev/ostree/pull/1457
+Applied-upstream: 2018.3, commit:6cabeaed3f45c8f3e05fb5e1152bfa5b96a3bc79
 ---
  tests/bootloader-entries-crosscheck.py | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)

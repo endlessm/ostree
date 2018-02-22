@@ -6,7 +6,7 @@ range in Python 3 does what xrange did in Python 2. This still works in
 Python 2, it just uses a bit more memory.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
-Forwarded: https://github.com/ostreedev/ostree/pull/1457
+Applied-upstream: 2018.3, commit:02dc5e2dd47d1be0eb73d2f7e5b588f04c572390
 ---
  tests/test-concurrency.py | 10 +++++-----
  1 file changed, 5 insertions(+), 5 deletions(-)
