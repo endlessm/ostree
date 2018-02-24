@@ -1,9 +1,8 @@
 ostree (2018.2-2) UNRELEASED; urgency=medium
 
-  * d/p/{debian/,}Use-Python-3-for-tests.patch:
-    Mark patch as forwarded. It was previously considered
-    Debian-specific, but upstream seem interested.
-  * Mark all other patches as applied upstream for 2018.3
+  * Mark all patches as applied upstream for 2018.3, including one
+    that was previously considered to be Debian-specific (moving to
+    Python 3 for tests)
 
  -- Simon McVittie <smcv@debian.org>  Thu, 22 Feb 2018 22:55:11 +0000
 
