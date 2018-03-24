@@ -79,7 +79,7 @@
 /* Define if we have libsoup client certs */
 #undef HAVE_LIBSOUP_CLIENT_CERTS
 
-/* Define if we have libsystemd */
+/* Define if we have libsystemd.pc */
 #undef HAVE_LIBSYSTEMD
 
 /* Define to 1 if you have the <memory.h> header file. */

@@ -37,13 +37,6 @@
 #include "ostree-bootloader-syslinux.h"
 #include "ostree-bootloader-grub2.h"
 
-static gboolean
-find_booted_deployment (OstreeSysroot       *self,
-                        GPtrArray           *deployments,
-                        OstreeDeployment   **out_deployment,
-                        GCancellable        *cancellable,
-                        GError             **error);
-
 /**
  * SECTION:ostree-sysroot
  * @title: Root partition mount point
@@ -642,6 +635,24 @@ parse_deployment (OstreeSysroot       *self,
                        &deployment_dfd, error))
     return FALSE;
 
+  /* See if this is the booted deployment */
+  const gboolean looking_for_booted_deployment =
+    (self->ostree_booted && self->root_is_sysroot &&
+     !self->booted_deployment);
+  gboolean is_booted_deployment = FALSE;
+  if (looking_for_booted_deployment)
+    {
+      struct stat stbuf;
+      if (!glnx_fstat (deployment_dfd, &stbuf, error))
+        return FALSE;
+      /* A bit ugly, we're assigning to a sysroot-owned variable from deep in
+       * this parsing code. But eh, if something fails the sysroot state can't
+       * be relied on anyways.
+       */
+      is_booted_deployment = (stbuf.st_dev == self->root_device &&
+                              stbuf.st_ino == self->root_inode);
+    }
+
   g_autoptr(GKeyFile) origin = NULL;
   if (!parse_origin (self, deployment_dfd, deploy_basename, &origin,
                      cancellable, error))
@@ -672,35 +683,32 @@ parse_deployment (OstreeSysroot       *self,
 
   g_debug ("Deployment %s.%d unlocked=%d", treecsum, deployserial, ret_deployment->unlocked);
 
+  if (is_booted_deployment)
+    self->booted_deployment = g_object_ref (ret_deployment);
   if (out_deployment)
     *out_deployment = g_steal_pointer (&ret_deployment);
   return TRUE;
 }
 
+/* Given a bootloader config, return the value part of the ostree= kernel
+ * argument.
+ */
 static char *
 get_ostree_kernel_arg_from_config (OstreeBootconfigParser  *config)
 {
-  const char *options;
-  char *ret = NULL;
-  char **opts, **iter;
-
-  options = ostree_bootconfig_parser_get (config, "options");
+  const char *options = ostree_bootconfig_parser_get (config, "options");
   if (!options)
     return NULL;
 
-  opts = g_strsplit (options, " ", -1);
-  for (iter = opts; *iter; iter++)
+  g_auto(GStrv) opts = g_strsplit (options, " ", -1);
+  for (char **iter = opts; *iter; iter++)
     {
       const char *opt = *iter;
       if (g_str_has_prefix (opt, "ostree="))
-        {
-          ret = g_strdup (opt + strlen ("ostree="));
-          break;
-        }
+        return g_strdup (opt + strlen ("ostree="));
     }
-  g_strfreev (opts);
 
-  return ret;
+  return NULL;
 }
 
 static gboolean
@@ -797,6 +805,32 @@ ostree_sysroot_load_if_changed (OstreeSysroot  *self,
   if (!ensure_repo (self, error))
     return FALSE;
 
+  /* Gather some global state; first if we have the global ostree-booted flag;
+   * we'll use it to sanity check that we found a booted deployment for example.
+   * Second, we also find out whether sysroot == /.
+   */
+  if (!self->loaded)
+    {
+      if (!glnx_fstatat_allow_noent (AT_FDCWD, "/run/ostree-booted", NULL, 0, error))
+        return FALSE;
+      self->ostree_booted = (errno == 0);
+
+      { struct stat root_stbuf;
+        if (!glnx_fstatat (AT_FDCWD, "/", &root_stbuf, 0, error))
+          return FALSE;
+        self->root_device = root_stbuf.st_dev;
+        self->root_inode = root_stbuf.st_ino;
+      }
+
+      struct stat self_stbuf;
+      if (!glnx_fstat (self->sysroot_fd, &self_stbuf, error))
+        return FALSE;
+
+      self->root_is_sysroot =
+        (self->root_device == self_stbuf.st_dev &&
+         self->root_inode == self_stbuf.st_ino);
+    }
+
   int bootversion = 0;
   if (!read_current_bootversion (self, &bootversion, cancellable, error))
     return FALSE;
@@ -837,10 +871,18 @@ ostree_sysroot_load_if_changed (OstreeSysroot  *self,
     {
       OstreeBootconfigParser *config = boot_loader_configs->pdata[i];
 
+      /* Note this also sets self->booted_deployment */
       if (!list_deployments_process_one_boot_entry (self, config, deployments,
                                                     cancellable, error))
-        return FALSE;
+        {
+          g_clear_object (&self->booted_deployment);
+          return FALSE;
+        }
     }
+
+  if (self->ostree_booted && self->root_is_sysroot
+      && !self->booted_deployment)
+    return glnx_throw (error, "Unexpected state: /run/ostree-booted found and in / sysroot but not in a booted deployment");
 
   g_ptr_array_sort (deployments, compare_deployments_by_boot_loader_version_reversed);
   for (guint i = 0; i < deployments->len; i++)
@@ -848,10 +890,6 @@ ostree_sysroot_load_if_changed (OstreeSysroot  *self,
       OstreeDeployment *deployment = deployments->pdata[i];
       ostree_deployment_set_index (deployment, i);
     }
-
-  if (!find_booted_deployment (self, deployments, &self->booted_deployment,
-                               cancellable, error))
-    return FALSE;
 
   /* Determine whether we're "physical" or not, the first time we initialize */
   if (!self->loaded)
@@ -920,13 +958,10 @@ ostree_sysroot_get_booted_deployment (OstreeSysroot       *self)
 GPtrArray *
 ostree_sysroot_get_deployments (OstreeSysroot  *self)
 {
-  GPtrArray *copy;
-  guint i;
-
   g_return_val_if_fail (self->loaded, NULL);
 
-  copy = g_ptr_array_new_with_free_func ((GDestroyNotify)g_object_unref);
-  for (i = 0; i < self->deployments->len; i++)
+  GPtrArray *copy = g_ptr_array_new_with_free_func ((GDestroyNotify)g_object_unref);
+  for (guint i = 0; i < self->deployments->len; i++)
     g_ptr_array_add (copy, g_object_ref (self->deployments->pdata[i]));
   return copy;
 }
@@ -1071,10 +1106,9 @@ char *
 _ostree_sysroot_join_lines (GPtrArray  *lines)
 {
   GString *buf = g_string_new ("");
-  guint i;
   gboolean prev_was_empty = FALSE;
 
-  for (i = 0; i < lines->len; i++)
+  for (guint i = 0; i < lines->len; i++)
     {
       const char *line = lines->pdata[i];
       /* Special bit to remove extraneous empty lines */
@@ -1089,84 +1123,6 @@ _ostree_sysroot_join_lines (GPtrArray  *lines)
       g_string_append_c (buf, '\n');
     }
   return g_string_free (buf, FALSE);
-}
-
-static gboolean
-parse_kernel_commandline (OstreeKernelArgs  **out_args,
-                          GCancellable       *cancellable,
-                          GError            **error)
-{
-  g_autoptr(GFile) proc_cmdline = g_file_new_for_path ("/proc/cmdline");
-  g_autofree char *contents = NULL;
-  gsize len;
-
-  if (!g_file_load_contents (proc_cmdline, cancellable, &contents, &len, NULL,
-                             error))
-    return FALSE;
-
-  g_strchomp (contents);
-  *out_args = _ostree_kernel_args_from_string (contents);
-  return TRUE;
-}
-
-static gboolean
-find_booted_deployment (OstreeSysroot       *self,
-                        GPtrArray           *deployments,
-                        OstreeDeployment   **out_deployment,
-                        GCancellable        *cancellable,
-                        GError             **error)
-{
-  struct stat root_stbuf;
-  struct stat self_stbuf;
-  g_autoptr(OstreeDeployment) ret_deployment = NULL;
-
-  if (stat ("/", &root_stbuf) != 0)
-    return glnx_throw_errno_prefix (error, "stat /");
-
-  if (!ensure_sysroot_fd (self, error))
-    return FALSE;
-
-  if (fstat (self->sysroot_fd, &self_stbuf) != 0)
-    return glnx_throw_errno_prefix (error, "fstat");
-
-  if (root_stbuf.st_dev == self_stbuf.st_dev &&
-      root_stbuf.st_ino == self_stbuf.st_ino)
-    {
-      g_autoptr(OstreeKernelArgs) kernel_args = NULL;
-      if (!parse_kernel_commandline (&kernel_args, cancellable, error))
-        return FALSE;
-
-      const char *bootlink_arg = _ostree_kernel_args_get_last_value (kernel_args, "ostree");
-      if (bootlink_arg)
-        {
-          for (guint i = 0; i < deployments->len; i++)
-            {
-              OstreeDeployment *deployment = deployments->pdata[i];
-              g_autofree char *deployment_path = ostree_sysroot_get_deployment_dirpath (self, deployment);
-              struct stat stbuf;
-
-              if (fstatat (self->sysroot_fd, deployment_path, &stbuf, 0) != 0)
-                return glnx_throw_errno_prefix (error, "fstatat");
-
-              if (stbuf.st_dev == root_stbuf.st_dev &&
-                  stbuf.st_ino == root_stbuf.st_ino)
-                {
-                  ret_deployment = g_object_ref (deployment);
-                  break;
-                }
-            }
-
-          if (ret_deployment == NULL)
-            return glnx_throw (error, "Unexpected state: ostree= kernel argument found, but / is not a deployment root");
-        }
-      else
-        {
-          /* Not an ostree system */
-        }
-    }
-
-  ot_transfer_out_value (out_deployment, &ret_deployment);
-  return TRUE;
 }
 
 /**
@@ -1202,6 +1158,10 @@ ostree_sysroot_query_deployments_for (OstreeSysroot     *self,
     {
       OstreeDeployment *deployment = self->deployments->pdata[i];
 
+      /* Ignore deployments not for this osname */
+      if (strcmp (ostree_deployment_get_osname (deployment), osname) != 0)
+          continue;
+
       /* Is this deployment booted?  If so, note we're past the booted */
       if (self->booted_deployment != NULL &&
           ostree_deployment_equal (deployment, self->booted_deployment))
@@ -1209,10 +1169,6 @@ ostree_sysroot_query_deployments_for (OstreeSysroot     *self,
           found_booted = TRUE;
           continue;
         }
-
-      /* Ignore deployments not for this osname */
-      if (strcmp (ostree_deployment_get_osname (deployment), osname) != 0)
-          continue;
 
       if (!found_booted && !ret_pending)
         ret_pending = g_object_ref (deployment);
@@ -1572,12 +1528,14 @@ ostree_sysroot_simple_write_deployment (OstreeSysroot      *sysroot,
 
       /* Retain deployment if:
        *   - we're explicitly asked to, or
+       *   - it's pinned
        *   - the deployment is for another osname, or
        *   - we're keeping pending deployments and this is a pending deployment, or
        *   - this is the merge or boot deployment, or
        *   - we're keeping rollback deployments and this is a rollback deployment
        */
       if (retain
+          || ostree_deployment_is_pinned (deployment)
           || !osname_matches
           || (retain_pending && !passed_crossover)
           || (is_booted || is_merge)
@@ -1828,6 +1786,48 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
    * regardless.
    */
   if (!_ostree_sysroot_bump_mtime (self, error))
+    return FALSE;
+
+  return TRUE;
+}
+
+/**
+ * ostree_sysroot_deployment_set_pinned:
+ * @self: Sysroot
+ * @deployment: A deployment
+ * @is_pinned: Whether or not deployment will be automatically GC'd
+ * @error: Error
+ *
+ * By default, deployments may be subject to garbage collection. Typical uses of
+ * libostree only retain at most 2 deployments. If @is_pinned is `TRUE`, a
+ * metadata bit will be set causing libostree to avoid automatic GC of the
+ * deployment. However, this is really an "advisory" note; it's still possible
+ * for e.g. older versions of libostree unaware of pinning to GC the deployment.
+ *
+ * This function does nothing and returns successfully if the deployment
+ * is already in the desired pinning state.
+ *
+ * Since: 2018.3
+ */
+gboolean
+ostree_sysroot_deployment_set_pinned (OstreeSysroot     *self,
+                                      OstreeDeployment  *deployment,
+                                      gboolean           is_pinned,
+                                      GError           **error)
+{
+  const gboolean current_pin = ostree_deployment_is_pinned (deployment);
+  if (is_pinned == current_pin)
+    return TRUE;
+
+  g_autoptr(OstreeDeployment) deployment_clone = ostree_deployment_clone (deployment);
+  GKeyFile *origin_clone = ostree_deployment_get_origin (deployment_clone);
+
+  if (is_pinned)
+    g_key_file_set_boolean (origin_clone, OSTREE_ORIGIN_TRANSIENT_GROUP, "pinned", TRUE);
+  else
+    g_key_file_remove_key (origin_clone, OSTREE_ORIGIN_TRANSIENT_GROUP, "pinned", NULL);
+
+  if (!ostree_sysroot_write_origin_file (self, deployment, origin_clone, NULL, error))
     return FALSE;
 
   return TRUE;

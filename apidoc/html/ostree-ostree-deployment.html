@@ -142,6 +142,14 @@
 </tr>
 <tr>
 <td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-ostree-deployment.html#ostree-deployment-is-pinned" title="ostree_deployment_is_pinned ()">ostree_deployment_is_pinned</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
 <span class="returnvalue">void</span>
 </td>
 <td class="function_name">
@@ -170,6 +178,14 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-ostree-deployment.html#ostree-deployment-set-origin" title="ostree_deployment_set_origin ()">ostree_deployment_set_origin</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-ostree-deployment.html#ostree-deployment-origin-remove-transient-state" title="ostree_deployment_origin_remove_transient_state ()">ostree_deployment_origin_remove_transient_state</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -382,6 +398,33 @@ ostree_deployment_get_unlocked (<em class="parameter"><code><a class="link" href
 </div>
 <hr>
 <div class="refsect2">
+<a name="ostree-deployment-is-pinned"></a><h3>ostree_deployment_is_pinned ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_deployment_is_pinned (<em class="parameter"><code><a class="link" href="ostree-ostree-deployment.html#OstreeDeployment" title="OstreeDeployment"><span class="type">OstreeDeployment</span></a> *self</code></em>);</pre>
+<p>See <a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-pinned" title="ostree_sysroot_deployment_set_pinned ()"><code class="function">ostree_sysroot_deployment_set_pinned()</code></a>.</p>
+<div class="refsect3">
+<a name="ostree-deployment-is-pinned.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Deployment</p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-deployment-is-pinned.returns"></a><h4>Returns</h4>
+<p> <code class="literal">TRUE</code> if deployment will not be subject to GC</p>
+</div>
+<p class="since">Since: 2018.3</p>
+</div>
+<hr>
+<div class="refsect2">
 <a name="ostree-deployment-set-index"></a><h3>ostree_deployment_set_index ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_deployment_set_index (<em class="parameter"><code><a class="link" href="ostree-ostree-deployment.html#OstreeDeployment" title="OstreeDeployment"><span class="type">OstreeDeployment</span></a> *self</code></em>,
@@ -407,6 +450,41 @@ ostree_deployment_set_bootconfig (<em class="parameter"><code><a class="link" hr
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_deployment_set_origin (<em class="parameter"><code><a class="link" href="ostree-ostree-deployment.html#OstreeDeployment" title="OstreeDeployment"><span class="type">OstreeDeployment</span></a> *self</code></em>,
                               <em class="parameter"><code><span class="type">GKeyFile</span> *origin</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-deployment-origin-remove-transient-state"></a><h3>ostree_deployment_origin_remove_transient_state ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+ostree_deployment_origin_remove_transient_state
+                               (<em class="parameter"><code><span class="type">GKeyFile</span> *origin</code></em>);</pre>
+<p>The intention of an origin file is primarily describe the "inputs" that
+resulted in a deployment, and it's commonly used to derive the new state. For
+example, a key value (in pure libostree mode) is the "refspec". However,
+libostree (or other applications) may want to store "transient" state that
+should not be carried across upgrades.</p>
+<p>This function just removes all members of the <code class="literal">libostree-transient</code> group.
+The name of that group is available to all libostree users; best practice
+would be to prefix values underneath there with a short identifier for your
+software.</p>
+<p>Additionally, this function will remove the <code class="literal">origin/unlocked</code> and
+<code class="literal">origin/override-commit</code> members; these should be considered transient state
+that should have been under an explicit group.</p>
+<div class="refsect3">
+<a name="ostree-deployment-origin-remove-transient-state.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>origin</p></td>
+<td class="parameter_description"><p>An origin</p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<p class="since">Since: 2018.3</p>
 </div>
 <hr>
 <div class="refsect2">

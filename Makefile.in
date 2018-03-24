@@ -1007,6 +1007,7 @@ am__ostree_SOURCES_DIST = src/ostree/main.c \
 	src/ostree/ot-admin-builtin-set-origin.c \
 	src/ostree/ot-admin-builtin-status.c \
 	src/ostree/ot-admin-builtin-switch.c \
+	src/ostree/ot-admin-builtin-pin.c \
 	src/ostree/ot-admin-builtin-upgrade.c \
 	src/ostree/ot-admin-builtin-unlock.c \
 	src/ostree/ot-admin-builtins.h \
@@ -1079,6 +1080,7 @@ am_ostree_OBJECTS = src/ostree/ostree-main.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-set-origin.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-status.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-switch.$(OBJEXT) \
+	src/ostree/ostree-ot-admin-builtin-pin.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-upgrade.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-unlock.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-instutil-builtin-selinux-ensure-labeled.$(OBJEXT) \
@@ -2469,6 +2471,7 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-admin-builtin-set-origin.c \
 	src/ostree/ot-admin-builtin-status.c \
 	src/ostree/ot-admin-builtin-switch.c \
+	src/ostree/ot-admin-builtin-pin.c \
 	src/ostree/ot-admin-builtin-upgrade.c \
 	src/ostree/ot-admin-builtin-unlock.c \
 	src/ostree/ot-admin-builtins.h \
@@ -2773,7 +2776,8 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 @ENABLE_MAN_TRUE@	ostree-admin-set-origin.1 \
 @ENABLE_MAN_TRUE@	ostree-admin-switch.1 ostree-admin-undeploy.1 \
 @ENABLE_MAN_TRUE@	ostree-admin-upgrade.1 ostree-admin-unlock.1 \
-@ENABLE_MAN_TRUE@	ostree-admin.1 ostree-cat.1 ostree-checkout.1 \
+@ENABLE_MAN_TRUE@	ostree-admin-pin.1 ostree-admin.1 \
+@ENABLE_MAN_TRUE@	ostree-cat.1 ostree-checkout.1 \
 @ENABLE_MAN_TRUE@	ostree-checksum.1 ostree-commit.1 \
 @ENABLE_MAN_TRUE@	ostree-export.1 ostree-gpg-sign.1 \
 @ENABLE_MAN_TRUE@	ostree-config.1 ostree-diff.1 ostree-fsck.1 \
@@ -3768,6 +3772,9 @@ src/ostree/ostree-ot-admin-builtin-status.$(OBJEXT):  \
 src/ostree/ostree-ot-admin-builtin-switch.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
+src/ostree/ostree-ot-admin-builtin-pin.$(OBJEXT):  \
+	src/ostree/$(am__dirstamp) \
+	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-admin-builtin-upgrade.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
@@ -4419,6 +4426,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-init-fs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-instutil.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-os-init.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-set-origin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-status.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-switch.Po@am__quote@
@@ -5680,6 +5688,20 @@ src/ostree/ostree-ot-admin-builtin-switch.obj: src/ostree/ot-admin-builtin-switc
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-builtin-switch.c' object='src/ostree/ostree-ot-admin-builtin-switch.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-builtin-switch.obj `if test -f 'src/ostree/ot-admin-builtin-switch.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-builtin-switch.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-builtin-switch.c'; fi`
+
+src/ostree/ostree-ot-admin-builtin-pin.o: src/ostree/ot-admin-builtin-pin.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-builtin-pin.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Tpo -c -o src/ostree/ostree-ot-admin-builtin-pin.o `test -f 'src/ostree/ot-admin-builtin-pin.c' || echo '$(srcdir)/'`src/ostree/ot-admin-builtin-pin.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Tpo src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-builtin-pin.c' object='src/ostree/ostree-ot-admin-builtin-pin.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-builtin-pin.o `test -f 'src/ostree/ot-admin-builtin-pin.c' || echo '$(srcdir)/'`src/ostree/ot-admin-builtin-pin.c
+
+src/ostree/ostree-ot-admin-builtin-pin.obj: src/ostree/ot-admin-builtin-pin.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-builtin-pin.obj -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Tpo -c -o src/ostree/ostree-ot-admin-builtin-pin.obj `if test -f 'src/ostree/ot-admin-builtin-pin.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-builtin-pin.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-builtin-pin.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Tpo src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-builtin-pin.c' object='src/ostree/ostree-ot-admin-builtin-pin.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-builtin-pin.obj `if test -f 'src/ostree/ot-admin-builtin-pin.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-builtin-pin.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-builtin-pin.c'; fi`
 
 src/ostree/ostree-ot-admin-builtin-upgrade.o: src/ostree/ot-admin-builtin-upgrade.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-builtin-upgrade.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-upgrade.Tpo -c -o src/ostree/ostree-ot-admin-builtin-upgrade.o `test -f 'src/ostree/ot-admin-builtin-upgrade.c' || echo '$(srcdir)/'`src/ostree/ot-admin-builtin-upgrade.c

@@ -52,6 +52,13 @@ assert_repo_has_n_commits() {
     assert_streq "$(find ${repo}/objects -name '*.commit' | wc -l)" "${count}"
 }
 
+# Test --no-prune
+objectcount_orig=$(find repo/objects | wc -l)
+${CMD_PREFIX} ostree prune --repo=repo --refs-only --depth=0 --no-prune | tee noprune.txt
+assert_file_has_content noprune.txt 'Would delete: [1-9][0-9]* objects, freeing [1-9][0-9]*'
+objectcount_new=$(find repo/objects | wc -l)
+assert_streq "${objectcount_orig}" "${objectcount_new}"
+
 ${CMD_PREFIX} ostree prune --repo=repo --refs-only --depth=2 -v
 assert_repo_has_n_commits repo 3
 find repo/objects -name '*.tombstone-commit' | wc -l > tombstonecommitcount
@@ -134,9 +141,10 @@ assert_file_has_content deltascount "^1$"
 ${CMD_PREFIX} ostree --repo=repo static-delta generate test
 ${CMD_PREFIX} ostree --repo=repo static-delta list | wc -l > deltascount
 assert_file_has_content deltascount "^2$"
-${CMD_PREFIX} ostree --repo=repo prune --static-deltas-only --keep-younger-than="October 20 2015"
-${CMD_PREFIX} ostree --repo=repo static-delta list | wc -l > deltascount
-assert_file_has_content deltascount "^1$"
+if ${CMD_PREFIX} ostree --repo=repo prune --static-deltas-only --keep-younger-than="October 20 2015" 2>err.txt; then
+    fatal "pruned deltas only"
+fi
+assert_file_has_content_literal err.txt "--static-deltas-only requires --delete-commit"
 
 echo "ok prune"
 

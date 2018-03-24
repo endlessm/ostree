@@ -275,6 +275,7 @@
     <keyword type="function" name="ostree_sysroot_deployment_set_kargs ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-kargs"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_mutable ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-mutable"/>
     <keyword type="function" name="ostree_sysroot_deployment_unlock ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-unlock"/>
+    <keyword type="function" name="ostree_sysroot_deployment_set_pinned ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-pinned" since="2018.3"/>
     <keyword type="function" name="ostree_sysroot_write_deployments ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments"/>
     <keyword type="function" name="ostree_sysroot_write_deployments_with_options ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments-with-options"/>
     <keyword type="function" name="ostree_sysroot_write_origin_file ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-origin-file"/>
@@ -362,10 +363,12 @@
     <keyword type="function" name="ostree_deployment_get_origin ()" link="ostree-ostree-deployment.html#ostree-deployment-get-origin"/>
     <keyword type="function" name="ostree_deployment_get_origin_relpath ()" link="ostree-ostree-deployment.html#ostree-deployment-get-origin-relpath"/>
     <keyword type="function" name="ostree_deployment_get_unlocked ()" link="ostree-ostree-deployment.html#ostree-deployment-get-unlocked"/>
+    <keyword type="function" name="ostree_deployment_is_pinned ()" link="ostree-ostree-deployment.html#ostree-deployment-is-pinned" since="2018.3"/>
     <keyword type="function" name="ostree_deployment_set_index ()" link="ostree-ostree-deployment.html#ostree-deployment-set-index"/>
     <keyword type="function" name="ostree_deployment_set_bootserial ()" link="ostree-ostree-deployment.html#ostree-deployment-set-bootserial"/>
     <keyword type="function" name="ostree_deployment_set_bootconfig ()" link="ostree-ostree-deployment.html#ostree-deployment-set-bootconfig"/>
     <keyword type="function" name="ostree_deployment_set_origin ()" link="ostree-ostree-deployment.html#ostree-deployment-set-origin"/>
+    <keyword type="function" name="ostree_deployment_origin_remove_transient_state ()" link="ostree-ostree-deployment.html#ostree-deployment-origin-remove-transient-state" since="2018.3"/>
     <keyword type="function" name="ostree_deployment_clone ()" link="ostree-ostree-deployment.html#ostree-deployment-clone"/>
     <keyword type="function" name="ostree_deployment_unlocked_state_to_string ()" link="ostree-ostree-deployment.html#ostree-deployment-unlocked-state-to-string"/>
     <keyword type="struct" name="OstreeDeployment" link="ostree-ostree-deployment.html#OstreeDeployment"/>
@@ -395,6 +398,7 @@
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_COMMIT" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-COMMIT:CAPS"/>
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-TOMBSTONE-COMMIT:CAPS"/>
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_COMMIT_META" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-COMMIT-META:CAPS"/>
+    <keyword type="constant" name="OSTREE_OBJECT_TYPE_PAYLOAD_LINK" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-PAYLOAD-LINK:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_ARCHIVE" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-ARCHIVE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_ARCHIVE_Z2" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-ARCHIVE-Z2:CAPS"/>
