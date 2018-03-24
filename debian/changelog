@@ -1,8 +1,10 @@
-ostree (2018.2-2) UNRELEASED; urgency=medium
+ostree (2018.4-1) UNRELEASED; urgency=medium
 
-  * Mark all patches as applied upstream for 2018.3, including one
-    that was previously considered to be Debian-specific (moving to
-    Python 3 for tests)
+  * New upstream release
+  * Update symbols file
+  * Drop all patches, including one that was previously considered to
+    be Debian-specific (moving to Python 3 for tests)
+  * d/copyright: Update
 
  -- Simon McVittie <smcv@debian.org>  Thu, 22 Feb 2018 22:55:11 +0000
 

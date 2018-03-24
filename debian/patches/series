@@ -1,5 +1,0 @@
-test-concurrency-Use-Python-3-syntax-for-octal.patch
-test-concurrency-Replace-range-with-xrange.patch
-test-concurrency-Explicitly-use-floor-division.patch
-tests-bootloader-entries-crosscheck-Use-Python-3-friendly.patch
-Use-Python-3-for-tests.patch

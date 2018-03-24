@@ -18,6 +18,7 @@ configure_options = \
 	--with-dracut \
 	--with-grub2 \
 	--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
+	--with-libsystemd \
 	--with-systemdsystemgeneratordir=/lib/systemd/system-generators \
 	--with-systemdsystemunitdir=/lib/systemd/system \
 	$(NULL)

@@ -23,6 +23,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2017.15@LIBOSTREE_2017.15 2017.15
  LIBOSTREE_2018.1@LIBOSTREE_2018.1 2018.1
  LIBOSTREE_2018.2@LIBOSTREE_2018.2 2018.2
+ LIBOSTREE_2018.3@LIBOSTREE_2018.3 2018.3
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
@@ -92,7 +93,9 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_deployment_get_type@LIBOSTREE_2016.3 2016.4
  ostree_deployment_get_unlocked@LIBOSTREE_2016.4 2016.4
  ostree_deployment_hash@LIBOSTREE_2016.3 2016.4
+ ostree_deployment_is_pinned@LIBOSTREE_2018.3 2018.3
  ostree_deployment_new@LIBOSTREE_2016.3 2016.4
+ ostree_deployment_origin_remove_transient_state@LIBOSTREE_2018.3 2018.3
  ostree_deployment_set_bootconfig@LIBOSTREE_2016.3 2016.4
  ostree_deployment_set_bootserial@LIBOSTREE_2016.3 2016.4
  ostree_deployment_set_index@LIBOSTREE_2016.3 2016.4
@@ -298,6 +301,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sysroot_deploy_tree@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_deployment_set_kargs@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_deployment_set_mutable@LIBOSTREE_2016.3 2016.4
+ ostree_sysroot_deployment_set_pinned@LIBOSTREE_2018.3 2018.3
  ostree_sysroot_deployment_unlock@LIBOSTREE_2016.4 2016.4
  ostree_sysroot_ensure_initialized@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_get_booted_deployment@LIBOSTREE_2016.3 2016.4
