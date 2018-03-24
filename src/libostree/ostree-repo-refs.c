@@ -617,6 +617,8 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
                                  GCancellable     *cancellable,
                                  GError          **error)
 {
+  GLNX_AUTO_PREFIX_ERROR ("Listing refs", error);
+
   g_autofree char *remote = NULL;
   g_autofree char *ref_prefix = NULL;
 
@@ -627,8 +629,24 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
       const char *prefix_path;
       const char *path;
 
-      if (!ostree_parse_refspec (refspec_prefix, &remote, &ref_prefix, error))
-        return FALSE;
+      /* special-case "<remote>:" and "<remote>:.", which ostree_parse_refspec won't like */
+      if (g_str_has_suffix (refspec_prefix, ":") ||
+          g_str_has_suffix (refspec_prefix, ":."))
+        {
+          const char *colon = strrchr (refspec_prefix, ':');
+          g_autofree char *r = g_strndup (refspec_prefix, colon - refspec_prefix);
+          if (ostree_validate_remote_name (r, NULL))
+            {
+              remote = g_steal_pointer (&r);
+              ref_prefix = g_strdup (".");
+            }
+        }
+
+      if (!ref_prefix)
+        {
+          if (!ostree_parse_refspec (refspec_prefix, &remote, &ref_prefix, error))
+            return FALSE;
+        }
 
       if (!(flags & OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES) && remote)
         {
@@ -1029,10 +1047,7 @@ _ostree_repo_write_ref (OstreeRepo                 *self,
     {
       if (!glnx_opendirat (self->repo_dir_fd, "refs/heads", TRUE,
                            &dfd, error))
-        {
-          g_prefix_error (error, "Opening %s: ", "refs/heads");
-          return FALSE;
-        }
+        return FALSE;
     }
   else if (remote == NULL && ref->collection_id != NULL)
     {
@@ -1041,10 +1056,7 @@ _ostree_repo_write_ref (OstreeRepo                 *self,
       /* refs/mirrors might not exist in older repositories, so create it. */
       if (!glnx_shutil_mkdir_p_at_open (self->repo_dir_fd, "refs/mirrors", 0777,
                                         &refs_mirrors_dfd, cancellable, error))
-        {
-          g_prefix_error (error, "Opening %s: ", "refs/mirrors");
-          return FALSE;
-        }
+        return FALSE;
 
       if (rev != NULL)
         {
@@ -1063,10 +1075,7 @@ _ostree_repo_write_ref (OstreeRepo                 *self,
 
       if (!glnx_opendirat (self->repo_dir_fd, "refs/remotes", TRUE,
                            &refs_remotes_dfd, error))
-        {
-          g_prefix_error (error, "Opening %s: ", "refs/remotes");
-          return FALSE;
-        }
+        return FALSE;
 
       if (rev != NULL)
         {
@@ -1207,6 +1216,8 @@ ostree_repo_list_collection_refs (OstreeRepo                 *self,
                                   GCancellable               *cancellable,
                                   GError                     **error)
 {
+  GLNX_AUTO_PREFIX_ERROR ("Listing refs", error);
+
   g_return_val_if_fail (OSTREE_IS_REPO (self), FALSE);
   g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), FALSE);
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);

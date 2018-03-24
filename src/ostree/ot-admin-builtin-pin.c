@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012,2013 Colin Walters <walters@verbum.org>
+ * Copyright (C) 2018 Colin Walters <walters@verbum.org>
  *
  * SPDX-License-Identifier: LGPL-2.0+
  *
@@ -29,22 +29,18 @@
 #include "ostree.h"
 #include "otutil.h"
 
+static gboolean opt_unpin;
+
 static GOptionEntry options[] = {
+  { "unpin", 'u', 0, G_OPTION_ARG_NONE, &opt_unpin, "Unset pin", NULL },
   { NULL }
 };
 
 gboolean
-ot_admin_builtin_undeploy (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
+ot_admin_builtin_pin (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
-  g_autoptr(GOptionContext) context = NULL;
+  g_autoptr(GOptionContext) context = g_option_context_new ("INDEX");
   g_autoptr(OstreeSysroot) sysroot = NULL;
-  const char *deploy_index_str;
-  int deploy_index;
-  g_autoptr(GPtrArray) current_deployments = NULL;
-  g_autoptr(OstreeDeployment) target_deployment = NULL;
-
-  context = g_option_context_new ("INDEX");
-
   if (!ostree_admin_option_context_parse (context, options, &argc, &argv,
                                           OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER,
                                           invocation, &sysroot, cancellable, error))
@@ -56,33 +52,24 @@ ot_admin_builtin_undeploy (int argc, char **argv, OstreeCommandInvocation *invoc
       return FALSE;
     }
 
-  current_deployments = ostree_sysroot_get_deployments (sysroot);
+  const char *deploy_index_str = argv[1];
+  const int deploy_index = atoi (deploy_index_str);
 
-  deploy_index_str = argv[1];
-  deploy_index = atoi (deploy_index_str);
-
-  target_deployment = ot_admin_get_indexed_deployment (sysroot, deploy_index, error);
+  g_autoptr(OstreeDeployment) target_deployment = ot_admin_get_indexed_deployment (sysroot, deploy_index, error);
   if (!target_deployment)
     return FALSE;
 
-  if (target_deployment == ostree_sysroot_get_booted_deployment (sysroot))
+
+  gboolean current_pin = ostree_deployment_is_pinned (target_deployment);
+  const gboolean desired_pin = !opt_unpin;
+  if (current_pin == desired_pin)
+    g_print ("Deployment is already %s\n", current_pin ? "pinned" : "unpinned");
+  else
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
-                   "Cannot undeploy currently booted deployment %i", deploy_index);
-      return FALSE;
+      if (!ostree_sysroot_deployment_set_pinned (sysroot, target_deployment, desired_pin, error))
+        return FALSE;
+      g_print ("Deployment is now %s\n", desired_pin ? "pinned" : "unpinned");
     }
-
-  g_ptr_array_remove_index (current_deployments, deploy_index);
-
-  if (!ostree_sysroot_write_deployments (sysroot, current_deployments,
-                                         cancellable, error))
-    return FALSE;
-
-  g_print ("Deleted deployment %s.%d\n", ostree_deployment_get_csum (target_deployment),
-           ostree_deployment_get_deployserial (target_deployment));
-
-  if (!ostree_sysroot_cleanup (sysroot, cancellable, error))
-    return glnx_prefix_error (error, "Performing final cleanup");
 
   return TRUE;
 }

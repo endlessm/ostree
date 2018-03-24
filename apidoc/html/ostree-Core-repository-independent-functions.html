@@ -2488,6 +2488,13 @@ content, the other types are metadata.</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-OBJECT-TYPE-PAYLOAD-LINK:CAPS"></a>OSTREE_OBJECT_TYPE_PAYLOAD_LINK</p></td>
+<td class="enum_member_description">
+<p>Symlink to a .file given its checksum on the payload only.</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
 </tbody>
 </table></div>
 </div>
@@ -2495,7 +2502,7 @@ content, the other types are metadata.</p>
 <hr>
 <div class="refsect2">
 <a name="OSTREE-OBJECT-TYPE-LAST:CAPS"></a><h3>OSTREE_OBJECT_TYPE_LAST</h3>
-<pre class="programlisting">#define OSTREE_OBJECT_TYPE_LAST OSTREE_OBJECT_TYPE_COMMIT_META
+<pre class="programlisting">#define OSTREE_OBJECT_TYPE_LAST OSTREE_OBJECT_TYPE_PAYLOAD_LINK
 </pre>
 <p>Last valid object type; use this to validate ranges.</p>
 </div>

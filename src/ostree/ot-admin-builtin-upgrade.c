@@ -40,11 +40,6 @@ static gboolean opt_deploy_only;
 static char *opt_osname;
 static char *opt_override_commit;
 
-/* ATTENTION:
- * Please remember to update the bash-completion script (bash/ostree) and
- * man page (man/ostree-admin-upgrade.xml) when changing the option list.
- */
-
 static GOptionEntry options[] = {
   { "os", 0, 0, G_OPTION_ARG_STRING, &opt_osname, "Use a different operating system root than the current one", "OSNAME" },
   { "reboot", 'r', 0, G_OPTION_ARG_NONE, &opt_reboot, "Reboot after a successful upgrade", NULL },
@@ -88,33 +83,18 @@ ot_admin_builtin_upgrade (int argc, char **argv, OstreeCommandInvocation *invoca
   g_autoptr(GKeyFile) origin = ostree_sysroot_upgrader_dup_origin (upgrader);
   if (origin != NULL)
     {
-      gboolean origin_changed = FALSE;
-
+      /* Should we consider requiring --discard-hotfix here? */
+      ostree_deployment_origin_remove_transient_state (origin);
       if (opt_override_commit != NULL)
         {
           /* Override the commit to pull and deploy. */
           g_key_file_set_string (origin, "origin",
                                  "override-commit",
                                  opt_override_commit);
-          origin_changed = TRUE;
-        }
-      else
-        {
-          /* Strip any override-commit from the origin file so
-           * we always upgrade to the latest available commit. */
-          origin_changed = g_key_file_remove_key (origin, "origin",
-                                                  "override-commit", NULL);
         }
 
-      /* Should we consider requiring --discard-hotfix here? */
-      origin_changed |= g_key_file_remove_key (origin, "origin", "unlocked", NULL);
-
-      if (origin_changed)
-        {
-          /* XXX GCancellable parameter is not used. */
-          if (!ostree_sysroot_upgrader_set_origin (upgrader, origin, NULL, error))
-            return FALSE;
-        }
+      if (!ostree_sysroot_upgrader_set_origin (upgrader, origin, NULL, error))
+        return FALSE;
     }
 
   gboolean changed;

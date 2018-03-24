@@ -2827,6 +2827,15 @@ reload_core_config (OstreeRepo          *self,
       return FALSE;
   }
 
+  { g_autofree char *payload_threshold = NULL;
+
+    if (!ot_keyfile_get_value_with_default (self->config, "core", "payload-link-threshold", "-1",
+                                            &payload_threshold, error))
+      return FALSE;
+
+    self->payload_link_threshold = g_ascii_strtoull (payload_threshold, NULL, 10);
+  }
+
   return TRUE;
 }
 
@@ -3278,6 +3287,8 @@ list_loose_objects_at (OstreeRepo             *self,
         objtype = OSTREE_OBJECT_TYPE_DIR_META;
       else if (strcmp (dot, ".commit") == 0)
         objtype = OSTREE_OBJECT_TYPE_COMMIT;
+      else if (strcmp (dot, ".payload-link") == 0)
+        objtype = OSTREE_OBJECT_TYPE_PAYLOAD_LINK;
       else
         continue;
 
@@ -4800,17 +4811,16 @@ ostree_repo_add_gpg_signature_summary (OstreeRepo     *self,
   /* Note that fd is reused below */
   glnx_close_fd (&fd);
 
-  g_autoptr(GVariant) existing_signatures = NULL;
+  g_autoptr(GVariant) metadata = NULL;
   if (!ot_openat_ignore_enoent (self->repo_dir_fd, "summary.sig", &fd, error))
     return FALSE;
   if (fd != -1)
     {
       if (!ot_variant_read_fd (fd, 0, G_VARIANT_TYPE (OSTREE_SUMMARY_SIG_GVARIANT_STRING),
-                               FALSE, &existing_signatures, error))
+                               FALSE, &metadata, error))
         return FALSE;
     }
 
-  g_autoptr(GVariant) new_metadata = NULL;
   for (guint i = 0; key_id[i]; i++)
     {
       g_autoptr(GBytes) signature_data = NULL;
@@ -4819,10 +4829,11 @@ ostree_repo_add_gpg_signature_summary (OstreeRepo     *self,
                       cancellable, error))
         return FALSE;
 
-      new_metadata = _ostree_detached_metadata_append_gpg_sig (existing_signatures, signature_data);
+      g_autoptr(GVariant) old_metadata = g_steal_pointer (&metadata);
+      metadata = _ostree_detached_metadata_append_gpg_sig (old_metadata, signature_data);
     }
 
-  g_autoptr(GVariant) normalized = g_variant_get_normal_form (new_metadata);
+  g_autoptr(GVariant) normalized = g_variant_get_normal_form (metadata);
 
   if (!_ostree_repo_file_replace_contents (self,
                                            self->repo_dir_fd,
@@ -4914,7 +4925,7 @@ _ostree_repo_gpg_verify_data_internal (OstreeRepo    *self,
       g_autofree char *gpgkeypath = NULL;
       /* Add the remote's keyring file if it exists. */
 
-      OstreeRemote *remote;
+      g_autoptr(OstreeRemote) remote = NULL;
 
       remote = _ostree_repo_get_remote_inherited (self, remote_name, error);
       if (remote == NULL)
@@ -4936,8 +4947,6 @@ _ostree_repo_gpg_verify_data_internal (OstreeRepo    *self,
 
       if (gpgkeypath)
         _ostree_gpg_verifier_add_key_ascii_file (verifier, gpgkeypath);
-
-      ostree_remote_unref (remote);
     }
 
   if (add_global_keyring_dir)

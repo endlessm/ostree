@@ -53,6 +53,9 @@ G_BEGIN_DECLS
 #define OSTREE_SUMMARY_COLLECTION_ID "ostree.summary.collection-id"
 #define OSTREE_SUMMARY_COLLECTION_MAP "ostree.summary.collection-map"
 
+#define _OSTREE_PAYLOAD_LINK_PREFIX "../"
+#define _OSTREE_PAYLOAD_LINK_PREFIX_LEN (sizeof (_OSTREE_PAYLOAD_LINK_PREFIX) - 1)
+
 /* Well-known keys for the additional metadata field in a commit in a ref entry
  * in a summary file. */
 #define OSTREE_COMMIT_TIMESTAMP "ostree.commit.timestamp"
@@ -161,6 +164,8 @@ struct OstreeRepo {
   gchar *collection_id;
   gboolean add_remotes_config_dir; /* Add new remotes in remotes.d dir */
   gint lock_timeout_seconds;
+  guint64 payload_link_threshold;
+  gint fs_support_reflink; /* The underlying filesystem has support for ioctl (FICLONE..) */
 
   OstreeRepo *parent_repo;
 };
@@ -236,14 +241,6 @@ _ostree_repo_ensure_loose_objdir_at (int             dfd,
                                      const char     *loose_path,
                                      GCancellable   *cancellable,
                                      GError        **error);
-
-gboolean
-_ostree_repo_find_object (OstreeRepo           *self,
-                          OstreeObjectType      objtype,
-                          const char           *checksum,
-                          GFile               **out_stored_path,
-                          GCancellable         *cancellable,
-                          GError             **error);
 
 GFile *
 _ostree_repo_get_commit_metadata_loose_path (OstreeRepo        *self,
