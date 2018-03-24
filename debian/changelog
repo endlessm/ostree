@@ -1,4 +1,4 @@
-ostree (2018.4-1) UNRELEASED; urgency=medium
+ostree (2018.4-1) unstable; urgency=medium
 
   * New upstream release
   * Update symbols file
@@ -6,7 +6,7 @@ ostree (2018.4-1) UNRELEASED; urgency=medium
     be Debian-specific (moving to Python 3 for tests)
   * d/copyright: Update
 
- -- Simon McVittie <smcv@debian.org>  Thu, 22 Feb 2018 22:55:11 +0000
+ -- Simon McVittie <smcv@debian.org>  Sat, 24 Mar 2018 19:20:08 +0000
 
 ostree (2018.2-1) unstable; urgency=medium
 
