@@ -56,6 +56,7 @@ BUILTINPROTO(fsck);
 BUILTINPROTO(show);
 BUILTINPROTO(static_delta);
 BUILTINPROTO(summary);
+BUILTINPROTO(size_summary);
 BUILTINPROTO(rev_parse);
 BUILTINPROTO(remote);
 BUILTINPROTO(write_refs);
