@@ -2742,10 +2742,10 @@ reload_core_config (OstreeRepo          *self,
     self->tmp_expiry_seconds = g_ascii_strtoull (tmp_expiry_seconds, NULL, 10);
   }
 
-  /* Disable locking by default for now */
+  /* Make locking enabled by default for Endless */
   { gboolean locking;
     if (!ot_keyfile_get_boolean_with_default (self->config, "core", "locking",
-                                              FALSE, &locking, error))
+                                              TRUE, &locking, error))
       return FALSE;
     if (!locking)
       {
