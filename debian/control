@@ -21,6 +21,7 @@ Build-Depends:
  elfutils,
  fuse,
  gnupg <!nocheck>,
+ gjs [!s390x !sparc64],
  gobject-introspection,
  gtk-doc-tools <!nodoc>,
  libarchive-dev,
