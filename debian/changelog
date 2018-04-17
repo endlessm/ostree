@@ -200,6 +200,51 @@ ostree (2017.12-1) unstable; urgency=medium
 
  -- Simon McVittie <smcv@debian.org>  Tue, 03 Oct 2017 22:47:48 +0100
 
+ostree (2017.12-0endless5) master; urgency=medium
+
+  * Add symbol for ostree_remote_get_url (T20078)
+    - https://github.com/ostreedev/ostree/pull/102
+
+ -- Joaquim Rocha <jrocha@endlessm.com>  Wed, 29 Nov 2017 12:42:32 +0200
+
+ostree (2017.12-0endless4) master; urgency=medium
+
+  * Add symbols for new repo locking APIs (T16736)
+    - https://github.com/ostreedev/ostree/pull/1343
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Fri, 17 Nov 2017 20:06:41 +0000
+
+ostree (2017.12-0endless3) unstable; urgency=medium
+
+  * Pull in upstream patches for GIR fixes
+    - https://github.com/ostreedev/ostree/pull/1322
+    - https://github.com/ostreedev/ostree/pull/1337
+
+ -- Philip Withnall <withnall@endlessm.com>  Tue, 14 Nov 2017 18:38:00 +0000
+
+ostree (2017.12-0endless2) unstable; urgency=medium
+
+  * Pull in upstream patches before 2017.13 release
+    - https://github.com/ostreedev/ostree/pull/1281
+    - https://github.com/ostreedev/ostree/pull/1293
+    - https://github.com/ostreedev/ostree/pull/1301
+    - https://github.com/ostreedev/ostree/pull/1303
+
+ -- Philip Withnall <withnall@endlessm.com>  Tue, 24 Oct 2017 19:08:00 +0100
+
+ostree (2017.12-0endless1) unstable; urgency=medium
+
+  * Resync Debian packaging changes
+    - Resync to packaging from 2017.11-2
+    - Keep differences as per README.Endless
+    - Drop all debian/patches/ as they’re all present in the 2017.12 release
+    - Keep <!nodoc> profile usage from Debian packaging, as T18835 is now fixed
+  * New upstream release
+    - Update symbols file
+    - Add Build-Depends-Indep for docs as per upstream packaging
+
+ -- Philip Withnall <withnall@endlessm.com>  Tue, 03 Oct 2017 13:52:00 +0100
+
 ostree (2017.11-2) unstable; urgency=medium
 
   * Replace patch with the version applied upstream in 2017.12
@@ -273,6 +318,51 @@ ostree (2017.8-1) unstable; urgency=medium
 
  -- Simon McVittie <smcv@debian.org>  Wed, 19 Jul 2017 22:18:20 +0100
 
+ostree (2017.10-0endless1) unstable; urgency=medium
+
+  * New upstream release
+    - Update symbols file
+    - Add Build-Depends-Indep for docs as per upstream packaging
+  * Enable --enable-experimental-api configure flag — this will enable P2P
+    functionality in libostree
+
+ -- Philip Withnall <withnall@endlessm.com>  Wed, 22 Aug 2017 12:08:00 +0100
+
+ostree (2017.9-1) unstable; urgency=medium
+
+  * New upstream release
+    - Drop backported patch
+    - Update symbols file
+  * debian/rules: Adjust a comment to avoid Lintian thinking this is a
+    dh_make template
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 28 Jul 2017 14:43:30 +0100
+
+ostree (2017.8-1) unstable; urgency=medium
+
+  * New upstream release
+    - Update symbols file
+    - Remove patches that are no longer needed
+    - Add patch from upstream PR #1016 to fix a regression
+  * Add a Breaks on flatpak (<< 0.8.7-2~), which rely on libostree to
+    download the summary and its signature when mirroring.
+    libostree >= 2017.7 no longer does this. On affected flatpak versions,
+    this breaks installation of new apps and runtimes system-wide.
+  * Add Build-Depends-Indep: libglib2.0-doc so gtk-doc can set up
+    cross-references
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 19 Jul 2017 22:18:20 +0100
+
+ostree (2017.7-1endless1) unstable; urgency=medium
+
+  * Resync Debian packaging changes
+    - Keep Endless specific ostree_repo_delete_compat_signature() and
+      ostree_repo_get_commit_sizes() ABIs.
+    - Keep the parts needed for boot in the main ostree package, as
+      ostree-boot does not yet exist in the upstream Debian packaging.
+
+ -- Philip Withnall <withnall@endlessm.com>  Mon, 10 Jul 2017 19:11:00 +0100
+
 ostree (2017.7-1) unstable; urgency=medium
 
   * New upstream release
@@ -295,8 +385,16 @@ ostree (2017.6-1) experimental; urgency=medium
     - Add new ABI to symbols file
   * Skip build-time tests when nocheck is in DEB_BUILD_OPTIONS
     (Closes: #862803). Thanks to Krzesimir Nowak
+  * Drop libsoup input streams races patch.
+  * Add compatibility metadata support (Dan Nicholson)
 
  -- Simon McVittie <smcv@debian.org>  Thu, 25 May 2017 10:01:12 +0100
+
+ostree (2017.6-0) experimental; urgency=low
+
+  * Stub changelog entry for Jenkins
+
+ -- Georges Basile Stavracas Neto <georges@endlessm.com>  Tue, 30 May 2017 13:06:04 -0300
 
 ostree (2017.5-1) experimental; urgency=high
 
@@ -481,6 +579,18 @@ ostree (2016.10-1) unstable; urgency=medium
 
  -- Simon McVittie <smcv@debian.org>  Thu, 15 Sep 2016 08:26:51 +0100
 
+ostree (2016.10-0) master; urgency=medium
+
+  * New upstream version (T13340)
+  * Resync debian packaging changes. Downstream changes still kept:
+    - Have our ostree package still maintaining the parts needed for
+      boot rather than being split out into an ostree-boot package.
+    - The grub2 files are manually removed before dh_install since we
+      only want the Grub BLS support.
+    - Add deprecation rules for old package names (T11513)
+
+ -- Mario Sanchez Prada <mario@endlessm.com>  Wed, 14 Sep 2016 01:07:56 +0000
+
 ostree (2016.9-2) unstable; urgency=medium
 
   * debian/patches/Terminate-individual-tests-after-half-an-hour.patch:
@@ -502,6 +612,32 @@ ostree (2016.9-1) unstable; urgency=medium
   * Explicitly build-depend on xsltproc, which is directly used
 
  -- Simon McVittie <smcv@debian.org>  Tue, 06 Sep 2016 09:59:00 +0100
+
+ostree (2016.9-0) master; urgency=medium
+
+  * New upstream version (T13117)
+    - Remove the libgsystem-dev build dependency as it has been dropped
+      upstream.
+    - Update symbols file for new ABI.
+    - Add Endless specific ostree_repo_delete_compat_signature and
+      ostree_repo_get_commit_sizes ABIs to symbols file. These are
+      specified to the 2016.3 version like all older symbols.
+    - Update ostree-prepare-root and ostree-remount install paths.
+      These are now installed under /usr/lib/ostree.
+    - Add build dependency on latest libc6-dev for non-x86 to get a
+      corrected definition of O_TMPFILE in glibc.
+      See https://bugzilla.gnome.org/show_bug.cgi?id=769453 for details.
+  * Resync debian packaging changes
+    - Add Build-Depends on libsystemd-dev
+    - Add missing Depends on cpio for ostree-tests package
+    - Remove the ostree-grub2 package as was done upstream. However,
+      our ostree package still maintains the parts needed for boot
+      rather than being split out into an ostree-boot package. The
+      grub2 files are manually removed before dh_install since we
+      only want the Grub BLS support.
+    - Pull in libostree-1-1.symbols updates.
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Thu, 01 Sep 2016 05:26:09 -0700
 
 ostree (2016.7-1) unstable; urgency=medium
 
@@ -576,6 +712,13 @@ ostree (2016.6-1) unstable; urgency=medium
     the boot integration is reinstated (see #824650).
 
  -- Simon McVittie <smcv@debian.org>  Sun, 26 Jun 2016 19:51:31 +0100
+
+ostree (2016.6-0) master; urgency=medium
+
+  * New upstream release, rebase debian packaging
+    - Debian's ostree-boot package split left out for now.
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Fri, 24 Jun 2016 10:04:51 -0700
 
 ostree (2016.5-4) unstable; urgency=medium
 
