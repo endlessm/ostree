@@ -11,7 +11,6 @@ override_dh_autoreconf:
 	env NOCONFIGURE=1 dh_autoreconf ./autogen.sh
 
 configure_options = \
-	GJS=some-nonexistent-gjs-binary \
 	--enable-installed-tests \
 	--with-avahi \
 	--with-dracut \
