@@ -1,3 +1,12 @@
+ostree (2018.4-2) UNRELEASED; urgency=medium
+
+  * d/p/Don-t-write-to-parent-repo.patch:
+    Add patch from upstream to prevent trying to write to a parent
+    repository, fixing installation of Flatpak apps and runtimes into
+    the system-wide repository (Closes: #895883)
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 17 Apr 2018 08:56:30 +0100
+
 ostree (2018.4-1) unstable; urgency=medium
 
   * New upstream release
