@@ -128,6 +128,23 @@ ostree (2018.5-1) unstable; urgency=medium
 
  -- Simon McVittie <smcv@debian.org>  Tue, 15 May 2018 11:30:03 +0100
 
+ostree (2018.4-2endless1) master; urgency=medium
+
+  * Resync Debian packaging changes (T22022):
+    - Rewrite history on debian/2018.4-2 tag
+    - Reapply changes from README.Endless
+    - Add --enable-experimental-api and all symbols
+    - Update versions in symbols files to use upstream versions instead of
+      our downstream package versions
+    - Drop Don-t-write-to-parent-repo.patch as it's on our main branch
+    - Revert change to disable gjs tests as we don't have the install
+      issue on Endless
+    - Add back --enable-trivial-httpd-cmdline as eos-updater uses that in
+      its tests
+    - Add --with-avahi and associated dependencies for P2P support
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Wed, 18 Apr 2018 09:40:33 -0500
+
 ostree (2018.4-2) unstable; urgency=medium
 
   * d/p/Don-t-write-to-parent-repo.patch:
