@@ -12,6 +12,7 @@ override_dh_autoreconf:
 
 configure_options = \
 	--enable-installed-tests \
+	--enable-trivial-httpd-cmdline \
 	--with-avahi \
 	--with-dracut \
 	--with-grub2 \
