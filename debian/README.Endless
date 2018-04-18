@@ -1,4 +1,8 @@
-(This README is correct as of 2017-10-03.)
+(This README is correct as of 2018-04-18.)
+
+The packaging in this branch is based on debian's git repo at
+https://salsa.debian.org/debian/ostree.git. When updating, changes
+should be based on the debian/<upstream>-<package> tag in that repo.
 
 The Endless OSTree package differs a little from upstream Debian OSTree, since Debian does not install the boot integration due to having no way to test it — but we do. See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=824650 for the Debian status of things.
 
