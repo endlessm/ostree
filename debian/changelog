@@ -1,3 +1,25 @@
+ostree (2018.4-2xenial1) unstable; urgency=medium
+
+  * Resync changes for xenial (T22022):
+    - Drop debhelper compat back to 9 since 10 is not in xenial.
+      + debian/compat: Drop back to debhelper 9.
+      + debian/control: Add back dh-autoreconf and dh-systemd deps.
+      + debian/rules: Add back --with autoreconf and systemd.
+    - Disable use of O_TMPFILE in the jessie backport. O_TMPFILE was
+      still a new thing when jessie was released, and fails on
+      the arm64, armel, armhf, powerpc and ppc64el buildds.
+    - Switch libgpgme-dev build-dependency back to libgpgme11-dev
+    - Enable experimental API and update symbols file. (T19082)
+    - Disable rofiles-fuse on armhf (T18830)
+    - Drop downstream versions from symbols file
+  * Add --with-avahi option and build dependencies for avahi P2P support
+    (T20662)
+  * Revert change to disable gjs tests since we don't have install issues
+    on xenial
+  * Drop Don-t-write-to-parent-repo.patch as it's on our main branch
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Thu, 19 Apr 2018 06:15:19 -0500
+
 ostree (2018.4-2) unstable; urgency=medium
 
   * d/p/Don-t-write-to-parent-repo.patch:
