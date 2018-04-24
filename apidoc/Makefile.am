@@ -1,5 +1,7 @@
 # Copyright (C) 2013 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -83,6 +85,7 @@ IGNORE_HFILES= \
 	ostree-metalink.h \
 	ostree-repo-file-enumerator.h \
 	ostree-repo-private.h \
+	ostree-repo-pull-private.h \
 	ostree-repo-static-delta-private.h \
 	ostree-sysroot-private.h \
 	ostree-tls-cert-interaction.h \

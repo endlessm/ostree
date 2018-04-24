@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -32,6 +34,7 @@ static char* opt_print_variant_type;
 static char* opt_print_metadata_key;
 static char* opt_print_detached_metadata_key;
 static gboolean opt_raw;
+static gboolean opt_no_byteswap;
 static char *opt_gpg_homedir;
 static char *opt_gpg_verify_remote;
 
@@ -46,6 +49,7 @@ static GOptionEntry options[] = {
   { "print-metadata-key", 0, 0, G_OPTION_ARG_STRING, &opt_print_metadata_key, "Print string value of metadata key", "KEY" },
   { "print-detached-metadata-key", 0, 0, G_OPTION_ARG_STRING, &opt_print_detached_metadata_key, "Print string value of detached metadata key", "KEY" },
   { "raw", 0, 0, G_OPTION_ARG_NONE, &opt_raw, "Show raw variant data" },
+  { "no-byteswap", 'B', 0, G_OPTION_ARG_NONE, &opt_no_byteswap, "Do not automatically convert variant data from big endian" },
   { "gpg-homedir", 0, 0, G_OPTION_ARG_FILENAME, &opt_gpg_homedir, "GPG Homedir to use when looking for keyrings", "HOMEDIR"},
   { "gpg-verify-remote", 0, 0, G_OPTION_ARG_STRING, &opt_gpg_verify_remote, "Use REMOTE name for GPG configuration", "REMOTE"},
   { NULL }
@@ -58,7 +62,10 @@ do_print_variant_generic (const GVariantType *type,
 {
   g_autoptr(GVariant) variant = NULL;
 
-  if (!ot_util_variant_map_at (AT_FDCWD, filename, type, TRUE, &variant, error))
+  glnx_autofd int fd = -1;
+  if (!glnx_openat_rdonly (AT_FDCWD, filename, TRUE, &fd, error))
+    return FALSE;
+  if (!ot_variant_read_fd (fd, 0, type, FALSE, &variant, error))
     return FALSE;
 
   ot_dump_variant (variant);
@@ -129,7 +136,13 @@ do_print_metadata_key (OstreeRepo     *repo,
       return FALSE;
     }
 
-  ot_dump_variant (value);
+  if (opt_no_byteswap)
+    {
+      g_autofree char *formatted = g_variant_print (value, TRUE);
+      g_print ("%s\n", formatted);
+    }
+  else
+    ot_dump_variant (value);
   return TRUE;
 }
 
@@ -147,6 +160,8 @@ print_object (OstreeRepo          *repo,
     return FALSE;
   if (opt_raw)
     flags |= OSTREE_DUMP_RAW;
+  if (opt_no_byteswap)
+    flags |= OSTREE_DUMP_UNSWAPPED;
   ot_dump_object (objtype, checksum, variant, flags);
 
   if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
@@ -223,12 +238,12 @@ print_if_found (OstreeRepo        *repo,
 }
 
 gboolean
-ostree_builtin_show (int argc, char **argv, GCancellable *cancellable, GError **error)
+ostree_builtin_show (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
-  g_autoptr(GOptionContext) context = g_option_context_new ("OBJECT - Output a metadata object");
+  g_autoptr(GOptionContext) context = g_option_context_new ("OBJECT");
 
   g_autoptr(OstreeRepo) repo = NULL;
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &repo, cancellable, error))
     return FALSE;
 
   if (argc <= 1)

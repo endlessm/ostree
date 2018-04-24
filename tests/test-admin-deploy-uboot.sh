@@ -3,6 +3,8 @@
 # Copyright (C) 2011,2014 Colin Walters <walters@verbum.org>
 # Copyright (C) 2013 Javier Martinez <javier.martinez@collabora.co.uk>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -30,6 +32,10 @@ extra_admin_tests=1
 . $(dirname $0)/admin-test.sh
 
 cd ${test_tmpdir}
+# Note this test actually requires a checksum change to /boot,
+# because adding the uEnv.txt isn't currently covered by the
+# "bootcsum".
+os_repository_new_commit "uboot test" "test upgrade multiple kernel args"
 mkdir -p osdata/usr/lib/ostree-boot
 cat << 'EOF' > osdata/usr/lib/ostree-boot/uEnv.txt
 loaduimage=load mmc ${bootpart} ${loadaddr} ${kernel_image}

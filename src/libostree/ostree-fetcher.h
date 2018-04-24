@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2012 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -50,12 +52,14 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC(OstreeFetcher, g_object_unref)
 typedef enum {
   OSTREE_FETCHER_FLAGS_NONE = 0,
   OSTREE_FETCHER_FLAGS_TLS_PERMISSIVE = (1 << 0),
-  OSTREE_FETCHER_FLAGS_TRANSFER_GZIP = (1 << 1)
+  OSTREE_FETCHER_FLAGS_TRANSFER_GZIP = (1 << 1),
+  OSTREE_FETCHER_FLAGS_DISABLE_HTTP2 = (1 << 2),
 } OstreeFetcherConfigFlags;
 
 typedef enum {
   OSTREE_FETCHER_REQUEST_NUL_TERMINATION = (1 << 0),
-  OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT = (1 << 1)
+  OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT = (1 << 1),
+  OSTREE_FETCHER_REQUEST_LINKABLE = (1 << 2),
 } OstreeFetcherRequestFlags;
 
 void
@@ -110,6 +114,9 @@ void _ostree_fetcher_set_tls_database (OstreeFetcher *self,
 void _ostree_fetcher_set_extra_headers (OstreeFetcher *self,
                                         GVariant      *extra_headers);
 
+void _ostree_fetcher_set_extra_user_agent (OstreeFetcher *self,
+                                           const char    *extra_user_agent);
+
 guint64 _ostree_fetcher_bytes_transferred (OstreeFetcher       *self);
 
 void _ostree_fetcher_request_to_tmpfile (OstreeFetcher         *self,
@@ -124,7 +131,7 @@ void _ostree_fetcher_request_to_tmpfile (OstreeFetcher         *self,
 
 gboolean _ostree_fetcher_request_to_tmpfile_finish (OstreeFetcher *self,
                                                     GAsyncResult  *result,
-                                                    char         **out_filename,
+                                                    GLnxTmpfile   *out_tmpf,
                                                     GError       **error);
 
 void _ostree_fetcher_request_to_membuf (OstreeFetcher         *self,

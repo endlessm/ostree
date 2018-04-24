@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -22,6 +24,7 @@
 #include "ostree-cmdprivate.h"
 #include "ostree-repo-private.h"
 #include "ostree-core-private.h"
+#include "ostree-repo-pull-private.h"
 #include "ostree-repo-static-delta-private.h"
 #include "ostree-sysroot.h"
 #include "ostree-bootloader-grub2.h"
@@ -48,7 +51,8 @@ ostree_cmd__private__ (void)
     impl_ostree_generate_grub2_config,
     _ostree_repo_static_delta_dump,
     _ostree_repo_static_delta_query_exists,
-    _ostree_repo_static_delta_delete
+    _ostree_repo_static_delta_delete,
+    _ostree_repo_verify_bindings
   };
 
   return &table;

@@ -1,6 +1,8 @@
 /*
  * Copyright © 2017 Endless Mobile, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -23,6 +25,7 @@
 #include "config.h"
 
 #include <gio/gio.h>
+#include <gio/gunixmounts.h>
 #include <glib.h>
 #include <glib-object.h>
 #include <libglnx.h>
@@ -49,7 +52,7 @@
  * enumerated, and all OSTree repositories below it will be searched, in lexical
  * order, for the requested #OstreeCollectionRefs. The names of the directories
  * below `.ostree/repos.d` are irrelevant, apart from their lexical ordering.
- * The directories `.ostree/repo`, `ostree/repo` and `var/lib/flatpak`
+ * The directories `.ostree/repo`, `ostree/repo` and `var/lib/flatpak/repo`
  * will be searched after the others, if they exist.
  * Non-removable volumes are ignored.
  *
@@ -235,8 +238,7 @@ scan_repo (int                 dfd,
     {
       g_debug ("Ignoring repository ‘%s’ on mount ‘%s’ as it’s on a different file system from the mount",
                path, mount_name);
-      g_propagate_error (error, g_steal_pointer (&local_error));
-      return FALSE;
+      return glnx_throw (error, "Repository is on a different file system from the mount");
     }
 
   /* Exclude repositories which resolve to @parent_repo. */
@@ -245,8 +247,7 @@ scan_repo (int                 dfd,
     {
       g_debug ("Ignoring repository ‘%s’ on mount ‘%s’ as it is the same as the one we are resolving",
                path, mount_name);
-      g_propagate_error (error, g_steal_pointer (&local_error));
-      return FALSE;
+      return glnx_throw (error, "Repository is the same as the one we are resolving");
     }
 
   /* List the repo’s refs and return them. */
@@ -294,8 +295,8 @@ scan_and_add_repo (int                 dfd,
       };
       g_array_append_val (inout_repos_refs, val);
 
-      g_debug ("%s: Adding repo ‘%s’ (%ssortable)",
-               G_STRFUNC, path, sortable ? "" : "not ");
+      g_debug ("%s: Adding repo ‘%s’ on mount ‘%s’ (%ssortable)",
+               G_STRFUNC, path, mount_name, sortable ? "" : "not ");
     }
 }
 
@@ -328,9 +329,9 @@ ostree_repo_finder_mount_resolve_async (OstreeRepoFinder                  *finde
       g_autofree gchar *mount_name = NULL;
       g_autoptr(GFile) mount_root = NULL;
       g_autofree gchar *mount_root_path = NULL;
-      glnx_fd_close int mount_root_dfd = -1;
+      glnx_autofd int mount_root_dfd = -1;
       struct stat mount_root_stbuf;
-      glnx_fd_close int repos_dfd = -1;
+      glnx_autofd int repos_dfd = -1;
       gsize i;
       g_autoptr(GHashTable) repo_to_refs = NULL;  /* (element-type UriAndKeyring GHashTable) */
       GHashTable *supported_ref_to_checksum;  /* (element-type OstreeCollectionRef utf8) */
@@ -356,6 +357,23 @@ ostree_repo_finder_mount_resolve_async (OstreeRepoFinder                  *finde
                    mount_name, mount_root_path, local_error->message);
           continue;
         }
+
+#if GLIB_CHECK_VERSION(2, 55, 0)
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS  /* remove once GLIB_VERSION_MAX_ALLOWED ≥ 2.56 */
+      g_autoptr(GUnixMountEntry) mount_entry = g_unix_mount_at (mount_root_path, NULL);
+
+      if (mount_entry != NULL &&
+          (g_unix_is_system_fs_type (g_unix_mount_get_fs_type (mount_entry)) ||
+           g_unix_is_system_device_path (g_unix_mount_get_device_path (mount_entry))))
+        {
+          g_debug ("Ignoring mount ‘%s’ as its file system type (%s) or device "
+                   "path (%s) indicate it’s a system mount.",
+                   mount_name, g_unix_mount_get_fs_type (mount_entry),
+                   g_unix_mount_get_device_path (mount_entry));
+          continue;
+        }
+G_GNUC_END_IGNORE_DEPRECATIONS
+#endif  /* GLib 2.56.0 */
 
       /* stat() the mount root so we can later check whether the resolved
        * repositories for individual refs are on the same device (to avoid the
@@ -421,7 +439,7 @@ ostree_repo_finder_mount_resolve_async (OstreeRepoFinder                  *finde
         {
           ".ostree/repo",
           "ostree/repo",
-          "var/lib/flatpak",
+          "var/lib/flatpak/repo",
         };
 
       for (i = 0; i < G_N_ELEMENTS (well_known_repos); i++)

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2012,2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -27,17 +29,12 @@
 #include "ostree.h"
 #include "otutil.h"
 
-/* ATTENTION:
- * Please remember to update the bash-completion script (bash/ostree) and
- * man page (man/ostree-admin-undeploy.xml) when changing the option list.
- */
-
 static GOptionEntry options[] = {
   { NULL }
 };
 
 gboolean
-ot_admin_builtin_undeploy (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_admin_builtin_undeploy (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
   g_autoptr(OstreeSysroot) sysroot = NULL;
@@ -46,11 +43,11 @@ ot_admin_builtin_undeploy (int argc, char **argv, GCancellable *cancellable, GEr
   g_autoptr(GPtrArray) current_deployments = NULL;
   g_autoptr(OstreeDeployment) target_deployment = NULL;
 
-  context = g_option_context_new ("INDEX - Delete deployment INDEX");
+  context = g_option_context_new ("INDEX");
 
   if (!ostree_admin_option_context_parse (context, options, &argc, &argv,
                                           OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER,
-                                          &sysroot, cancellable, error))
+                                          invocation, &sysroot, cancellable, error))
     return FALSE;
 
   if (argc < 2)

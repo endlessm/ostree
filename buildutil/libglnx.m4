@@ -2,7 +2,8 @@ AC_DEFUN([LIBGLNX_CONFIGURE],
 [
 AC_CHECK_DECLS([
         renameat2,
-        ],
+        memfd_create,
+        copy_file_range],
         [], [], [[
 #include <sys/types.h>
 #include <unistd.h>
@@ -11,6 +12,7 @@ AC_CHECK_DECLS([
 #include <sched.h>
 #include <linux/loop.h>
 #include <linux/random.h>
+#include <sys/mman.h>
 ]])
 
 AC_ARG_ENABLE(otmpfile,

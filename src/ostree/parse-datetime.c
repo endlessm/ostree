@@ -103,6 +103,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <glib.h>
+#include <stdint.h>
 
 /* There's no need to extend the stack, so there's no need to involve
    alloca.  */
@@ -119,11 +120,11 @@ xmemdup (void const *p, size_t s)
 static void
 gettime (struct timespec *ts)
  {
-#if HAVE_NANOTIME
+#ifdef HAVE_NANOTIME
    nanotime (ts);
 #else
 
-# if defined CLOCK_REALTIME && HAVE_CLOCK_GETTIME
+# if defined(CLOCK_REALTIME) && defined(HAVE_CLOCK_GETTIME)
    if (clock_gettime (CLOCK_REALTIME, ts) == 0)
      return;
 # endif
@@ -199,13 +200,6 @@ gettime (struct timespec *ts)
 
 #define HOUR(x) ((x) * 60)
 
-/* long_time_t is a signed integer type that contains all time_t values.  */
-#if TIME_T_FITS_IN_LONG_INT
-typedef long int long_time_t;
-#else
-typedef time_t long_time_t;
-#endif
-
 /* Convert a possibly-signed character to an unsigned character.  This is
    a bit safer than casting to unsigned char, since it catches some type
    errors that the cast doesn't.  */
@@ -245,15 +239,11 @@ typedef struct
   long int day;
   long int hour;
   long int minutes;
-  long_time_t seconds;
-  long int ns;
+  intmax_t seconds;
+  int ns;
 } relative_time;
 
-#if HAVE_COMPOUND_LITERALS
-# define RELATIVE_TIME_0 ((relative_time) { 0, 0, 0, 0, 0, 0, 0 })
-#else
-static relative_time const RELATIVE_TIME_0;
-#endif
+#define RELATIVE_TIME_0 ((relative_time) { 0, 0, 0, 0, 0, 0, 0 })
 
 /* Information passed to and from the parser.  */
 typedef struct
@@ -371,7 +361,7 @@ set_hhmmss (parser_control *pc, long int hour, long int minutes,
 }
 
 
-#line 375 "src/ostree/parse-datetime.c" /* yacc.c:339  */
+#line 365 "src/ostree/parse-datetime.c" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -452,14 +442,14 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 320 "src/ostree/parse-datetime.y" /* yacc.c:355  */
+#line 310 "src/ostree/parse-datetime.y" /* yacc.c:355  */
 
   long int intval;
   textint textintval;
   struct timespec timespec;
   relative_time rel;
 
-#line 463 "src/ostree/parse-datetime.c" /* yacc.c:355  */
+#line 453 "src/ostree/parse-datetime.c" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -475,7 +465,7 @@ int yyparse (parser_control *pc);
 
 /* Copy the second part of user declarations.  */
 
-#line 479 "src/ostree/parse-datetime.c" /* yacc.c:358  */
+#line 469 "src/ostree/parse-datetime.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -774,16 +764,16 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   347,   347,   348,   352,   359,   361,   365,   367,   369,
-     371,   373,   375,   377,   378,   379,   383,   387,   391,   396,
-     401,   406,   410,   415,   420,   427,   429,   433,   441,   446,
-     456,   458,   460,   463,   466,   468,   470,   475,   480,   485,
-     490,   498,   503,   523,   531,   539,   544,   550,   555,   561,
-     565,   575,   577,   579,   584,   586,   588,   590,   592,   594,
-     596,   598,   600,   602,   604,   606,   608,   610,   612,   614,
-     616,   618,   620,   622,   624,   628,   630,   632,   634,   636,
-     638,   643,   647,   647,   650,   651,   656,   657,   662,   667,
-     678,   679
+       0,   337,   337,   338,   342,   349,   351,   355,   357,   359,
+     361,   363,   365,   367,   368,   369,   373,   377,   381,   386,
+     391,   396,   400,   405,   410,   417,   419,   423,   431,   436,
+     446,   448,   450,   453,   456,   458,   460,   465,   470,   475,
+     480,   488,   493,   513,   521,   529,   534,   540,   545,   551,
+     555,   565,   567,   569,   574,   576,   578,   580,   582,   584,
+     586,   588,   590,   592,   594,   596,   598,   600,   602,   604,
+     606,   608,   610,   612,   614,   618,   620,   622,   624,   626,
+     628,   633,   637,   637,   640,   641,   646,   647,   652,   657,
+     668,   669
 };
 #endif
 
@@ -1642,222 +1632,222 @@ yyreduce:
   switch (yyn)
     {
         case 4:
-#line 353 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 343 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->seconds = (yyvsp[0].timespec);
         pc->timespec_seen = true;
       }
-#line 1651 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1641 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 366 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 356 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->times_seen++; pc->dates_seen++; }
-#line 1657 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1647 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 368 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 358 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->times_seen++; }
-#line 1663 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1653 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 9:
-#line 370 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 360 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->local_zones_seen++; }
-#line 1669 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1659 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 10:
-#line 372 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 362 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->zones_seen++; }
-#line 1675 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1665 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 11:
-#line 374 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 364 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->dates_seen++; }
-#line 1681 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1671 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 12:
-#line 376 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 366 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->days_seen++; }
-#line 1687 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1677 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 18:
-#line 392 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 382 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         set_hhmmss (pc, (yyvsp[-1].textintval).value, 0, 0, 0);
         pc->meridian = (yyvsp[0].intval);
       }
-#line 1696 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1686 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 19:
-#line 397 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 387 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         set_hhmmss (pc, (yyvsp[-3].textintval).value, (yyvsp[-1].textintval).value, 0, 0);
         pc->meridian = (yyvsp[0].intval);
       }
-#line 1705 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1695 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 20:
-#line 402 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 392 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         set_hhmmss (pc, (yyvsp[-5].textintval).value, (yyvsp[-3].textintval).value, (yyvsp[-1].timespec).tv_sec, (yyvsp[-1].timespec).tv_nsec);
         pc->meridian = (yyvsp[0].intval);
       }
-#line 1714 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1704 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 22:
-#line 411 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 401 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         set_hhmmss (pc, (yyvsp[-1].textintval).value, 0, 0, 0);
         pc->meridian = MER24;
       }
-#line 1723 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1713 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 23:
-#line 416 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 406 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         set_hhmmss (pc, (yyvsp[-3].textintval).value, (yyvsp[-1].textintval).value, 0, 0);
         pc->meridian = MER24;
       }
-#line 1732 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1722 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 24:
-#line 421 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 411 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         set_hhmmss (pc, (yyvsp[-5].textintval).value, (yyvsp[-3].textintval).value, (yyvsp[-1].timespec).tv_sec, (yyvsp[-1].timespec).tv_nsec);
         pc->meridian = MER24;
       }
-#line 1741 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1731 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 434 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 424 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->zones_seen++;
         pc->time_zone = time_zone_hhmm (pc, (yyvsp[-1].textintval), (yyvsp[0].intval));
       }
-#line 1750 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1740 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 28:
-#line 442 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 432 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->local_isdst = (yyvsp[0].intval);
         pc->dsts_seen += (0 < (yyvsp[0].intval));
       }
-#line 1759 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1749 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 29:
-#line 447 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 437 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->local_isdst = 1;
         pc->dsts_seen += (0 < (yyvsp[-1].intval)) + 1;
       }
-#line 1768 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1758 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 30:
-#line 457 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 447 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->time_zone = (yyvsp[0].intval); }
-#line 1774 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1764 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 31:
-#line 459 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 449 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->time_zone = HOUR(7); }
-#line 1780 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1770 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 32:
-#line 461 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 451 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->time_zone = (yyvsp[-1].intval);
         apply_relative_time (pc, (yyvsp[0].rel), 1); }
-#line 1787 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1777 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 33:
-#line 464 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 454 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->time_zone = HOUR(7);
         apply_relative_time (pc, (yyvsp[0].rel), 1); }
-#line 1794 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1784 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 34:
-#line 467 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 457 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->time_zone = (yyvsp[-2].intval) + time_zone_hhmm (pc, (yyvsp[-1].textintval), (yyvsp[0].intval)); }
-#line 1800 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1790 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 35:
-#line 469 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 459 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->time_zone = (yyvsp[0].intval) + 60; }
-#line 1806 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1796 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 36:
-#line 471 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 461 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { pc->time_zone = (yyvsp[-1].intval) + 60; }
-#line 1812 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1802 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 37:
-#line 476 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 466 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->day_ordinal = 0;
         pc->day_number = (yyvsp[0].intval);
       }
-#line 1821 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1811 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 38:
-#line 481 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 471 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->day_ordinal = 0;
         pc->day_number = (yyvsp[-1].intval);
       }
-#line 1830 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1820 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 39:
-#line 486 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 476 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->day_ordinal = (yyvsp[-1].intval);
         pc->day_number = (yyvsp[0].intval);
       }
-#line 1839 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1829 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 40:
-#line 491 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 481 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->day_ordinal = (yyvsp[-1].textintval).value;
         pc->day_number = (yyvsp[0].intval);
       }
-#line 1848 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1838 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 41:
-#line 499 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 489 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->month = (yyvsp[-2].textintval).value;
         pc->day = (yyvsp[0].textintval).value;
       }
-#line 1857 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1847 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 42:
-#line 504 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 494 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         /* Interpret as YYYY/MM/DD if the first value has 4 or more digits,
            otherwise as MM/DD/YY.
@@ -1877,11 +1867,11 @@ yyreduce:
             pc->year = (yyvsp[0].textintval);
           }
       }
-#line 1881 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1871 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 43:
-#line 524 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 514 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         /* e.g. 17-JUN-1992.  */
         pc->day = (yyvsp[-2].textintval).value;
@@ -1889,11 +1879,11 @@ yyreduce:
         pc->year.value = -(yyvsp[0].textintval).value;
         pc->year.digits = (yyvsp[0].textintval).digits;
       }
-#line 1893 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1883 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 44:
-#line 532 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 522 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         /* e.g. JUN-17-1992.  */
         pc->month = (yyvsp[-2].intval);
@@ -1901,281 +1891,281 @@ yyreduce:
         pc->year.value = -(yyvsp[0].textintval).value;
         pc->year.digits = (yyvsp[0].textintval).digits;
       }
-#line 1905 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1895 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 45:
-#line 540 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 530 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->month = (yyvsp[-1].intval);
         pc->day = (yyvsp[0].textintval).value;
       }
-#line 1914 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1904 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 46:
-#line 545 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 535 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->month = (yyvsp[-3].intval);
         pc->day = (yyvsp[-2].textintval).value;
         pc->year = (yyvsp[0].textintval);
       }
-#line 1924 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1914 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 47:
-#line 551 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 541 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->day = (yyvsp[-1].textintval).value;
         pc->month = (yyvsp[0].intval);
       }
-#line 1933 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1923 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 48:
-#line 556 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 546 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         pc->day = (yyvsp[-2].textintval).value;
         pc->month = (yyvsp[-1].intval);
         pc->year = (yyvsp[0].textintval);
       }
-#line 1943 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1933 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 50:
-#line 566 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 556 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         /* ISO 8601 format.  YYYY-MM-DD.  */
         pc->year = (yyvsp[-2].textintval);
         pc->month = -(yyvsp[-1].textintval).value;
         pc->day = -(yyvsp[0].textintval).value;
       }
-#line 1954 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1944 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 51:
-#line 576 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 566 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { apply_relative_time (pc, (yyvsp[-1].rel), (yyvsp[0].intval)); }
-#line 1960 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1950 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 52:
-#line 578 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 568 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { apply_relative_time (pc, (yyvsp[0].rel), 1); }
-#line 1966 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1956 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 53:
-#line 580 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 570 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { apply_relative_time (pc, (yyvsp[0].rel), 1); }
-#line 1972 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1962 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 54:
-#line 585 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 575 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).year = (yyvsp[-1].intval); }
-#line 1978 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1968 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 55:
-#line 587 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 577 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).year = (yyvsp[-1].textintval).value; }
-#line 1984 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1974 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 56:
-#line 589 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 579 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).year = 1; }
-#line 1990 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1980 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 57:
-#line 591 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 581 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).month = (yyvsp[-1].intval); }
-#line 1996 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1986 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 58:
-#line 593 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 583 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).month = (yyvsp[-1].textintval).value; }
-#line 2002 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1992 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 59:
-#line 595 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 585 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).month = 1; }
-#line 2008 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 1998 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 60:
-#line 597 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 587 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).day = (yyvsp[-1].intval) * (yyvsp[0].intval); }
-#line 2014 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2004 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 61:
-#line 599 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 589 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).day = (yyvsp[-1].textintval).value * (yyvsp[0].intval); }
-#line 2020 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2010 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 62:
-#line 601 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 591 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).day = (yyvsp[0].intval); }
-#line 2026 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2016 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 63:
-#line 603 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 593 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).hour = (yyvsp[-1].intval); }
-#line 2032 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2022 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 64:
-#line 605 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 595 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).hour = (yyvsp[-1].textintval).value; }
-#line 2038 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2028 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 65:
-#line 607 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 597 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).hour = 1; }
-#line 2044 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2034 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 66:
-#line 609 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 599 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).minutes = (yyvsp[-1].intval); }
-#line 2050 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2040 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 67:
-#line 611 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 601 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).minutes = (yyvsp[-1].textintval).value; }
-#line 2056 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2046 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 68:
-#line 613 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 603 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).minutes = 1; }
-#line 2062 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2052 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 69:
-#line 615 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 605 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).seconds = (yyvsp[-1].intval); }
-#line 2068 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2058 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 70:
-#line 617 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 607 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).seconds = (yyvsp[-1].textintval).value; }
-#line 2074 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2064 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 71:
-#line 619 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 609 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).seconds = (yyvsp[-1].timespec).tv_sec; (yyval.rel).ns = (yyvsp[-1].timespec).tv_nsec; }
-#line 2080 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2070 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 72:
-#line 621 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 611 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).seconds = (yyvsp[-1].timespec).tv_sec; (yyval.rel).ns = (yyvsp[-1].timespec).tv_nsec; }
-#line 2086 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2076 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 73:
-#line 623 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 613 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).seconds = 1; }
-#line 2092 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2082 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 75:
-#line 629 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 619 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).year = (yyvsp[-1].textintval).value; }
-#line 2098 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2088 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 76:
-#line 631 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 621 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).month = (yyvsp[-1].textintval).value; }
-#line 2104 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2094 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 77:
-#line 633 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 623 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).day = (yyvsp[-1].textintval).value * (yyvsp[0].intval); }
-#line 2110 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2100 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 78:
-#line 635 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 625 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).hour = (yyvsp[-1].textintval).value; }
-#line 2116 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2106 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 79:
-#line 637 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 627 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).minutes = (yyvsp[-1].textintval).value; }
-#line 2122 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2112 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 80:
-#line 639 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 629 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).seconds = (yyvsp[-1].textintval).value; }
-#line 2128 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2118 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 81:
-#line 644 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 634 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.rel) = RELATIVE_TIME_0; (yyval.rel).day = (yyvsp[0].intval); }
-#line 2134 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2124 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 85:
-#line 652 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 642 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.timespec).tv_sec = (yyvsp[0].textintval).value; (yyval.timespec).tv_nsec = 0; }
-#line 2140 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2130 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 87:
-#line 658 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 648 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.timespec).tv_sec = (yyvsp[0].textintval).value; (yyval.timespec).tv_nsec = 0; }
-#line 2146 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2136 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 88:
-#line 663 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 653 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { digits_to_date_time (pc, (yyvsp[0].textintval)); }
-#line 2152 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2142 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 89:
-#line 668 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 658 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     {
         /* Hybrid all-digit and relative offset, so that we accept e.g.,
            "YYYYMMDD +N days" as well as "YYYYMMDD N days".  */
         digits_to_date_time (pc, (yyvsp[-1].textintval));
         apply_relative_time (pc, (yyvsp[0].rel), 1);
       }
-#line 2163 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2153 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 90:
-#line 678 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 668 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.intval) = -1; }
-#line 2169 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2159 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
   case 91:
-#line 680 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
+#line 670 "src/ostree/parse-datetime.y" /* yacc.c:1646  */
     { (yyval.intval) = (yyvsp[0].textintval).value; }
-#line 2175 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2165 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
     break;
 
 
-#line 2179 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
+#line 2169 "src/ostree/parse-datetime.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2403,7 +2393,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 683 "src/ostree/parse-datetime.y" /* yacc.c:1906  */
+#line 673 "src/ostree/parse-datetime.y" /* yacc.c:1906  */
 
 
 static table const meridian_table[] =
@@ -2679,7 +2669,8 @@ lookup_zone (parser_control const *pc, char const *name)
   return NULL;
 }
 
-#if ! HAVE_TM_GMTOFF
+// #if ! HAVE_TM_GMTOFF
+#if 1 // Always true for us
 /* Yield the difference between *A and *B,
    measured in seconds, ignoring leap seconds.
    The body of this function is taken directly from the GNU C Library;
@@ -3304,10 +3295,10 @@ parse_datetime (struct timespec *result, char const *p,
         time_t t1 = t0 + d1;
         long int d2 = 60 * pc.rel.minutes;
         time_t t2 = t1 + d2;
-        long_time_t d3 = pc.rel.seconds;
-        long_time_t t3 = t2 + d3;
+        intmax_t d3 = pc.rel.seconds;
+        intmax_t t3 = t2 + d3;
         long int d4 = (sum_ns - normalized_ns) / BILLION;
-        long_time_t t4 = t3 + d4;
+        intmax_t t4 = t3 + d4;
         time_t t5 = t4;
 
         if ((d1 / (60 * 60) ^ pc.rel.hour)
@@ -3335,39 +3326,3 @@ parse_datetime (struct timespec *result, char const *p,
     free (tz0);
   return ok;
 }
-
-#if TEST
-
-int
-main (int ac, char **av)
-{
-  char buff[BUFSIZ];
-
-  printf ("Enter date, or blank line to exit.\n\t> ");
-  fflush (stdout);
-
-  buff[BUFSIZ - 1] = '\0';
-  while (fgets (buff, BUFSIZ - 1, stdin) && buff[0])
-    {
-      struct timespec d;
-      struct tm const *tm;
-      if (! parse_datetime (&d, buff, NULL))
-        printf ("Bad format - couldn't convert.\n");
-      else if (! (tm = localtime (&d.tv_sec)))
-        {
-          long int sec = d.tv_sec;
-          printf ("localtime (%ld) failed\n", sec);
-        }
-      else
-        {
-          int ns = d.tv_nsec;
-          printf ("%04ld-%02d-%02d %02d:%02d:%02d.%09d\n",
-                  tm->tm_year + 1900L, tm->tm_mon + 1, tm->tm_mday,
-                  tm->tm_hour, tm->tm_min, tm->tm_sec, ns);
-        }
-      printf ("\t> ");
-      fflush (stdout);
-    }
-  return 0;
-}
-#endif /* TEST */

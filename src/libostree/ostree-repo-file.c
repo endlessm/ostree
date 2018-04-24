@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -508,7 +510,7 @@ ostree_repo_file_get_parent (GFile *file)
 {
   OstreeRepoFile *self = OSTREE_REPO_FILE (file);
 
-  return g_object_ref (self->parent);
+  return (GFile*)g_object_ref (self->parent);
 }
 
 static GFile *
@@ -621,7 +623,7 @@ ostree_repo_file_resolve_relative_path (GFile      *file,
       g_assert (*relative_path == '/');
 
       if (strcmp (relative_path, "/") == 0)
-        return g_object_ref (ostree_repo_file_get_root (self)); 
+        return (GFile*)g_object_ref (ostree_repo_file_get_root (self));
 
       if (self->parent)
         return ostree_repo_file_resolve_relative_path ((GFile*)ostree_repo_file_get_root (self),

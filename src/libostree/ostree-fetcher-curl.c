@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2016 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -75,6 +77,7 @@ struct OstreeFetcher
   char *proxy;
   struct curl_slist *extra_headers;
   int tmpdir_dfd;
+  char *custom_user_agent;
 
   GMainContext *mainctx;
   CURLM *multi;
@@ -167,6 +170,7 @@ _ostree_fetcher_finalize (GObject *object)
 {
   OstreeFetcher *self = OSTREE_FETCHER (object);
 
+  curl_multi_cleanup (self->multi);
   g_free (self->remote_name);
   g_free (self->cookie_jar_path);
   g_free (self->proxy);
@@ -177,7 +181,7 @@ _ostree_fetcher_finalize (GObject *object)
   g_clear_pointer (&self->timer_event, (GDestroyNotify)destroy_and_unref_source);
   if (self->mainctx)
     g_main_context_unref (self->mainctx);
-  curl_multi_cleanup (self->multi);
+  g_clear_pointer (&self->custom_user_agent, (GDestroyNotify)g_free);
 
   G_OBJECT_CLASS (_ostree_fetcher_parent_class)->finalize (object);
 }
@@ -269,13 +273,13 @@ ensure_tmpfile (FetcherRequest *req, GError **error)
 {
   if (!req->tmpf.initialized)
     {
-      if (!glnx_open_tmpfile_linkable_at (req->fetcher->tmpdir_dfd, ".",
-                                          O_WRONLY | O_CLOEXEC, &req->tmpf,
-                                          error))
+      if (!_ostree_fetcher_tmpf_from_flags (req->flags, req->fetcher->tmpdir_dfd,
+                                            &req->tmpf, error))
         return FALSE;
     }
   return TRUE;
 }
+
 /* Check for completed transfers, and remove their easy handles */
 static void
 check_multi_info (OstreeFetcher *fetcher)
@@ -378,25 +382,19 @@ check_multi_info (OstreeFetcher *fetcher)
               g_autoptr(GError) local_error = NULL;
               GError **error = &local_error;
 
-              g_autofree char *tmpfile_path =
-                ostree_fetcher_generate_url_tmpname (eff_url);
               if (!ensure_tmpfile (req, error))
                 {
                   g_task_return_error (task, g_steal_pointer (&local_error));
                 }
-              /* This should match the libsoup chmod */
-              else if (fchmod (req->tmpf.fd, 0644) < 0)
+              else if (lseek (req->tmpf.fd, 0, SEEK_SET) < 0)
                 {
                   glnx_set_error_from_errno (error);
                   g_task_return_error (task, g_steal_pointer (&local_error));
                 }
-              else if (!glnx_link_tmpfile_at (&req->tmpf, GLNX_LINK_TMPFILE_REPLACE,
-                                              fetcher->tmpdir_dfd, tmpfile_path,
-                                              error))
-                g_task_return_error (task, g_steal_pointer (&local_error));
               else
                 {
-                  g_task_return_pointer (task, g_steal_pointer (&tmpfile_path), g_free);
+                  /* We return the tmpfile in the _finish wrapper */
+                  g_task_return_boolean (task, TRUE);
                 }
             }
         }
@@ -680,6 +678,18 @@ _ostree_fetcher_set_extra_headers (OstreeFetcher *self,
     }
 }
 
+void
+_ostree_fetcher_set_extra_user_agent (OstreeFetcher *self,
+                                      const char    *extra_user_agent)
+{
+  g_clear_pointer (&self->custom_user_agent, (GDestroyNotify)g_free);
+  if (extra_user_agent)
+    {
+      self->custom_user_agent =
+        g_strdup_printf ("%s %s", OSTREE_FETCHER_USERAGENT_STRING, extra_user_agent);
+    }
+}
+
 /* Re-bind all of the outstanding curl items to our new main context */
 static void
 adopt_steal_mainctx (OstreeFetcher *self,
@@ -693,7 +703,7 @@ adopt_steal_mainctx (OstreeFetcher *self,
       guint64 readytime = g_source_get_ready_time (self->timer_event);
       guint64 curtime = g_source_get_time (self->timer_event);
       guint64 timeout_micros = curtime - readytime;
-      if (timeout_micros < 0)
+      if (curtime < readytime)
         timeout_micros = 0;
       update_timeout_cb (self->multi, timeout_micros / 1000, self);
     }
@@ -706,7 +716,7 @@ static void
 initiate_next_curl_request (FetcherRequest *req,
                             GTask *task)
 {
-  CURLMcode rc;
+  CURLcode rc;
   OstreeFetcher *self = req->fetcher;
 
   if (req->easy)
@@ -720,7 +730,8 @@ initiate_next_curl_request (FetcherRequest *req,
     curl_easy_setopt (req->easy, CURLOPT_URL, uri);
   }
 
-  curl_easy_setopt (req->easy, CURLOPT_USERAGENT, "ostree ");
+  curl_easy_setopt (req->easy, CURLOPT_USERAGENT,
+                    self->custom_user_agent ?: OSTREE_FETCHER_USERAGENT_STRING);
   if (self->extra_headers)
     curl_easy_setopt (req->easy, CURLOPT_HTTPHEADER, self->extra_headers);
 
@@ -777,13 +788,18 @@ initiate_next_curl_request (FetcherRequest *req,
    * there are numerous HTTP/2 fixes since the original version in
    * libcurl 7.43.0.
    */
+#ifdef BUILDOPT_HTTP2
+  if (!(self->config_flags & OSTREE_FETCHER_FLAGS_DISABLE_HTTP2))
+    {
 #if CURL_AT_LEAST_VERSION(7, 51, 0)
-  curl_easy_setopt (req->easy, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
+      curl_easy_setopt (req->easy, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
 #endif
-  /* https://github.com/curl/curl/blob/curl-7_53_0/docs/examples/http2-download.c */
+      /* https://github.com/curl/curl/blob/curl-7_53_0/docs/examples/http2-download.c */
 #if (CURLPIPE_MULTIPLEX > 0)
-  /* wait for pipe connection to confirm */
-  curl_easy_setopt (req->easy, CURLOPT_PIPEWAIT, 1L);
+      /* wait for pipe connection to confirm */
+      curl_easy_setopt (req->easy, CURLOPT_PIPEWAIT, 1L);
+#endif
+    }
 #endif
   curl_easy_setopt (req->easy, CURLOPT_WRITEFUNCTION, write_cb);
   if (g_getenv ("OSTREE_DEBUG_HTTP"))
@@ -794,16 +810,21 @@ initiate_next_curl_request (FetcherRequest *req,
   curl_easy_setopt (req->easy, CURLOPT_PROGRESSFUNCTION, prog_cb);
   curl_easy_setopt (req->easy, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt (req->easy, CURLOPT_CONNECTTIMEOUT, 30L);
-  curl_easy_setopt (req->easy, CURLOPT_LOW_SPEED_LIMIT, 1L);
-  curl_easy_setopt (req->easy, CURLOPT_LOW_SPEED_TIME, 30L);
+  /* We used to set CURLOPT_LOW_SPEED_LIMIT and CURLOPT_LOW_SPEED_TIME
+   * here, but see https://github.com/ostreedev/ostree/issues/878#issuecomment-347228854
+   * basically those options don't play well with HTTP2 at the moment
+   * where we can have lots of outstanding requests.  Further,
+   * we could implement that functionality at a higher level
+   * more consistently too.
+   */
 
   /* closure bindings -> task */
   curl_easy_setopt (req->easy, CURLOPT_PRIVATE, task);
   curl_easy_setopt (req->easy, CURLOPT_WRITEDATA, task);
   curl_easy_setopt (req->easy, CURLOPT_PROGRESSDATA, task);
 
-  rc = curl_multi_add_handle (self->multi, req->easy);
-  g_assert (rc == CURLM_OK);
+  CURLMcode multi_rc = curl_multi_add_handle (self->multi, req->easy);
+  g_assert (multi_rc == CURLM_OK);
 }
 
 static void
@@ -860,12 +881,6 @@ _ostree_fetcher_request_async (OstreeFetcher         *self,
   initiate_next_curl_request (req, task);
 
   g_hash_table_add (self->outstanding_requests, g_steal_pointer (&task));
-
-  /* Sanity check, I added * 2 just so we don't abort if something odd happens,
-   * but we do want to abort if we're asked to do obviously too many requests.
-   */
-  g_assert_cmpint (g_hash_table_size (self->outstanding_requests), <,
-                   _OSTREE_MAX_OUTSTANDING_FETCHER_REQUESTS * 2);
 }
 
 void
@@ -887,26 +902,21 @@ _ostree_fetcher_request_to_tmpfile (OstreeFetcher         *self,
 gboolean
 _ostree_fetcher_request_to_tmpfile_finish (OstreeFetcher *self,
                                            GAsyncResult  *result,
-                                           char         **out_filename,
+                                           GLnxTmpfile   *out_tmpf,
                                            GError       **error)
 {
-  GTask *task;
-  FetcherRequest *req;
-  gpointer ret;
-
   g_return_val_if_fail (g_task_is_valid (result, self), FALSE);
   g_return_val_if_fail (g_async_result_is_tagged (result, _ostree_fetcher_request_async), FALSE);
 
-  task = (GTask*)result;
-  req = g_task_get_task_data (task);
+  GTask *task = (GTask*)result;
+  FetcherRequest *req = g_task_get_task_data (task);
 
-  ret = g_task_propagate_pointer (task, error);
-  if (!ret)
+  if (!g_task_propagate_boolean (task, error))
     return FALSE;
 
   g_assert (!req->is_membuf);
-  g_assert (out_filename);
-  *out_filename = ret;
+  *out_tmpf = req->tmpf;
+  req->tmpf.initialized = FALSE; /* Transfer ownership */
 
   return TRUE;
 }

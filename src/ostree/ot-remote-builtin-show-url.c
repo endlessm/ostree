@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2015 Red Hat, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -34,7 +36,7 @@ static GOptionEntry option_entries[] = {
 };
 
 gboolean
-ot_remote_builtin_show_url (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_remote_builtin_show_url (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
   g_autoptr(OstreeRepo) repo = NULL;
@@ -42,10 +44,10 @@ ot_remote_builtin_show_url (int argc, char **argv, GCancellable *cancellable, GE
   g_autofree char *remote_url = NULL;
   gboolean ret = FALSE;
 
-  context = g_option_context_new ("NAME - Show remote repository URL");
+  context = g_option_context_new ("NAME");
 
   if (!ostree_option_context_parse (context, option_entries, &argc, &argv,
-                                    OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+                                    invocation, &repo, cancellable, error))
     goto out;
 
   if (argc < 2)

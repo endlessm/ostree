@@ -1,6 +1,8 @@
 /*
  * Copyright © 2017 Endless Mobile, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -48,7 +50,6 @@ typedef struct
   gchar *ref_name;  /* (not nullable) */
 } OstreeCollectionRef;
 
-#ifndef __GI_SCANNER__
 _OSTREE_PUBLIC
 GType ostree_collection_ref_get_type (void);
 
@@ -59,7 +60,6 @@ _OSTREE_PUBLIC
 OstreeCollectionRef *ostree_collection_ref_dup (const OstreeCollectionRef *ref);
 _OSTREE_PUBLIC
 void ostree_collection_ref_free (OstreeCollectionRef *ref);
-#endif
 
 _OSTREE_PUBLIC
 guint ostree_collection_ref_hash (gconstpointer ref);

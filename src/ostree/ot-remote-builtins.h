@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2015 Red Hat, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -23,17 +25,23 @@
 
 G_BEGIN_DECLS
 
-gboolean ot_remote_builtin_add (int argc, char **argv, GCancellable *cancellable, GError **error);
-gboolean ot_remote_builtin_delete (int argc, char **argv, GCancellable *cancellable, GError **error);
-gboolean ot_remote_builtin_gpg_import (int argc, char **argv, GCancellable *cancellable, GError **error);
-gboolean ot_remote_builtin_list (int argc, char **argv, GCancellable *cancellable, GError **error);
-#ifdef HAVE_LIBSOUP
-gboolean ot_remote_builtin_add_cookie (int argc, char **argv, GCancellable *cancellable, GError **error);
-gboolean ot_remote_builtin_list_cookies (int argc, char **argv, GCancellable *cancellable, GError **error);
-gboolean ot_remote_builtin_delete_cookie (int argc, char **argv, GCancellable *cancellable, GError **error);
+#define BUILTINPROTO(name) gboolean ot_remote_builtin_ ## name (int argc, char **argv, \
+                                                                OstreeCommandInvocation *invocation, \
+                                                                GCancellable *cancellable, GError **error)
+
+BUILTINPROTO(add);
+BUILTINPROTO(delete);
+BUILTINPROTO(gpg_import);
+BUILTINPROTO(list);
+#ifdef HAVE_LIBCURL_OR_LIBSOUP
+BUILTINPROTO(add_cookie);
+BUILTINPROTO(list_cookies);
+BUILTINPROTO(delete_cookie);
 #endif
-gboolean ot_remote_builtin_show_url (int argc, char **argv, GCancellable *cancellable, GError **error);
-gboolean ot_remote_builtin_refs (int argc, char **argv, GCancellable *cancellable, GError **error);
-gboolean ot_remote_builtin_summary (int argc, char **argv, GCancellable *cancellable, GError **error);
+BUILTINPROTO(show_url);
+BUILTINPROTO(refs);
+BUILTINPROTO(summary);
+
+#undef BUILTINPROTO
 
 G_END_DECLS

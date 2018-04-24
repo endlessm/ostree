@@ -2,6 +2,8 @@
 #
 # Copyright (C) 2013 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -35,13 +37,14 @@ AM_TESTS_ENVIRONMENT += OT_TESTS_DEBUG=1 \
 	LD_LIBRARY_PATH=$$(cd $(top_builddir)/.libs && pwd)$${LD_LIBRARY_PATH:+:$${LD_LIBRARY_PATH}} \
 	PATH=$$(cd $(top_builddir)/tests && pwd):$${PATH} \
 	OSTREE_FEATURES="$(OSTREE_FEATURES)" \
+	PYTHONUNBUFFERED=1 \
 	$(NULL)
 if BUILDOPT_ASAN
 AM_TESTS_ENVIRONMENT += OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
 endif
 
 uninstalled_test_data = tests/ostree-symlink-stamp tests/ostree-prepare-root-symlink-stamp \
-			tests/ostree-remount-symlink-stamp tests/rofiles-fuse-symlink-stamp
+			tests/ostree-remount-symlink-stamp
 
 dist_uninstalled_test_scripts = tests/test-symbols.sh tests/coccinelle.sh
 
@@ -69,6 +72,8 @@ _installed_or_uninstalled_test_scripts = \
 	tests/test-parent.sh \
 	tests/test-pull-bare.sh \
 	tests/test-pull-bareuser.sh \
+	tests/test-pull-bareuseronly.sh \
+	tests/test-pull2-bareuseronly.sh \
 	tests/test-pull-commit-only.sh \
 	tests/test-pull-depth.sh \
 	tests/test-pull-mirror-summary.sh \
@@ -105,6 +110,7 @@ _installed_or_uninstalled_test_scripts = \
 	tests/test-xattrs.sh \
 	tests/test-auto-summary.sh \
 	tests/test-prune.sh \
+	tests/test-concurrency.py \
 	tests/test-refs.sh \
 	tests/test-demo-buildsystem.sh \
 	tests/test-switchroot.sh \
@@ -112,6 +118,7 @@ _installed_or_uninstalled_test_scripts = \
 	tests/test-pull-mirrorlist.sh \
 	tests/test-summary-update.sh \
 	tests/test-summary-view.sh \
+	tests/test-no-initramfs.sh \
 	$(NULL)
 
 experimental_test_scripts = \
@@ -126,7 +133,13 @@ experimental_test_scripts = \
 	tests/test-summary-collections.sh \
 	tests/test-pull-collections.sh \
 	$(NULL)
-test_extra_programs = $(NULL)
+test_extra_programs = \
+	tests/get-byte-order \
+	$(NULL)
+
+tests_get_byte_order_SOURCES = tests/get-byte-order.c
+tests_get_byte_order_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS)
+tests_get_byte_order_LDADD = $(GLIB_LIBS)
 
 tests_repo_finder_mount_SOURCES = tests/repo-finder-mount.c
 tests_repo_finder_mount_CFLAGS = $(common_tests_cflags)
@@ -141,6 +154,7 @@ endif
 
 if BUILDOPT_FUSE
 _installed_or_uninstalled_test_scripts += tests/test-rofiles-fuse.sh
+uninstalled_test_data += tests/rofiles-fuse-symlink-stamp
 else
 EXTRA_DIST += tests/test-rofiles-fuse.sh
 endif
@@ -159,10 +173,14 @@ endif
 
 dist_installed_test_data = tests/archive-test.sh \
 	tests/pull-test.sh \
+	tests/pull-test2.sh \
 	tests/admin-test.sh \
 	tests/basic-test.sh \
 	tests/pre-endian-deltas-repo-big.tar.xz \
 	tests/pre-endian-deltas-repo-little.tar.xz \
+	tests/fah-deltadata-old.tar.xz \
+	tests/fah-deltadata-new.tar.xz \
+	tests/ostree-path-traverse.tar.gz \
 	tests/libtest-core.sh \
 	$(NULL)
 
@@ -365,6 +383,14 @@ check-local:
 else
 dist_test_scripts += $(_installed_or_uninstalled_test_scripts)
 test_programs += $(_installed_or_uninstalled_test_programs)
+endif
+
+if !USE_LIBSOUP
+no-soup-for-you-warning:
+	@echo "WARNING: $(PACKAGE) was built without libsoup, which is currently" 1>&2
+	@echo "WARNING: required for many unit tests." 1>&2
+	sleep 10
+check: no-soup-for-you-warning
 endif
 
 # Unfortunately the glib test data APIs don't actually handle

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -150,7 +152,7 @@ find_ref_in_remotes (OstreeRepo         *self,
                      GError            **error)
 {
   g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
-  glnx_fd_close int ret_fd = -1;
+  glnx_autofd int ret_fd = -1;
 
   if (!glnx_dirfd_iterator_init_at (self->repo_dir_fd, "refs/remotes", TRUE, &dfd_iter, error))
     return FALSE;
@@ -158,7 +160,7 @@ find_ref_in_remotes (OstreeRepo         *self,
   while (TRUE)
     {
       struct dirent *dent = NULL;
-      glnx_fd_close int remote_dfd = -1;
+      glnx_autofd int remote_dfd = -1;
 
       if (!glnx_dirfd_iterator_next_dent_ensure_dtype (&dfd_iter, &dent, NULL, error))
         return FALSE;
@@ -234,7 +236,7 @@ resolve_refspec (OstreeRepo     *self,
 {
   __attribute__((unused)) GCancellable *cancellable = NULL;
   g_autofree char *ret_rev = NULL;
-  glnx_fd_close int target_fd = -1;
+  glnx_autofd int target_fd = -1;
 
   g_return_val_if_fail (ref != NULL, FALSE);
 
@@ -560,6 +562,14 @@ enumerate_refs_recurse (OstreeRepo    *repo,
       if (dent == NULL)
         break;
 
+      /* https://github.com/ostreedev/ostree/issues/1285
+       * Ignore any files that don't appear to be valid fragments; e.g.
+       * Red Hat has a tool that drops .rsync_info files into each
+       * directory it syncs.
+       **/
+      if (!_ostree_validate_ref_fragment (dent->d_name, NULL))
+        continue;
+
       g_string_append (base_path, dent->d_name);
 
       if (dent->d_type == DT_DIR)
@@ -607,6 +617,8 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
                                  GCancellable     *cancellable,
                                  GError          **error)
 {
+  GLNX_AUTO_PREFIX_ERROR ("Listing refs", error);
+
   g_autofree char *remote = NULL;
   g_autofree char *ref_prefix = NULL;
 
@@ -617,8 +629,24 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
       const char *prefix_path;
       const char *path;
 
-      if (!ostree_parse_refspec (refspec_prefix, &remote, &ref_prefix, error))
-        return FALSE;
+      /* special-case "<remote>:" and "<remote>:.", which ostree_parse_refspec won't like */
+      if (g_str_has_suffix (refspec_prefix, ":") ||
+          g_str_has_suffix (refspec_prefix, ":."))
+        {
+          const char *colon = strrchr (refspec_prefix, ':');
+          g_autofree char *r = g_strndup (refspec_prefix, colon - refspec_prefix);
+          if (ostree_validate_remote_name (r, NULL))
+            {
+              remote = g_steal_pointer (&r);
+              ref_prefix = g_strdup (".");
+            }
+        }
+
+      if (!ref_prefix)
+        {
+          if (!ostree_parse_refspec (refspec_prefix, &remote, &ref_prefix, error))
+            return FALSE;
+        }
 
       if (!(flags & OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES) && remote)
         {
@@ -637,7 +665,7 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
         {
           if (S_ISDIR (stbuf.st_mode))
             {
-              glnx_fd_close int base_fd = -1;
+              glnx_autofd int base_fd = -1;
               g_autoptr(GString) base_path = g_string_new ("");
               if (!cut_prefix)
                 g_string_printf (base_path, "%s/", ref_prefix);
@@ -652,7 +680,7 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
             }
           else
             {
-              glnx_fd_close int prefix_dfd = -1;
+              glnx_autofd int prefix_dfd = -1;
 
               if (!glnx_opendirat (self->repo_dir_fd, prefix_path, TRUE, &prefix_dfd, error))
                 return FALSE;
@@ -667,7 +695,7 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
     {
       g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
       g_autoptr(GString) base_path = g_string_new ("");
-      glnx_fd_close int refs_heads_dfd = -1;
+      glnx_autofd int refs_heads_dfd = -1;
 
       if (!glnx_opendirat (self->repo_dir_fd, "refs/heads", TRUE, &refs_heads_dfd, error))
         return FALSE;
@@ -687,7 +715,7 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
           while (TRUE)
             {
               struct dirent *dent;
-              glnx_fd_close int remote_dfd = -1;
+              glnx_autofd int remote_dfd = -1;
 
               if (!glnx_dirfd_iterator_next_dent_ensure_dtype (&dfd_iter, &dent, cancellable, error))
                 return FALSE;
@@ -717,13 +745,18 @@ _ostree_repo_list_refs_internal (OstreeRepo       *self,
  * ostree_repo_list_refs:
  * @self: Repo
  * @refspec_prefix: (allow-none): Only list refs which match this prefix
- * @out_all_refs: (out) (element-type utf8 utf8): Mapping from ref to checksum
+ * @out_all_refs: (out) (element-type utf8 utf8) (transfer container):
+ *    Mapping from refspec to checksum
  * @cancellable: Cancellable
  * @error: Error
  *
  * If @refspec_prefix is %NULL, list all local and remote refspecs,
  * with their current values in @out_all_refs.  Otherwise, only list
  * refspecs which have @refspec_prefix as a prefix.
+ *
+ * @out_all_refs will be returned as a mapping from refspecs (including the
+ * remote name) to checksums. If @refspec_prefix is non-%NULL, it will be
+ * removed as a prefix from the hash table keys.
  */
 gboolean
 ostree_repo_list_refs (OstreeRepo       *self,
@@ -742,16 +775,19 @@ ostree_repo_list_refs (OstreeRepo       *self,
  * ostree_repo_list_refs_ext:
  * @self: Repo
  * @refspec_prefix: (allow-none): Only list refs which match this prefix
- * @out_all_refs: (out) (element-type utf8 utf8): Mapping from ref to checksum
+ * @out_all_refs: (out) (element-type utf8 utf8) (transfer container):
+ *    Mapping from refspec to checksum
  * @flags: Options controlling listing behavior
  * @cancellable: Cancellable
  * @error: Error
  *
  * If @refspec_prefix is %NULL, list all local and remote refspecs,
  * with their current values in @out_all_refs.  Otherwise, only list
- * refspecs which have @refspec_prefix as a prefix.  Differently from
- * ostree_repo_list_refs(), the prefix will not be removed from the ref
- * name.
+ * refspecs which have @refspec_prefix as a prefix.
+ *
+ * @out_all_refs will be returned as a mapping from refspecs (including the
+ * remote name) to checksums. Differently from ostree_repo_list_refs(), the
+ * @refspec_prefix will not be removed from the refspecs in the hash table.
  */
 gboolean
 ostree_repo_list_refs_ext (OstreeRepo                 *self,
@@ -770,7 +806,8 @@ ostree_repo_list_refs_ext (OstreeRepo                 *self,
  * ostree_repo_remote_list_refs:
  * @self: Repo
  * @remote_name: Name of the remote.
- * @out_all_refs: (out) (element-type utf8 utf8): Mapping from ref to checksum
+ * @out_all_refs: (out) (element-type utf8 utf8) (transfer container):
+ *    Mapping from ref to checksum
  * @cancellable: Cancellable
  * @error: Error
  *
@@ -885,7 +922,8 @@ remote_list_collection_refs_process_refs (OstreeRepo   *self,
  * ostree_repo_remote_list_collection_refs:
  * @self: Repo
  * @remote_name: Name of the remote.
- * @out_all_refs: (out) (element-type OstreeCollectionRef utf8): Mapping from collection–ref to checksum
+ * @out_all_refs: (out) (element-type OstreeCollectionRef utf8) (transfer container):
+ *    Mapping from collection–ref to checksum
  * @cancellable: Cancellable
  * @error: Error
  *
@@ -992,7 +1030,7 @@ _ostree_repo_write_ref (OstreeRepo                 *self,
                         GCancellable               *cancellable,
                         GError                    **error)
 {
-  glnx_fd_close int dfd = -1;
+  glnx_autofd int dfd = -1;
 
   g_return_val_if_fail (remote == NULL || ref->collection_id == NULL, FALSE);
   g_return_val_if_fail (!(rev != NULL && alias != NULL), FALSE);
@@ -1009,22 +1047,16 @@ _ostree_repo_write_ref (OstreeRepo                 *self,
     {
       if (!glnx_opendirat (self->repo_dir_fd, "refs/heads", TRUE,
                            &dfd, error))
-        {
-          g_prefix_error (error, "Opening %s: ", "refs/heads");
-          return FALSE;
-        }
+        return FALSE;
     }
   else if (remote == NULL && ref->collection_id != NULL)
     {
-      glnx_fd_close int refs_mirrors_dfd = -1;
+      glnx_autofd int refs_mirrors_dfd = -1;
 
       /* refs/mirrors might not exist in older repositories, so create it. */
       if (!glnx_shutil_mkdir_p_at_open (self->repo_dir_fd, "refs/mirrors", 0777,
                                         &refs_mirrors_dfd, cancellable, error))
-        {
-          g_prefix_error (error, "Opening %s: ", "refs/mirrors");
-          return FALSE;
-        }
+        return FALSE;
 
       if (rev != NULL)
         {
@@ -1039,14 +1071,11 @@ _ostree_repo_write_ref (OstreeRepo                 *self,
     }
   else
     {
-      glnx_fd_close int refs_remotes_dfd = -1;
+      glnx_autofd int refs_remotes_dfd = -1;
 
       if (!glnx_opendirat (self->repo_dir_fd, "refs/remotes", TRUE,
                            &refs_remotes_dfd, error))
-        {
-          g_prefix_error (error, "Opening %s: ", "refs/remotes");
-          return FALSE;
-        }
+        return FALSE;
 
       if (rev != NULL)
         {
@@ -1157,7 +1186,8 @@ _ostree_repo_update_collection_refs (OstreeRepo        *self,
  * ostree_repo_list_collection_refs:
  * @self: Repo
  * @match_collection_id: (nullable): If non-%NULL, only list refs from this collection
- * @out_all_refs: (out) (element-type OstreeCollectionRef utf8): Mapping from collection–ref to checksum
+ * @out_all_refs: (out) (element-type OstreeCollectionRef utf8) (transfer container):
+ *    Mapping from collection–ref to checksum
  * @flags: Options controlling listing behavior
  * @cancellable: Cancellable
  * @error: Error
@@ -1186,6 +1216,8 @@ ostree_repo_list_collection_refs (OstreeRepo                 *self,
                                   GCancellable               *cancellable,
                                   GError                     **error)
 {
+  GLNX_AUTO_PREFIX_ERROR ("Listing refs", error);
+
   g_return_val_if_fail (OSTREE_IS_REPO (self), FALSE);
   g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), FALSE);
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
@@ -1212,7 +1244,7 @@ ostree_repo_list_collection_refs (OstreeRepo                 *self,
   if (main_collection_id != NULL &&
       (match_collection_id == NULL || g_strcmp0 (match_collection_id, main_collection_id) == 0))
     {
-      glnx_fd_close int refs_heads_dfd = -1;
+      glnx_autofd int refs_heads_dfd = -1;
 
       if (!glnx_opendirat (self->repo_dir_fd, "refs/heads", TRUE, &refs_heads_dfd, error))
         return FALSE;
@@ -1237,7 +1269,7 @@ ostree_repo_list_collection_refs (OstreeRepo                 *self,
       while (refs_dir_exists)
         {
           struct dirent *dent;
-          glnx_fd_close int subdir_fd = -1;
+          glnx_autofd int subdir_fd = -1;
           const gchar *current_collection_id;
           g_autofree gchar *remote_collection_id = NULL;
 

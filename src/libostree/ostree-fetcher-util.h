@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2016 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -25,14 +27,29 @@
 
 G_BEGIN_DECLS
 
-/* FIXME - delete this and replace by having fetchers simply
- * return O_TMPFILE fds, not file paths.
+/* We used to only send "ostree/" but now include the version
+ * https://github.com/ostreedev/ostree/issues/1405
+ * This came up in allowing Fedora infrastructure to work around a libcurl bug with HTTP2.
  */
-static inline char *
-ostree_fetcher_generate_url_tmpname (const char *url)
+#define OSTREE_FETCHER_USERAGENT_STRING (PACKAGE_NAME "/" PACKAGE_VERSION)
+
+static inline gboolean
+_ostree_fetcher_tmpf_from_flags (OstreeFetcherRequestFlags flags,
+                                 int                       dfd,
+                                 GLnxTmpfile              *tmpf,
+                                 GError                  **error)
 {
-  return g_compute_checksum_for_string (G_CHECKSUM_SHA256,
-                                        url, strlen (url));
+  if ((flags & OSTREE_FETCHER_REQUEST_LINKABLE) > 0)
+    {
+      if (!glnx_open_tmpfile_linkable_at (dfd, ".", O_RDWR | O_CLOEXEC, tmpf, error))
+        return FALSE;
+    }
+  else if (!glnx_open_anonymous_tmpfile (O_RDWR | O_CLOEXEC, tmpf, error))
+    return FALSE;
+
+  if (!glnx_fchmod (tmpf->fd, 0644, error))
+    return FALSE;
+  return TRUE;
 }
 
 gboolean _ostree_fetcher_mirrored_request_to_membuf (OstreeFetcher *fetcher,

@@ -2,9 +2,9 @@
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
-# Some tests assert that we will see English strings
-export LC_ALL=C.UTF-8
 DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+
+binaries := $(shell dh_listpackages)
 
 %:
 	dh $@ --parallel --with=autoreconf,gir,systemd
@@ -13,6 +13,7 @@ override_dh_autoreconf:
 	env NOCONFIGURE=1 dh_autoreconf ./autogen.sh
 
 configure_options = \
+	GJS=some-nonexistent-gjs-binary \
 	--enable-experimental-api \
 	--disable-otmpfile \
 	--enable-installed-tests \
@@ -20,15 +21,20 @@ configure_options = \
 	--with-dracut \
 	--with-grub2 \
 	--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
+	--with-libsystemd \
 	--with-systemdsystemgeneratordir=/lib/systemd/system-generators \
 	--with-systemdsystemunitdir=/lib/systemd/system \
 	$(NULL)
 
-ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
+ifneq ($(filter libostree-doc,$(binaries)),)
 configure_options += --enable-gtk-doc
-configure_options += --enable-man
 else
 configure_options += --disable-gtk-doc
+endif
+
+ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
+configure_options += --enable-man
+else
 configure_options += --disable-man
 endif
 
@@ -47,6 +53,7 @@ override_dh_auto_configure:
 
 override_dh_auto_test-arch:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	chmod +x tests/test-pull-bareuseronly.sh
 	debian/test.sh
 endif
 

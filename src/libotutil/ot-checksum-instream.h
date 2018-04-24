@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -51,13 +53,9 @@ struct _OtChecksumInstreamClass
 GType          ot_checksum_instream_get_type     (void) G_GNUC_CONST;
 
 OtChecksumInstream * ot_checksum_instream_new          (GInputStream   *stream, GChecksumType   checksum);
+OtChecksumInstream * ot_checksum_instream_new_with_start (GInputStream   *stream, GChecksumType   checksum,
+                                                          const guint8 *buf, size_t len);
 
-void   ot_checksum_instream_get_digest (OtChecksumInstream *stream,
-                                        guint8          *buffer,
-                                        gsize           *digest_len);
-
-guint8* ot_checksum_instream_dup_digest (OtChecksumInstream *stream,
-                                         gsize              *ret_len);
 char * ot_checksum_instream_get_string (OtChecksumInstream *stream);
 
 G_END_DECLS

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -21,6 +23,7 @@
 
 #pragma once
 
+#include <sys/stat.h>
 #include <gio/gio.h>
 #include <ostree-types.h>
 
@@ -65,6 +68,7 @@ G_BEGIN_DECLS
  * @OSTREE_OBJECT_TYPE_COMMIT: Toplevel object, refers to tree and dirmeta for root
  * @OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT: Toplevel object, refers to a deleted commit
  * @OSTREE_OBJECT_TYPE_COMMIT_META: Detached metadata for a commit
+ * @OSTREE_OBJECT_TYPE_PAYLOAD_LINK: Symlink to a .file given its checksum on the payload only.
  *
  * Enumeration for core object types; %OSTREE_OBJECT_TYPE_FILE is for
  * content, the other types are metadata.
@@ -76,6 +80,7 @@ typedef enum {
   OSTREE_OBJECT_TYPE_COMMIT = 4,              /* .commit */
   OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT = 5,    /* .commit-tombstone */
   OSTREE_OBJECT_TYPE_COMMIT_META = 6,         /* .commitmeta */
+  OSTREE_OBJECT_TYPE_PAYLOAD_LINK = 7,         /* .payload-link */
 } OstreeObjectType;
 
 /**
@@ -91,7 +96,7 @@ typedef enum {
  *
  * Last valid object type; use this to validate ranges.
  */
-#define OSTREE_OBJECT_TYPE_LAST OSTREE_OBJECT_TYPE_COMMIT_META
+#define OSTREE_OBJECT_TYPE_LAST OSTREE_OBJECT_TYPE_PAYLOAD_LINK
 
 /**
  * OSTREE_DIRMETA_GVARIANT_FORMAT:
@@ -227,6 +232,23 @@ typedef enum {
  * Since: 2017.7
  */
 #define OSTREE_COMMIT_META_KEY_ENDOFLIFE "ostree.endoflife"
+/**
+ * OSTREE_COMMIT_META_KEY_SOURCE_TITLE:
+ *
+ * GVariant type `s`. This should hold a relatively short single line value
+ * containing a human-readable "source" for a commit, intended to be displayed
+ * near the origin ref.  This is particularly useful for systems that inject
+ * content into an OSTree commit from elsewhere - for example, generating from
+ * an OCI or qcow2 image. Or if generating from packages, the enabled repository
+ * names and their versions.
+ *
+ * Try to keep this key short (e.g. < 80 characters) and human-readable; if you
+ * desire machine readable data, consider injecting separate metadata keys.
+ *
+ * Since: 2017.13
+ */
+#define OSTREE_COMMIT_META_KEY_SOURCE_TITLE "ostree.source-title"
+
 /**
  * OSTREE_COMMIT_META_KEY_REF_BINDING:
  *
@@ -421,6 +443,33 @@ gboolean ostree_checksum_file (GFile             *f,
                                GError           **error);
 
 _OSTREE_PUBLIC
+gboolean ostree_break_hardlink (int               dfd,
+                                const char       *path,
+                                gboolean          skip_xattrs,
+                                GCancellable     *cancellable,
+                                GError          **error);
+
+/**
+ * OstreeChecksumFlags:
+ *
+ * Since: 2017.13
+ */
+typedef enum {
+  OSTREE_CHECKSUM_FLAGS_NONE = 0,
+  OSTREE_CHECKSUM_FLAGS_IGNORE_XATTRS = (1 << 0),
+} OstreeChecksumFlags;
+
+_OSTREE_PUBLIC
+gboolean ostree_checksum_file_at (int               dfd,
+                                  const char       *path,
+                                  struct stat      *stbuf,
+                                  OstreeObjectType  objtype,
+                                  OstreeChecksumFlags flags,
+                                  char            **out_checksum,
+                                  GCancellable     *cancellable,
+                                  GError          **error);
+
+_OSTREE_PUBLIC
 void ostree_checksum_file_async (GFile                 *f,
                                  OstreeObjectType       objtype,
                                  int                    io_priority,
@@ -472,6 +521,9 @@ _OSTREE_PUBLIC
 gchar *  ostree_commit_get_parent            (GVariant  *commit_variant);
 _OSTREE_PUBLIC
 guint64  ostree_commit_get_timestamp         (GVariant  *commit_variant);
+
+_OSTREE_PUBLIC
+gchar *  ostree_commit_get_content_checksum  (GVariant  *commit_variant);
 
 _OSTREE_PUBLIC
 gboolean ostree_check_version (guint required_year, guint required_release);

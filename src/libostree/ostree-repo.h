@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -106,6 +108,48 @@ OstreeRepo *  ostree_repo_create_at (int             dfd,
                                      GError        **error);
 
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
+
+/**
+ * OstreeRepoLockType:
+ * @OSTREE_REPO_LOCK_SHARED: A shared lock
+ * @OSTREE_REPO_LOCK_EXCLUSIVE: An exclusive lock
+ *
+ * The type of repository lock to acquire.
+ *
+ * Since: 2017.14
+ */
+typedef enum {
+  OSTREE_REPO_LOCK_SHARED,
+  OSTREE_REPO_LOCK_EXCLUSIVE
+} OstreeRepoLockType;
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_lock_push (OstreeRepo          *self,
+                                     OstreeRepoLockType   lock_type,
+                                     GCancellable        *cancellable,
+                                     GError             **error);
+_OSTREE_PUBLIC
+gboolean      ostree_repo_lock_pop (OstreeRepo    *self,
+                                    GCancellable  *cancellable,
+                                    GError       **error);
+
+/**
+ * OstreeRepoAutoLock: (skip)
+ *
+ * This is simply an alias to #OstreeRepo used for automatic lock cleanup.
+ * See ostree_repo_auto_lock_push() for its intended usage.
+ *
+ * Since: 2017.14
+ */
+typedef OstreeRepo OstreeRepoAutoLock;
+
+_OSTREE_PUBLIC
+OstreeRepoAutoLock * ostree_repo_auto_lock_push (OstreeRepo          *self,
+                                                 OstreeRepoLockType   lock_type,
+                                                 GCancellable        *cancellable,
+                                                 GError             **error);
+_OSTREE_PUBLIC
+void          ostree_repo_auto_lock_cleanup (OstreeRepoAutoLock *lock);
 
 _OSTREE_PUBLIC
 const gchar * ostree_repo_get_collection_id (OstreeRepo   *self);
@@ -319,6 +363,12 @@ _OSTREE_PUBLIC
 gboolean      ostree_repo_abort_transaction (OstreeRepo     *self,
                                              GCancellable   *cancellable,
                                              GError        **error);
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_mark_commit_partial (OstreeRepo     *self,
+                                               const char     *checksum,
+                                               gboolean        is_partial,
+                                               GError        **error);
 
 _OSTREE_PUBLIC
 void          ostree_repo_transaction_set_refspec (OstreeRepo *self,
@@ -539,7 +589,20 @@ gboolean      ostree_repo_load_variant_if_exists (OstreeRepo  *self,
                                                   GVariant     **out_variant,
                                                   GError       **error);
 
+/**
+ * OstreeRepoCommitState:
+ * @OSTREE_REPO_COMMIT_STATE_NORMAL: Commit is complete. This is the default.
+ *    (Since: 2017.14.)
+ * @OSTREE_REPO_COMMIT_STATE_PARTIAL: One or more objects are missing from the
+ *    local copy of the commit, but metadata is present. (Since: 2015.7.)
+ *
+ * Flags representing the state of a commit in the local repository, as returned
+ * by ostree_repo_load_commit().
+ *
+ * Since: 2015.7
+ */
 typedef enum {
+  OSTREE_REPO_COMMIT_STATE_NORMAL = 0,
   OSTREE_REPO_COMMIT_STATE_PARTIAL = (1 << 0),
 } OstreeRepoCommitState;
 
@@ -595,9 +658,16 @@ gboolean      ostree_repo_import_object_from_with_trust (OstreeRepo           *s
 _OSTREE_PUBLIC
 gboolean      ostree_repo_delete_object (OstreeRepo           *self,
                                          OstreeObjectType      objtype,
-                                         const char           *sha256, 
+                                         const char           *sha256,
                                          GCancellable         *cancellable,
                                          GError              **error);
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_fsck_object (OstreeRepo           *self,
+                                       OstreeObjectType      objtype,
+                                       const char           *sha256,
+                                       GCancellable         *cancellable,
+                                       GError              **error);
 
 /** 
  * OstreeRepoCommitFilterResult:
@@ -630,6 +700,8 @@ typedef OstreeRepoCommitFilterResult (*OstreeRepoCommitFilter) (OstreeRepo    *r
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES: Generate size information.
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS: Canonicalize permissions for bare-user-only mode.
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED: Emit an error if configured SELinux policy does not provide a label
+ * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME: Delete added files/directories after commit; Since: 2017.13
+ * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL: If a devino cache hit is found, skip modifier filters (non-directories only); Since: 2017.14
  */
 typedef enum {
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE = 0,
@@ -637,6 +709,8 @@ typedef enum {
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES = (1 << 1),
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS = (1 << 2),
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED = (1 << 3),
+  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME = (1 << 4),
+  OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL = (1 << 5),
 } OstreeRepoCommitModifierFlags;
 
 /**
@@ -846,7 +920,7 @@ typedef enum {
 /**
  * OstreeRepoCheckoutOverwriteMode:
  * @OSTREE_REPO_CHECKOUT_OVERWRITE_NONE: No special options
- * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES: When layering checkouts, unlink() and replace existing files, but do not modify existing directories
+ * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_FILES: When layering checkouts, unlink() and replace existing files, but do not modify existing directories (unless whiteouts are enabled, then directories are replaced)
  * @OSTREE_REPO_CHECKOUT_OVERWRITE_ADD_FILES: Only add new files/directories
  * @OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_IDENTICAL: Like UNION_FILES, but error if files are not identical (requires hardlink checkouts)
  */
@@ -867,6 +941,34 @@ ostree_repo_checkout_tree (OstreeRepo               *self,
                            GFileInfo                *source_info,
                            GCancellable             *cancellable,
                            GError                  **error);
+
+/**
+ * OstreeRepoCheckoutFilterResult:
+ * @OSTREE_REPO_CHECKOUT_FILTER_ALLOW: Do checkout this object
+ * @OSTREE_REPO_CHECKOUT_FILTER_SKIP: Ignore this object
+ *
+ * Since: 2018.2
+ */
+typedef enum {
+  OSTREE_REPO_CHECKOUT_FILTER_ALLOW,
+  OSTREE_REPO_CHECKOUT_FILTER_SKIP
+} OstreeRepoCheckoutFilterResult;
+
+/**
+ * OstreeRepoCheckoutFilter:
+ * @repo: Repo
+ * @path: Path to file
+ * @stbuf: File information
+ * @user_data: User data
+ *
+ * Returns: #OstreeRepoCheckoutFilterResult saying whether or not to checkout this file
+ *
+ * Since: 2018.2
+ */
+typedef OstreeRepoCheckoutFilterResult (*OstreeRepoCheckoutFilter) (OstreeRepo    *repo,
+                                                                    const char    *path,
+                                                                    struct stat   *stbuf,
+                                                                    gpointer       user_data);
 
 /**
  * OstreeRepoCheckoutAtOptions:
@@ -895,7 +997,9 @@ typedef struct {
   OstreeRepoDevInoCache *devino_to_csum_cache;
 
   int unused_ints[6];
-  gpointer unused_ptrs[5];
+  gpointer unused_ptrs[3];
+  OstreeRepoCheckoutFilter filter; /* Since: 2018.2 */
+  gpointer filter_user_data; /* Since: 2018.2 */
   OstreeSePolicy *sepolicy; /* Since: 2017.6 */
   const char *sepolicy_prefix;
 } OstreeRepoCheckoutAtOptions;
@@ -908,6 +1012,9 @@ _OSTREE_PUBLIC
 OstreeRepoDevInoCache * ostree_repo_devino_cache_ref (OstreeRepoDevInoCache *cache);
 _OSTREE_PUBLIC
 void ostree_repo_devino_cache_unref (OstreeRepoDevInoCache *cache);
+
+_OSTREE_PUBLIC
+void ostree_repo_checkout_at_options_set_devino (OstreeRepoCheckoutAtOptions *opts, OstreeRepoDevInoCache *cache);
 
 _OSTREE_PUBLIC
 gboolean ostree_repo_checkout_at (OstreeRepo                         *self,

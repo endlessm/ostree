@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -23,6 +25,7 @@
 
 #include "ostree-core-private.h"
 #include "ostree-repo-private.h"
+#include "ostree-autocleanups.h"
 #include "otutil.h"
 
 typedef struct {
@@ -36,16 +39,6 @@ typedef struct {
 } OtPruneData;
 
 static gboolean
-prune_commitpartial_file (OstreeRepo    *repo,
-                          const char    *checksum,
-                          GCancellable  *cancellable,
-                          GError       **error)
-{
-  g_autofree char *path = _ostree_get_commitpartial_path (checksum);
-  return ot_ensure_unlinked_at (repo->repo_dir_fd, path, error);
-}
-
-static gboolean
 maybe_prune_loose_object (OtPruneData        *data,
                           OstreeRepoPruneFlags    flags,
                           const char         *checksum,
@@ -53,40 +46,79 @@ maybe_prune_loose_object (OtPruneData        *data,
                           GCancellable       *cancellable,
                           GError            **error)
 {
+  gboolean reachable = FALSE;
   g_autoptr(GVariant) key = NULL;
 
   key = ostree_object_name_serialize (checksum, objtype);
 
-  if (!g_hash_table_lookup_extended (data->reachable, key, NULL, NULL))
+  if (g_hash_table_lookup_extended (data->reachable, key, NULL, NULL))
+    reachable = TRUE;
+  else
     {
+      guint64 storage_size = 0;
+
       g_debug ("Pruning unneeded object %s.%s", checksum,
                ostree_object_type_to_string (objtype));
+
+      if (!ostree_repo_query_object_storage_size (data->repo, objtype, checksum,
+                                                  &storage_size, cancellable, error))
+        return FALSE;
+
+      data->freed_bytes += storage_size;
+
       if (!(flags & OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE))
         {
-          guint64 storage_size = 0;
-
-          if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
+          if (objtype == OSTREE_OBJECT_TYPE_PAYLOAD_LINK)
             {
-              if (!prune_commitpartial_file (data->repo, checksum, cancellable, error))
+              ssize_t size;
+              char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
+              char target_checksum[OSTREE_SHA256_STRING_LEN+1];
+              char target_buf[_OSTREE_LOOSE_PATH_MAX + _OSTREE_PAYLOAD_LINK_PREFIX_LEN];
+
+              _ostree_loose_path (loose_path_buf, checksum, OSTREE_OBJECT_TYPE_PAYLOAD_LINK, data->repo->mode);
+              size = readlinkat (data->repo->objects_dir_fd, loose_path_buf, target_buf, sizeof (target_buf));
+              if (size < 0)
+                return glnx_throw_errno_prefix (error, "readlinkat");
+
+              if (size < OSTREE_SHA256_STRING_LEN + _OSTREE_PAYLOAD_LINK_PREFIX_LEN)
+                return glnx_throw (error, "invalid data size for %s", loose_path_buf);
+
+              sprintf (target_checksum, "%.2s%.62s", target_buf + _OSTREE_PAYLOAD_LINK_PREFIX_LEN, target_buf + _OSTREE_PAYLOAD_LINK_PREFIX_LEN + 3);
+
+              g_autoptr(GVariant) target_key = ostree_object_name_serialize (target_checksum, OSTREE_OBJECT_TYPE_FILE);
+
+              if (g_hash_table_lookup_extended (data->reachable, target_key, NULL, NULL))
+                {
+                  guint64 target_storage_size = 0;
+                  if (!ostree_repo_query_object_storage_size (data->repo, OSTREE_OBJECT_TYPE_FILE, target_checksum,
+                                                              &target_storage_size, cancellable, error))
+                    return FALSE;
+
+                  reachable = target_storage_size >= data->repo->payload_link_threshold;
+                  if (reachable)
+                    goto exit;
+                }
+            }
+          else if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
+            {
+              if (!ostree_repo_mark_commit_partial (data->repo, checksum, FALSE, error))
                 return FALSE;
             }
-
-          if (!ostree_repo_query_object_storage_size (data->repo, objtype, checksum,
-                                                      &storage_size, cancellable, error))
-            return FALSE;
 
           if (!ostree_repo_delete_object (data->repo, objtype, checksum,
                                           cancellable, error))
             return FALSE;
 
-          data->freed_bytes += storage_size;
         }
+
       if (OSTREE_OBJECT_TYPE_IS_META (objtype))
         data->n_unreachable_meta++;
       else
         data->n_unreachable_content++;
     }
-  else
+
+ exit:
+  if (reachable)
     {
       g_debug ("Keeping needed object %s.%s", checksum,
                ostree_object_type_to_string (objtype));
@@ -160,12 +192,20 @@ _ostree_repo_prune_tmp (OstreeRepo *self,
  * Prune static deltas, if COMMIT is specified then delete static delta files only
  * targeting that commit; otherwise any static delta of non existing commits are
  * deleted.
+ *
+ * This function takes an exclusive lock on the @self repository.
  */
 gboolean
 ostree_repo_prune_static_deltas (OstreeRepo *self, const char *commit,
                                  GCancellable      *cancellable,
                                  GError           **error)
 {
+  g_autoptr(OstreeRepoAutoLock) lock =
+    ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable,
+                                error);
+  if (!lock)
+    return FALSE;
+
   g_autoptr(GPtrArray) deltas = NULL;
   if (!ostree_repo_list_static_delta_names (self, &deltas,
                                             cancellable, error))
@@ -282,10 +322,12 @@ repo_prune_internal (OstreeRepo        *self,
  * of traversing all commits, only refs will be used.  Particularly
  * when combined with @depth, this is a convenient way to delete
  * history from the repository.
- * 
+ *
  * Use the %OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE to just determine
  * statistics on objects that would be deleted, without actually
  * deleting them.
+ *
+ * This function takes an exclusive lock on the @self repository.
  */
 gboolean
 ostree_repo_prune (OstreeRepo        *self,
@@ -297,6 +339,12 @@ ostree_repo_prune (OstreeRepo        *self,
                    GCancellable      *cancellable,
                    GError           **error)
 {
+  g_autoptr(OstreeRepoAutoLock) lock =
+    ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable,
+                                error);
+  if (!lock)
+    return FALSE;
+
   g_autoptr(GHashTable) objects = NULL;
   gboolean refs_only = flags & OSTREE_REPO_PRUNE_FLAGS_REFS_ONLY;
 
@@ -391,6 +439,8 @@ ostree_repo_prune (OstreeRepo        *self,
  *
  * The %OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE flag may be specified to just determine
  * statistics on objects that would be deleted, without actually deleting them.
+ *
+ * This function takes an exclusive lock on the @self repository.
  */
 gboolean
 ostree_repo_prune_from_reachable (OstreeRepo        *self,
@@ -401,6 +451,12 @@ ostree_repo_prune_from_reachable (OstreeRepo        *self,
                                   GCancellable      *cancellable,
                                   GError           **error)
 {
+  g_autoptr(OstreeRepoAutoLock) lock =
+    ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable,
+                                error);
+  if (!lock)
+    return FALSE;
+
   g_autoptr(GHashTable) objects = NULL;
 
   if (!ostree_repo_list_objects (self, OSTREE_REPO_LIST_OBJECTS_ALL | OSTREE_REPO_LIST_OBJECTS_NO_PARENTS,

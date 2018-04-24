@@ -2,6 +2,8 @@
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  * Copyright (C) 2015 Red Hat, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -45,6 +47,9 @@
 #include <glib/gstdio.h>
 #include <sys/file.h>
 #include <sys/statvfs.h>
+
+#define REPO_LOCK_DISABLED (-2)
+#define REPO_LOCK_BLOCKING (-1)
 
 /* ABI Size checks for ostree-repo.h, only for LP64 systems;
  * https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models
@@ -155,6 +160,526 @@ static guint signals[LAST_SIGNAL] = { 0 };
 G_DEFINE_TYPE (OstreeRepo, ostree_repo, G_TYPE_OBJECT)
 
 #define SYSCONF_REMOTES SHORTENED_SYSCONFDIR "/ostree/remotes.d"
+
+/* Repository locking
+ *
+ * To guard against objects being deleted (e.g., prune) while they're in
+ * use by another operation is accessing them (e.g., commit), the
+ * repository must be locked by concurrent writers.
+ *
+ * The locking is implemented by maintaining a thread local table of
+ * lock stacks per repository. This allows thread safe locking since
+ * each thread maintains its own lock stack. See the OstreeRepoLock type
+ * below.
+ *
+ * The actual locking is done using either open file descriptor locks or
+ * flock locks. This allows the locking to work with concurrent
+ * processes. The lock file is held on the ".lock" file within the
+ * repository.
+ *
+ * The intended usage is to take a shared lock when writing objects or
+ * reading objects in critical sections. Exclusive locks are taken when
+ * deleting objects.
+ *
+ * To allow fine grained locking within libostree, the lock is
+ * maintained as a stack. The core APIs then push or pop from the stack.
+ * When pushing or popping a lock state identical to the existing or
+ * next state, the stack is simply updated. Only when upgrading or
+ * downgrading the lock (changing to/from unlocked, pushing exclusive on
+ * shared or popping exclusive to shared) are actual locking operations
+ * performed.
+ */
+
+static void
+free_repo_lock_table (gpointer data)
+{
+  GHashTable *lock_table = data;
+
+  if (lock_table != NULL)
+    {
+      g_debug ("Free lock table");
+      g_hash_table_destroy (lock_table);
+    }
+}
+
+static GPrivate repo_lock_table = G_PRIVATE_INIT (free_repo_lock_table);
+
+typedef struct {
+  int fd;
+  GQueue stack;
+} OstreeRepoLock;
+
+typedef struct {
+  guint len;
+  int state;
+  const char *name;
+} OstreeRepoLockInfo;
+
+static void
+repo_lock_info (OstreeRepoLock *lock, OstreeRepoLockInfo *out_info)
+{
+  g_assert (lock != NULL);
+  g_assert (out_info != NULL);
+
+  OstreeRepoLockInfo info;
+  info.len = g_queue_get_length (&lock->stack);
+  if (info.len == 0)
+    {
+      info.state = LOCK_UN;
+      info.name = "unlocked";
+    }
+  else
+    {
+      info.state = GPOINTER_TO_INT (g_queue_peek_head (&lock->stack));
+      info.name = (info.state == LOCK_EX) ? "exclusive" : "shared";
+    }
+
+  *out_info = info;
+}
+
+static void
+free_repo_lock (gpointer data)
+{
+  OstreeRepoLock *lock = data;
+
+  if (lock != NULL)
+    {
+      OstreeRepoLockInfo info;
+      repo_lock_info (lock, &info);
+
+      g_debug ("Free lock: state=%s, depth=%u", info.name, info.len);
+      g_queue_clear (&lock->stack);
+      if (lock->fd >= 0)
+        {
+          g_debug ("Closing repo lock file");
+          (void) close (lock->fd);
+        }
+      g_free (lock);
+    }
+}
+
+/* Wrapper to handle flock vs OFD locking based on GLnxLockFile */
+static gboolean
+do_repo_lock (int fd,
+              int flags)
+{
+  int res;
+
+#ifdef F_OFD_SETLK
+  struct flock fl = {
+    .l_type = (flags & ~LOCK_NB) == LOCK_EX ? F_WRLCK : F_RDLCK,
+    .l_whence = SEEK_SET,
+    .l_start = 0,
+    .l_len = 0,
+  };
+
+  res = TEMP_FAILURE_RETRY (fcntl (fd, (flags & LOCK_NB) ? F_OFD_SETLK : F_OFD_SETLKW, &fl));
+#else
+  res = -1;
+  errno = EINVAL;
+#endif
+
+  /* Fallback to flock when OFD locks not available */
+  if (res < 0)
+    {
+      if (errno == EINVAL)
+        res = TEMP_FAILURE_RETRY (flock (fd, flags));
+      if (res < 0)
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+/* Wrapper to handle flock vs OFD unlocking based on GLnxLockFile */
+static gboolean
+do_repo_unlock (int fd,
+                int flags)
+{
+  int res;
+
+#ifdef F_OFD_SETLK
+  struct flock fl = {
+    .l_type = F_UNLCK,
+    .l_whence = SEEK_SET,
+    .l_start = 0,
+    .l_len = 0,
+  };
+
+  res = TEMP_FAILURE_RETRY (fcntl (fd, (flags & LOCK_NB) ? F_OFD_SETLK : F_OFD_SETLKW, &fl));
+#else
+  res = -1;
+  errno = EINVAL;
+#endif
+
+  /* Fallback to flock when OFD locks not available */
+  if (res < 0)
+    {
+      if (errno == EINVAL)
+        res = TEMP_FAILURE_RETRY (flock (fd, LOCK_UN | flags));
+      if (res < 0)
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+push_repo_lock (OstreeRepo          *self,
+                OstreeRepoLockType   lock_type,
+                gboolean             blocking,
+                GError             **error)
+{
+  int flags = (lock_type == OSTREE_REPO_LOCK_EXCLUSIVE) ? LOCK_EX : LOCK_SH;
+  if (!blocking)
+    flags |= LOCK_NB;
+
+  GHashTable *lock_table = g_private_get (&repo_lock_table);
+  if (lock_table == NULL)
+    {
+      g_debug ("Creating repo lock table");
+      lock_table = g_hash_table_new_full (NULL, NULL, NULL,
+                                          (GDestroyNotify)free_repo_lock);
+      g_private_set (&repo_lock_table, lock_table);
+    }
+
+  OstreeRepoLock *lock = g_hash_table_lookup (lock_table, self);
+  if (lock == NULL)
+    {
+      lock = g_new0 (OstreeRepoLock, 1);
+      g_queue_init (&lock->stack);
+      g_debug ("Opening repo lock file");
+      lock->fd = TEMP_FAILURE_RETRY (openat (self->repo_dir_fd, ".lock",
+                                             O_CREAT | O_RDWR | O_CLOEXEC,
+                                             0600));
+      if (lock->fd < 0)
+        {
+          free_repo_lock (lock);
+          return glnx_throw_errno_prefix (error,
+                                          "Opening lock file %s/.lock failed",
+                                          gs_file_get_path_cached (self->repodir));
+        }
+      g_hash_table_insert (lock_table, self, lock);
+    }
+
+  OstreeRepoLockInfo info;
+  repo_lock_info (lock, &info);
+  g_debug ("Push lock: state=%s, depth=%u", info.name, info.len);
+
+  if (info.state == LOCK_EX)
+    {
+      g_debug ("Repo already locked exclusively, extending stack");
+      g_queue_push_head (&lock->stack, GINT_TO_POINTER (LOCK_EX));
+    }
+  else
+    {
+      int next_state = (flags & LOCK_EX) ? LOCK_EX : LOCK_SH;
+      const char *next_state_name = (flags & LOCK_EX) ? "exclusive" : "shared";
+
+      g_debug ("Locking repo %s", next_state_name);
+      if (!do_repo_lock (lock->fd, flags))
+        return glnx_throw_errno_prefix (error, "Locking repo %s failed",
+                                        next_state_name);
+
+      g_queue_push_head (&lock->stack, GINT_TO_POINTER (next_state));
+    }
+
+  return TRUE;
+}
+
+static gboolean
+pop_repo_lock (OstreeRepo  *self,
+               gboolean     blocking,
+               GError     **error)
+{
+  int flags = blocking ? 0 : LOCK_NB;
+
+  GHashTable *lock_table = g_private_get (&repo_lock_table);
+  g_return_val_if_fail (lock_table != NULL, FALSE);
+
+  OstreeRepoLock *lock = g_hash_table_lookup (lock_table, self);
+  g_return_val_if_fail (lock != NULL, FALSE);
+  g_return_val_if_fail (lock->fd != -1, FALSE);
+
+  OstreeRepoLockInfo info;
+  repo_lock_info (lock, &info);
+  g_return_val_if_fail (info.len > 0, FALSE);
+
+  g_debug ("Pop lock: state=%s, depth=%u", info.name, info.len);
+  if (info.len > 1)
+    {
+      int next_state = GPOINTER_TO_INT (g_queue_peek_nth (&lock->stack, 1));
+
+      /* Drop back to the previous lock state if it differs */
+      if (next_state != info.state)
+        {
+          /* We should never drop from shared to exclusive */
+          g_return_val_if_fail (next_state == LOCK_SH, FALSE);
+          g_debug ("Returning lock state to shared");
+          if (!do_repo_lock (lock->fd, next_state | flags))
+            return glnx_throw_errno_prefix (error,
+                                            "Setting repo lock to shared failed");
+        }
+      else
+        g_debug ("Maintaining lock state as %s", info.name);
+    }
+  else
+    {
+      /* Lock stack will be empty, unlock */
+      g_debug ("Unlocking repo");
+      if (!do_repo_unlock (lock->fd, flags))
+        return glnx_throw_errno_prefix (error, "Unlocking repo failed");
+    }
+
+  g_queue_pop_head (&lock->stack);
+
+  return TRUE;
+}
+
+/**
+ * ostree_repo_lock_push:
+ * @self: a #OstreeRepo
+ * @lock_type: the type of lock to acquire
+ * @cancellable: a #GCancellable
+ * @error: a #GError
+ *
+ * Takes a lock on the repository and adds it to the lock stack. If @lock_type
+ * is %OSTREE_REPO_LOCK_SHARED, a shared lock is taken. If @lock_type is
+ * %OSTREE_REPO_LOCK_EXCLUSIVE, an exclusive lock is taken. The actual lock
+ * state is only changed when locking a previously unlocked repository or
+ * upgrading the lock from shared to exclusive. If the requested lock state is
+ * unchanged or would represent a downgrade (exclusive to shared), the lock
+ * state is not changed and the stack is simply updated.
+ *
+ * ostree_repo_lock_push() waits for the lock depending on the repository's
+ * lock-timeout configuration. When lock-timeout is -1, a blocking lock is
+ * attempted. Otherwise, the lock is taken non-blocking and
+ * ostree_repo_lock_push() will sleep synchronously up to lock-timeout seconds
+ * attempting to acquire the lock. If the lock cannot be acquired within the
+ * timeout, a %G_IO_ERROR_WOULD_BLOCK error is returned.
+ *
+ * If @self is not writable by the user, then no locking is attempted and
+ * %TRUE is returned.
+ *
+ * Returns: %TRUE on success, otherwise %FALSE with @error set
+ * Since: 2017.14
+ */
+gboolean
+ostree_repo_lock_push (OstreeRepo          *self,
+                       OstreeRepoLockType   lock_type,
+                       GCancellable        *cancellable,
+                       GError             **error)
+{
+  g_return_val_if_fail (self != NULL, FALSE);
+  g_return_val_if_fail (OSTREE_IS_REPO (self), FALSE);
+  g_return_val_if_fail (self->inited, FALSE);
+  g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), FALSE);
+  g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+  if (!self->writable)
+    return TRUE;
+
+  g_assert (self->lock_timeout_seconds >= REPO_LOCK_DISABLED);
+  if (self->lock_timeout_seconds == REPO_LOCK_DISABLED)
+    return TRUE; /* No locking */
+  else if (self->lock_timeout_seconds == REPO_LOCK_BLOCKING)
+    {
+      g_debug ("Pushing lock blocking");
+      return push_repo_lock (self, lock_type, TRUE, error);
+    }
+  else
+    {
+      /* Convert to unsigned to guard against negative values */
+      guint lock_timeout_seconds = self->lock_timeout_seconds;
+      guint waited = 0;
+      g_debug ("Pushing lock non-blocking with timeout %u",
+               lock_timeout_seconds);
+      for (;;)
+        {
+          if (g_cancellable_set_error_if_cancelled (cancellable, error))
+            return FALSE;
+
+          g_autoptr(GError) local_error = NULL;
+          if (push_repo_lock (self, lock_type, FALSE, &local_error))
+            return TRUE;
+
+          if (!g_error_matches (local_error, G_IO_ERROR,
+                                G_IO_ERROR_WOULD_BLOCK))
+            {
+              g_propagate_error (error, g_steal_pointer (&local_error));
+              return FALSE;
+            }
+
+          if (waited >= lock_timeout_seconds)
+            {
+              g_debug ("Push lock: Could not acquire lock within %u seconds",
+                       lock_timeout_seconds);
+              g_propagate_error (error, g_steal_pointer (&local_error));
+              return FALSE;
+            }
+
+          /* Sleep 1 second and try again */
+          if (waited % 60 == 0)
+            {
+              guint remaining = lock_timeout_seconds - waited;
+              g_debug ("Push lock: Waiting %u more second%s to acquire lock",
+                       remaining, (remaining == 1) ? "" : "s");
+            }
+          waited++;
+          sleep (1);
+        }
+    }
+}
+
+/**
+ * ostree_repo_lock_pop:
+ * @self: a #OstreeRepo
+ * @cancellable: a #GCancellable
+ * @error: a #GError
+ *
+ * Remove the current repository lock state from the lock stack. If the lock
+ * stack becomes empty, the repository is unlocked. Otherwise, the lock state
+ * only changes when transitioning from an exclusive lock back to a shared
+ * lock.
+ *
+ * ostree_repo_lock_pop() waits for the lock depending on the repository's
+ * lock-timeout configuration. When lock-timeout is -1, a blocking lock is
+ * attempted. Otherwise, the lock is removed non-blocking and
+ * ostree_repo_lock_pop() will sleep synchronously up to lock-timeout seconds
+ * attempting to remove the lock. If the lock cannot be removed within the
+ * timeout, a %G_IO_ERROR_WOULD_BLOCK error is returned.
+ *
+ * If @self is not writable by the user, then no unlocking is attempted and
+ * %TRUE is returned.
+ *
+ * Returns: %TRUE on success, otherwise %FALSE with @error set
+ * Since: 2017.14
+ */
+gboolean
+ostree_repo_lock_pop (OstreeRepo    *self,
+                      GCancellable  *cancellable,
+                      GError       **error)
+{
+  g_return_val_if_fail (self != NULL, FALSE);
+  g_return_val_if_fail (OSTREE_IS_REPO (self), FALSE);
+  g_return_val_if_fail (self->inited, FALSE);
+  g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), FALSE);
+  g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+  if (!self->writable)
+    return TRUE;
+
+  g_assert (self->lock_timeout_seconds >= REPO_LOCK_DISABLED);
+  if (self->lock_timeout_seconds == REPO_LOCK_DISABLED)
+    return TRUE;
+  else if (self->lock_timeout_seconds == REPO_LOCK_BLOCKING)
+    {
+      g_debug ("Popping lock blocking");
+      return pop_repo_lock (self, TRUE, error);
+    }
+  else
+    {
+      /* Convert to unsigned to guard against negative values */
+      guint lock_timeout_seconds = self->lock_timeout_seconds;
+      guint waited = 0;
+      g_debug ("Popping lock non-blocking with timeout %u",
+               lock_timeout_seconds);
+      for (;;)
+        {
+          if (g_cancellable_set_error_if_cancelled (cancellable, error))
+            return FALSE;
+
+          g_autoptr(GError) local_error = NULL;
+          if (pop_repo_lock (self, FALSE, &local_error))
+            return TRUE;
+
+          if (!g_error_matches (local_error, G_IO_ERROR,
+                                G_IO_ERROR_WOULD_BLOCK))
+            {
+              g_propagate_error (error, g_steal_pointer (&local_error));
+              return FALSE;
+            }
+
+          if (waited >= lock_timeout_seconds)
+            {
+              g_debug ("Pop lock: Could not remove lock within %u seconds",
+                       lock_timeout_seconds);
+              g_propagate_error (error, g_steal_pointer (&local_error));
+              return FALSE;
+            }
+
+          /* Sleep 1 second and try again */
+          if (waited % 60 == 0)
+            {
+              guint remaining = lock_timeout_seconds - waited;
+              g_debug ("Pop lock: Waiting %u more second%s to remove lock",
+                       remaining, (remaining == 1) ? "" : "s");
+            }
+          waited++;
+          sleep (1);
+        }
+    }
+}
+
+/**
+ * ostree_repo_auto_lock_push: (skip)
+ * @self: a #OstreeRepo
+ * @lock_type: the type of lock to acquire
+ * @cancellable: a #GCancellable
+ * @error: a #GError
+ *
+ * Like ostree_repo_lock_push(), but for usage with #OstreeRepoAutoLock.
+ * The intended usage is to declare the #OstreeRepoAutoLock with
+ * g_autoptr() so that ostree_repo_auto_lock_cleanup() is called when it
+ * goes out of scope. This will automatically pop the lock status off
+ * the stack if it was acquired successfully.
+ *
+ * |[<!-- language="C" -->
+ * g_autoptr(OstreeRepoAutoLock) lock = NULL;
+ * lock = ostree_repo_auto_lock_push (repo, lock_type, cancellable, error);
+ * if (!lock)
+ *   return FALSE;
+ * ]|
+ *
+ * Returns: @self on success, otherwise %NULL with @error set
+ * Since: 2017.14
+ */
+OstreeRepoAutoLock *
+ostree_repo_auto_lock_push (OstreeRepo          *self,
+                            OstreeRepoLockType   lock_type,
+                            GCancellable        *cancellable,
+                            GError             **error)
+{
+  if (!ostree_repo_lock_push (self, lock_type, cancellable, error))
+    return NULL;
+  return (OstreeRepoAutoLock *)self;
+}
+
+/**
+ * ostree_repo_auto_lock_cleanup: (skip)
+ * @lock: a #OstreeRepoAutoLock
+ *
+ * A cleanup handler for use with ostree_repo_auto_lock_push(). If @lock is
+ * not %NULL, ostree_repo_lock_pop() will be called on it. If
+ * ostree_repo_lock_pop() fails, a critical warning will be emitted.
+ *
+ * Since: 2017.14
+ */
+void
+ostree_repo_auto_lock_cleanup (OstreeRepoAutoLock *lock)
+{
+  OstreeRepo *repo = lock;
+  if (repo)
+    {
+      g_autoptr(GError) error = NULL;
+      int errsv = errno;
+
+      if (!ostree_repo_lock_pop (repo, NULL, &error))
+        g_critical ("Cleanup repo lock failed: %s", error->message);
+
+      errno = errsv;
+    }
+}
 
 static GFile *
 get_remotes_d_dir (OstreeRepo          *self,
@@ -488,18 +1013,13 @@ ostree_repo_finalize (GObject *object)
   g_free (self->stagedir_prefix);
   g_clear_object (&self->repodir_fdrel);
   g_clear_object (&self->repodir);
-  if (self->repo_dir_fd != -1)
-    (void) close (self->repo_dir_fd);
+  glnx_close_fd (&self->repo_dir_fd);
   glnx_tmpdir_unset (&self->commit_stagedir);
   glnx_release_lock_file (&self->commit_stagedir_lock);
-  if (self->tmp_dir_fd != -1)
-    (void) close (self->tmp_dir_fd);
-  if (self->cache_dir_fd != -1)
-    (void) close (self->cache_dir_fd);
-  if (self->objects_dir_fd != -1)
-    (void) close (self->objects_dir_fd);
-  if (self->uncompressed_objects_dir_fd != -1)
-    (void) close (self->uncompressed_objects_dir_fd);
+  glnx_close_fd (&self->tmp_dir_fd);
+  glnx_close_fd (&self->cache_dir_fd);
+  glnx_close_fd (&self->objects_dir_fd);
+  glnx_close_fd (&self->uncompressed_objects_dir_fd);
   g_clear_object (&self->sysroot_dir);
   g_weak_ref_clear (&self->sysroot);
   g_free (self->remotes_config_dir);
@@ -510,17 +1030,25 @@ ostree_repo_finalize (GObject *object)
     g_hash_table_destroy (self->updated_uncompressed_dirs);
   if (self->config)
     g_key_file_free (self->config);
-  g_clear_pointer (&self->txn_refs, g_hash_table_destroy);
-  g_clear_pointer (&self->txn_collection_refs, g_hash_table_destroy);
+  g_clear_pointer (&self->txn.refs, g_hash_table_destroy);
+  g_clear_pointer (&self->txn.collection_refs, g_hash_table_destroy);
   g_clear_error (&self->writable_error);
   g_clear_pointer (&self->object_sizes, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&self->dirmeta_cache, (GDestroyNotify) g_hash_table_unref);
   g_mutex_clear (&self->cache_lock);
-  g_mutex_clear (&self->txn_stats_lock);
+  g_mutex_clear (&self->txn_lock);
   g_free (self->collection_id);
 
   g_clear_pointer (&self->remotes, g_hash_table_destroy);
   g_mutex_clear (&self->remotes_lock);
+
+  GHashTable *lock_table = g_private_get (&repo_lock_table);
+  if (lock_table)
+    {
+      g_hash_table_remove (lock_table, self);
+      if (g_hash_table_size (lock_table) == 0)
+        g_private_replace (&repo_lock_table, NULL);
+    }
 
   G_OBJECT_CLASS (ostree_repo_parent_class)->finalize (object);
 }
@@ -677,7 +1205,7 @@ ostree_repo_init (OstreeRepo *self)
                                                  test_error_keys, G_N_ELEMENTS (test_error_keys));
 
   g_mutex_init (&self->cache_lock);
-  g_mutex_init (&self->txn_stats_lock);
+  g_mutex_init (&self->txn_lock);
 
   self->remotes = g_hash_table_new_full (g_str_hash, g_str_equal,
                                          (GDestroyNotify) NULL,
@@ -734,7 +1262,7 @@ ostree_repo_open_at (int           dfd,
                      GCancellable *cancellable,
                      GError      **error)
 {
-  glnx_fd_close int repo_dfd = -1;
+  glnx_autofd int repo_dfd = -1;
   if (!glnx_opendirat (dfd, path, TRUE, &repo_dfd, error))
     return NULL;
 
@@ -1271,7 +1799,7 @@ _ostree_repo_remote_list (OstreeRepo *self,
   g_mutex_unlock (&self->remotes_lock);
 
   if (self->parent_repo)
-    _ostree_repo_remote_list (self, out);
+    _ostree_repo_remote_list (self->parent_repo, out);
 }
 
 /**
@@ -1463,7 +1991,7 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
   gpgme_import_status_t import_status;
   g_autofree char *source_tmp_dir = NULL;
   g_autofree char *target_tmp_dir = NULL;
-  glnx_fd_close int target_temp_fd = -1;
+  glnx_autofd int target_temp_fd = -1;
   g_autoptr(GPtrArray) keys = NULL;
   struct stat stbuf;
   gpgme_error_t gpg_error;
@@ -1596,7 +2124,7 @@ ostree_repo_remote_gpg_import (OstreeRepo         *self,
     }
   else if (errno == ENOENT)
     {
-      glnx_fd_close int fd = -1;
+      glnx_autofd int fd = -1;
 
       /* Create an empty pubring.gpg file prior to importing keys.  This
        * prevents gpg2 from creating a pubring.kbx file in the new keybox
@@ -1711,6 +2239,9 @@ out:
  * @NULL.  Likewise if the summary file is not signed, @out_signatures is
  * set to @NULL.  In either case the function still returns %TRUE.
  *
+ * This method does not verify the signature of the downloaded summary file.
+ * Use ostree_repo_verify_summary() for that.
+ *
  * Parse the summary data into a #GVariant using g_variant_new_from_bytes()
  * with #OSTREE_SUMMARY_GVARIANT_FORMAT as the format string.
  *
@@ -1799,6 +2330,7 @@ repo_create_at_internal (int             dfd,
                          GCancellable   *cancellable,
                          GError        **error)
 {
+  GLNX_AUTO_PREFIX_ERROR ("Creating repo", error);
    struct stat stbuf;
   /* We do objects/ last - if it exists we do nothing and exit successfully */
   const char *state_dirs[] = { "tmp", "extensions", "state",
@@ -1812,7 +2344,7 @@ repo_create_at_internal (int             dfd,
       return FALSE;
     if (errno == 0)
       {
-        glnx_fd_close int repo_dfd = -1;
+        glnx_autofd int repo_dfd = -1;
         if (!glnx_opendirat (dfd, path, TRUE, &repo_dfd, error))
           return FALSE;
 
@@ -1828,7 +2360,7 @@ repo_create_at_internal (int             dfd,
         return glnx_throw_errno_prefix (error, "mkdirat");
     }
 
-  glnx_fd_close int repo_dfd = -1;
+  glnx_autofd int repo_dfd = -1;
   if (!glnx_opendirat (dfd, path, TRUE, &repo_dfd, error))
     return FALSE;
 
@@ -1919,9 +2451,10 @@ ostree_repo_create (OstreeRepo     *self,
     g_variant_builder_add (builder, "{s@v}", "collection-id",
                            g_variant_new_variant (g_variant_new_string (self->collection_id)));
 
-  glnx_fd_close int repo_dir_fd = -1;
+  glnx_autofd int repo_dir_fd = -1;
+  g_autoptr(GVariant) options = g_variant_ref_sink (g_variant_builder_end (builder));
   if (!repo_create_at_internal (AT_FDCWD, repopath, mode,
-                                g_variant_builder_end (builder),
+                                options,
                                 &repo_dir_fd,
                                 cancellable, error))
     return FALSE;
@@ -1963,7 +2496,7 @@ ostree_repo_create_at (int             dfd,
                        GCancellable   *cancellable,
                        GError        **error)
 {
-  glnx_fd_close int repo_dfd = -1;
+  glnx_autofd int repo_dfd = -1;
   if (!repo_create_at_internal (dfd, path, mode, options, &repo_dfd,
                                 cancellable, error))
     return NULL;
@@ -2209,6 +2742,27 @@ reload_core_config (OstreeRepo          *self,
     self->tmp_expiry_seconds = g_ascii_strtoull (tmp_expiry_seconds, NULL, 10);
   }
 
+  /* Disable locking by default for now */
+  { gboolean locking;
+    if (!ot_keyfile_get_boolean_with_default (self->config, "core", "locking",
+                                              FALSE, &locking, error))
+      return FALSE;
+    if (!locking)
+      {
+        self->lock_timeout_seconds = REPO_LOCK_DISABLED;
+      }
+    else
+      {
+        g_autofree char *lock_timeout_seconds = NULL;
+
+        if (!ot_keyfile_get_value_with_default (self->config, "core", "lock-timeout-secs", "30",
+                                                &lock_timeout_seconds, error))
+          return FALSE;
+
+        self->lock_timeout_seconds = g_ascii_strtoull (lock_timeout_seconds, NULL, 10);
+      }
+  }
+
   { g_autofree char *compression_level_str = NULL;
 
     /* gzip defaults to 6 */
@@ -2271,6 +2825,15 @@ reload_core_config (OstreeRepo          *self,
     if (!ot_keyfile_get_boolean_with_default (self->config, "core", "add-remotes-config-dir",
                                               is_system, &self->add_remotes_config_dir, error))
       return FALSE;
+  }
+
+  { g_autofree char *payload_threshold = NULL;
+
+    if (!ot_keyfile_get_value_with_default (self->config, "core", "payload-link-threshold", "-1",
+                                            &payload_threshold, error))
+      return FALSE;
+
+    self->payload_link_threshold = g_ascii_strtoull (payload_threshold, NULL, 10);
   }
 
   return TRUE;
@@ -2475,18 +3038,6 @@ ostree_repo_open (OstreeRepo    *self,
   if (!ostree_repo_reload_config (self, cancellable, error))
     return FALSE;
 
-  /* TODO - delete this */
-  if (self->mode == OSTREE_REPO_MODE_ARCHIVE && self->enable_uncompressed_cache)
-    {
-      if (!glnx_shutil_mkdir_p_at (self->repo_dir_fd, "uncompressed-objects-cache", 0755,
-                                   cancellable, error))
-        return FALSE;
-      if (!glnx_opendirat (self->repo_dir_fd, "uncompressed-objects-cache", TRUE,
-                           &self->uncompressed_objects_dir_fd,
-                           error))
-        return FALSE;
-    }
-
   self->inited = TRUE;
   return TRUE;
 }
@@ -2528,14 +3079,12 @@ ostree_repo_set_cache_dir (OstreeRepo    *self,
                            GCancellable  *cancellable,
                            GError        **error)
 {
-  int fd;
-
+  glnx_autofd int fd = -1;
   if (!glnx_opendirat (dfd, path, TRUE, &fd, error))
     return FALSE;
 
-  if (self->cache_dir_fd != -1)
-    close (self->cache_dir_fd);
-  self->cache_dir_fd = fd;
+  glnx_close_fd (&self->cache_dir_fd);
+  self->cache_dir_fd = glnx_steal_fd (&fd);
 
   return TRUE;
 }
@@ -2738,6 +3287,8 @@ list_loose_objects_at (OstreeRepo             *self,
         objtype = OSTREE_OBJECT_TYPE_DIR_META;
       else if (strcmp (dot, ".commit") == 0)
         objtype = OSTREE_OBJECT_TYPE_COMMIT;
+      else if (strcmp (dot, ".payload-link") == 0)
+        objtype = OSTREE_OBJECT_TYPE_PAYLOAD_LINK;
       else
         continue;
 
@@ -2807,16 +3358,17 @@ load_metadata_internal (OstreeRepo       *self,
                         GVariant        **out_variant,
                         GInputStream    **out_stream,
                         guint64          *out_size,
+                        OstreeRepoCommitState *out_state,
                         GCancellable     *cancellable,
                         GError          **error)
 {
   char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
-  struct stat stbuf;
-  glnx_fd_close int fd = -1;
+  glnx_autofd int fd = -1;
   g_autoptr(GInputStream) ret_stream = NULL;
   g_autoptr(GVariant) ret_variant = NULL;
 
   g_return_val_if_fail (OSTREE_OBJECT_TYPE_IS_META (objtype), FALSE);
+  g_return_val_if_fail (objtype == OSTREE_OBJECT_TYPE_COMMIT || out_state == NULL, FALSE);
 
   /* Special caching for dirmeta objects, since they're commonly referenced many
    * times.
@@ -2853,36 +3405,14 @@ load_metadata_internal (OstreeRepo       *self,
 
   if (fd != -1)
     {
+      struct stat stbuf;
       if (!glnx_fstat (fd, &stbuf, error))
         return FALSE;
-
       if (out_variant)
         {
-          /* http://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access */
-          if (stbuf.st_size > 16*1024)
-            {
-              GMappedFile *mfile;
-
-              mfile = g_mapped_file_new_from_fd (fd, FALSE, error);
-              if (!mfile)
-                return FALSE;
-              ret_variant = g_variant_new_from_data (ostree_metadata_variant_type (objtype),
-                                                     g_mapped_file_get_contents (mfile),
-                                                     g_mapped_file_get_length (mfile),
-                                                     TRUE,
-                                                     (GDestroyNotify) g_mapped_file_unref,
-                                                     mfile);
-              g_variant_ref_sink (ret_variant);
-            }
-          else
-            {
-              g_autoptr(GBytes) data = glnx_fd_readall_bytes (fd, cancellable, error);
-              if (!data)
-                return FALSE;
-              ret_variant = g_variant_new_from_bytes (ostree_metadata_variant_type (objtype),
-                                                      data, TRUE);
-              g_variant_ref_sink (ret_variant);
-            }
+          if (!ot_variant_read_fd (fd, 0, ostree_metadata_variant_type (objtype), TRUE,
+                                   &ret_variant, error))
+            return FALSE;
 
           /* Now, let's put it in the cache */
           if (is_dirmeta_cachable)
@@ -2904,11 +3434,24 @@ load_metadata_internal (OstreeRepo       *self,
 
       if (out_size)
         *out_size = stbuf.st_size;
+
+      if (out_state)
+        {
+          g_autofree char *commitpartial_path = _ostree_get_commitpartial_path (sha256);
+          *out_state = 0;
+
+          if (!glnx_fstatat_allow_noent (self->repo_dir_fd, commitpartial_path, NULL, 0, error))
+            return FALSE;
+          if (errno == 0)
+            *out_state |= OSTREE_REPO_COMMIT_STATE_PARTIAL;
+        }
     }
   else if (self->parent_repo)
     {
-      if (!ostree_repo_load_variant (self->parent_repo, objtype, sha256, &ret_variant, error))
-        return FALSE;
+      /* Directly recurse to simplify out parameters */
+      return load_metadata_internal (self->parent_repo, objtype, sha256, error_if_not_found,
+                                     out_variant, out_stream, out_size, out_state,
+                                     cancellable, error);
     }
   else if (error_if_not_found)
     {
@@ -2952,7 +3495,7 @@ repo_load_file_archive (OstreeRepo *self,
   char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
   _ostree_loose_path (loose_path_buf, checksum, OSTREE_OBJECT_TYPE_FILE, self->mode);
 
-  glnx_fd_close int fd = -1;
+  glnx_autofd int fd = -1;
   if (!ot_openat_ignore_enoent (self->objects_dir_fd, loose_path_buf, &fd,
                                 error))
     return FALSE;
@@ -3008,7 +3551,7 @@ _ostree_repo_load_file_bare (OstreeRepo         *self,
     }
 
   struct stat stbuf;
-  glnx_fd_close int fd = -1;
+  glnx_autofd int fd = -1;
   g_autofree char *ret_symlink = NULL;
   g_autoptr(GVariant) ret_xattrs = NULL;
   char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
@@ -3082,7 +3625,7 @@ _ostree_repo_load_file_bare (OstreeRepo         *self,
               ret_symlink = g_strndup (targetbuf, target_size);
             }
           /* In the symlink case, we don't want to return the bare-user fd */
-          (void) close (glnx_steal_fd (&fd));
+          glnx_close_fd (&fd);
         }
     }
   else if (self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY)
@@ -3158,7 +3701,7 @@ ostree_repo_load_file (OstreeRepo         *self,
                                    cancellable, error);
   else
     {
-      glnx_fd_close int fd = -1;
+      glnx_autofd int fd = -1;
       struct stat stbuf;
       g_autofree char *symlink_target = NULL;
       g_autoptr(GVariant) ret_xattrs = NULL;
@@ -3220,7 +3763,7 @@ ostree_repo_load_object_stream (OstreeRepo         *self,
   if (OSTREE_OBJECT_TYPE_IS_META (objtype))
     {
       if (!load_metadata_internal (self, objtype, checksum, TRUE, NULL,
-                                   &ret_input, &size,
+                                   &ret_input, &size, NULL,
                                    cancellable, error))
         return FALSE;
     }
@@ -3399,6 +3942,84 @@ ostree_repo_delete_object (OstreeRepo           *self,
   return TRUE;
 }
 
+/* Thin wrapper for _ostree_verify_metadata_object() */
+static gboolean
+fsck_metadata_object (OstreeRepo           *self,
+                      OstreeObjectType      objtype,
+                      const char           *sha256,
+                      GCancellable         *cancellable,
+                      GError              **error)
+{
+  const char *errmsg = glnx_strjoina ("fsck ", sha256, ".", ostree_object_type_to_string (objtype));
+  GLNX_AUTO_PREFIX_ERROR (errmsg, error);
+  g_autoptr(GVariant) metadata = NULL;
+  if (!load_metadata_internal (self, objtype, sha256, TRUE,
+                               &metadata, NULL, NULL, NULL,
+                               cancellable, error))
+    return FALSE;
+
+  return _ostree_verify_metadata_object (objtype, sha256, metadata, error);
+}
+
+static gboolean
+fsck_content_object (OstreeRepo           *self,
+                     const char           *sha256,
+                     GCancellable         *cancellable,
+                     GError              **error)
+{
+  const char *errmsg = glnx_strjoina ("fsck content object ", sha256);
+  GLNX_AUTO_PREFIX_ERROR (errmsg, error);
+  g_autoptr(GInputStream) input = NULL;
+  g_autoptr(GFileInfo) file_info = NULL;
+  g_autoptr(GVariant) xattrs = NULL;
+
+  if (!ostree_repo_load_file (self, sha256, &input, &file_info, &xattrs,
+                              cancellable, error))
+    return FALSE;
+
+  /* TODO more consistency checks here */
+  const guint32 mode = g_file_info_get_attribute_uint32 (file_info, "unix::mode");
+  if (!ostree_validate_structureof_file_mode (mode, error))
+    return FALSE;
+
+  g_autofree guchar *computed_csum = NULL;
+  if (!ostree_checksum_file_from_input (file_info, xattrs, input,
+                                        OSTREE_OBJECT_TYPE_FILE, &computed_csum,
+                                        cancellable, error))
+    return FALSE;
+
+  char actual_checksum[OSTREE_SHA256_STRING_LEN+1];
+  ostree_checksum_inplace_from_bytes (computed_csum, actual_checksum);
+  return _ostree_compare_object_checksum (OSTREE_OBJECT_TYPE_FILE, sha256, actual_checksum, error);
+}
+
+/**
+ * ostree_repo_fsck_object:
+ * @self: Repo
+ * @objtype: Object type
+ * @sha256: Checksum
+ * @cancellable: Cancellable
+ * @error: Error
+ *
+ * Verify consistency of the object; this performs checks only relevant to the
+ * immediate object itself, such as checksumming. This API call will not itself
+ * traverse metadata objects for example.
+ *
+ * Since: 2017.15
+ */
+gboolean
+ostree_repo_fsck_object (OstreeRepo           *self,
+                         OstreeObjectType      objtype,
+                         const char           *sha256,
+                         GCancellable         *cancellable,
+                         GError              **error)
+{
+  if (OSTREE_OBJECT_TYPE_IS_META (objtype))
+    return fsck_metadata_object (self, objtype, sha256, cancellable, error);
+  else
+    return fsck_content_object (self, sha256, cancellable, error);
+}
+
 /**
  * ostree_repo_import_object_from:
  * @self: Destination repo
@@ -3516,7 +4137,7 @@ ostree_repo_load_variant_if_exists (OstreeRepo       *self,
                                     GError          **error)
 {
   return load_metadata_internal (self, objtype, sha256, FALSE,
-                                 out_variant, NULL, NULL, NULL, error);
+                                 out_variant, NULL, NULL, NULL, NULL, error);
 }
 
 /**
@@ -3538,7 +4159,7 @@ ostree_repo_load_variant (OstreeRepo       *self,
                           GError          **error)
 {
   return load_metadata_internal (self, objtype, sha256, TRUE,
-                                 out_variant, NULL, NULL, NULL, error);
+                                 out_variant, NULL, NULL, NULL, NULL, error);
 }
 
 /**
@@ -3561,31 +4182,8 @@ ostree_repo_load_commit (OstreeRepo            *self,
                          OstreeRepoCommitState *out_state,
                          GError               **error)
 {
-  if (out_variant)
-    {
-      if (!load_metadata_internal (self, OSTREE_OBJECT_TYPE_COMMIT, checksum, TRUE,
-                                   out_variant, NULL, NULL, NULL, error))
-        return FALSE;
-    }
-
-  if (out_state)
-    {
-      g_autofree char *commitpartial_path = _ostree_get_commitpartial_path (checksum);
-      struct stat stbuf;
-
-      *out_state = 0;
-
-      if (fstatat (self->repo_dir_fd, commitpartial_path, &stbuf, 0) == 0)
-        {
-          *out_state |= OSTREE_REPO_COMMIT_STATE_PARTIAL;
-        }
-      else if (errno != ENOENT)
-        {
-          return glnx_throw_errno_prefix (error, "fstatat(%s)", commitpartial_path);
-        }
-    }
-
-  return TRUE;
+  return load_metadata_internal (self, OSTREE_OBJECT_TYPE_COMMIT, checksum, TRUE,
+                                 out_variant, NULL, NULL, out_state, NULL, error);
 }
 
 /**
@@ -4119,7 +4717,9 @@ ostree_repo_sign_commit (OstreeRepo     *self,
    * pass the homedir so that the signing key can be imported, allowing
    * subkey signatures to be recognised. */
   g_autoptr(GError) local_error = NULL;
-  g_autoptr(GFile) verify_keydir = g_file_new_for_path (homedir);
+  g_autoptr(GFile) verify_keydir = NULL;
+  if (homedir != NULL)
+    verify_keydir = g_file_new_for_path (homedir);
   g_autoptr(OstreeGpgVerifyResult) result
     =_ostree_repo_gpg_verify_with_metadata (self, commit_data, old_metadata,
                                             NULL, verify_keydir, NULL,
@@ -4202,17 +4802,25 @@ ostree_repo_add_gpg_signature_summary (OstreeRepo     *self,
                                        GCancellable   *cancellable,
                                        GError        **error)
 {
-  g_autoptr(GBytes) summary_data = ot_file_mapat_bytes (self->repo_dir_fd, "summary", error);
+  glnx_autofd int fd = -1;
+  if (!glnx_openat_rdonly (self->repo_dir_fd, "summary", TRUE, &fd, error))
+    return FALSE;
+  g_autoptr(GBytes) summary_data = ot_fd_readall_or_mmap (fd, 0, error);
   if (!summary_data)
     return FALSE;
+  /* Note that fd is reused below */
+  glnx_close_fd (&fd);
 
-  g_autoptr(GVariant) existing_signatures = NULL;
-  if (!ot_util_variant_map_at (self->repo_dir_fd, "summary.sig",
-                               G_VARIANT_TYPE (OSTREE_SUMMARY_SIG_GVARIANT_STRING),
-                               OT_VARIANT_MAP_ALLOW_NOENT, &existing_signatures, error))
+  g_autoptr(GVariant) metadata = NULL;
+  if (!ot_openat_ignore_enoent (self->repo_dir_fd, "summary.sig", &fd, error))
     return FALSE;
+  if (fd != -1)
+    {
+      if (!ot_variant_read_fd (fd, 0, G_VARIANT_TYPE (OSTREE_SUMMARY_SIG_GVARIANT_STRING),
+                               FALSE, &metadata, error))
+        return FALSE;
+    }
 
-  g_autoptr(GVariant) new_metadata = NULL;
   for (guint i = 0; key_id[i]; i++)
     {
       g_autoptr(GBytes) signature_data = NULL;
@@ -4221,10 +4829,11 @@ ostree_repo_add_gpg_signature_summary (OstreeRepo     *self,
                       cancellable, error))
         return FALSE;
 
-      new_metadata = _ostree_detached_metadata_append_gpg_sig (existing_signatures, signature_data);
+      g_autoptr(GVariant) old_metadata = g_steal_pointer (&metadata);
+      metadata = _ostree_detached_metadata_append_gpg_sig (old_metadata, signature_data);
     }
 
-  g_autoptr(GVariant) normalized = g_variant_get_normal_form (new_metadata);
+  g_autoptr(GVariant) normalized = g_variant_get_normal_form (metadata);
 
   if (!_ostree_repo_file_replace_contents (self,
                                            self->repo_dir_fd,
@@ -4250,7 +4859,7 @@ find_keyring (OstreeRepo          *self,
               GCancellable        *cancellable,
               GError             **error)
 {
-  glnx_fd_close int fd = -1;
+  glnx_autofd int fd = -1;
   if (!ot_openat_ignore_enoent (self->repo_dir_fd, remote->keyring, &fd, error))
     return FALSE;
 
@@ -4316,7 +4925,7 @@ _ostree_repo_gpg_verify_data_internal (OstreeRepo    *self,
       g_autofree char *gpgkeypath = NULL;
       /* Add the remote's keyring file if it exists. */
 
-      OstreeRemote *remote;
+      g_autoptr(OstreeRemote) remote = NULL;
 
       remote = _ostree_repo_get_remote_inherited (self, remote_name, error);
       if (remote == NULL)
@@ -4328,7 +4937,7 @@ _ostree_repo_gpg_verify_data_internal (OstreeRepo    *self,
 
       if (keyring_data != NULL)
         {
-          _ostree_gpg_verifier_add_keyring_data (verifier, keyring_data);
+          _ostree_gpg_verifier_add_keyring_data (verifier, keyring_data, remote->keyring);
           add_global_keyring_dir = FALSE;
         }
 
@@ -4338,8 +4947,6 @@ _ostree_repo_gpg_verify_data_internal (OstreeRepo    *self,
 
       if (gpgkeypath)
         _ostree_gpg_verifier_add_key_ascii_file (verifier, gpgkeypath);
-
-      ostree_remote_unref (remote);
     }
 
   if (add_global_keyring_dir)
@@ -4759,23 +5366,21 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
           return FALSE;
 
         g_autofree char *superblock = _ostree_get_relative_static_delta_superblock_path ((from && from[0]) ? from : NULL, to);
-        glnx_fd_close int superblock_file_fd = -1;
+        glnx_autofd int superblock_file_fd = -1;
 
         if (!glnx_openat_rdonly (self->repo_dir_fd, superblock, TRUE, &superblock_file_fd, error))
           return FALSE;
 
-        g_autoptr(GInputStream) in_stream = g_unix_input_stream_new (superblock_file_fd, FALSE);
-        if (!in_stream)
+        g_autoptr(GBytes) superblock_content = ot_fd_readall_or_mmap (superblock_file_fd, 0, error);
+        if (!superblock_content)
           return FALSE;
+        g_auto(OtChecksum) hasher = { 0, };
+        ot_checksum_init (&hasher);
+        ot_checksum_update_bytes (&hasher, superblock_content);
+        guint8 digest[OSTREE_SHA256_DIGEST_LEN];
+        ot_checksum_get_digest (&hasher, digest, sizeof (digest));
 
-        g_autofree guchar *csum = NULL;
-        if (!ot_gio_checksum_stream (in_stream,
-                                     &csum,
-                                     cancellable,
-                                     error))
-          return FALSE;
-
-        g_variant_dict_insert_value (&deltas_builder, delta_names->pdata[i], ot_gvariant_new_bytearray (csum, 32));
+        g_variant_dict_insert_value (&deltas_builder, delta_names->pdata[i], ot_gvariant_new_bytearray (digest, sizeof (digest)));
       }
 
     if (delta_names->len > 0)
@@ -4929,7 +5534,16 @@ _ostree_repo_try_lock_tmpdir (int            tmpdir_dfd,
     }
   else
     {
-      did_lock = TRUE;
+      /* It's possible that we got a lock after seeing the directory, but
+       * another process deleted the tmpdir, so verify it still exists.
+       */
+      struct stat stbuf;
+      if (!glnx_fstatat_allow_noent (tmpdir_dfd, tmpdir_name, &stbuf, AT_SYMLINK_NOFOLLOW, error))
+        return FALSE;
+      if (errno == 0 && S_ISDIR (stbuf.st_mode))
+        did_lock = TRUE;
+      else
+        glnx_release_lock_file (file_lock_out);
     }
 
   *out_did_lock = did_lock;
@@ -4960,7 +5574,6 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
   while (!ret_tmpdir.initialized)
     {
       struct dirent *dent;
-      glnx_fd_close int existing_tmpdir_fd = -1;
       g_autoptr(GError) local_error = NULL;
 
       if (!glnx_dirfd_iterator_next_dent (&dfd_iter, &dent, cancellable, error))
@@ -4977,11 +5590,12 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
           dent->d_type != DT_DIR)
         continue;
 
-      glnx_fd_close int target_dfd = -1;
+      glnx_autofd int target_dfd = -1;
       if (!glnx_opendirat (dfd_iter.fd, dent->d_name, FALSE,
                            &target_dfd, &local_error))
         {
-          if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY))
+          if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY) ||
+              g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
             continue;
           else
             {
@@ -5005,6 +5619,8 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
       (void)futimens (target_dfd, NULL);
 
       /* We found an existing tmpdir which we managed to lock */
+      g_debug ("Reusing tmpdir %s", dent->d_name);
+      reusing_dir = TRUE;
       ret_tmpdir.src_dfd = tmpdir_dfd;
       ret_tmpdir.fd = glnx_steal_fd (&target_dfd);
       ret_tmpdir.path = g_strdup (dent->d_name);
@@ -5027,8 +5643,18 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
                                          error))
         return FALSE;
       if (!did_lock)
-        continue;
+        {
+          /* We raced and someone else already locked the newly created
+           * directory. Free the resources here and then mark it as
+           * uninitialized so glnx_tmpdir_cleanup doesn't delete the directory
+           * when new_tmpdir goes out of scope.
+           */
+          glnx_tmpdir_unset (&new_tmpdir);
+          new_tmpdir.initialized = FALSE;
+          continue;
+        }
 
+      g_debug ("Using new tmpdir %s", new_tmpdir.path);
       ret_tmpdir = new_tmpdir; /* Transfer ownership */
       new_tmpdir.initialized = FALSE;
     }

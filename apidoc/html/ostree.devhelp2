@@ -52,8 +52,10 @@
     <keyword type="function" name="ostree_raw_file_to_archive_z2_stream ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-archive-z2-stream"/>
     <keyword type="function" name="ostree_raw_file_to_archive_z2_stream_with_options ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-archive-z2-stream-with-options" since="2017.3"/>
     <keyword type="function" name="ostree_raw_file_to_content_stream ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-content-stream"/>
+    <keyword type="function" name="ostree_break_hardlink ()" link="ostree-Core-repository-independent-functions.html#ostree-break-hardlink" since="2017.15"/>
     <keyword type="function" name="ostree_checksum_file_from_input ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file-from-input"/>
     <keyword type="function" name="ostree_checksum_file ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file"/>
+    <keyword type="function" name="ostree_checksum_file_at ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file-at" since="2017.13"/>
     <keyword type="function" name="ostree_checksum_file_async ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file-async"/>
     <keyword type="function" name="ostree_checksum_file_async_finish ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file-async-finish"/>
     <keyword type="function" name="ostree_create_directory_metadata ()" link="ostree-Core-repository-independent-functions.html#ostree-create-directory-metadata"/>
@@ -66,6 +68,7 @@
     <keyword type="function" name="ostree_validate_structureof_dirmeta ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-structureof-dirmeta"/>
     <keyword type="function" name="ostree_commit_get_parent ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-parent"/>
     <keyword type="function" name="ostree_commit_get_timestamp ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-timestamp"/>
+    <keyword type="function" name="ostree_commit_get_content_checksum ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-content-checksum"/>
     <keyword type="function" name="ostree_check_version ()" link="ostree-Core-repository-independent-functions.html#ostree-check-version"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-SIZE:CAPS"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_WARN_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-WARN-SIZE:CAPS"/>
@@ -127,6 +130,7 @@
     <keyword type="function" name="ostree_repo_set_cache_dir ()" link="ostree-OstreeRepo.html#ostree-repo-set-cache-dir"/>
     <keyword type="function" name="ostree_repo_sign_delta ()" link="ostree-OstreeRepo.html#ostree-repo-sign-delta"/>
     <keyword type="function" name="ostree_repo_has_object ()" link="ostree-OstreeRepo.html#ostree-repo-has-object"/>
+    <keyword type="function" name="ostree_repo_mark_commit_partial ()" link="ostree-OstreeRepo.html#ostree-repo-mark-commit-partial" since="2017.15"/>
     <keyword type="function" name="ostree_repo_write_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata"/>
     <keyword type="function" name="ostree_repo_write_metadata_async ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata-async"/>
     <keyword type="function" name="ostree_repo_write_metadata_finish ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata-finish"/>
@@ -152,12 +156,13 @@
     <keyword type="function" name="ostree_repo_import_archive_to_mtree ()" link="ostree-OstreeRepo.html#ostree-repo-import-archive-to-mtree"/>
     <keyword type="function" name="ostree_repo_export_tree_to_archive ()" link="ostree-OstreeRepo.html#ostree-repo-export-tree-to-archive"/>
     <keyword type="function" name="ostree_repo_delete_object ()" link="ostree-OstreeRepo.html#ostree-repo-delete-object"/>
+    <keyword type="function" name="ostree_repo_fsck_object ()" link="ostree-OstreeRepo.html#ostree-repo-fsck-object" since="2017.15"/>
     <keyword type="function" name="OstreeRepoCommitFilter ()" link="ostree-OstreeRepo.html#OstreeRepoCommitFilter"/>
     <keyword type="function" name="ostree_repo_commit_modifier_new ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-new"/>
     <keyword type="function" name="OstreeRepoCommitModifierXattrCallback ()" link="ostree-OstreeRepo.html#OstreeRepoCommitModifierXattrCallback"/>
     <keyword type="function" name="ostree_repo_commit_modifier_set_xattr_callback ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-xattr-callback"/>
     <keyword type="function" name="ostree_repo_commit_modifier_set_sepolicy ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-sepolicy"/>
-    <keyword type="function" name="ostree_repo_commit_modifier_set_devino_cache ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-devino-cache"/>
+    <keyword type="function" name="ostree_repo_commit_modifier_set_devino_cache ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-devino-cache" since="2017.13"/>
     <keyword type="function" name="ostree_repo_commit_modifier_ref ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-ref"/>
     <keyword type="function" name="ostree_repo_commit_modifier_unref ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-unref"/>
     <keyword type="function" name="ostree_repo_devino_cache_new ()" link="ostree-OstreeRepo.html#ostree-repo-devino-cache-new"/>
@@ -172,6 +177,7 @@
     <keyword type="function" name="ostree_repo_write_commit_with_time ()" link="ostree-OstreeRepo.html#ostree-repo-write-commit-with-time"/>
     <keyword type="function" name="ostree_repo_read_commit_detached_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-read-commit-detached-metadata"/>
     <keyword type="function" name="ostree_repo_write_commit_detached_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-write-commit-detached-metadata"/>
+    <keyword type="function" name="ostree_repo_checkout_at_options_set_devino ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-at-options-set-devino"/>
     <keyword type="function" name="ostree_repo_checkout_tree ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-tree"/>
     <keyword type="function" name="ostree_repo_checkout_tree_at ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-tree-at" deprecated=""/>
     <keyword type="function" name="ostree_repo_checkout_at ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-at"/>
@@ -214,10 +220,11 @@
     <keyword type="struct" name="struct OstreeRepoTransactionStats" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats"/>
     <keyword type="enum" name="enum OstreeRepoResolveRevExtFlags" link="ostree-OstreeRepo.html#OstreeRepoResolveRevExtFlags"/>
     <keyword type="enum" name="enum OstreeRepoListRefsExtFlags" link="ostree-OstreeRepo.html#OstreeRepoListRefsExtFlags"/>
-    <keyword type="enum" name="enum OstreeRepoCommitState" link="ostree-OstreeRepo.html#OstreeRepoCommitState"/>
+    <keyword type="enum" name="enum OstreeRepoCommitState" link="ostree-OstreeRepo.html#OstreeRepoCommitState" since="2015.7"/>
     <keyword type="enum" name="enum OstreeRepoCommitFilterResult" link="ostree-OstreeRepo.html#OstreeRepoCommitFilterResult"/>
     <keyword type="typedef" name="OstreeRepoCommitModifier" link="ostree-OstreeRepo.html#OstreeRepoCommitModifier"/>
     <keyword type="enum" name="enum OstreeRepoCommitModifierFlags" link="ostree-OstreeRepo.html#OstreeRepoCommitModifierFlags"/>
+    <keyword type="struct" name="OstreeRepoCheckoutAtOptions" link="ostree-OstreeRepo.html#OstreeRepoCheckoutAtOptions"/>
     <keyword type="enum" name="enum OstreeRepoCheckoutMode" link="ostree-OstreeRepo.html#OstreeRepoCheckoutMode"/>
     <keyword type="enum" name="enum OstreeRepoCheckoutOverwriteMode" link="ostree-OstreeRepo.html#OstreeRepoCheckoutOverwriteMode"/>
     <keyword type="enum" name="enum OstreeRepoListObjectsFlags" link="ostree-OstreeRepo.html#OstreeRepoListObjectsFlags"/>
@@ -268,6 +275,7 @@
     <keyword type="function" name="ostree_sysroot_deployment_set_kargs ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-kargs"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_mutable ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-mutable"/>
     <keyword type="function" name="ostree_sysroot_deployment_unlock ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-unlock"/>
+    <keyword type="function" name="ostree_sysroot_deployment_set_pinned ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-pinned" since="2018.3"/>
     <keyword type="function" name="ostree_sysroot_write_deployments ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments"/>
     <keyword type="function" name="ostree_sysroot_write_deployments_with_options ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments-with-options"/>
     <keyword type="function" name="ostree_sysroot_write_origin_file ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-origin-file"/>
@@ -355,10 +363,12 @@
     <keyword type="function" name="ostree_deployment_get_origin ()" link="ostree-ostree-deployment.html#ostree-deployment-get-origin"/>
     <keyword type="function" name="ostree_deployment_get_origin_relpath ()" link="ostree-ostree-deployment.html#ostree-deployment-get-origin-relpath"/>
     <keyword type="function" name="ostree_deployment_get_unlocked ()" link="ostree-ostree-deployment.html#ostree-deployment-get-unlocked"/>
+    <keyword type="function" name="ostree_deployment_is_pinned ()" link="ostree-ostree-deployment.html#ostree-deployment-is-pinned" since="2018.3"/>
     <keyword type="function" name="ostree_deployment_set_index ()" link="ostree-ostree-deployment.html#ostree-deployment-set-index"/>
     <keyword type="function" name="ostree_deployment_set_bootserial ()" link="ostree-ostree-deployment.html#ostree-deployment-set-bootserial"/>
     <keyword type="function" name="ostree_deployment_set_bootconfig ()" link="ostree-ostree-deployment.html#ostree-deployment-set-bootconfig"/>
     <keyword type="function" name="ostree_deployment_set_origin ()" link="ostree-ostree-deployment.html#ostree-deployment-set-origin"/>
+    <keyword type="function" name="ostree_deployment_origin_remove_transient_state ()" link="ostree-ostree-deployment.html#ostree-deployment-origin-remove-transient-state" since="2018.3"/>
     <keyword type="function" name="ostree_deployment_clone ()" link="ostree-ostree-deployment.html#ostree-deployment-clone"/>
     <keyword type="function" name="ostree_deployment_unlocked_state_to_string ()" link="ostree-ostree-deployment.html#ostree-deployment-unlocked-state-to-string"/>
     <keyword type="struct" name="OstreeDeployment" link="ostree-ostree-deployment.html#OstreeDeployment"/>
@@ -388,6 +398,7 @@
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_COMMIT" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-COMMIT:CAPS"/>
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-TOMBSTONE-COMMIT:CAPS"/>
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_COMMIT_META" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-COMMIT-META:CAPS"/>
+    <keyword type="constant" name="OSTREE_OBJECT_TYPE_PAYLOAD_LINK" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-PAYLOAD-LINK:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_ARCHIVE" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-ARCHIVE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_ARCHIVE_Z2" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-ARCHIVE-Z2:CAPS"/>
@@ -401,6 +412,7 @@
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_ALIASES" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-ALIASES:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-EXCLUDE-REMOTES:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_NORMAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-STATE-NORMAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_PARTIAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-STATE-PARTIAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_ALLOW" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-FILTER-ALLOW:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_SKIP" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-FILTER-SKIP:CAPS"/>
@@ -409,6 +421,8 @@
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-GENERATE-SIZES:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-CANONICAL-PERMISSIONS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-ERROR-ON-UNLABELED:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-CONSUME:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-DEVINO-CANONICAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_MODE_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-CHECKOUT-MODE-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_MODE_USER" link="ostree-OstreeRepo.html#OSTREE-REPO-CHECKOUT-MODE-USER:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_CHECKOUT_OVERWRITE_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-CHECKOUT-OVERWRITE-NONE:CAPS"/>

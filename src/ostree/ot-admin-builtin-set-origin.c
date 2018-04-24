@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2015 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -33,11 +35,6 @@
 static int opt_index = -1;
 static char **opt_set;
 
-/* ATTENTION:
- * Please remember to update the bash-completion script (bash/ostree) and
- * man page (man/ostree-admin-set-origin.xml) when changing the option list.
- */
-
 static GOptionEntry options[] = {
   { "set", 's', 0, G_OPTION_ARG_STRING_ARRAY, &opt_set, "Set config option KEY=VALUE for remote", "KEY=VALUE" },
   { "index", 0, 0, G_OPTION_ARG_INT, &opt_index, "Operate on the deployment INDEX, starting from zero", "INDEX" },
@@ -45,7 +42,7 @@ static GOptionEntry options[] = {
 };
 
 gboolean
-ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_admin_builtin_set_origin (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   gboolean ret = FALSE;
   g_autoptr(GOptionContext) context = NULL;
@@ -60,7 +57,7 @@ ot_admin_builtin_set_origin (int argc, char **argv, GCancellable *cancellable, G
 
   if (!ostree_admin_option_context_parse (context, options, &argc, &argv,
                                           OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER,
-                                          &sysroot, cancellable, error))
+                                          invocation, &sysroot, cancellable, error))
     goto out;
 
   if (argc < 3)

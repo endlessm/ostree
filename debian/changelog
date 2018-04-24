@@ -1,3 +1,127 @@
+ostree (2018.4-2) unstable; urgency=medium
+
+  * d/p/Don-t-write-to-parent-repo.patch:
+    Add patch from upstream to prevent trying to write to a parent
+    repository, fixing installation of Flatpak apps and runtimes into
+    the system-wide repository (Closes: #895883)
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 17 Apr 2018 09:06:42 +0100
+
+ostree (2018.4-1) unstable; urgency=medium
+
+  * New upstream release
+  * Update symbols file
+  * Drop all patches, including one that was previously considered to
+    be Debian-specific (moving to Python 3 for tests)
+  * d/copyright: Update
+
+ -- Simon McVittie <smcv@debian.org>  Sat, 24 Mar 2018 19:20:08 +0000
+
+ostree (2018.2-1) unstable; urgency=medium
+
+  * New upstream release
+    - d/copyright: Update
+    - d/libostree-1-1.symbols: Update
+  * Mark patches as forwarded
+  * Add gnupg to build-time test dependencies (and ostree-tests
+    dependencies) as it is no longer transitively build-essential
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 19 Feb 2018 09:01:47 +0000
+
+ostree (2018.1-1) unstable; urgency=medium
+
+  * New upstream release
+    - d/copyright: Update
+    - d/patches: Remove, applied upstream
+    - d/libostree-1-1.symbols: Update
+  * Move Vcs-* to salsa.debian.org
+    d/p/test-concurrency-Explicitly-use-floor-division.patch,
+    d/p/tests-bootloader-entries-crosscheck-Use-Python-3-friendly.patch:
+    Make tests compatible with Python 3
+  * d/control, d/p/debian/Use-Python-3-for-tests.patch:
+    Switch build-time tests and autopkgtests to Python 3
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 17 Jan 2018 15:34:46 +0000
+
+ostree (2017.15-2) unstable; urgency=medium
+
+  * d/p/2018.1/tests-Don-t-assume-uid-primary-gid.patch: Mark as applied
+    upstream in 2018.1
+  * d/p/2018.1/tests-Assert-that-byte-order-[etc.].patch:
+    Add patch to fix test failures on big-endian machines
+    (Closes: #886218)
+  * Temporarily disable gjs tests. gjs is not currently installable on
+    buildds due to the glibc transition and a long dependency chain
+    involving systemd-shim being preferred over systemd-sysv, which
+    ends with libnih1 Depends: libc6 (<< 2.26).
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 04 Jan 2018 19:26:16 +0000
+
+ostree (2017.15-1) unstable; urgency=medium
+
+  * New upstream release
+    - d/libostree-1-1.symbols: Update
+  * d/rules: Stop forcing C.UTF-8 locale: the tests now do this internally
+  * Standards-Version: 4.1.3 (no changes required)
+  * d/p/tests-Don-t-assume-uid-primary-gid.patch: Mark as forwarded
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 02 Jan 2018 14:13:08 +0000
+
+ostree (2017.14-1) unstable; urgency=medium
+
+  * New upstream release
+    - d/libostree-1-1.symbols: Update
+  * Standards-Version: 4.1.2 (no changes required)
+  * d/p/tests-Don-t-assume-uid-primary-gid.patch:
+    Add patch to fix automated test failure when uid != primary gid
+
+ -- Simon McVittie <smcv@debian.org>  Sun, 10 Dec 2017 19:42:36 +0000
+
+ostree (2017.13-1) unstable; urgency=medium
+
+  * New upstream release
+    - d/patches: Drop all patches
+    - d/copyright: Update
+    - Update symbols file
+  * d/control: Require dh-exec 0.23~, for build-profile support.
+    Strictly speaking we might only need 0.15, but I'm not going to
+    test versions older than the jessie backport.
+  * Set Rules-Requires-Root to no
+  * Standards-Version: 4.1.1 (no changes required)
+
+ -- Simon McVittie <smcv@debian.org>  Sat, 04 Nov 2017 14:05:06 +0000
+
+ostree (2017.12-2) unstable; urgency=medium
+
+  * Disable gtk-doc if we are not going to build libostree-doc,
+    in particular for architecture-specific builds. Note that it remains
+    in Build-Depends (not Build-Depends-Indep) because it is also needed
+    for gtkdocize during dh_autoreconf.
+    - In particular this might fix FTBFS on sparc64, where highlight(1)
+      fails.
+  * d/p/2017.13/lib-core-Init-struct-stat-buffer.patch,
+    d/p/2017.13/lib-sysroot-Fix-pointer-going-out-of-scope-in-unlock-code.patch,
+    d/p/2017.13/lib-deploy-Ignore-FIFREEZE-FITHAW-errors-when-already-in-.patch,
+    d/p/2017.13/lib-deploy-Use-_exit-for-FIFREEZE-watchdog.patch,
+    d/p/2017.13/lib-deltas-Check-cancellable-during-processing.patch,
+    d/p/2017.13/lib-utils-Check-for-invalid-UTF-8-in-filenames.patch,
+    d/p/2017.13/Cope-with-xattr-syscalls-raising-EOPNOTSUPP.patch,
+    d/p/2017.13/lib-sysroot-Fix-error-handling-when-mounting-overlayfs-fa.patch,
+    d/p/2017.13/lib-repo-Properly-handle-NULL-homedir-when-signing-commit.patch,
+    d/p/2017.13/fdio-allow-NULL-for-fstatat_allow_noent-stbuf.patch,
+    d/p/2017.13/lib-repo-Fix-loading-commitstate-with-parent-repos.patch:
+    Add various bugfix patches from upstream
+    - In particular, dealing with the possibility that EOPNOTSUPP != ENOTSUP
+      should fix test failures on hppa.
+  * d/p/2017.13/tests-Add-test-pull-bareuseronly.patch:
+    Add more test coverage from upstream
+    - d/rules: Make the new test executable
+  * d/test.sh: Clean up ostree-trivial-httpd processes
+  * d/test.sh: Don't repeat build-time tests if they fail once. They seem
+    to be somewhat reliable now.
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 27 Oct 2017 00:19:45 +0100
+
 ostree (2017.12-1xenial2) xenial; urgency=medium
 
   * Pull in upstream patches for GIR fixes

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -127,11 +129,6 @@ _ostree_static_delta_part_open (GInputStream   *part_in,
                                 GVariant    **out_part,
                                 GCancellable *cancellable,
                                 GError      **error);
-
-gboolean _ostree_static_delta_dump (OstreeRepo     *repo,
-                                    const char *delta_id,
-                                    GCancellable   *cancellable,
-                                    GError        **error);
 
 typedef struct {
   guint n_ops_executed[OSTREE_STATIC_DELTA_N_OPS];

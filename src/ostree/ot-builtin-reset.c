@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2013 Stef Walter <stefw@redhat.com>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -38,6 +40,7 @@ static GOptionEntry options[] = {
 gboolean
 ostree_builtin_reset (int           argc,
                       char        **argv,
+                      OstreeCommandInvocation *invocation,
                       GCancellable *cancellable,
                       GError      **error)
 {
@@ -50,9 +53,9 @@ ostree_builtin_reset (int           argc,
   g_autofree char *checksum = NULL;
 
   /* FIXME: Add support for collection–refs. */
-  context = g_option_context_new ("REF COMMIT - Reset a REF to a previous COMMIT");
+  context = g_option_context_new ("REF COMMIT");
 
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &repo, cancellable, error))
     goto out;
 
   if (!ostree_ensure_repo_writable (repo, error))

@@ -5,6 +5,8 @@
 <!--
 Copyright 2014 Colin Walters <walters@verbum.org>
 
+SPDX-License-Identifier: LGPL-2.0+
+
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
 License as published by the Free Software Foundation; either
@@ -143,6 +145,13 @@ Boston, MA 02111-1307, USA.
         </listitem>
       </varlistentry>
 
+      <varlistentry>
+        <term><varname>payload-link-threshold</varname></term>
+        <listitem><para>An integer value that specifies a minimum file size for creating
+        a payload link.  By default it is disabled.
+        </para></listitem>
+      </varlistentry>
+
     </variablelist>
   </refsect1>
 
@@ -220,6 +229,14 @@ Boston, MA 02111-1307, USA.
       <varlistentry>
         <term><varname>tls-ca-path</varname></term>
         <listitem><para>Path to file containing trusted anchors instead of the system CA database.</para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>http2</varname></term>
+        <listitem><para>A boolean value, defaults to true.  By
+        default, libostree will use HTTP2; setting this to <literal>false</literal>
+        will disable it.  May be useful to work around broken servers.
+        </para></listitem>
       </varlistentry>
 
       <varlistentry>

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -100,6 +102,21 @@ read_proc_cmdline_ostree (void)
 
   free (cmdline);
   return ret;
+}
+
+/* This is an API for other projects to determine whether or not the
+ * currently running system is ostree-controlled.
+ */
+static inline void
+touch_run_ostree (void)
+{
+  int fd = open ("/run/ostree-booted", O_CREAT | O_WRONLY | O_NOCTTY | O_CLOEXEC, 0640);
+  /* We ignore failures here in case /run isn't mounted...not much we
+   * can do about that, but we don't want to fail.
+   */
+  if (fd == -1)
+    return;
+  (void) close (fd);
 }
 
 #endif /* __OSTREE_MOUNT_UTIL_H_ */

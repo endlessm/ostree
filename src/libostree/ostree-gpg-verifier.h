@@ -2,6 +2,8 @@
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  * Copyright (C) 2013 Sjoerd Simons <sjoerd.simons@collabora.co.uk>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -65,7 +67,8 @@ gboolean      _ostree_gpg_verifier_add_global_keyring_dir (OstreeGpgVerifier  *s
                                                            GError            **error);
 
 void _ostree_gpg_verifier_add_keyring_data (OstreeGpgVerifier *self,
-                                            GBytes            *data);
+                                            GBytes            *data,
+                                            const char        *data_source);
 void _ostree_gpg_verifier_add_keyring_file (OstreeGpgVerifier *self,
                                             GFile             *path);
 

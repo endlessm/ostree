@@ -1,5 +1,7 @@
 # Copyright (C) 2011 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -29,9 +31,10 @@ AM_CPPFLAGS += -DDATADIR='"$(datadir)"' -DLIBEXECDIR='"$(libexecdir)"' \
 	-DOSTREE_COMPILATION \
 	-DG_LOG_DOMAIN=\"OSTree\" \
   -DOSTREE_GITREV='"$(OSTREE_GITREV)"' \
-	-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_40 -DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_50 \
-	-DSOUP_VERSION_MIN_REQUIRED=SOUP_VERSION_2_40 -DSOUP_VERSION_MAX_ALLOWED=SOUP_VERSION_2_48
-AM_CFLAGS += -std=gnu99 $(WARN_CFLAGS)
+	-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_40 '-DGLIB_VERSION_MAX_ALLOWED=G_ENCODE_VERSION(2,50)' \
+	-DSOUP_VERSION_MIN_REQUIRED=SOUP_VERSION_2_40 '-DSOUP_VERSION_MAX_ALLOWED=G_ENCODE_VERSION(2,48)'
+# For strict aliasing, see https://bugzilla.gnome.org/show_bug.cgi?id=791622
+AM_CFLAGS += -std=gnu99 -fno-strict-aliasing $(WARN_CFLAGS)
 AM_DISTCHECK_CONFIGURE_FLAGS += \
 	--enable-gtk-doc \
 	--enable-man \
@@ -90,13 +93,24 @@ endif # end ENABLE_RUST
 libglnx_srcpath := $(srcdir)/libglnx
 libglnx_cflags := $(OT_DEP_GIO_UNIX_CFLAGS) "-I$(libglnx_srcpath)"
 libglnx_libs := $(OT_DEP_GIO_UNIX_LIBS)
+# See also autogen.sh and https://github.com/ostreedev/ostree/pull/1274/
+#
+# v2017.12 didn't include test-libglnx-shutil.c, but if you re-run
+# autogen.sh (as we do in Debian, to update the Autotools build system)
+# it will try to build it.
+$(srcdir)/libglnx/Makefile-libglnx.am.inc: $(srcdir)/libglnx/Makefile-libglnx.am
+	sed -e 's,$$(libglnx_srcpath),libglnx,g' < $< > $@
 include libglnx/Makefile-libglnx.am.inc
 EXTRA_DIST += libglnx/Makefile-libglnx.am
 noinst_LTLIBRARIES += libglnx.la
 
 libbsdiff_srcpath := $(srcdir)/bsdiff
+
 libbsdiff_cflags := $(OT_DEP_GIO_UNIX_CFLAGS) "-I$(bsdiff_srcpath)"
 libbsdiff_libs := $(OT_DEP_GIO_UNIX_LIBS)
+# See the comment for the similar libglnx bit above
+$(srcdir)/bsdiff/Makefile-bsdiff.am.inc: $(srcdir)/bsdiff/Makefile-bsdiff.am
+	sed -e 's,$$(libbsdiff_srcpath),bsdiff,g' < $< > $@
 include bsdiff/Makefile-bsdiff.am.inc
 EXTRA_DIST += bsdiff/Makefile-bsdiff.am
 noinst_LTLIBRARIES += libbsdiff.la

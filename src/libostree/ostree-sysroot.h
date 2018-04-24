@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -178,6 +180,12 @@ gboolean ostree_sysroot_deployment_set_mutable (OstreeSysroot     *self,
                                                 gboolean           is_mutable,
                                                 GCancellable      *cancellable,
                                                 GError           **error);
+
+_OSTREE_PUBLIC
+gboolean ostree_sysroot_deployment_set_pinned (OstreeSysroot     *self,
+                                               OstreeDeployment  *deployment,
+                                               gboolean           is_pinned,
+                                               GError           **error);
 
 _OSTREE_PUBLIC
 gboolean ostree_sysroot_deployment_unlock (OstreeSysroot     *self,

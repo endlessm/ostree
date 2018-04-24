@@ -1,6 +1,8 @@
 /*
  * Copyright © 2017 Endless Mobile, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -432,8 +434,8 @@ G_DEFINE_BOXED_TYPE (OstreeRepoFinderResult, ostree_repo_finder_result,
  *    result
  * @priority: static priority of the result, where higher numbers indicate lower
  *    priority
- * @ref_to_checksum: (element-type OstreeCollectionRef utf8): map of collection–ref pairs
- *    to checksums provided by this result
+ * @ref_to_checksum: (element-type OstreeCollectionRef utf8) (transfer none):
+ *    map of collection–ref pairs to checksums provided by this result
  * @summary_last_modified: Unix timestamp (seconds since the epoch, UTC) when
  *    the summary file for the result was last modified, or `0` if this is unknown
  *

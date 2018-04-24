@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -39,6 +41,7 @@ static gboolean opt_bareuseronly_files;
 static char** opt_subpaths;
 static char** opt_http_headers;
 static char* opt_cache_dir;
+static char* opt_append_user_agent;
 static int opt_depth = 0;
 static int opt_frequency = 0;
 static char* opt_url;
@@ -67,6 +70,8 @@ static GOptionEntry options[] = {
    { "update-frequency", 0, 0, G_OPTION_ARG_INT, &opt_frequency, "Sets the update frequency, in milliseconds (0=1000ms) (default: 0)", "FREQUENCY" },
    { "localcache-repo", 'L', 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_localcache_repos, "Add REPO as local cache source for objects during this pull", "REPO" },
    { "timestamp-check", 'T', 0, G_OPTION_ARG_NONE, &opt_timestamp_check, "Require fetched commits to have newer timestamps", NULL },
+   /* let's leave this hidden for now; we just need it for tests */
+   { "append-user-agent", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &opt_append_user_agent, "Append string to user agent", NULL },
    { NULL }
  };
 
@@ -143,7 +148,7 @@ noninteractive_console_progress_changed (OstreeAsyncProgress *progress,
 }
 
 gboolean
-ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **error)
+ostree_builtin_pull (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
   g_autoptr(OstreeRepo) repo = NULL;
@@ -155,9 +160,9 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
   g_autoptr(OstreeAsyncProgress) progress = NULL;
   gulong signal_handler_id = 0;
 
-  context = g_option_context_new ("REMOTE [BRANCH...] - Download data from remote repository");
+  context = g_option_context_new ("REMOTE [BRANCH...]");
 
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &repo, cancellable, error))
     goto out;
 
   if (!ostree_ensure_repo_writable (repo, error))
@@ -330,6 +335,10 @@ ostree_builtin_pull (int argc, char **argv, GCancellable *cancellable, GError **
         g_variant_builder_add (&builder, "{s@v}", "http-headers",
                                g_variant_new_variant (g_variant_builder_end (&hdr_builder)));
       }
+
+    if (opt_append_user_agent)
+      g_variant_builder_add (&builder, "{s@v}", "append-user-agent",
+                             g_variant_new_variant (g_variant_new_string (opt_append_user_agent)));
 
     if (!opt_dry_run)
       {

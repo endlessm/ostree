@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -51,6 +53,9 @@ G_BEGIN_DECLS
 #define OSTREE_SUMMARY_COLLECTION_ID "ostree.summary.collection-id"
 #define OSTREE_SUMMARY_COLLECTION_MAP "ostree.summary.collection-map"
 
+#define _OSTREE_PAYLOAD_LINK_PREFIX "../"
+#define _OSTREE_PAYLOAD_LINK_PREFIX_LEN (sizeof (_OSTREE_PAYLOAD_LINK_PREFIX) - 1)
+
 /* Well-known keys for the additional metadata field in a commit in a ref entry
  * in a summary file. */
 #define OSTREE_COMMIT_TIMESTAMP "ostree.commit.timestamp"
@@ -82,6 +87,15 @@ typedef enum {
   OSTREE_REPO_SYSROOT_KIND_IS_SYSROOT_OSTREE, /* We match /ostree/repo */
 } OstreeRepoSysrootKind;
 
+typedef struct {
+  GHashTable *refs;  /* (element-type utf8 utf8) */
+  GHashTable *collection_refs;  /* (element-type OstreeCollectionRef utf8) */
+  OstreeRepoTransactionStats stats;
+  /* Implementation of min-free-space-percent */
+  gulong blocksize;
+  fsblkcnt_t max_blocks;
+} OstreeRepoTxn;
+
 /**
  * OstreeRepo:
  *
@@ -109,13 +123,9 @@ struct OstreeRepo {
   GWeakRef sysroot; /* Weak to avoid a circular ref; see also `is_system` */
   char *remotes_config_dir;
 
-  GHashTable *txn_refs;  /* (element-type utf8 utf8) */
-  GHashTable *txn_collection_refs;  /* (element-type OstreeCollectionRef utf8) */
-  GMutex txn_stats_lock;
-  OstreeRepoTransactionStats txn_stats;
-  /* Implementation of min-free-space-percent */
-  gulong txn_blocksize;
-  fsblkcnt_t max_txn_blocks;
+  GMutex txn_lock;
+  OstreeRepoTxn txn;
+  gboolean txn_locked;
 
   GMutex cache_lock;
   guint dirmeta_cache_refcount;
@@ -153,6 +163,9 @@ struct OstreeRepo {
   guint64 tmp_expiry_seconds;
   gchar *collection_id;
   gboolean add_remotes_config_dir; /* Add new remotes in remotes.d dir */
+  gint lock_timeout_seconds;
+  guint64 payload_link_threshold;
+  gint fs_support_reflink; /* The underlying filesystem has support for ioctl (FICLONE..) */
 
   OstreeRepo *parent_repo;
 };
@@ -228,14 +241,6 @@ _ostree_repo_ensure_loose_objdir_at (int             dfd,
                                      const char     *loose_path,
                                      GCancellable   *cancellable,
                                      GError        **error);
-
-gboolean
-_ostree_repo_find_object (OstreeRepo           *self,
-                          OstreeObjectType      objtype,
-                          const char           *checksum,
-                          GFile               **out_stored_path,
-                          GCancellable         *cancellable,
-                          GError             **error);
 
 GFile *
 _ostree_repo_get_commit_metadata_loose_path (OstreeRepo        *self,
@@ -365,33 +370,41 @@ _ostree_repo_commit_tmpf_final (OstreeRepo        *self,
                                 GCancellable      *cancellable,
                                 GError           **error);
 
-gboolean
-_ostree_repo_commit_path_final (OstreeRepo        *self,
-                                const char        *checksum,
-                                OstreeObjectType   objtype,
-                                OtCleanupUnlinkat *tmp_path,
-                                GCancellable      *cancellable,
-                                GError           **error);
+typedef struct {
+  gboolean initialized;
+  gpointer opaque0[10];
+  guint opaque1[10];
+} OstreeRepoBareContent;
+void _ostree_repo_bare_content_cleanup (OstreeRepoBareContent *regwrite);
+G_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(OstreeRepoBareContent, _ostree_repo_bare_content_cleanup)
 
 gboolean
-_ostree_repo_open_content_bare (OstreeRepo          *self,
-                                const char          *checksum,
-                                guint64              content_len,
-                                GLnxTmpfile         *out_tmpf,
-                                gboolean            *out_have_object,
+_ostree_repo_bare_content_open (OstreeRepo            *self,
+                                const char            *checksum,
+                                guint64                content_len,
+                                guint                  uid,
+                                guint                  gid,
+                                guint                  mode,
+                                GVariant              *xattrs,
+                                OstreeRepoBareContent *out_regwrite,
                                 GCancellable        *cancellable,
                                 GError             **error);
 
 gboolean
-_ostree_repo_commit_trusted_content_bare (OstreeRepo          *self,
-                                          const char          *checksum,
-                                          GLnxTmpfile         *tmpf,
-                                          guint32              uid,
-                                          guint32              gid,
-                                          guint32              mode,
-                                          GVariant            *xattrs,
-                                          GCancellable        *cancellable,
-                                          GError             **error);
+_ostree_repo_bare_content_write (OstreeRepo                 *repo,
+                                 OstreeRepoBareContent      *barewrite,
+                                 const guint8               *buf,
+                                 size_t                      len,
+                                 GCancellable               *cancellable,
+                                 GError                    **error);
+
+gboolean
+_ostree_repo_bare_content_commit (OstreeRepo                 *self,
+                                  OstreeRepoBareContent      *barewrite,
+                                  char                       *checksum_buf,
+                                  size_t                      buflen,
+                                  GCancellable               *cancellable,
+                                  GError                    **error);
 
 gboolean
 _ostree_repo_load_file_bare (OstreeRepo         *self,
@@ -423,6 +436,32 @@ _ostree_repo_get_remote_inherited (OstreeRepo  *self,
                                    GError     **error);
 
 #ifndef OSTREE_ENABLE_EXPERIMENTAL_API
+
+/* All the locking APIs below are duplicated in ostree-repo.h. Remove the ones
+ * here once it's no longer experimental.
+ */
+
+typedef enum {
+  OSTREE_REPO_LOCK_SHARED,
+  OSTREE_REPO_LOCK_EXCLUSIVE
+} OstreeRepoLockType;
+
+gboolean      ostree_repo_lock_push (OstreeRepo          *self,
+                                     OstreeRepoLockType   lock_type,
+                                     GCancellable        *cancellable,
+                                     GError             **error);
+gboolean      ostree_repo_lock_pop (OstreeRepo    *self,
+                                    GCancellable  *cancellable,
+                                    GError       **error);
+
+typedef OstreeRepo OstreeRepoAutoLock;
+
+OstreeRepoAutoLock * ostree_repo_auto_lock_push (OstreeRepo          *self,
+                                                 OstreeRepoLockType   lock_type,
+                                                 GCancellable        *cancellable,
+                                                 GError             **error);
+void          ostree_repo_auto_lock_cleanup (OstreeRepoAutoLock *lock);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoAutoLock, ostree_repo_auto_lock_cleanup)
 
 const gchar * ostree_repo_get_collection_id (OstreeRepo   *self);
 gboolean      ostree_repo_set_collection_id (OstreeRepo   *self,

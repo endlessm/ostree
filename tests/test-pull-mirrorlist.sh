@@ -2,6 +2,8 @@
 #
 # Copyright (C) 2016 Red Hat, Inc.
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -60,7 +62,7 @@ cat > ${test_tmpdir}/ostree-srv/mirrorlist <<EOF
 
 # comment with empty lines around
 
-http://example.com/nonexistent
+$(cat ${test_tmpdir}/content_mirror1-address)/ostree/non-existent-repo
 
 $(cat ${test_tmpdir}/content_mirror1-address)/ostree/gnomerepo
 $(cat ${test_tmpdir}/content_mirror2-address)/ostree/gnomerepo

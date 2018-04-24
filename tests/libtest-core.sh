@@ -9,6 +9,8 @@
 #
 # Copyright (C) 2017 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -37,6 +39,8 @@ assert_not_reached () {
 # (https://sourceware.org/glibc/wiki/Proposals/C.UTF-8)
 if locale -a | grep C.UTF-8 >/dev/null; then
     export LC_ALL=C.UTF-8
+elif locale -a | grep C.utf8 >/dev/null; then
+    export LC_ALL=C.utf8
 else
     export LC_ALL=C
 fi
@@ -110,9 +114,12 @@ assert_file_has_content () {
 }
 
 assert_file_has_content_literal () {
-    if ! grep -q -F -e "$2" "$1"; then
-        _fatal_print_file "$1" "File '$1' doesn't match fixed string list '$2'"
-    fi
+    fpath=$1; shift
+    for s in "$@"; do
+        if ! grep -q -F -e "$s" "$fpath"; then
+            _fatal_print_file "$fpath" "File '$fpath' doesn't match fixed string list '$s'"
+        fi
+    done
 }
 
 assert_file_has_mode () {

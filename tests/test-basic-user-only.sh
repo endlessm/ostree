@@ -2,6 +2,8 @@
 #
 # Copyright (C) 2011 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -26,7 +28,7 @@ extra_basic_tests=5
 . $(dirname $0)/basic-test.sh
 
 $CMD_PREFIX ostree --version > version.yaml
-python -c 'import yaml; yaml.safe_load(open("version.yaml"))'
+python3 -c 'import yaml; yaml.safe_load(open("version.yaml"))'
 echo "ok yaml version"
 
 # Reset things so we don't inherit a lot of state from earlier tests

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -282,7 +284,7 @@ cleanup_old_deployments (OstreeSysroot       *self,
       if (!g_hash_table_lookup (active_deployment_dirs, deployment_path))
         {
           struct stat stbuf;
-          glnx_fd_close int deployment_fd = -1;
+          glnx_autofd int deployment_fd = -1;
 
           if (!glnx_opendirat (self->sysroot_fd, deployment_path, TRUE,
                                &deployment_fd, error))

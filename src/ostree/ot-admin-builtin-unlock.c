@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2016 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -32,18 +34,13 @@
 
 static gboolean opt_hotfix;
 
-/* ATTENTION:
- * Please remember to update the bash-completion script (bash/ostree) and
- * man page (man/ostree-admin-unlock.xml) when changing the option list.
- */
-
 static GOptionEntry options[] = {
   { "hotfix", 0, 0, G_OPTION_ARG_NONE, &opt_hotfix, "Retain changes across reboots", NULL },
   { NULL }
 };
 
 gboolean
-ot_admin_builtin_unlock (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_admin_builtin_unlock (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   gboolean ret = FALSE;
   g_autoptr(GOptionContext) context = NULL;
@@ -51,11 +48,11 @@ ot_admin_builtin_unlock (int argc, char **argv, GCancellable *cancellable, GErro
   OstreeDeployment *booted_deployment = NULL;
   OstreeDeploymentUnlockedState target_state;
 
-  context = g_option_context_new ("Make the current deployment mutable (as a hotfix or development)");
+  context = g_option_context_new ("");
 
   if (!ostree_admin_option_context_parse (context, options, &argc, &argv,
                                           OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER,
-                                          &sysroot, cancellable, error))
+                                          invocation, &sysroot, cancellable, error))
     goto out;
   
   if (argc > 1)

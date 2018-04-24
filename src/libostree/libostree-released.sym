@@ -436,6 +436,34 @@ global:
   ostree_repo_hash;
 } LIBOSTREE_2017.11;
 
+LIBOSTREE_2017.13 {
+global:
+  ostree_checksum_file_at;
+  ostree_repo_checkout_at_options_set_devino;
+} LIBOSTREE_2017.12;
+
+LIBOSTREE_2017.14 {
+} LIBOSTREE_2017.13;
+
+LIBOSTREE_2017.15 {
+  ostree_repo_fsck_object;
+  ostree_repo_mark_commit_partial;
+  ostree_break_hardlink;
+} LIBOSTREE_2017.14;
+
+LIBOSTREE_2018.1 {
+} LIBOSTREE_2017.15;
+
+LIBOSTREE_2018.2 {
+  ostree_commit_get_content_checksum;
+} LIBOSTREE_2018.1;
+
+LIBOSTREE_2018.3 {
+  ostree_deployment_origin_remove_transient_state;
+  ostree_sysroot_deployment_set_pinned;
+  ostree_deployment_is_pinned;
+} LIBOSTREE_2018.2;
+
 /* NOTE: Only add more content here in release commits!  See the
  * comments at the top of this file.
  */

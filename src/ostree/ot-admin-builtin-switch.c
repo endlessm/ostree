@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2012,2014 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -32,11 +34,6 @@
 static gboolean opt_reboot;
 static char *opt_osname;
 
-/* ATTENTION:
- * Please remember to update the bash-completion script (bash/ostree) and
- * man page (man/ostree-admin-switch.xml) when changing the option list.
- */
-
 static GOptionEntry options[] = {
   { "reboot", 'r', 0, G_OPTION_ARG_NONE, &opt_reboot, "Reboot after switching trees", NULL },
   { "os", 0, 0, G_OPTION_ARG_STRING, &opt_osname, "Use a different operating system root than the current one", "OSNAME" },
@@ -44,14 +41,14 @@ static GOptionEntry options[] = {
 };
 
 gboolean
-ot_admin_builtin_switch (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_admin_builtin_switch (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context =
-    g_option_context_new ("REF - Construct new tree from REF and deploy it");
+    g_option_context_new ("REF");
   g_autoptr(OstreeSysroot) sysroot = NULL;
   if (!ostree_admin_option_context_parse (context, options, &argc, &argv,
                                           OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER,
-                                          &sysroot, cancellable, error))
+                                          invocation, &sysroot, cancellable, error))
     return FALSE;
 
   if (argc < 2)

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -64,7 +66,7 @@ noninteractive_console_progress_changed (OstreeAsyncProgress *progress,
 }
 
 gboolean
-ostree_builtin_pull_local (int argc, char **argv, GCancellable *cancellable, GError **error)
+ostree_builtin_pull_local (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   gboolean ret = FALSE;
   g_autoptr(GOptionContext) context = NULL;
@@ -76,9 +78,9 @@ ostree_builtin_pull_local (int argc, char **argv, GCancellable *cancellable, GEr
   g_autoptr(GPtrArray) refs_to_fetch = NULL;
   OstreeRepoPullFlags pullflags = 0;
 
-  context = g_option_context_new ("SRC_REPO [REFS...] -  Copy data from SRC_REPO");
+  context = g_option_context_new ("SRC_REPO [REFS...]");
 
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &repo, cancellable, error))
     goto out;
 
   if (!ostree_ensure_repo_writable (repo, error))

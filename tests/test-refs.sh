@@ -2,6 +2,8 @@
 #
 # Copyright (C) 2016 Red Hat, Inc.
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -23,7 +25,7 @@ set -euo pipefail
 
 setup_fake_remote_repo1 "archive"
 
-echo '1..2'
+echo '1..6'
 
 cd ${test_tmpdir}
 mkdir repo
@@ -88,6 +90,35 @@ if ${CMD_PREFIX} ostree --repo=repo refs foo/ctest --create=ctest; then
     assert_not_reached "refs --create unexpectedly succeeded in overwriting an existing prefix!"
 fi
 
+# https://github.com/ostreedev/ostree/issues/1285
+# One tool was creating .latest_rsync files in each dir, let's ignore stuff like
+# that.
+echo '👻' > repo/refs/heads/.spooky_and_hidden
+${CMD_PREFIX} ostree --repo=repo refs > refs.txt
+assert_not_file_has_content refs.txt 'spooky'
+${CMD_PREFIX} ostree --repo=repo refs ctest --create=exampleos/x86_64/standard
+echo '👻' > repo/refs/heads/exampleos/x86_64/.further_spooky_and_hidden
+${CMD_PREFIX} ostree --repo=repo refs > refs.txt
+assert_file_has_content refs.txt 'exampleos/x86_64/standard'
+assert_not_file_has_content refs.txt 'spooky'
+rm repo/refs/heads/exampleos -rf
+echo "ok hidden refs"
+
+for ref in '.' '-' '.foo' '-bar' '!' '!foo'; do
+    if ${CMD_PREFIX} ostree --repo=repo refs ctest --create=${ref} 2>err.txt; then
+        fatal "Created ref ${ref}"
+    fi
+    assert_file_has_content err.txt 'Invalid ref'
+done
+echo "ok invalid refs"
+
+for ref in 'org.foo.bar/x86_64/standard-blah'; do
+    ostree --repo=repo refs ctest --create=${ref}
+    ostree --repo=repo rev-parse ${ref} >/dev/null
+    ostree --repo=repo refs --delete ${ref}
+done
+echo "ok valid refs with chars '._-'"
+
 #Check to see if any uncleaned tmp files were created after failed --create
 ${CMD_PREFIX} ostree --repo=repo refs | wc -l > refscount.create1
 assert_file_has_content refscount.create1 "^5$"
@@ -115,6 +146,13 @@ ${CMD_PREFIX} ostree --repo=repo refs origin:remote1 --create=origin/remote1
 ${CMD_PREFIX} ostree --repo=repo refs local1 --create=origin:local1
 ${CMD_PREFIX} ostree --repo=repo refs | wc -l > refscount.create6
 assert_file_has_content refscount.create6 "^11$"
+
+#Check that we can list just remote refs
+${CMD_PREFIX} ostree --repo=repo refs origin: | wc -l > refscount.create7
+assert_file_has_content refscount.create7 "^2$" # origin:remote1 origin:local1
+#Also support :. for backcompat with flatpak
+${CMD_PREFIX} ostree --repo=repo refs origin:. | wc -l > refscount.create8
+assert_file_has_content refscount.create8 "^2$" # origin:remote1 origin:local1
 
 echo "ok refs"
 
@@ -157,3 +195,10 @@ assert_file_has_content_literal refs.txt 'exampleos/x86_64/stable/server -> exam
 ${CMD_PREFIX} ostree --repo=repo summary -u
 
 echo "ok ref symlink"
+
+# https://github.com/ostreedev/ostree/issues/1342
+if ${CMD_PREFIX} ostree --repo=repo refs -A exampleos/x86_64/27/server --create=exampleos:exampleos/x86_64/stable/server 2>err.txt; then
+    fatal "Created alias ref to remote?"
+fi
+assert_file_has_content_literal err.txt 'Cannot create alias to remote ref'
+echo "ok ref no alias remote"

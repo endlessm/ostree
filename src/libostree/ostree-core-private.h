@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -20,6 +22,7 @@
 #pragma once
 
 #include "ostree-core.h"
+#include "otutil.h"
 #include <sys/stat.h>
 
 G_BEGIN_DECLS
@@ -67,19 +70,11 @@ G_BEGIN_DECLS
 #define _OSTREE_ZLIB_FILE_HEADER_GVARIANT_FORMAT G_VARIANT_TYPE ("(tuuuusa(ayay))")
 
 
-GVariant *_ostree_file_header_new (GFileInfo         *file_info,
-                                   GVariant          *xattrs);
+GBytes *_ostree_file_header_new (GFileInfo         *file_info,
+                                 GVariant          *xattrs);
 
-GVariant *_ostree_zlib_file_header_new (GFileInfo         *file_info,
-                                        GVariant          *xattrs);
-
-gboolean _ostree_write_variant_with_size (GOutputStream      *output,
-                                          GVariant           *variant,
-                                          guint64             alignment_offset,
-                                          gsize              *out_bytes_written,
-                                          GChecksum          *checksum,
-                                          GCancellable       *cancellable,
-                                          GError            **error);
+GBytes *_ostree_zlib_file_header_new (GFileInfo         *file_info,
+                                      GVariant          *xattrs);
 
 gboolean
 _ostree_make_temporary_symlink_at (int             tmp_dirfd,
@@ -89,7 +84,9 @@ _ostree_make_temporary_symlink_at (int             tmp_dirfd,
                                    GError        **error);
 
 GFileInfo * _ostree_stbuf_to_gfileinfo (const struct stat *stbuf);
+void _ostree_gfileinfo_to_stbuf (GFileInfo    *file_info, struct stat  *out_stbuf);
 gboolean _ostree_gfileinfo_equal (GFileInfo *a, GFileInfo *b);
+gboolean _ostree_stbuf_equal (struct stat *stbuf_a, struct stat *stbuf_b);
 GFileInfo * _ostree_mode_uidgid_to_gfileinfo (mode_t mode, uid_t uid, gid_t gid);
 
 static inline void
@@ -135,6 +132,11 @@ static inline char * _ostree_get_commitpartial_path (const char *checksum)
 }
 
 gboolean
+_ostree_validate_ref_fragment (const char *fragment,
+                               GError    **error);
+
+
+gboolean
 _ostree_validate_bareuseronly_mode (guint32     mode,
                                     const char *checksum,
                                     GError    **error);
@@ -148,6 +150,12 @@ _ostree_validate_bareuseronly_mode_finfo (GFileInfo  *finfo,
 }
 
 gboolean
+_ostree_compare_object_checksum (OstreeObjectType objtype,
+                                 const char      *expected,
+                                 const char      *actual,
+                                 GError         **error);
+
+gboolean
 _ostree_parse_delta_name (const char  *delta_name,
                           char        **out_from,
                           char        **out_to,
@@ -158,6 +166,17 @@ _ostree_loose_path (char              *buf,
                     const char        *checksum,
                     OstreeObjectType   objtype,
                     OstreeRepoMode     repo_mode);
+
+gboolean _ostree_validate_structureof_metadata (OstreeObjectType objtype,
+                                                GVariant      *commit,
+                                                GError       **error);
+
+gboolean
+_ostree_verify_metadata_object (OstreeObjectType objtype,
+                                const char      *expected_checksum,
+                                GVariant        *metadata,
+                                GError         **error);
+
 
 #define _OSTREE_METADATA_GPGSIGS_NAME "ostree.gpgsigs"
 #define _OSTREE_METADATA_GPGSIGS_TYPE G_VARIANT_TYPE ("aay")
@@ -218,6 +237,9 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderConfig, g_object_unref)
 
 #include "ostree-repo-finder-mount.h"
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderMount, g_object_unref)
+
+#include "ostree-repo-finder-override.h"
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoFinderOverride, g_object_unref)
 #endif
 
 G_END_DECLS

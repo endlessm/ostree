@@ -2,6 +2,8 @@
 #
 # Copyright (C) 2011 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -34,11 +36,12 @@ libotutil_la_SOURCES = \
 	src/libotutil/ot-unix-utils.h \
 	src/libotutil/ot-variant-utils.c \
 	src/libotutil/ot-variant-utils.h \
+	src/libotutil/ot-variant-builder.c \
+	src/libotutil/ot-variant-builder.h \
 	src/libotutil/ot-gio-utils.c \
 	src/libotutil/ot-gio-utils.h \
 	src/libotutil/ot-gpg-utils.c \
 	src/libotutil/ot-gpg-utils.h \
-	src/libotutil/otutil.c \
 	src/libotutil/otutil.h \
 	src/libotutil/ot-tool-util.c \
 	src/libotutil/ot-tool-util.h \

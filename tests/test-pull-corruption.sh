@@ -2,6 +2,8 @@
 #
 # Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -76,7 +78,7 @@ if ! skip_one_without_user_xattrs; then
     if ${CMD_PREFIX} ostree --repo=ostree-srv/gnomerepo fsck 2>err.txt; then
         assert_not_reached "fsck with corrupted commit worked?"
     fi
-    assert_file_has_content err.txt "corrupted object ${corruptrev}\.commit"
+    assert_file_has_content_literal err.txt "Corrupted commit object; checksum expected='${corruptrev}' actual='${rev}'"
 
     # Do a pull-local; this should succeed since we don't verify checksums
     # for local repos by default.
@@ -89,7 +91,7 @@ if ! skip_one_without_user_xattrs; then
     if ${CMD_PREFIX} ostree --repo=repo pull-local --untrusted ostree-srv/gnomerepo main 2>err.txt; then
         assert_not_reached "pull-local --untrusted worked?"
     fi
-    assert_file_has_content err.txt "Corrupted commit object ${corruptrev}.*actual checksum is ${rev}"
+    assert_file_has_content_literal err.txt "Corrupted commit object; checksum expected='${corruptrev}' actual='${rev}'"
 
     rm repo err.txt -rf
     ostree_repo_init repo --mode=bare-user
@@ -97,6 +99,6 @@ if ! skip_one_without_user_xattrs; then
     if ${CMD_PREFIX} ostree --repo=repo pull origin main 2>err.txt; then
         assert_not_reached "pull unexpectedly succeeded!"
     fi
-    assert_file_has_content err.txt "Corrupted commit object ${corruptrev}.*actual checksum is ${rev}"
+    assert_file_has_content_literal err.txt "Corrupted commit object; checksum expected='${corruptrev}' actual='${rev}'"
     echo "ok pull commit corruption"
 fi

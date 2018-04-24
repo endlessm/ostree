@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2013 Stef Walter <stefw@redhat.com>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -82,6 +84,7 @@ out:
 gboolean
 ostree_builtin_log (int           argc,
                     char        **argv,
+                    OstreeCommandInvocation *invocation,
                     GCancellable *cancellable,
                     GError      **error)
 {
@@ -92,9 +95,9 @@ ostree_builtin_log (int           argc,
   g_autofree char *checksum = NULL;
   OstreeDumpFlags flags = OSTREE_DUMP_NONE;
 
-  context = g_option_context_new ("REF - Show log starting at commit or ref");
+  context = g_option_context_new ("REF");
 
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &repo, cancellable, error))
     goto out;
 
   if (opt_raw)

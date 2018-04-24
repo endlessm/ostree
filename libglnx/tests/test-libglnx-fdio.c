@@ -32,8 +32,8 @@ static gboolean
 renameat_test_setup (int *out_srcfd, int *out_destfd,
                      GError **error)
 {
-  glnx_fd_close int srcfd = -1;
-  glnx_fd_close int destfd = -1;
+  glnx_autofd int srcfd = -1;
+  glnx_autofd int destfd = -1;
 
   (void) glnx_shutil_rm_rf_at (AT_FDCWD, "srcdir", NULL, NULL);
   if (mkdir ("srcdir", 0755) < 0)
@@ -62,8 +62,8 @@ static void
 test_renameat2_noreplace (void)
 {
   _GLNX_TEST_DECLARE_ERROR(local_error, error);
-  glnx_fd_close int srcfd = -1;
-  glnx_fd_close int destfd = -1;
+  glnx_autofd int srcfd = -1;
+  glnx_autofd int destfd = -1;
   struct stat stbuf;
 
   if (!renameat_test_setup (&srcfd, &destfd, error))
@@ -92,8 +92,8 @@ test_renameat2_exchange (void)
 {
   _GLNX_TEST_DECLARE_ERROR(local_error, error);
 
-  glnx_fd_close int srcfd = -1;
-  glnx_fd_close int destfd = -1;
+  glnx_autofd int srcfd = -1;
+  glnx_autofd int destfd = -1;
   if (!renameat_test_setup (&srcfd, &destfd, error))
     return;
 
@@ -161,13 +161,22 @@ test_fstatat (void)
     return;
   g_assert_cmpint (errno, ==, ENOENT);
   g_assert_no_error (local_error);
+
+  /* test NULL parameter for stat */
+  if (!glnx_fstatat_allow_noent (AT_FDCWD, ".", NULL, 0, error))
+    return;
+  g_assert_cmpint (errno, ==, 0);
+  g_assert_no_error (local_error);
+  if (!glnx_fstatat_allow_noent (AT_FDCWD, "nosuchfile", NULL, 0, error))
+    return;
+  g_assert_cmpint (errno, ==, ENOENT);
+  g_assert_no_error (local_error);
 }
 
 static void
 test_filecopy (void)
 {
   _GLNX_TEST_DECLARE_ERROR(local_error, error);
-  g_auto(GLnxTmpfile) tmpf = { 0, };
   const char foo[] = "foo";
   struct stat stbuf;
 

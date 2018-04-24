@@ -11,6 +11,8 @@
  *
  * Relicensed with permission to LGPLv2+.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -45,23 +47,6 @@
 #include <ctype.h>
 
 #include "ostree-mount-util.h"
-
-/* This is an API for other projects to determine whether or not the
- * currently running system is ostree-controlled.
- */
-static void
-touch_run_ostree (void)
-{
-  int fd;
-
-  fd = open ("/run/ostree-booted", O_CREAT | O_WRONLY | O_NOCTTY | O_CLOEXEC, 0640);
-  /* We ignore failures here in case /run isn't mounted...not much we
-   * can do about that, but we don't want to fail.
-   */
-  if (fd == -1)
-    return;
-  (void) close (fd);
-}
 
 static char*
 resolve_deploy_path (const char * root_mountpoint)
@@ -102,10 +87,16 @@ main(int argc, char *argv[])
   struct stat stbuf;
   int we_mounted_proc = 0;
 
-  if (argc < 2)
-    root_arg = "/";
+  if (getpid() == 1)
+    {
+      root_arg = "/";
+    }
   else
-    root_arg = argv[1];
+    {
+      if (argc < 2)
+        err (EXIT_FAILURE, "usage: ostree-prepare-root SYSROOT");
+      root_arg = argv[1];
+    }
 
   if (stat ("/proc/cmdline", &stbuf) < 0)
     {
@@ -197,7 +188,13 @@ main(int argc, char *argv[])
         err (EXIT_FAILURE, "failed to bind mount (class:readonly) /usr");
     }
 
-  touch_run_ostree ();
+
+  /* We only stamp /run now if we're running in an initramfs, i.e. we're
+   * not pid 1.  Otherwise it's handled later via ostree-remount.service.
+   * https://mail.gnome.org/archives/ostree-list/2018-March/msg00012.html
+   */
+  if (getpid () != 1)
+    touch_run_ostree ();
 
   if (strcmp(root_mountpoint, "/") == 0)
     {
@@ -237,6 +234,17 @@ main(int argc, char *argv[])
       if (mount (".", root_mountpoint, NULL, MS_MOVE, NULL) < 0)
         err (EXIT_FAILURE, "failed to MS_MOVE %s to %s", deploy_path, root_mountpoint);
     }
+
+  /* The /sysroot mount needs to be private to avoid having a mount for e.g. /var/cache
+   * also propagate to /sysroot/ostree/deploy/$stateroot/var/cache
+   *
+   * Now in reality, today this is overridden by systemd: the *actual* way we fix this up
+   * is in ostree-remount.c.  But let's do it here to express the semantics we want
+   * at the very start (perhaps down the line systemd will have compile/runtime option
+   * to say that the initramfs environment did everything right from the start).
+   */
+  if (mount ("none", "sysroot", NULL, MS_PRIVATE, NULL) < 0)
+    err (EXIT_FAILURE, "remounting 'sysroot' private");
 
   if (getpid() == 1)
     {

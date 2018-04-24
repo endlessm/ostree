@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -144,11 +146,11 @@ traverse_keep_younger_than (OstreeRepo *repo, const char *checksum,
 }
 
 gboolean
-ostree_builtin_prune (int argc, char **argv, GCancellable *cancellable, GError **error)
+ostree_builtin_prune (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
-  g_autoptr(GOptionContext) context = g_option_context_new ("- Search for unreachable objects");
+  g_autoptr(GOptionContext) context = g_option_context_new ("");
   g_autoptr(OstreeRepo) repo = NULL;
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &repo, cancellable, error))
     return FALSE;
 
   if (!opt_no_prune && !ostree_ensure_repo_writable (repo, error))
@@ -171,6 +173,15 @@ ostree_builtin_prune (int argc, char **argv, GCancellable *cancellable, GError *
           }
         else if (!delete_commit (repo, opt_delete_commit, cancellable, error))
           return FALSE;
+    }
+  else
+    {
+      /* In the future we should make this useful, but for now let's
+       * error out since what we were doing before was very misleading.
+       * https://github.com/ostreedev/ostree/issues/1479
+       */
+      if (opt_static_deltas_only)
+        return glnx_throw (error, "--static-deltas-only requires --delete-commit; see https://github.com/ostreedev/ostree/issues/1479");
     }
 
   OstreeRepoPruneFlags pruneflags = 0;

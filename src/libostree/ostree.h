@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -40,6 +42,7 @@
 #include <ostree-repo-finder-avahi.h>
 #include <ostree-repo-finder-config.h>
 #include <ostree-repo-finder-mount.h>
+#include <ostree-repo-finder-override.h>
 #endif /* OSTREE_ENABLE_EXPERIMENTAL_API */
 
 #include <ostree-autocleanups.h>

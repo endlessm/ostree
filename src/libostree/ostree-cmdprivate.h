@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2014 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -31,6 +33,7 @@ typedef struct {
   gboolean (* ostree_static_delta_dump) (OstreeRepo *repo, const char *delta_id, GCancellable *cancellable, GError **error);
   gboolean (* ostree_static_delta_query_exists) (OstreeRepo *repo, const char *delta_id, gboolean *out_exists, GCancellable *cancellable, GError **error);
   gboolean (* ostree_static_delta_delete) (OstreeRepo *repo, const char *delta_id, GCancellable *cancellable, GError **error);
+  gboolean (* ostree_repo_verify_bindings) (const char *collection_id, const char *ref_name, GVariant *commit, GError **error);
 } OstreeCmdPrivateVTable;
 
 /* Note this not really "public", we just export the symbol, but not the header */

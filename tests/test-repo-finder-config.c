@@ -1,6 +1,8 @@
 /*
  * Copyright © 2017 Endless Mobile, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -66,8 +68,6 @@ static void
 teardown (Fixture       *fixture,
           gconstpointer  test_data)
 {
-  g_autoptr(GError) error = NULL;
-
   /* Recursively remove the temporary directory. */
   (void)glnx_tmpdir_delete (&fixture->tmpdir, NULL, NULL);
 
@@ -286,11 +286,13 @@ test_repo_finder_config_mixed_configs (Fixture       *fixture,
           g_assert_cmpuint (g_hash_table_size (result->ref_to_checksum), ==, 2);
           g_assert_true (g_hash_table_contains (result->ref_to_checksum, &ref0));
           g_assert_true (g_hash_table_contains (result->ref_to_checksum, &ref1));
+          g_assert_cmpstr (ostree_remote_get_url (result->remote), ==, collection0_uri);
         }
       else if (g_strcmp0 (ostree_remote_get_name (result->remote), "remote1") == 0)
         {
           g_assert_cmpuint (g_hash_table_size (result->ref_to_checksum), ==, 1);
           g_assert_true (g_hash_table_contains (result->ref_to_checksum, &ref3));
+          g_assert_cmpstr (ostree_remote_get_url (result->remote), ==, collection1_uri);
         }
       else
         {

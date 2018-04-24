@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -58,7 +60,6 @@ typedef struct {
   int base_tmpdir_dfd;
 
   GVariant *extra_headers;
-  int max_outstanding;
   gboolean transfer_gzip;
 
   /* Our active HTTP requests */
@@ -374,6 +375,24 @@ session_thread_set_tls_database_cb (ThreadClosure *thread_closure,
 }
 
 static void
+session_thread_set_extra_user_agent_cb (ThreadClosure *thread_closure,
+                                        gpointer data)
+{
+  const char *extra_user_agent = data;
+  if (extra_user_agent != NULL)
+    {
+      g_autofree char *ua =
+        g_strdup_printf ("%s %s", OSTREE_FETCHER_USERAGENT_STRING, extra_user_agent);
+      g_object_set (thread_closure->session, SOUP_SESSION_USER_AGENT, ua, NULL);
+    }
+  else
+    {
+      g_object_set (thread_closure->session, SOUP_SESSION_USER_AGENT,
+                    OSTREE_FETCHER_USERAGENT_STRING, NULL);
+    }
+}
+
+static void
 on_request_sent (GObject        *object, GAsyncResult   *result, gpointer        user_data);
 
 static void
@@ -383,8 +402,6 @@ start_pending_request (ThreadClosure *thread_closure,
 
   OstreeFetcherPendingURI *pending;
   GCancellable *cancellable;
-
-  g_assert_cmpint (g_hash_table_size (thread_closure->outstanding), <, thread_closure->max_outstanding);
 
   pending = g_task_get_task_data (task);
   cancellable = g_task_get_cancellable (task);
@@ -471,7 +488,6 @@ ostree_fetcher_session_thread (gpointer data)
 {
   ThreadClosure *closure = data;
   g_autoptr(GMainContext) mainctx = g_main_context_ref (closure->main_context);
-  gint max_conns;
 
   /* This becomes the GMainContext that SoupSession schedules async
    * callbacks and emits signals from.  Make it the thread-default
@@ -479,7 +495,7 @@ ostree_fetcher_session_thread (gpointer data)
   g_main_context_push_thread_default (mainctx);
 
   /* We retain ownership of the SoupSession reference. */
-  closure->session = soup_session_async_new_with_options (SOUP_SESSION_USER_AGENT, "ostree ",
+  closure->session = soup_session_async_new_with_options (SOUP_SESSION_USER_AGENT, OSTREE_FETCHER_USERAGENT_STRING,
                                                           SOUP_SESSION_SSL_USE_SYSTEM_CA_FILE, TRUE,
                                                           SOUP_SESSION_USE_THREAD_CONTEXT, TRUE,
                                                           SOUP_SESSION_ADD_FEATURE_BY_TYPE, SOUP_TYPE_REQUESTER,
@@ -492,17 +508,23 @@ ostree_fetcher_session_thread (gpointer data)
 
   /* XXX: Now that we have mirrorlist support, we could make this even smarter
    * by spreading requests across mirrors. */
+  gint max_conns;
   g_object_get (closure->session, "max-conns-per-host", &max_conns, NULL);
   if (max_conns < _OSTREE_MAX_OUTSTANDING_FETCHER_REQUESTS)
     {
       /* We download a lot of small objects in ostree, so this
-       * helps a lot.  Also matches what most modern browsers do. */
+       * helps a lot.  Also matches what most modern browsers do.
+       *
+       * Note since https://github.com/ostreedev/ostree/commit/f4d1334e19ce3ab2f8872b1e28da52044f559401
+       * we don't do queuing in this libsoup backend, but we still
+       * want to override libsoup's currently conservative
+       * #define SOUP_SESSION_MAX_CONNS_PER_HOST_DEFAULT 2 (as of 2018-02-14).
+       */
       max_conns = _OSTREE_MAX_OUTSTANDING_FETCHER_REQUESTS;
       g_object_set (closure->session,
                     "max-conns-per-host",
                     max_conns, NULL);
     }
-  closure->max_outstanding = 3 * max_conns;
 
   /* This model ensures we don't hit a race using g_main_loop_quit();
    * see also what pull_termination_condition() in ostree-repo-pull.c
@@ -770,6 +792,16 @@ _ostree_fetcher_set_extra_headers (OstreeFetcher *self,
                            (GDestroyNotify) g_variant_unref);
 }
 
+void
+_ostree_fetcher_set_extra_user_agent (OstreeFetcher *self,
+                                      const char    *extra_user_agent)
+{
+  session_thread_idle_add (self->thread_closure,
+                           session_thread_set_extra_user_agent_cb,
+                           g_strdup (extra_user_agent),
+                           (GDestroyNotify) g_free);
+}
+
 static gboolean
 finish_stream (OstreeFetcherPendingURI *pending,
                GCancellable            *cancellable,
@@ -905,11 +937,8 @@ on_stream_read (GObject        *object,
     {
       if (!pending->is_membuf)
         {
-          if (!glnx_open_tmpfile_linkable_at (pending->thread_closure->base_tmpdir_dfd, ".",
-                                              O_WRONLY | O_CLOEXEC, &pending->tmpf, &local_error))
-            goto out;
-          /* This should match the libcurl chmod */
-          if (!glnx_fchmod (pending->tmpf.fd, 0644, &local_error))
+          if (!_ostree_fetcher_tmpf_from_flags (pending->flags, pending->thread_closure->base_tmpdir_dfd,
+                                                &pending->tmpf, &local_error))
             goto out;
           pending->out_stream = g_unix_output_stream_new (pending->tmpf.fd, FALSE);
         }
@@ -943,18 +972,13 @@ on_stream_read (GObject        *object,
         }
       else
         {
-          g_autofree char *uristring =
-            soup_uri_to_string (soup_request_get_uri (pending->request), FALSE);
-          g_autofree char *tmpfile_path =
-            ostree_fetcher_generate_url_tmpname (uristring);
-          if (!glnx_link_tmpfile_at (&pending->tmpf, GLNX_LINK_TMPFILE_REPLACE,
-                                     pending->thread_closure->base_tmpdir_dfd, tmpfile_path,
-                                     &local_error))
-            g_task_return_error (task, g_steal_pointer (&local_error));
+          if (lseek (pending->tmpf.fd, 0, SEEK_SET) < 0)
+            {
+              glnx_set_error_from_errno (&local_error);
+              g_task_return_error (task, g_steal_pointer (&local_error));
+            }
           else
-            g_task_return_pointer (task,
-                                   g_steal_pointer (&tmpfile_path),
-                                   (GDestroyNotify) g_free);
+            g_task_return_boolean (task, TRUE);
         }
       remove_pending (pending);
     }
@@ -1174,7 +1198,7 @@ _ostree_fetcher_request_to_tmpfile (OstreeFetcher         *self,
 gboolean
 _ostree_fetcher_request_to_tmpfile_finish (OstreeFetcher *self,
                                            GAsyncResult  *result,
-                                           char         **out_filename,
+                                           GLnxTmpfile   *out_tmpf,
                                            GError       **error)
 {
   GTask *task;
@@ -1192,8 +1216,8 @@ _ostree_fetcher_request_to_tmpfile_finish (OstreeFetcher *self,
     return FALSE;
 
   g_assert (!pending->is_membuf);
-  g_assert (out_filename);
-  *out_filename = ret;
+  *out_tmpf = pending->tmpf;
+  pending->tmpf.initialized = FALSE; /* Transfer ownership */
 
   return TRUE;
 }

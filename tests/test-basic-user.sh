@@ -2,6 +2,8 @@
 #
 # Copyright (C) 2011 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -25,7 +27,7 @@ skip_without_user_xattrs
 
 setup_test_repository "bare-user"
 
-extra_basic_tests=4
+extra_basic_tests=6
 . $(dirname $0)/basic-test.sh
 
 # Reset things so we don't inherit a lot of state from earlier tests
@@ -73,3 +75,51 @@ rm test2-checkout -rf
 $OSTREE checkout -U -H test2-unreadable test2-checkout
 assert_file_has_mode test2-checkout/unreadable 400
 echo "ok bare-user handled unreadable file"
+
+cd ${test_tmpdir}
+mkdir -p components/{dbus,systemd}/usr/{bin,lib}
+echo dbus binary > components/dbus/usr/bin/dbus-daemon
+chmod a+x components/dbus/usr/bin/dbus-daemon
+echo dbus lib > components/dbus/usr/lib/libdbus.so.1
+echo dbus helper > components/dbus/usr/lib/dbus-daemon-helper
+chmod a+x components/dbus/usr/lib/dbus-daemon-helper
+echo systemd binary > components/systemd/usr/bin/systemd
+chmod a+x components/systemd/usr/bin/systemd
+echo systemd lib > components/systemd/usr/lib/libsystemd.so.1
+
+# Make the gid on dbus 81 like fedora
+$OSTREE commit -b component-dbus --owner-uid 0 --owner-gid 81 --tree=dir=components/dbus
+$OSTREE commit -b component-systemd --owner-uid 0 --owner-gid 0 --tree=dir=components/systemd
+rm rootfs -rf
+for component in dbus systemd; do
+    $OSTREE checkout -U -H component-${component} --union rootfs
+done
+echo 'some rootfs data' > rootfs/usr/lib/cache.txt
+$OSTREE commit -b rootfs --link-checkout-speedup --tree=dir=rootfs
+$OSTREE ls rootfs /usr/bin/systemd >ls.txt
+assert_file_has_content ls.txt '^-007.. 0 0 .*/usr/bin/systemd'
+$OSTREE ls rootfs /usr/lib/dbus-daemon-helper >ls.txt
+assert_file_has_content ls.txt '^-007.. 0 81 .*/usr/lib/dbus-daemon-helper'
+echo "ok bare-user link-checkout-speedup maintains uids"
+
+cd ${test_tmpdir}
+rm -rf test2-checkout
+$OSTREE checkout -H -U test2 test2-checkout
+# With --link-checkout-speedup, specifying --owner-uid should "win" by default.
+myuid=$(id -u)
+mygid=$(id -g)
+newuid=$((${myuid} + 1))
+newgid=$((${mygid} + 1))
+$OSTREE commit ${COMMIT_ARGS} --owner-uid ${newuid} --owner-gid ${newgid} \
+        --link-checkout-speedup -b test2-linkcheckout-test --tree=dir=test2-checkout
+$OSTREE ls test2-linkcheckout-test /baz/cow > ls.txt
+assert_file_has_content ls.txt "^-006.. ${newuid} ${newgid} .*/baz/cow"
+
+# But --devino-canonical should override that
+$OSTREE commit ${COMMIT_ARGS} --owner-uid ${newuid} --owner-gid ${newgid} \
+        -I -b test2-devino-test --tree=dir=test2-checkout
+$OSTREE ls test2-devino-test /baz/cow > ls.txt
+assert_file_has_content ls.txt "^-006.. ${myuid} ${mygid} .*/baz/cow"
+
+$OSTREE refs --delete test2-{linkcheckout,devino}-test
+echo "ok commit with -I"

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -39,7 +41,7 @@ static gboolean opt_inline;
 static gboolean opt_disable_bsdiff;
 static gboolean opt_if_not_exists;
 
-#define BUILTINPROTO(name) static gboolean ot_static_delta_builtin_ ## name (int argc, char **argv, GCancellable *cancellable, GError **error)
+#define BUILTINPROTO(name) static gboolean ot_static_delta_builtin_ ## name (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 
 BUILTINPROTO(list);
 BUILTINPROTO(show);
@@ -50,12 +52,22 @@ BUILTINPROTO(apply_offline);
 #undef BUILTINPROTO
 
 static OstreeCommand static_delta_subcommands[] = {
-  { "list", ot_static_delta_builtin_list },
-  { "show", ot_static_delta_builtin_show },
-  { "delete", ot_static_delta_builtin_delete },
-  { "generate", ot_static_delta_builtin_generate },
-  { "apply-offline", ot_static_delta_builtin_apply_offline },
-  { NULL, NULL }
+  { "list", OSTREE_BUILTIN_FLAG_NONE,
+    ot_static_delta_builtin_list,
+    "List static delta files" },
+  { "show", OSTREE_BUILTIN_FLAG_NONE,
+    ot_static_delta_builtin_show,
+    "Dump information on a delta" },
+  { "delete", OSTREE_BUILTIN_FLAG_NONE,
+    ot_static_delta_builtin_delete,
+    "Remove a delta" },
+  { "generate", OSTREE_BUILTIN_FLAG_NONE,
+    ot_static_delta_builtin_generate,
+    "Generate static delta files" },
+  { "apply-offline", OSTREE_BUILTIN_FLAG_NONE,
+    ot_static_delta_builtin_apply_offline,
+    "Apply static delta file" },
+  { NULL, 0, NULL, NULL }
 };
 
 /* ATTENTION:
@@ -105,7 +117,7 @@ static_delta_usage (char    **argv,
 
   while (command->name)
     {
-      print_func ("  %s\n", command->name);
+      print_func ("  %-17s%s\n", command->name, command->description ?: "");
       command++;
     }
 
@@ -113,12 +125,12 @@ static_delta_usage (char    **argv,
 }
 
 static gboolean
-ot_static_delta_builtin_list (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_static_delta_builtin_list (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   g_autoptr(OstreeRepo) repo = NULL;
-  g_autoptr(GOptionContext) context = g_option_context_new ("- list static delta files");
+  g_autoptr(GOptionContext) context = g_option_context_new ("");
   if (!ostree_option_context_parse (context, list_options, &argc, &argv,
-                                    OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+                                    invocation, &repo, cancellable, error))
     return FALSE;
 
   g_autoptr(GPtrArray) delta_names = NULL;
@@ -137,79 +149,65 @@ ot_static_delta_builtin_list (int argc, char **argv, GCancellable *cancellable, 
 }
 
 static gboolean
-ot_static_delta_builtin_show (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_static_delta_builtin_show (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
-  gboolean ret = FALSE;
-  g_autoptr(GOptionContext) context = NULL;
+
+  g_autoptr(GOptionContext) context = g_option_context_new ("");
+
   g_autoptr(OstreeRepo) repo = NULL;
-  const char *delta_id = NULL;
-
-  context = g_option_context_new ("- Dump information on a delta");
-
-  if (!ostree_option_context_parse (context, list_options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
-    goto out;
+  if (!ostree_option_context_parse (context, list_options, &argc, &argv, invocation, &repo, cancellable, error))
+    return FALSE;
 
   if (argc < 3)
     {
       g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                            "DELTA must be specified");
-      goto out;
+      return FALSE;
     }
 
-  delta_id = argv[2];
+  const char *delta_id = argv[2];
 
   if (!ostree_cmd__private__ ()->ostree_static_delta_dump (repo, delta_id, cancellable, error))
-    goto out;
-      
-  ret = TRUE;
- out:
-  return ret;
+    return FALSE;
+
+  return TRUE;
 }
 
 static gboolean
-ot_static_delta_builtin_delete (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_static_delta_builtin_delete (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
-  gboolean ret = FALSE;
-  g_autoptr(GOptionContext) context = NULL;
+  g_autoptr(GOptionContext) context = g_option_context_new ("");
+
   g_autoptr(OstreeRepo) repo = NULL;
-  const char *delta_id = NULL;
-
-  context = g_option_context_new ("- Remove a delta");
-
-  if (!ostree_option_context_parse (context, list_options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
-    goto out;
+  if (!ostree_option_context_parse (context, list_options, &argc, &argv, invocation, &repo, cancellable, error))
+    return FALSE;
 
   if (argc < 3)
     {
       g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                            "DELTA must be specified");
-      goto out;
+      return FALSE;
     }
 
-  delta_id = argv[2];
+  const char *delta_id = argv[2];
 
   if (!ostree_cmd__private__ ()->ostree_static_delta_delete (repo, delta_id, cancellable, error))
-    goto out;
+    return FALSE;
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 
 static gboolean
-ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_static_delta_builtin_generate (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
-  gboolean ret = FALSE;
-  g_autoptr(GOptionContext) context = NULL;
+  g_autoptr(GOptionContext) context = g_option_context_new ("[TO]");
   g_autoptr(OstreeRepo) repo = NULL;
-
-  context = g_option_context_new ("[TO] - Generate static delta files");
-  if (!ostree_option_context_parse (context, generate_options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
-    goto out;
+  if (!ostree_option_context_parse (context, generate_options, &argc, &argv, invocation, &repo, cancellable, error))
+    return FALSE;
 
   if (!ostree_ensure_repo_writable (repo, error))
-    goto out;
+    return FALSE;
 
   if (argc >= 3 && opt_to_rev == NULL)
     opt_to_rev = argv[2];
@@ -218,7 +216,7 @@ ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellab
     {
       g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                            "TO revision must be specified");
-      goto out;
+      return FALSE;
     }
   else
     {
@@ -237,7 +235,7 @@ ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellab
             {
               g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                                    "Cannot specify both --empty and --from=REV");
-              goto out;
+              return FALSE;
             }
           from_source = NULL;
         }
@@ -254,25 +252,24 @@ ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellab
       if (from_source)
         {
           if (!ostree_repo_resolve_rev (repo, from_source, FALSE, &from_resolved, error))
-            goto out;
+            return FALSE;
         }
       if (!ostree_repo_resolve_rev (repo, opt_to_rev, FALSE, &to_resolved, error))
-        goto out;
+        return FALSE;
 
       if (opt_if_not_exists)
         {
           gboolean does_exist;
           g_autofree char *delta_id = from_resolved ? g_strconcat (from_resolved, "-", to_resolved, NULL) : g_strdup (to_resolved);
           if (!ostree_cmd__private__ ()->ostree_static_delta_query_exists (repo, delta_id, &does_exist, cancellable, error))
-            goto out;
+            return FALSE;
           if (does_exist)
             {
               g_print ("Delta %s already exists.\n", delta_id);
-              ret = TRUE;
-              goto out;
+              return TRUE;
             }
         }
-      
+
       if (opt_endianness)
         {
           if (strcmp (opt_endianness, "l") == 0)
@@ -283,12 +280,12 @@ ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellab
             {
               g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                            "Invalid endianness '%s'", opt_endianness);
-              goto out;
+              return FALSE;
             }
         }
       else
         endianness = G_BYTE_ORDER;
-          
+
       if (opt_swap_endianness)
         {
           switch (endianness)
@@ -336,58 +333,51 @@ ot_static_delta_builtin_generate (int argc, char **argv, GCancellable *cancellab
                                                 from_resolved, to_resolved, NULL,
                                                 params,
                                                 cancellable, error))
-          goto out;
+          return FALSE;
       }
 
     }
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 static gboolean
-ot_static_delta_builtin_apply_offline (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_static_delta_builtin_apply_offline (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
-  gboolean ret = FALSE;
-  const char *patharg;
-  g_autoptr(GFile) path = NULL;
   g_autoptr(GOptionContext) context = NULL;
   g_autoptr(OstreeRepo) repo = NULL;
 
-  context = g_option_context_new ("- Apply static delta file");
-  if (!ostree_option_context_parse (context, apply_offline_options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
-    goto out;
+  context = g_option_context_new ("");
+  if (!ostree_option_context_parse (context, apply_offline_options, &argc, &argv, invocation, &repo, cancellable, error))
+    return FALSE;
 
   if (!ostree_ensure_repo_writable (repo, error))
-    goto out;
+    return FALSE;
 
   if (argc < 3)
     {
       g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                            "PATH must be specified");
-      goto out;
+      return FALSE;
     }
 
-  patharg = argv[2];
-  path = g_file_new_for_path (patharg);
+  const char *patharg = argv[2];
+  g_autoptr(GFile) path = g_file_new_for_path (patharg);
 
   if (!ostree_repo_prepare_transaction (repo, NULL, cancellable, error))
-    goto out;
+    return FALSE;
 
   if (!ostree_repo_static_delta_execute_offline (repo, path, FALSE, cancellable, error))
-    goto out;
+    return FALSE;
 
   if (!ostree_repo_commit_transaction (repo, NULL, cancellable, error))
-    goto out;
+    return FALSE;
 
-  ret = TRUE;
- out:
-  return ret;
+  return TRUE;
 }
 
 gboolean
-ostree_builtin_static_delta (int argc, char **argv, GCancellable *cancellable, GError **error)
+ostree_builtin_static_delta (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   gboolean want_help = FALSE;
   const char *cmdname = NULL;
@@ -438,5 +428,6 @@ ostree_builtin_static_delta (int argc, char **argv, GCancellable *cancellable, G
   g_autofree char *prgname = g_strdup_printf ("%s %s", g_get_prgname (), cmdname);
   g_set_prgname (prgname);
 
-  return command->fn (argc, argv, cancellable, error);
+  OstreeCommandInvocation sub_invocation = { .command = command };
+  return command->fn (argc, argv, &sub_invocation, cancellable, error);
 }

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -32,37 +34,94 @@
 #include "ot-builtins.h"
 
 static OstreeCommand commands[] = {
-  { "admin", ostree_builtin_admin },
-  { "cat", ostree_builtin_cat },
-  { "checkout", ostree_builtin_checkout },
-  { "checksum", ostree_builtin_checksum },
-  { "commit", ostree_builtin_commit },
-  { "config", ostree_builtin_config },
-  { "diff", ostree_builtin_diff },
-  { "export", ostree_builtin_export },
+  /* Note: all admin related commands have
+   * no_repo as their command flag, but each
+   * admin command may have their own
+   * admin flag
+   */
+  { "admin", OSTREE_BUILTIN_FLAG_NO_REPO,
+    ostree_builtin_admin,
+    "Commands for managing a host system booted with ostree" },
+  { "cat", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_cat,
+    "Concatenate contents of files"},
+  { "checkout", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_checkout,
+    "Check out a commit into a filesystem tree" },
+  { "checksum", OSTREE_BUILTIN_FLAG_NO_REPO,
+    ostree_builtin_checksum,
+    "Checksum a file or directory" },
+  { "commit", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_commit,
+    "Commit a new revision" },
+  { "config", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_config,
+    "Change repo configuration settings" },
+  { "diff", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_diff,
+    "Compare directory TARGETDIR against revision REV"},
+  { "export", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_export,
+    "Stream COMMIT to stdout in tar format" },
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
-  { "find-remotes", ostree_builtin_find_remotes },
-  { "create-usb", ostree_builtin_create_usb },
+  { "find-remotes", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_find_remotes,
+    "Find remotes to serve the given refs" },
+  { "create-usb", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_create_usb,
+    "Copy the refs to a USB stick" },
 #endif
-  { "fsck", ostree_builtin_fsck },
-  { "gpg-sign", ostree_builtin_gpg_sign },
-  { "init", ostree_builtin_init },
-  { "log", ostree_builtin_log },
-  { "ls", ostree_builtin_ls },
-  { "prune", ostree_builtin_prune },
-  { "pull-local", ostree_builtin_pull_local },
-#ifdef HAVE_LIBSOUP 
-  { "pull", ostree_builtin_pull },
+  { "fsck", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_fsck,
+    "Check the repository for consistency" },
+  { "gpg-sign", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_gpg_sign,
+    "Sign a commit" },
+  { "init", OSTREE_BUILTIN_FLAG_NO_CHECK,
+    ostree_builtin_init,
+    "Initialize a new empty repository" },
+  { "log", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_log,
+    "Show log starting at commit or ref" },
+  { "ls", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_ls,
+    "List file paths" },
+  { "prune", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_prune,
+    "Search for unreachable objects" },
+  { "pull-local", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_pull_local,
+    "Copy data from SRC_REPO" },
+#ifdef HAVE_LIBCURL_OR_LIBSOUP
+  { "pull", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_pull,
+    "Download data from remote repository" },
 #endif
-  { "refs", ostree_builtin_refs },
-  { "remote", ostree_builtin_remote },
-  { "reset", ostree_builtin_reset },
-  { "rev-parse", ostree_builtin_rev_parse },
-  { "show", ostree_builtin_show },
-  { "static-delta", ostree_builtin_static_delta },
-  { "summary", ostree_builtin_summary },
+  { "refs", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_refs,
+    "List refs" },
+  { "remote", OSTREE_BUILTIN_FLAG_NO_REPO,
+    ostree_builtin_remote,
+    "Remote commands that may involve internet access" },
+  { "reset", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_reset,
+    "Reset a REF to a previous COMMIT" },
+  { "rev-parse", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_rev_parse,
+    "Output the target of a rev" },
+  { "show", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_show,
+    "Output a metadata object" },
+  { "static-delta", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_static_delta,
+    "Static delta related commands" },
+  { "summary", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_summary,
+    "Manage summary metadata" },
 #if defined(HAVE_LIBSOUP) && defined(BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE)
-  { "trivial-httpd", ostree_builtin_trivial_httpd },
+  { "trivial-httpd", OSTREE_BUILTIN_FLAG_NONE,
+    ostree_builtin_trivial_httpd,
+    NULL },
 #endif
   { NULL }
 };
@@ -82,15 +141,10 @@ main (int    argc,
 
   if (error != NULL)
     {
-      int is_tty = isatty (1);
-      const char *prefix = "";
-      const char *suffix = "";
-      if (is_tty)
-        {
-          prefix = "\x1b[31m\x1b[1m"; /* red, bold */
-          suffix = "\x1b[22m\x1b[0m"; /* bold off, color reset */
-        }
-      g_printerr ("%serror: %s%s\n", prefix, suffix, error->message);
+      g_printerr ("%s%serror:%s%s %s\n",
+                  ot_get_red_start (), ot_get_bold_start (),
+                  ot_get_bold_end (), ot_get_red_end (),
+                  error->message);
     }
 
   return ret;

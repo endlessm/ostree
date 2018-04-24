@@ -1,6 +1,8 @@
 /*
  * Copyright © 2017 Endless Mobile, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -43,6 +45,7 @@ static GOptionEntry options[] =
 gboolean
 ostree_builtin_create_usb (int            argc,
                            char         **argv,
+                           OstreeCommandInvocation *invocation,
                            GCancellable  *cancellable,
                            GError       **error)
 {
@@ -50,12 +53,12 @@ ostree_builtin_create_usb (int            argc,
   g_autoptr(OstreeAsyncProgress) progress = NULL;
   g_auto(GLnxConsoleRef) console = { 0, };
 
-  context = g_option_context_new ("MOUNT-PATH COLLECTION-ID REF [COLLECTION-ID REF...] - Copy the refs to a USB stick");
+  context = g_option_context_new ("MOUNT-PATH COLLECTION-ID REF [COLLECTION-ID REF...]");
 
   /* Parse options. */
   g_autoptr(OstreeRepo) src_repo = NULL;
 
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &src_repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &src_repo, cancellable, error))
     return FALSE;
 
   if (argc < 2)
@@ -80,7 +83,7 @@ ostree_builtin_create_usb (int            argc,
   const char *mount_root_path = argv[1];
   struct stat mount_root_stbuf;
 
-  glnx_fd_close int mount_root_dfd = -1;
+  glnx_autofd int mount_root_dfd = -1;
   if (!glnx_opendirat (AT_FDCWD, mount_root_path, TRUE, &mount_root_dfd, error))
     return FALSE;
   if (!glnx_fstat (mount_root_dfd, &mount_root_stbuf, error))
@@ -113,7 +116,7 @@ ostree_builtin_create_usb (int            argc,
   OstreeRepoMode mode = OSTREE_REPO_MODE_BARE_USER;
 
   if (TEMP_FAILURE_RETRY (fgetxattr (mount_root_dfd, "user.test", NULL, 0)) < 0 &&
-      errno == ENOTSUP)
+      (errno == ENOTSUP || errno == EOPNOTSUPP))
     mode = OSTREE_REPO_MODE_ARCHIVE;
 
   g_debug ("%s: Creating repository in mode %u", G_STRFUNC, mode);

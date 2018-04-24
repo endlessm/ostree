@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -37,12 +39,15 @@ static char *opt_body_file;
 static gboolean opt_editor;
 static char *opt_parent;
 static gboolean opt_orphan;
+static gboolean opt_no_bindings;
 static char **opt_bind_refs;
 static char *opt_branch;
 static char *opt_statoverride_file;
 static char *opt_skiplist_file;
 static char **opt_metadata_strings;
+static char **opt_metadata_variants;
 static char **opt_detached_metadata_strings;
+static char **opt_metadata_keep;
 static gboolean opt_link_checkout_speedup;
 static gboolean opt_skip_if_unchanged;
 static gboolean opt_tar_autocreate_parents;
@@ -50,6 +55,8 @@ static char *opt_tar_pathname_filter;
 static gboolean opt_no_xattrs;
 static char *opt_selinux_policy;
 static gboolean opt_canonical_permissions;
+static gboolean opt_consume;
+static gboolean opt_devino_canonical;
 static char **opt_trees;
 static gint opt_owner_uid = -1;
 static gint opt_owner_gid = -1;
@@ -87,9 +94,12 @@ static GOptionEntry options[] = {
   { "editor", 'e', 0, G_OPTION_ARG_NONE, &opt_editor, "Use an editor to write the commit message", NULL },
   { "branch", 'b', 0, G_OPTION_ARG_STRING, &opt_branch, "Branch", "BRANCH" },
   { "orphan", 0, 0, G_OPTION_ARG_NONE, &opt_orphan, "Create a commit without writing a ref", NULL },
+  { "no-bindings", 0, 0, G_OPTION_ARG_NONE, &opt_no_bindings, "Do not write any ref bindings", NULL },
   { "bind-ref", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_bind_refs, "Add a ref to ref binding commit metadata", "BRANCH" },
   { "tree", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_trees, "Overlay the given argument as a tree", "dir=PATH or tar=TARFILE or ref=COMMIT" },
   { "add-metadata-string", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_metadata_strings, "Add a key/value pair to metadata", "KEY=VALUE" },
+  { "add-metadata", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_metadata_variants, "Add a key/value pair to metadata, where the KEY is a string, an VALUE is g_variant_parse() formatted", "KEY=VALUE" },
+  { "keep-metadata", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_metadata_keep, "Keep metadata KEY and its associated VALUE from parent", "KEY" },
   { "add-detached-metadata-string", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_detached_metadata_strings, "Add a key/value pair to detached metadata", "KEY=VALUE" },
   { "owner-uid", 0, 0, G_OPTION_ARG_INT, &opt_owner_uid, "Set file ownership user id", "UID" },
   { "owner-gid", 0, 0, G_OPTION_ARG_INT, &opt_owner_gid, "Set file ownership group id", "GID" },
@@ -97,11 +107,13 @@ static GOptionEntry options[] = {
   { "no-xattrs", 0, 0, G_OPTION_ARG_NONE, &opt_no_xattrs, "Do not import extended attributes", NULL },
   { "selinux-policy", 0, 0, G_OPTION_ARG_FILENAME, &opt_selinux_policy, "Set SELinux labels based on policy in root filesystem PATH (may be /)", "PATH" },
   { "link-checkout-speedup", 0, 0, G_OPTION_ARG_NONE, &opt_link_checkout_speedup, "Optimize for commits of trees composed of hardlinks into the repository", NULL },
+  { "devino-canonical", 'I', 0, G_OPTION_ARG_NONE, &opt_devino_canonical, "Assume hardlinked objects are unmodified.  Implies --link-checkout-speedup", NULL },
   { "tar-autocreate-parents", 0, 0, G_OPTION_ARG_NONE, &opt_tar_autocreate_parents, "When loading tar archives, automatically create parent directories as needed", NULL },
   { "tar-pathname-filter", 0, 0, G_OPTION_ARG_STRING, &opt_tar_pathname_filter, "When loading tar archives, use REGEX,REPLACEMENT against path names", "REGEX,REPLACEMENT" },
   { "skip-if-unchanged", 0, 0, G_OPTION_ARG_NONE, &opt_skip_if_unchanged, "If the contents are unchanged from previous commit, do nothing", NULL },
   { "statoverride", 0, 0, G_OPTION_ARG_FILENAME, &opt_statoverride_file, "File containing list of modifications to make to permissions", "PATH" },
   { "skip-list", 0, 0, G_OPTION_ARG_FILENAME, &opt_skiplist_file, "File containing list of files to skip", "PATH" },
+  { "consume", 0, 0, G_OPTION_ARG_NONE, &opt_consume, "Consume (delete) content after commit (for local directories)", NULL },
   { "table-output", 0, 0, G_OPTION_ARG_NONE, &opt_table_output, "Output more information in a KEY: VALUE format", NULL },
   { "gpg-sign", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_key_ids, "GPG Key ID to sign the commit with", "KEY-ID"},
   { "gpg-homedir", 0, 0, G_OPTION_ARG_FILENAME, &opt_gpg_homedir, "GPG Homedir to use when looking for keyrings", "HOMEDIR"},
@@ -111,32 +123,6 @@ static GOptionEntry options[] = {
   { "timestamp", 0, 0, G_OPTION_ARG_STRING, &opt_timestamp, "Override the timestamp of the commit", "TIMESTAMP" },
   { NULL }
 };
-
-static gboolean
-parse_file_by_line (const char    *path,
-                    gboolean     (*cb)(const char*, void*, GError**),
-                    void          *cbdata,
-                    GCancellable  *cancellable,
-                    GError       **error)
-{
-  g_autofree char *contents =
-    glnx_file_get_contents_utf8_at (AT_FDCWD, path, NULL, cancellable, error);
-  if (!contents)
-    return FALSE;
-
-  g_auto(GStrv) lines = g_strsplit (contents, "\n", -1);
-  for (char **iter = lines; iter && *iter; iter++)
-    {
-      /* skip empty lines at least */
-      if (**iter == '\0')
-        continue;
-
-      if (!cb (*iter, cbdata, error))
-        return FALSE;
-    }
-
-  return TRUE;
-}
 
 struct CommitFilterData {
   GHashTable *mode_adds;
@@ -317,13 +303,11 @@ commit_editor (OstreeRepo     *repo,
 }
 
 static gboolean
-parse_keyvalue_strings (char             **strings,
-                        GVariant         **out_metadata,
+parse_keyvalue_strings (GVariantBuilder   *builder,
+                        char             **strings,
+                        gboolean           is_gvariant_print,
                         GError           **error)
 {
-  g_autoptr(GVariantBuilder) builder =
-    g_variant_builder_new (G_VARIANT_TYPE ("a{sv}"));
-
   for (char ** iter = strings; *iter; iter++)
     {
       const char *s = *iter;
@@ -331,11 +315,19 @@ parse_keyvalue_strings (char             **strings,
       if (!eq)
         return glnx_throw (error, "Missing '=' in KEY=VALUE metadata '%s'", s);
       g_autofree char *key = g_strndup (s, eq - s);
-      g_variant_builder_add (builder, "{sv}", key,
-                             g_variant_new_string (eq + 1));
+      if (is_gvariant_print)
+        {
+          g_autoptr(GVariant) value = g_variant_parse (NULL, eq + 1, NULL, NULL, error);
+          if (!value)
+            return glnx_prefix_error (error, "Parsing %s", s);
+
+          g_variant_builder_add (builder, "{sv}", key, value);
+        }
+      else
+        g_variant_builder_add (builder, "{sv}", key,
+                               g_variant_new_string (eq + 1));
     }
 
-  *out_metadata = g_variant_ref_sink (g_variant_builder_end (builder));
   return TRUE;
 }
 
@@ -366,13 +358,11 @@ compare_strings (gconstpointer a, gconstpointer b)
 static void
 add_ref_binding (GVariantBuilder *metadata_builder)
 {
-  if (opt_orphan)
-    return;
-
-  g_assert_nonnull (opt_branch);
+  g_assert (opt_branch != NULL || opt_orphan);
 
   g_autoptr(GPtrArray) refs = g_ptr_array_new ();
-  g_ptr_array_add (refs, opt_branch);
+  if (opt_branch != NULL)
+    g_ptr_array_add (refs, opt_branch);
   for (char **iter = opt_bind_refs; iter != NULL && *iter != NULL; ++iter)
     g_ptr_array_add (refs, *iter);
   g_ptr_array_sort (refs, compare_strings);
@@ -405,7 +395,7 @@ fill_bindings (OstreeRepo    *repo,
 }
 
 gboolean
-ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError **error)
+ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
   g_autoptr(OstreeRepo) repo = NULL;
@@ -429,9 +419,9 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
   struct CommitFilterData filter_data = { 0, };
   g_autofree char *commit_body = NULL;
 
-  context = g_option_context_new ("[PATH] - Commit a new revision");
+  context = g_option_context_new ("[PATH]");
 
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &repo, cancellable, error))
     goto out;
 
   if (!ostree_ensure_repo_writable (repo, error))
@@ -441,29 +431,16 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
     {
       filter_data.mode_adds = mode_adds = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
       filter_data.mode_overrides = mode_overrides = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-      if (!parse_file_by_line (opt_statoverride_file, handle_statoverride_line,
-                               &filter_data, cancellable, error))
+      if (!ot_parse_file_by_line (opt_statoverride_file, handle_statoverride_line,
+                                  &filter_data, cancellable, error))
         goto out;
     }
 
   if (opt_skiplist_file)
     {
       skip_list = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-      if (!parse_file_by_line (opt_skiplist_file, handle_skiplist_line,
-                               skip_list, cancellable, error))
-        goto out;
-    }
-
-  if (opt_metadata_strings)
-    {
-      if (!parse_keyvalue_strings (opt_metadata_strings,
-                                   &metadata, error))
-        goto out;
-    }
-  if (opt_detached_metadata_strings)
-    {
-      if (!parse_keyvalue_strings (opt_detached_metadata_strings,
-                                   &detached_metadata, error))
+      if (!ot_parse_file_by_line (opt_skiplist_file, handle_skiplist_line,
+                                  skip_list, cancellable, error))
         goto out;
     }
 
@@ -472,42 +449,6 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
       g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                            "A branch must be specified with --branch, or use --orphan");
       goto out;
-    }
-
-  if (opt_no_xattrs)
-    flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS;
-  if (opt_canonical_permissions)
-    flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS;
-  if (opt_generate_sizes)
-    flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES;
-  if (opt_disable_fsync)
-    ostree_repo_set_disable_fsync (repo, TRUE);
-
-  if (flags != 0
-      || opt_owner_uid >= 0
-      || opt_owner_gid >= 0
-      || opt_statoverride_file != NULL
-      || opt_skiplist_file != NULL
-      || opt_no_xattrs
-      || opt_selinux_policy)
-    {
-      filter_data.mode_adds = mode_adds;
-      filter_data.skip_list = skip_list;
-      modifier = ostree_repo_commit_modifier_new (flags, commit_filter,
-                                                  &filter_data, NULL);
-      if (opt_selinux_policy)
-        {
-          glnx_fd_close int rootfs_dfd = -1;
-          if (!glnx_opendirat (AT_FDCWD, opt_selinux_policy, TRUE, &rootfs_dfd, error))
-            {
-              g_prefix_error (error, "selinux-policy: ");
-              goto out;
-            }
-          policy = ostree_sepolicy_new_at (rootfs_dfd, cancellable, error);
-          if (!policy)
-            goto out;
-          ostree_repo_commit_modifier_set_sepolicy (modifier, policy);
-        }
     }
 
   if (opt_parent)
@@ -532,6 +473,109 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
               g_clear_error (error);
             }
           else goto out;
+        }
+    }
+
+  if (!parent && opt_metadata_keep)
+    {
+      g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                           "Either --branch or --parent must be specified when using "
+                           "--keep-metadata");
+      goto out;
+    }
+
+  if (opt_metadata_strings || opt_metadata_variants || opt_metadata_keep)
+    {
+      g_autoptr(GVariantBuilder) builder =
+        g_variant_builder_new (G_VARIANT_TYPE ("a{sv}"));
+
+      if (opt_metadata_strings &&
+          !parse_keyvalue_strings (builder, opt_metadata_strings, FALSE, error))
+          goto out;
+
+      if (opt_metadata_variants &&
+          !parse_keyvalue_strings (builder, opt_metadata_variants, TRUE, error))
+        goto out;
+
+      if (opt_metadata_keep)
+        {
+          g_assert (parent);
+
+          g_autoptr(GVariant) parent_commit = NULL;
+          if (!ostree_repo_load_commit (repo, parent, &parent_commit, NULL, error))
+            goto out;
+
+          g_auto(GVariantDict) dict;
+          g_variant_dict_init (&dict, g_variant_get_child_value (parent_commit, 0));
+          for (char **keyp = opt_metadata_keep; keyp && *keyp; keyp++)
+            {
+              const char *key = *keyp;
+              g_autoptr(GVariant) val = g_variant_dict_lookup_value (&dict, key, NULL);
+              if (!val)
+                {
+                  g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                               "Missing metadata key '%s' from commit '%s'", key, parent);
+                  goto out;
+                }
+
+              g_variant_builder_add (builder, "{sv}", key, val);
+            }
+        }
+
+      metadata = g_variant_ref_sink (g_variant_builder_end (builder));
+    }
+
+  if (opt_detached_metadata_strings)
+    {
+      g_autoptr(GVariantBuilder) builder =
+        g_variant_builder_new (G_VARIANT_TYPE ("a{sv}"));
+
+      if (!parse_keyvalue_strings (builder, opt_detached_metadata_strings, FALSE, error))
+        goto out;
+
+      detached_metadata = g_variant_ref_sink (g_variant_builder_end (builder));
+    }
+
+  if (opt_no_xattrs)
+    flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS;
+  if (opt_consume)
+    flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME;
+  if (opt_devino_canonical)
+    {
+      opt_link_checkout_speedup = TRUE; /* Imply this */
+      flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL;
+    }
+  if (opt_canonical_permissions)
+    flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS;
+  if (opt_generate_sizes)
+    flags |= OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES;
+  if (opt_disable_fsync)
+    ostree_repo_set_disable_fsync (repo, TRUE);
+
+  if (flags != 0
+      || opt_owner_uid >= 0
+      || opt_owner_gid >= 0
+      || opt_statoverride_file != NULL
+      || opt_skiplist_file != NULL
+      || opt_no_xattrs
+      || opt_selinux_policy)
+    {
+      filter_data.mode_adds = mode_adds;
+      filter_data.skip_list = skip_list;
+      modifier = ostree_repo_commit_modifier_new (flags, commit_filter,
+                                                  &filter_data, NULL);
+      if (opt_selinux_policy)
+        {
+          glnx_autofd int rootfs_dfd = -1;
+          if (!glnx_opendirat (AT_FDCWD, opt_selinux_policy, TRUE, &rootfs_dfd, error))
+            {
+              g_prefix_error (error, "selinux-policy: ");
+              goto out;
+            }
+          policy = ostree_sepolicy_new_at (rootfs_dfd, cancellable, error);
+          if (!policy)
+            goto out;
+          ostree_repo_commit_modifier_set_sepolicy (modifier, policy);
         }
     }
 
@@ -714,9 +758,12 @@ ostree_builtin_commit (int argc, char **argv, GCancellable *cancellable, GError 
     {
       gboolean update_summary;
       guint64 timestamp;
-      g_autoptr(GVariant) old_metadata = g_steal_pointer (&metadata);
 
-      fill_bindings (repo, old_metadata, &metadata);
+      if (!opt_no_bindings)
+        {
+          g_autoptr(GVariant) old_metadata = g_steal_pointer (&metadata);
+          fill_bindings (repo, old_metadata, &metadata);
+        }
 
       if (!opt_timestamp)
         {

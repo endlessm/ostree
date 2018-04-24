@@ -3,6 +3,8 @@
  * Copyright © 2015 Red Hat, Inc.
  * Copyright © 2017 Endless Mobile, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -47,16 +49,17 @@ G_BEGIN_DECLS
 typedef struct OstreeRemote OstreeRemote;
 #endif
 
-#ifndef __GI_SCANNER__
 _OSTREE_PUBLIC
 GType ostree_remote_get_type (void) G_GNUC_CONST;
 _OSTREE_PUBLIC
 OstreeRemote *ostree_remote_ref (OstreeRemote *remote);
 _OSTREE_PUBLIC
 void ostree_remote_unref (OstreeRemote *remote);
-#endif /* GI_SCANNER */
 
 _OSTREE_PUBLIC
 const gchar *ostree_remote_get_name (OstreeRemote *remote);
+
+_OSTREE_PUBLIC
+gchar *ostree_remote_get_url (OstreeRemote *remote);
 
 G_END_DECLS

@@ -3,8 +3,8 @@ dnl If doing a final release, remember to follow the instructions to
 dnl update libostree-released.sym from libostree-devel.sym, and update the checksum
 dnl in test-symbols.sh, and also set is_release_build=yes below.  Then make
 dnl another post-release commit to bump the version, and set is_release_build=no.
-m4_define([year_version], [2017])
-m4_define([release_version], [12])
+m4_define([year_version], [2018])
+m4_define([release_version], [4])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -30,23 +30,25 @@ AC_SUBST([PACKAGE_VERSION], [package_version])
 
 AS_IF([echo "$CFLAGS" | grep -q -E -e '-Werror($| )'], [], [
 CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
-        -pipe \
-        -Wall \
-	-Werror=empty-body \
-	-Werror=strict-prototypes \
-	-Werror=missing-prototypes \
-	-Werror=implicit-function-declaration \
-        "-Werror=format=2 -Werror=format-security -Werror=format-nonliteral" \
-	-Werror=pointer-arith -Werror=init-self \
-        -Werror=missing-declarations \
-        -Werror=return-type \
-        -Werror=switch \
-        -Werror=overflow \
-        -Werror=int-conversion \
-        -Werror=parenthesis \
-        -Werror=incompatible-pointer-types \
-        -Werror=misleading-indentation \
-	-Werror=missing-include-dirs -Werror=aggregate-return \
+  -pipe \
+  -Wall \
+  -Werror=empty-body \
+  -Werror=strict-prototypes \
+  -Werror=missing-prototypes \
+  -Werror=implicit-function-declaration \
+  "-Werror=format=2 -Werror=format-security -Werror=format-nonliteral" \
+  -Werror=pointer-arith -Werror=init-self \
+  -Werror=missing-declarations \
+  -Werror=return-type \
+  -Werror=switch \
+  -Werror=overflow \
+  -Werror=int-conversion \
+  -Werror=parentheses \
+  -Werror=undef \
+  -Werror=incompatible-pointer-types \
+  -Werror=misleading-indentation \
+  -Werror=missing-include-dirs -Werror=aggregate-return \
+  -Wstrict-aliasing=2 \
   -Werror=unused-result \
 ])])
 AC_SUBST(WARN_CFLAGS)
@@ -83,6 +85,9 @@ AC_SUBST([OSTREE_FEATURES])
 GLIB_TESTS
 LIBGLNX_CONFIGURE
 
+dnl These bits attempt to mirror https://github.com/coreutils/gnulib/blob/e369b04cca4da1534c98628b8ee4648bfca2bb3a/m4/parse-datetime.m4#L27
+AC_CHECK_FUNCS([nanotime clock_gettime])
+AC_STRUCT_TIMEZONE
 AC_CHECK_HEADER([sys/xattr.h],,[AC_MSG_ERROR([You must have sys/xattr.h from glibc])])
 
 AS_IF([test "$YACC" != "bison -y"], [AC_MSG_ERROR([bison not found but required])])
@@ -131,6 +136,15 @@ AS_IF([test x$with_curl != xno ], [
 ], [with_soup_default=check])
 AM_CONDITIONAL(USE_CURL, test x$with_curl != xno)
 if test x$with_curl = xyes; then OSTREE_FEATURES="$OSTREE_FEATURES libcurl"; fi
+AC_ARG_ENABLE(http2,
+AS_HELP_STRING([--disable-http2],
+  [Disable use of http2 (default: no)]),,
+  [enable_http2=yes])
+AS_IF([test x$enable_http2 != xno ], [
+  AC_DEFINE([BUILDOPT_HTTP2], 1, [Define if we enable http2])
+], [
+  OSTREE_FEATURES="$OSTREE_FEATURES no-http2"
+])
 
 dnl When bumping the libsoup-2.4 dependency, remember to bump
 dnl SOUP_VERSION_MIN_REQUIRED and SOUP_VERSION_MAX_ALLOWED in
@@ -183,7 +197,7 @@ AM_COND_IF(BUILDOPT_TRIVIAL_HTTPD,
 )
 
 AS_IF([test x$with_curl = xyes && test x$with_soup = xno], [
-  AC_MSG_ERROR([Curl enabled, but libsoup is not; libsoup is needed for tests])
+  AC_MSG_WARN([Curl enabled, but libsoup is not; libsoup is needed for tests (make check, etc.)])
 ])
 AM_CONDITIONAL(USE_CURL_OR_SOUP, test x$with_curl != xno || test x$with_soup != xno)
 AS_IF([test x$with_curl != xno || test x$with_soup != xno],
@@ -455,10 +469,26 @@ AC_ARG_WITH(mkinitcpio,
 AM_CONDITIONAL(BUILDOPT_MKINITCPIO, test x$with_mkinitcpio = xyes)
 
 dnl We have separate checks for libsystemd and the unit dir for historical reasons
-PKG_CHECK_MODULES([LIBSYSTEMD], [libsystemd], [have_libsystemd=yes], [have_libsystemd=no])
-AM_CONDITIONAL(BUILDOPT_LIBSYSTEMD, test x$have_libsystemd = xyes)
-AM_COND_IF(BUILDOPT_LIBSYSTEMD,
-           AC_DEFINE([HAVE_LIBSYSTEMD], 1, [Define if we have libsystemd]))
+AC_ARG_WITH(libsystemd,
+            AS_HELP_STRING([--without-libsystemd], [Do not use libsystemd]),
+            :, with_libsystemd=maybe)
+
+AS_IF([ test x$with_libsystemd != xno ], [
+    AC_MSG_CHECKING([for libsystemd])
+    PKG_CHECK_EXISTS(libsystemd, have_libsystemd=yes, have_libsystemd=no)
+    AC_MSG_RESULT([$have_libsystemd])
+    AS_IF([ test x$have_libsystemd = xno && test x$with_libsystemd != xmaybe ], [
+       AC_MSG_ERROR([libsystemd is enabled but could not be found])
+    ])
+    AS_IF([ test x$have_libsystemd = xyes], [
+        AC_DEFINE([HAVE_LIBSYSTEMD], 1, [Define if we have libsystemd.pc])
+        PKG_CHECK_MODULES([LIBSYSTEMD], [libsystemd])
+        with_libsystemd=yes
+    ], [
+        with_libsystemd=no
+    ])
+], [ with_libsystemd=no ])
+AM_CONDITIONAL(BUILDOPT_LIBSYSTEMD, test $with_libsystemd != no)
 
 AS_IF([test "x$have_libsystemd" = "xyes"], [
   with_systemd=yes
@@ -499,13 +529,13 @@ AS_IF([test x$with_grub2_mkconfig_path = x], [
   dnl on some 'grub'.  We default to grub2-mkconfig.
   AC_CHECK_PROGS(GRUB2_MKCONFIG, [grub2-mkconfig grub-mkconfig], [grub2-mkconfig])
 ],[GRUB2_MKCONFIG=$with_grub2_mkconfig_path])
-AC_DEFINE_UNQUOTED([GRUB2_MKCONFIG_PATH], ["$GRUB2_MKCONFIG"], [The system grub2-mkconfig executible name])
+AC_DEFINE_UNQUOTED([GRUB2_MKCONFIG_PATH], ["$GRUB2_MKCONFIG"], [The system grub2-mkconfig executable name])
 
 AC_ARG_WITH(static-compiler,
             AS_HELP_STRING([--with-static-compiler],
                            [Use the given compiler to build ostree-prepare-root statically linked (default: no)]),,
               [with_static_compiler=no])
-AM_CONDITIONAL(BUILDOPT_USE_STATIC_COMPILER, test x$with_static_compiler != xno)
+AM_CONDITIONAL(BUILDOPT_USE_STATIC_COMPILER, test "x$with_static_compiler" != xno)
 AC_SUBST(STATIC_COMPILER, $with_static_compiler)
 
 dnl for tests (but we can't use asan with gjs or any introspection,
@@ -552,6 +582,7 @@ AC_OUTPUT
 
 echo "
     libostree $VERSION ($release_build_type)
+    features: $OSTREE_FEATURES
     ===============
 
 

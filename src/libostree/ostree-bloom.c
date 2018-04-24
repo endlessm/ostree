@@ -1,6 +1,8 @@
 /*
  * Copyright © 2017 Endless Mobile, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -76,7 +78,7 @@
 struct _OstreeBloom
 {
   guint ref_count;
-  gsize n_bytes;
+  gsize n_bytes;  /* 0 < n_bytes <= G_MAXSIZE / 8 */
   gboolean is_mutable;  /* determines which of [im]mutable_bytes is accessed */
   union
     {
@@ -117,6 +119,7 @@ ostree_bloom_new (gsize               n_bytes,
   g_autoptr(OstreeBloom) bloom = NULL;
 
   g_return_val_if_fail (n_bytes > 0, NULL);
+  g_return_val_if_fail (n_bytes <= G_MAXSIZE / 8, NULL);
   g_return_val_if_fail (k > 0, NULL);
   g_return_val_if_fail (hash_func != NULL, NULL);
 
@@ -159,6 +162,7 @@ ostree_bloom_new_from_bytes (GBytes              *bytes,
 
   g_return_val_if_fail (bytes != NULL, NULL);
   g_return_val_if_fail (g_bytes_get_size (bytes) > 0, NULL);
+  g_return_val_if_fail (g_bytes_get_size (bytes) <= G_MAXSIZE / 8, NULL);
   g_return_val_if_fail (k > 0, NULL);
   g_return_val_if_fail (hash_func != NULL, NULL);
 

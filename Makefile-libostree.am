@@ -2,6 +2,8 @@
 #
 # Copyright (C) 2011,2014 Colin Walters <walters@verbum.org>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -49,12 +51,13 @@ libostreeinclude_HEADERS = $(libostree_public_headers) $(libostree_public_built_
 ENUM_TYPES = $(NULL)
 ENUM_TYPES += $(srcdir)/src/libostree/ostree-fetcher.h
 
+# TODO: GLIB_CHECK_VERSION > 2.5x: use --output instead of mv (see https://github.com/ostreedev/ostree/pull/1329)
 src/libostree/ostree-enumtypes.h: src/libostree/ostree-enumtypes.h.template $(ENUM_TYPES)
 	$(AM_V_GEN) $(GLIB_MKENUMS) \
 	--template $< \
 	$(ENUM_TYPES) > $@.tmp && mv $@.tmp $@
 
-src/libostree/ostree-enumtypes.c: src/libostree/ostree-enumtypes.c.template $(ENUM_TYPES)
+src/libostree/ostree-enumtypes.c: src/libostree/ostree-enumtypes.c.template src/libostree/ostree-enumtypes.h $(ENUM_TYPES)
 	$(AM_V_GEN) $(GLIB_MKENUMS) \
 	--template $< \
 	$(ENUM_TYPES) > $@.tmp && mv $@.tmp $@
@@ -100,6 +103,7 @@ libostree_1_la_SOURCES = \
 	src/libostree/ostree-repo-checkout.c \
 	src/libostree/ostree-repo-commit.c \
 	src/libostree/ostree-repo-pull.c \
+	src/libostree/ostree-repo-pull-private.h \
 	src/libostree/ostree-repo-libarchive.c \
 	src/libostree/ostree-repo-prune.c \
 	src/libostree/ostree-repo-refs.c \
@@ -156,6 +160,7 @@ libostree_experimental_headers = \
 	src/libostree/ostree-repo-finder-avahi.h \
 	src/libostree/ostree-repo-finder-config.h \
 	src/libostree/ostree-repo-finder-mount.h \
+	src/libostree/ostree-repo-finder-override.h \
 	$(NULL)
 if !ENABLE_EXPERIMENTAL_API
 libostree_1_la_SOURCES += $(libostree_experimental_headers)
@@ -167,6 +172,7 @@ libostree_1_la_SOURCES += \
 	src/libostree/ostree-repo-finder-avahi.c \
 	src/libostree/ostree-repo-finder-config.c \
 	src/libostree/ostree-repo-finder-mount.c \
+	src/libostree/ostree-repo-finder-override.c \
 	$(NULL)
 
 if USE_AVAHI
@@ -198,6 +204,10 @@ libostree_1_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/bsdiff -I$(srcdir)/libglnx -I$(
 libostree_1_la_LDFLAGS = -version-number 1:0:0 -Bsymbolic-functions $(addprefix $(wl_versionscript_arg),$(symbol_files))
 libostree_1_la_LIBADD = libotutil.la libglnx.la libbsdiff.la libostree-kernel-args.la $(OT_INTERNAL_GIO_UNIX_LIBS) $(OT_INTERNAL_GPGME_LIBS) \
                         $(OT_DEP_LZMA_LIBS) $(OT_DEP_ZLIB_LIBS) $(OT_DEP_CRYPTO_LIBS)
+# Some change between rust-1.21.0-1.fc27 and rust-1.22.1-1.fc27.x86_64
+if ENABLE_RUST
+libostree_1_la_LIBADD += -ldl
+endif
 libostree_1_la_LIBADD += $(bupsplitpath)
 EXTRA_libostree_1_la_DEPENDENCIES = $(symbol_files)
 
@@ -259,6 +269,10 @@ OSTree-1.0.gir: libostree-1.la Makefile
 OSTree_1_0_gir_EXPORT_PACKAGES = ostree-1
 OSTree_1_0_gir_INCLUDES = Gio-2.0
 OSTree_1_0_gir_CFLAGS = $(libostree_1_la_CFLAGS)
+if ENABLE_EXPERIMENTAL_API
+# When compiling this is set via config.h, but g-ir-scanner can't use that
+OSTree_1_0_gir_CFLAGS += -DOSTREE_ENABLE_EXPERIMENTAL_API=1
+endif
 OSTree_1_0_gir_LIBS = libostree-1.la
 OSTree_1_0_gir_SCANNERFLAGS = --warn-all --identifier-prefix=Ostree --symbol-prefix=ostree $(GI_SCANNERFLAGS)
 OSTree_1_0_gir_FILES = $(libostreeinclude_HEADERS) $(filter-out %-private.h %/ostree-soup-uri.h $(libostree_experimental_headers),$(libostree_1_la_SOURCES))

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -48,8 +50,7 @@
 #include <ot-opt-utils.h>
 #include <ot-unix-utils.h>
 #include <ot-variant-utils.h>
+#include <ot-variant-builder.h>
 #include <ot-checksum-utils.h>
 #include <ot-gpg-utils.h>
 #include <ot-checksum-instream.h>
-
-void ot_ptrarray_add_many (GPtrArray  *a, ...) G_GNUC_NULL_TERMINATED; 

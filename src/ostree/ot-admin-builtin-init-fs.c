@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2012 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -28,25 +30,20 @@
 
 #include <glib/gi18n.h>
 
-/* ATTENTION:
- * Please remember to update the bash-completion script (bash/ostree) and
- * man page (man/ostree-admin-init-fs.xml) when changing the option list.
- */
-
 static GOptionEntry options[] = {
   { NULL }
 };
 
 gboolean
-ot_admin_builtin_init_fs (int argc, char **argv, GCancellable *cancellable, GError **error)
+ot_admin_builtin_init_fs (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
-  g_autoptr(GOptionContext) context = g_option_context_new ("PATH - Initialize a root filesystem");
+  g_autoptr(GOptionContext) context = g_option_context_new ("PATH");
 
   if (!ostree_admin_option_context_parse (context, options, &argc, &argv,
                                           OSTREE_ADMIN_BUILTIN_FLAG_SUPERUSER |
-                                           OSTREE_ADMIN_BUILTIN_FLAG_UNLOCKED |
-                                           OSTREE_ADMIN_BUILTIN_FLAG_NO_SYSROOT,
-                                          NULL, cancellable, error))
+                                          OSTREE_ADMIN_BUILTIN_FLAG_UNLOCKED |
+                                          OSTREE_ADMIN_BUILTIN_FLAG_NO_SYSROOT,
+                                          invocation, NULL, cancellable, error))
     return FALSE;
 
   if (argc < 2)
@@ -57,7 +54,7 @@ ot_admin_builtin_init_fs (int argc, char **argv, GCancellable *cancellable, GErr
 
   const char *sysroot_path = argv[1];
 
-  glnx_fd_close int root_dfd = -1;
+  glnx_autofd int root_dfd = -1;
   if (!glnx_opendirat (AT_FDCWD, sysroot_path, TRUE, &root_dfd, error))
     return FALSE;
 

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011,2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -353,7 +355,7 @@ do_get (OtTrivialHttpd    *self,
       
       if (msg->method == SOUP_METHOD_GET)
         {
-          glnx_fd_close int fd = -1;
+          glnx_autofd int fd = -1;
           g_autoptr(GMappedFile) mapping = NULL;
           gsize buffer_length, file_size;
           SoupRange *ranges;
@@ -678,15 +680,10 @@ main (int    argc,
 
   if (!run (argc, argv, cancellable, &error))
     {
-      int is_tty = isatty (1);
-      const char *prefix = "";
-      const char *suffix = "";
-      if (is_tty)
-        {
-          prefix = "\x1b[31m\x1b[1m"; /* red, bold */
-          suffix = "\x1b[22m\x1b[0m"; /* bold off, color reset */
-        }
-      g_printerr ("%serror: %s%s\n", prefix, suffix, error->message);
+      g_printerr ("%s%serror:%s%s %s\n",
+                  ot_get_red_start (), ot_get_bold_start (),
+                  ot_get_bold_end (), ot_get_red_end (),
+                  error->message);
       return 1;
     }
 

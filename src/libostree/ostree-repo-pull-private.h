@@ -1,5 +1,7 @@
 /*
- * Copyright (C) 2011 Colin Walters <walters@verbum.org>
+ * Copyright © 2017 Endless Mobile, Inc.
+ *
+ * SPDX-License-Identifier: LGPL-2.0+
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -15,26 +17,18 @@
  * License along with this library; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
- *
- * Author: Colin Walters <walters@verbum.org>
  */
 
-#include "config.h"
+#pragma once
 
-#include "otutil.h"
+#include "ostree-core.h"
 
-#include <string.h>
+G_BEGIN_DECLS
 
-void
-ot_ptrarray_add_many (GPtrArray  *a, ...)
-{
-  va_list args;
-  void *p;
+gboolean
+_ostree_repo_verify_bindings (const char  *collection_id,
+                              const char  *ref_name,
+                              GVariant    *commit,
+                              GError     **error);
 
-  va_start (args, a);
-
-  while ((p = va_arg (args, void *)) != NULL)
-    g_ptr_array_add (a, p);
-
-  va_end (args);
-}
+G_END_DECLS

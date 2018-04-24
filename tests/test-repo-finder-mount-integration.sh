@@ -2,6 +2,8 @@
 #
 # Copyright © 2017 Endless Mobile, Inc.
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -109,12 +111,12 @@ for fs_type in ext4 vfat; do
     ostree_repo_init peer-repo_$fs_type
     ${CMD_PREFIX} ostree --repo=peer-repo_$fs_type remote add remote1 file://just-here-for-the-keyring --collection-id org.example.Collection1 --gpg-import="${test_tmpdir}/gpghome/key1.asc"
 
-    ${CMD_PREFIX} ostree --repo=peer-repo_$fs_type find-remotes org.example.Collection1 test-1 > find-results
+    ${CMD_PREFIX} ostree --repo=peer-repo_$fs_type find-remotes --finders=mount org.example.Collection1 test-1 > find-results
     assert_not_file_has_content find-results "^No results.$"
     assert_file_has_content find-results "^Result 0: file://${usb_mount}"
     assert_file_has_content find-results "(org.example.Collection1, test-1) = $(cat ref1-checksum)$"
 
-    ${CMD_PREFIX} ostree --repo=peer-repo_$fs_type find-remotes --pull org.example.Collection1 test-1 > pull-results
+    ${CMD_PREFIX} ostree --repo=peer-repo_$fs_type find-remotes --finders=mount --pull org.example.Collection1 test-1 > pull-results
     assert_file_has_content pull-results "^Pulled 1/1 refs successfully.$"
 
     ${CMD_PREFIX} ostree --repo=peer-repo_$fs_type refs --collections > refs

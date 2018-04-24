@@ -70,6 +70,10 @@ projects.
 where OSTree was born - as a high performance continuous delivery/testing
 system for GNOME.
 
+The [BuildStream](https://gitlab.com/BuildStream/buildstream) build and
+integration tool uses libostree as a caching system to store and share
+built artifacts.
+
 Building
 --------
 
@@ -104,3 +108,10 @@ Contributing
 ------------
 
 See [Contributing](CONTRIBUTING.md).
+
+
+Licensing
+-------
+
+The license for the *code* of libostree can be found in [COPYING](COPYING).
+The license for the *documentation* of libostree is: `SPDX-License-Identifier: (CC-BY-SA-3.0 OR GFDL-1.3-or-later)`

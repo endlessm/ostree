@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2017 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -164,7 +166,7 @@ _ostree_impl_system_generator (const char *ostree_cmdline,
   /* Prepare to write to the output unit dir; we use the "normal" dir
    * that overrides /usr, but not /etc.
    */
-  glnx_fd_close int normal_dir_dfd = -1;
+  glnx_autofd int normal_dir_dfd = -1;
   if (!glnx_opendirat (AT_FDCWD, normal_dir, TRUE, &normal_dir_dfd, error))
     return FALSE;
 

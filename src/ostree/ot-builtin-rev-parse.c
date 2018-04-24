@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2011 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -36,7 +38,7 @@ static GOptionEntry options[] = {
 };
 
 gboolean
-ostree_builtin_rev_parse (int argc, char **argv, GCancellable *cancellable, GError **error)
+ostree_builtin_rev_parse (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
   g_autoptr(OstreeRepo) repo = NULL;
@@ -45,9 +47,9 @@ ostree_builtin_rev_parse (int argc, char **argv, GCancellable *cancellable, GErr
   int i;
   g_autofree char *resolved_rev = NULL;
 
-  context = g_option_context_new ("REV - Output the target of a rev");
+  context = g_option_context_new ("REV");
 
-  if (!ostree_option_context_parse (context, options, &argc, &argv, OSTREE_BUILTIN_FLAG_NONE, &repo, cancellable, error))
+  if (!ostree_option_context_parse (context, options, &argc, &argv, invocation, &repo, cancellable, error))
     goto out;
 
   if (argc < 2)

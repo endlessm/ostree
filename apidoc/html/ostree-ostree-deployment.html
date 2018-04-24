@@ -8,7 +8,7 @@
 <link rel="up" href="reference.html" title="API Reference">
 <link rel="prev" href="ostree-ostree-checksum-input-stream.html" title="ostree-checksum-input-stream">
 <link rel="next" href="ostree-ostree-diff.html" title="ostree-diff">
-<meta name="generator" content="GTK-Doc V1.25 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.27 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -142,6 +142,14 @@
 </tr>
 <tr>
 <td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-ostree-deployment.html#ostree-deployment-is-pinned" title="ostree_deployment_is_pinned ()">ostree_deployment_is_pinned</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
 <span class="returnvalue">void</span>
 </td>
 <td class="function_name">
@@ -170,6 +178,14 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-ostree-deployment.html#ostree-deployment-set-origin" title="ostree_deployment_set_origin ()">ostree_deployment_set_origin</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-ostree-deployment.html#ostree-deployment-origin-remove-transient-state" title="ostree_deployment_origin_remove_transient_state ()">ostree_deployment_origin_remove_transient_state</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -230,12 +246,12 @@ ostree_deployment_equal (<em class="parameter"><code><span class="type">gconstpo
 <tbody>
 <tr>
 <td class="parameter_name"><p>ap</p></td>
-<td class="parameter_description"><p> A deployment. </p></td>
+<td class="parameter_description"><p>A deployment. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/type"><span class="acronym">type</span></a> OstreeDeployment]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>bp</p></td>
-<td class="parameter_description"><p> A deployment. </p></td>
+<td class="parameter_description"><p>A deployment. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/type"><span class="acronym">type</span></a> OstreeDeployment]</span></td>
 </tr>
 </tbody>
@@ -315,7 +331,7 @@ ostree_deployment_get_bootconfig (<em class="parameter"><code><a class="link" hr
 </div>
 <div class="refsect3">
 <a name="ostree-deployment-get-bootconfig.returns"></a><h4>Returns</h4>
-<p> Boot configuration. </p>
+<p>Boot configuration. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
 </div>
@@ -341,7 +357,7 @@ ostree_deployment_get_origin (<em class="parameter"><code><a class="link" href="
 </div>
 <div class="refsect3">
 <a name="ostree-deployment-get-origin.returns"></a><h4>Returns</h4>
-<p> Origin. </p>
+<p>Origin. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
 </div>
 </div>
@@ -370,7 +386,7 @@ or concatenate it with the full <a class="link" href="ostree-Root-partition-moun
 </div>
 <div class="refsect3">
 <a name="ostree-deployment-get-origin-relpath.returns"></a><h4>Returns</h4>
-<p> Path to deployment root directory, relative to sysroot. </p>
+<p>Path to deployment root directory, relative to sysroot. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 </div>
@@ -379,6 +395,33 @@ or concatenate it with the full <a class="link" href="ostree-Root-partition-moun
 <a name="ostree-deployment-get-unlocked"></a><h3>ostree_deployment_get_unlocked ()</h3>
 <pre class="programlisting"><span class="returnvalue">OstreeDeploymentUnlockedState</span>
 ostree_deployment_get_unlocked (<em class="parameter"><code><a class="link" href="ostree-ostree-deployment.html#OstreeDeployment" title="OstreeDeployment"><span class="type">OstreeDeployment</span></a> *self</code></em>);</pre>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-deployment-is-pinned"></a><h3>ostree_deployment_is_pinned ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_deployment_is_pinned (<em class="parameter"><code><a class="link" href="ostree-ostree-deployment.html#OstreeDeployment" title="OstreeDeployment"><span class="type">OstreeDeployment</span></a> *self</code></em>);</pre>
+<p>See <a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-pinned" title="ostree_sysroot_deployment_set_pinned ()"><code class="function">ostree_sysroot_deployment_set_pinned()</code></a>.</p>
+<div class="refsect3">
+<a name="ostree-deployment-is-pinned.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Deployment</p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-deployment-is-pinned.returns"></a><h4>Returns</h4>
+<p> <code class="literal">TRUE</code> if deployment will not be subject to GC</p>
+</div>
+<p class="since">Since: 2018.3</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -410,6 +453,41 @@ ostree_deployment_set_origin (<em class="parameter"><code><a class="link" href="
 </div>
 <hr>
 <div class="refsect2">
+<a name="ostree-deployment-origin-remove-transient-state"></a><h3>ostree_deployment_origin_remove_transient_state ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+ostree_deployment_origin_remove_transient_state
+                               (<em class="parameter"><code><span class="type">GKeyFile</span> *origin</code></em>);</pre>
+<p>The intention of an origin file is primarily describe the "inputs" that
+resulted in a deployment, and it's commonly used to derive the new state. For
+example, a key value (in pure libostree mode) is the "refspec". However,
+libostree (or other applications) may want to store "transient" state that
+should not be carried across upgrades.</p>
+<p>This function just removes all members of the <code class="literal">libostree-transient</code> group.
+The name of that group is available to all libostree users; best practice
+would be to prefix values underneath there with a short identifier for your
+software.</p>
+<p>Additionally, this function will remove the <code class="literal">origin/unlocked</code> and
+<code class="literal">origin/override-commit</code> members; these should be considered transient state
+that should have been under an explicit group.</p>
+<div class="refsect3">
+<a name="ostree-deployment-origin-remove-transient-state.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>origin</p></td>
+<td class="parameter_description"><p>An origin</p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<p class="since">Since: 2018.3</p>
+</div>
+<hr>
+<div class="refsect2">
 <a name="ostree-deployment-clone"></a><h3>ostree_deployment_clone ()</h3>
 <pre class="programlisting"><a class="link" href="ostree-ostree-deployment.html#OstreeDeployment" title="OstreeDeployment"><span class="returnvalue">OstreeDeployment</span></a> *
 ostree_deployment_clone (<em class="parameter"><code><a class="link" href="ostree-ostree-deployment.html#OstreeDeployment" title="OstreeDeployment"><span class="type">OstreeDeployment</span></a> *self</code></em>);</pre>
@@ -430,7 +508,7 @@ ostree_deployment_clone (<em class="parameter"><code><a class="link" href="ostre
 </div>
 <div class="refsect3">
 <a name="ostree-deployment-clone.returns"></a><h4>Returns</h4>
-<p> New deep copy of <em class="parameter"><code>self</code></em>
+<p>New deep copy of <em class="parameter"><code>self</code></em>
 . </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
@@ -522,6 +600,6 @@ ostree_deployment_unlocked_state_to_string
 </div>
 </div>
 <div class="footer">
-<hr>Generated by GTK-Doc V1.25</div>
+<hr>Generated by GTK-Doc V1.27</div>
 </body>
 </html>

@@ -3,6 +3,8 @@
  * Copyright © 2015 Red Hat, Inc.
  * Copyright © 2017 Endless Mobile, Inc.
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -147,6 +149,7 @@ ostree_remote_unref (OstreeRemote *remote)
   if (g_atomic_int_dec_and_test (&remote->ref_count))
     {
       g_clear_pointer (&remote->name, g_free);
+      g_clear_pointer (&remote->refspec_name, g_free);
       g_clear_pointer (&remote->group, g_free);
       g_clear_pointer (&remote->keyring, g_free);
       g_clear_object (&remote->file);
@@ -179,4 +182,22 @@ ostree_remote_get_name (OstreeRemote *remote)
   g_return_val_if_fail (remote->ref_count > 0, NULL);
 
   return remote->name;
+}
+
+/**
+ * ostree_remote_get_url:
+ * @remote: an #OstreeRemote
+ *
+ * Get the URL from the remote.
+ *
+ * Returns: (transfer full): the remote's URL
+ * Since: 2017.14
+ */
+gchar *
+ostree_remote_get_url (OstreeRemote *remote)
+{
+  g_return_val_if_fail (remote != NULL, NULL);
+  g_return_val_if_fail (remote->ref_count > 0, NULL);
+
+  return g_key_file_get_string (remote->options, remote->group, "url", NULL);
 }

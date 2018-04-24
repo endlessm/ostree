@@ -3,6 +3,8 @@
 # Copyright (C) 2013 Jeremy Whiting <jeremy.whiting@collabora.com>
 # Copyright (C) 2016 Sjoerd Simons <sjoerd@luon.net>
 #
+# SPDX-License-Identifier: LGPL-2.0+
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -25,7 +27,8 @@ echo '1..4'
 . $(dirname $0)/libtest.sh
 
 setup_fake_remote_repo1 "archive" "" \
-  "--expected-cookies foo=bar --expected-cookies baz=badger"
+  --expected-cookies foo=bar \
+  --expected-cookies baz=badger
 
 assert_fail (){ 
   if $@; then

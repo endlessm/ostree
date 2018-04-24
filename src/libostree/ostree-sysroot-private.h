@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2012,2013 Colin Walters <walters@verbum.org>
  *
+ * SPDX-License-Identifier: LGPL-2.0+
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -48,6 +50,11 @@ struct OstreeSysroot {
   GLnxLockFile lock;
 
   gboolean loaded;
+  gboolean ostree_booted;
+  gboolean root_is_sysroot; /* TRUE if sysroot_fd is pointed to rootfs "/" */
+  /* The device/inode for /, used to detect booted deployment */
+  dev_t root_device;
+  ino_t root_inode;
 
   gboolean is_physical; /* TRUE if we're pointed at physical storage root and not a deployment */
   GPtrArray *deployments;
