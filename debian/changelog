@@ -3,6 +3,7 @@ ostree (2018.4-3) UNRELEASED; urgency=medium
   * ostree-tests: Add Lintian override for library-not-linked-against-libc.
     libreaddir-rand.so genuinely doesn't use any libc ABIs directly, only
     via GLib.
+  * Standards-Version: 4.1.4 (no changes required)
 
  -- Simon McVittie <smcv@debian.org>  Tue, 24 Apr 2018 08:21:54 +0100
 
