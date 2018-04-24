@@ -8,3 +8,7 @@ ostree-tests: symlink-is-self-recursive usr/lib/installed-tests/libostree/tests 
 
 # We won't run this on sparc64 currently
 [sparc64]: missing-dep-for-interpreter gjs => gjs (usr/lib/installed-tests/libostree/corrupt-repo-ref.js)
+
+# This shared object genuinely doesn't use any libc ABIs directly,
+# only via GLib
+library-not-linked-against-libc usr/lib/installed-tests/libostree/libreaddir-rand.so
