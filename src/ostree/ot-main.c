@@ -46,7 +46,7 @@ static GOptionEntry global_entries[] = {
 };
 
 static GOptionEntry repo_entry[] = {
-  { "repo", 0, 0, G_OPTION_ARG_FILENAME, &opt_repo, "Path to OSTree repository (defaults to /sysroot/ostree/repo)", "PATH" },
+  { "repo", 0, 0, G_OPTION_ARG_FILENAME, &opt_repo, "Path to OSTree repository (defaults to current directory or /sysroot/ostree/repo)", "PATH" },
   { NULL }
 };
 
@@ -66,10 +66,13 @@ ostree_option_context_new_with_commands (OstreeCommand *commands)
 
   while (commands->name != NULL)
     {
-      g_string_append_printf (summary, "\n  %-18s", commands->name);
+      if ((commands->flags & OSTREE_BUILTIN_FLAG_HIDDEN) == 0)
+        {
+          g_string_append_printf (summary, "\n  %-18s", commands->name);
 
-      if (commands->description != NULL )
-        g_string_append_printf (summary, "%s", commands->description);
+          if (commands->description != NULL )
+            g_string_append_printf (summary, "%s", commands->description);
+        }
 
       commands++;
     }

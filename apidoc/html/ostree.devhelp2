@@ -189,8 +189,11 @@
     <keyword type="function" name="ostree_repo_static_delta_generate ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-generate"/>
     <keyword type="function" name="ostree_repo_static_delta_execute_offline ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-execute-offline"/>
     <keyword type="function" name="ostree_repo_traverse_new_reachable ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-new-reachable"/>
+    <keyword type="function" name="ostree_repo_traverse_new_parents ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-new-parents" since="2018.5"/>
+    <keyword type="function" name="ostree_repo_traverse_parents_get_commits ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-parents-get-commits" since="2018.5"/>
     <keyword type="function" name="ostree_repo_traverse_commit ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-commit"/>
     <keyword type="function" name="ostree_repo_traverse_commit_union ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-commit-union"/>
+    <keyword type="function" name="ostree_repo_traverse_commit_union_with_parents ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-commit-union-with-parents" since="2018.5"/>
     <keyword type="function" name="ostree_repo_commit_traverse_iter_cleanup ()" link="ostree-OstreeRepo.html#ostree-repo-commit-traverse-iter-cleanup"/>
     <keyword type="function" name="ostree_repo_commit_traverse_iter_clear ()" link="ostree-OstreeRepo.html#ostree-repo-commit-traverse-iter-clear"/>
     <keyword type="function" name="ostree_repo_commit_traverse_iter_get_dir ()" link="ostree-OstreeRepo.html#ostree-repo-commit-traverse-iter-get-dir"/>
@@ -271,6 +274,7 @@
     <keyword type="function" name="ostree_sysroot_prepare_cleanup ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-prepare-cleanup"/>
     <keyword type="function" name="ostree_sysroot_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-repo"/>
     <keyword type="function" name="ostree_sysroot_get_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-repo"/>
+    <keyword type="function" name="ostree_sysroot_get_staged_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-staged-deployment"/>
     <keyword type="function" name="ostree_sysroot_init_osname ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-init-osname"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_kargs ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-kargs"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_mutable ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-mutable"/>
@@ -279,6 +283,7 @@
     <keyword type="function" name="ostree_sysroot_write_deployments ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments"/>
     <keyword type="function" name="ostree_sysroot_write_deployments_with_options ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments-with-options"/>
     <keyword type="function" name="ostree_sysroot_write_origin_file ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-origin-file"/>
+    <keyword type="function" name="ostree_sysroot_stage_tree ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-stage-tree"/>
     <keyword type="function" name="ostree_sysroot_deploy_tree ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deploy-tree"/>
     <keyword type="function" name="ostree_sysroot_get_merge_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-merge-deployment"/>
     <keyword type="function" name="ostree_sysroot_query_deployments_for ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-query-deployments-for" since="2017.7"/>
@@ -364,6 +369,7 @@
     <keyword type="function" name="ostree_deployment_get_origin_relpath ()" link="ostree-ostree-deployment.html#ostree-deployment-get-origin-relpath"/>
     <keyword type="function" name="ostree_deployment_get_unlocked ()" link="ostree-ostree-deployment.html#ostree-deployment-get-unlocked"/>
     <keyword type="function" name="ostree_deployment_is_pinned ()" link="ostree-ostree-deployment.html#ostree-deployment-is-pinned" since="2018.3"/>
+    <keyword type="function" name="ostree_deployment_is_staged ()" link="ostree-ostree-deployment.html#ostree-deployment-is-staged" since="2018.3"/>
     <keyword type="function" name="ostree_deployment_set_index ()" link="ostree-ostree-deployment.html#ostree-deployment-set-index"/>
     <keyword type="function" name="ostree_deployment_set_bootserial ()" link="ostree-ostree-deployment.html#ostree-deployment-set-bootserial"/>
     <keyword type="function" name="ostree_deployment_set_bootconfig ()" link="ostree-ostree-deployment.html#ostree-deployment-set-bootconfig"/>
@@ -500,5 +506,6 @@
     <keyword type="member" name="OstreeDeployment.bootconfig" link="ostree-ostree-deployment.html#OstreeDeployment.bootconfig"/>
     <keyword type="member" name="OstreeDeployment.origin" link="ostree-ostree-deployment.html#OstreeDeployment.origin"/>
     <keyword type="member" name="OstreeDeployment.unlocked" link="ostree-ostree-deployment.html#OstreeDeployment.unlocked"/>
+    <keyword type="member" name="OstreeDeployment.staged" link="ostree-ostree-deployment.html#OstreeDeployment.staged"/>
   </functions>
 </book>

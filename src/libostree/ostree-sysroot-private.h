@@ -50,8 +50,7 @@ struct OstreeSysroot {
   GLnxLockFile lock;
 
   gboolean loaded;
-  gboolean ostree_booted;
-  gboolean root_is_sysroot; /* TRUE if sysroot_fd is pointed to rootfs "/" */
+  gboolean root_is_ostree_booted; /* TRUE if sysroot is / and we are booted via ostree */
   /* The device/inode for /, used to detect booted deployment */
   dev_t root_device;
   ino_t root_inode;
@@ -61,6 +60,8 @@ struct OstreeSysroot {
   int bootversion;
   int subbootversion;
   OstreeDeployment *booted_deployment;
+  OstreeDeployment *staged_deployment;
+  GVariant *staged_deployment_data;
   struct timespec loaded_ts;
 
   /* Only access through ostree_sysroot_[_get]repo() */
@@ -71,6 +72,7 @@ struct OstreeSysroot {
 
 #define OSTREE_SYSROOT_LOCKFILE "ostree/lock"
 /* We keep some transient state in /run */
+#define _OSTREE_SYSROOT_RUNSTATE_STAGED "/run/ostree/staged-deployment"
 #define _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_DIR "/run/ostree/deployment-state/"
 #define _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_FLAG_DEVELOPMENT "unlocked-development"
 
@@ -105,12 +107,36 @@ _ostree_sysroot_list_deployment_dirs_for_os (int                  deploydir_dfd,
                                              GCancellable        *cancellable,
                                              GError             **error);
 
+void
+_ostree_deployment_set_bootconfig_from_kargs (OstreeDeployment *deployment,
+                                              char            **override_kernel_argv);
+
+gboolean
+_ostree_sysroot_reload_staged (OstreeSysroot *self, GError       **error);
+
+gboolean
+_ostree_sysroot_finalize_staged (OstreeSysroot *self,
+                                 GCancellable  *cancellable,
+                                 GError       **error);
+
+OstreeDeployment *
+_ostree_sysroot_deserialize_deployment_from_variant (GVariant *v,
+                                                     GError  **error);
+
 char *
 _ostree_sysroot_get_origin_relpath (GFile         *path,
                                     guint32       *out_device,
                                     guint64       *out_inode,
                                     GCancellable  *cancellable,
                                     GError       **error);
+
+gboolean
+_ostree_sysroot_rmrf_deployment (OstreeSysroot *sysroot,
+                                 OstreeDeployment *deployment,
+                                 GCancellable  *cancellable,
+                                 GError       **error);
+
+char * _ostree_sysroot_get_runstate_path (OstreeDeployment *deployment, const char *key);
 
 char *_ostree_sysroot_join_lines (GPtrArray  *lines);
 

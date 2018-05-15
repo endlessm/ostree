@@ -82,6 +82,8 @@ ostree_sysroot_finalize (GObject *object)
   g_clear_object (&self->repo);
   g_clear_pointer (&self->deployments, g_ptr_array_unref);
   g_clear_object (&self->booted_deployment);
+  g_clear_object (&self->staged_deployment);
+  g_clear_pointer (&self->staged_deployment_data, (GDestroyNotify)g_variant_unref);
 
   glnx_release_lock_file (&self->lock);
 
@@ -525,32 +527,30 @@ read_current_bootversion (OstreeSysroot *self,
 }
 
 static gboolean
-parse_origin (OstreeSysroot   *self,
-              int              deployment_dfd,
-              const char      *deployment_name,
-              GKeyFile       **out_origin,
-              GCancellable    *cancellable,
-              GError         **error)
+load_origin (OstreeSysroot   *self,
+             OstreeDeployment *deployment,
+             GCancellable    *cancellable,
+             GError         **error)
 {
-  g_autofree char *origin_path = g_strconcat ("../", deployment_name, ".origin", NULL);
-  g_autoptr(GKeyFile) ret_origin = g_key_file_new ();
+  g_autofree char *origin_path = ostree_deployment_get_origin_relpath (deployment);
 
-  struct stat stbuf;
-  if (!glnx_fstatat_allow_noent (deployment_dfd, origin_path, &stbuf, 0, error))
+  glnx_autofd int fd = -1;
+  if (!ot_openat_ignore_enoent (self->sysroot_fd, origin_path, &fd, error))
     return FALSE;
-  if (errno == 0)
+  if (fd >= 0)
     {
       g_autofree char *origin_contents =
-        glnx_file_get_contents_utf8_at (deployment_dfd, origin_path,
-                                        NULL, cancellable, error);
+        glnx_fd_readall_utf8 (fd, NULL, cancellable, error);
       if (!origin_contents)
         return FALSE;
 
-      if (!g_key_file_load_from_data (ret_origin, origin_contents, -1, 0, error))
+      g_autoptr(GKeyFile) origin = g_key_file_new ();
+      if (!g_key_file_load_from_data (origin, origin_contents, -1, 0, error))
         return glnx_prefix_error (error, "Parsing %s", origin_path);
+
+      ostree_deployment_set_origin (deployment, origin);
     }
 
-  ot_transfer_out_value(out_origin, &ret_origin);
   return TRUE;
 }
 
@@ -584,14 +584,14 @@ parse_bootlink (const char    *bootlink,
   return TRUE;
 }
 
-static char *
-get_unlocked_development_path (OstreeDeployment *deployment)
+char *
+_ostree_sysroot_get_runstate_path (OstreeDeployment *deployment, const char *key)
 {
   return g_strdup_printf ("%s%s.%d/%s",
                           _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_DIR,
                           ostree_deployment_get_csum (deployment),
                           ostree_deployment_get_deployserial (deployment),
-                          _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_FLAG_DEVELOPMENT);
+                          key);
 }
 
 static gboolean
@@ -637,8 +637,7 @@ parse_deployment (OstreeSysroot       *self,
 
   /* See if this is the booted deployment */
   const gboolean looking_for_booted_deployment =
-    (self->ostree_booted && self->root_is_sysroot &&
-     !self->booted_deployment);
+    (self->root_is_ostree_booted && !self->booted_deployment);
   gboolean is_booted_deployment = FALSE;
   if (looking_for_booted_deployment)
     {
@@ -653,26 +652,23 @@ parse_deployment (OstreeSysroot       *self,
                               stbuf.st_ino == self->root_inode);
     }
 
-  g_autoptr(GKeyFile) origin = NULL;
-  if (!parse_origin (self, deployment_dfd, deploy_basename, &origin,
-                     cancellable, error))
-    return FALSE;
-
   g_autoptr(OstreeDeployment) ret_deployment
     = ostree_deployment_new (-1, osname, treecsum, deployserial,
                              bootcsum, treebootserial);
-  if (origin)
-    ostree_deployment_set_origin (ret_deployment, origin);
+  if (!load_origin (self, ret_deployment, cancellable, error))
+    return FALSE;
 
   ret_deployment->unlocked = OSTREE_DEPLOYMENT_UNLOCKED_NONE;
-  g_autofree char *unlocked_development_path = get_unlocked_development_path (ret_deployment);
+  g_autofree char *unlocked_development_path =
+    _ostree_sysroot_get_runstate_path (ret_deployment, _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_FLAG_DEVELOPMENT);
   struct stat stbuf;
   if (lstat (unlocked_development_path, &stbuf) == 0)
     ret_deployment->unlocked = OSTREE_DEPLOYMENT_UNLOCKED_DEVELOPMENT;
   else
     {
-      g_autofree char *existing_unlocked_state =
-        g_key_file_get_string (origin, "origin", "unlocked", NULL);
+      GKeyFile *origin = ostree_deployment_get_origin (ret_deployment);
+      g_autofree char *existing_unlocked_state = origin ?
+        g_key_file_get_string (origin, "origin", "unlocked", NULL) : NULL;
 
       if (g_strcmp0 (existing_unlocked_state, "hotfix") == 0)
         {
@@ -742,6 +738,15 @@ compare_deployments_by_boot_loader_version_reversed (gconstpointer     a_pp,
   OstreeBootconfigParser *a_bootconfig = ostree_deployment_get_bootconfig (a);
   OstreeBootconfigParser *b_bootconfig = ostree_deployment_get_bootconfig (b);
 
+  /* Staged deployments are always first */
+  if (ostree_deployment_is_staged (a))
+    {
+      g_assert (!ostree_deployment_is_staged (b));
+      return -1;
+    }
+  else if (ostree_deployment_is_staged (b))
+    return 1;
+
   return compare_boot_loader_configs (a_bootconfig, b_bootconfig);
 }
 
@@ -789,6 +794,63 @@ ensure_repo (OstreeSysroot  *self,
   return TRUE;
 }
 
+/* Reload the staged deployment from the file in /run */
+gboolean
+_ostree_sysroot_reload_staged (OstreeSysroot *self,
+                               GError       **error)
+{
+  GLNX_AUTO_PREFIX_ERROR ("Loading staged deployment", error);
+  if (!self->root_is_ostree_booted)
+    return TRUE; /* Note early return */
+
+  g_assert (self->booted_deployment);
+
+  g_clear_object (&self->staged_deployment);
+  g_clear_pointer (&self->staged_deployment_data, (GDestroyNotify)g_variant_unref);
+
+  /* Read the staged state from disk */
+  glnx_autofd int fd = -1;
+  if (!ot_openat_ignore_enoent (AT_FDCWD, _OSTREE_SYSROOT_RUNSTATE_STAGED, &fd, error))
+    return FALSE;
+  if (fd != -1)
+    {
+      g_autoptr(GBytes) contents = ot_fd_readall_or_mmap (fd, 0, error);
+      if (!contents)
+        return FALSE;
+      g_autoptr(GVariant) staged_deployment_data =
+        g_variant_new_from_bytes ((GVariantType*)"a{sv}", contents, TRUE);
+      g_autoptr(GVariantDict) staged_deployment_dict =
+        g_variant_dict_new (staged_deployment_data);
+
+      /* Parse it */
+      g_autoptr(GVariant) target = NULL;
+      g_autofree char **kargs = NULL;
+      g_variant_dict_lookup (staged_deployment_dict, "target", "@a{sv}", &target);
+      g_variant_dict_lookup (staged_deployment_dict, "kargs", "^a&s", &kargs);
+      if (target)
+        {
+          g_autoptr(OstreeDeployment) staged =
+            _ostree_sysroot_deserialize_deployment_from_variant (target, error);
+          if (!staged)
+            return FALSE;
+
+          _ostree_deployment_set_bootconfig_from_kargs (staged, kargs);
+          if (!load_origin (self, staged, NULL, error))
+            return FALSE;
+
+          self->staged_deployment = g_steal_pointer (&staged);
+          self->staged_deployment_data = g_steal_pointer (&staged_deployment_data);
+          /* We set this flag for ostree_deployment_is_staged() because that API
+           * doesn't have access to the sysroot, which currently has the
+           * canonical "staged_deployment" reference.
+           */
+          self->staged_deployment->staged = TRUE;
+        }
+    }
+
+  return TRUE;
+}
+
 gboolean
 ostree_sysroot_load_if_changed (OstreeSysroot  *self,
                                 gboolean       *out_changed,
@@ -813,7 +875,7 @@ ostree_sysroot_load_if_changed (OstreeSysroot  *self,
     {
       if (!glnx_fstatat_allow_noent (AT_FDCWD, "/run/ostree-booted", NULL, 0, error))
         return FALSE;
-      self->ostree_booted = (errno == 0);
+      const gboolean ostree_booted = (errno == 0);
 
       { struct stat root_stbuf;
         if (!glnx_fstatat (AT_FDCWD, "/", &root_stbuf, 0, error))
@@ -826,9 +888,11 @@ ostree_sysroot_load_if_changed (OstreeSysroot  *self,
       if (!glnx_fstat (self->sysroot_fd, &self_stbuf, error))
         return FALSE;
 
-      self->root_is_sysroot =
+      const gboolean root_is_sysroot =
         (self->root_device == self_stbuf.st_dev &&
          self->root_inode == self_stbuf.st_ino);
+
+      self->root_is_ostree_booted = (ostree_booted && root_is_sysroot);
     }
 
   int bootversion = 0;
@@ -857,6 +921,7 @@ ostree_sysroot_load_if_changed (OstreeSysroot  *self,
 
   g_clear_pointer (&self->deployments, g_ptr_array_unref);
   g_clear_object (&self->booted_deployment);
+  g_clear_object (&self->staged_deployment);
   self->bootversion = -1;
   self->subbootversion = -1;
 
@@ -880,11 +945,20 @@ ostree_sysroot_load_if_changed (OstreeSysroot  *self,
         }
     }
 
-  if (self->ostree_booted && self->root_is_sysroot
-      && !self->booted_deployment)
+  if (self->root_is_ostree_booted && !self->booted_deployment)
     return glnx_throw (error, "Unexpected state: /run/ostree-booted found and in / sysroot but not in a booted deployment");
 
+  if (!_ostree_sysroot_reload_staged (self, error))
+    return FALSE;
+
+  /* Ensure the entires are sorted */
   g_ptr_array_sort (deployments, compare_deployments_by_boot_loader_version_reversed);
+
+  /* Staged shows up first */
+  if (self->staged_deployment)
+    g_ptr_array_insert (deployments, 0, g_object_ref (self->staged_deployment));
+
+  /* And then set their index variables */
   for (guint i = 0; i < deployments->len; i++)
     {
       OstreeDeployment *deployment = deployments->pdata[i];
@@ -947,6 +1021,20 @@ ostree_sysroot_get_booted_deployment (OstreeSysroot       *self)
   g_return_val_if_fail (self->loaded, NULL);
 
   return self->booted_deployment;
+}
+
+/**
+ * ostree_sysroot_get_staged_deployment:
+ * @self: Sysroot
+ *
+ * Returns: (transfer none): The currently staged deployment, or %NULL if none
+ */
+OstreeDeployment *
+ostree_sysroot_get_staged_deployment (OstreeSysroot       *self)
+{
+  g_return_val_if_fail (self->loaded, NULL);
+
+  return self->staged_deployment;
 }
 
 /**
@@ -1769,7 +1857,8 @@ ostree_sysroot_deployment_unlock (OstreeSysroot     *self,
       break;
     case OSTREE_DEPLOYMENT_UNLOCKED_DEVELOPMENT:
       {
-        g_autofree char *devpath = get_unlocked_development_path (deployment);
+        g_autofree char *devpath =
+          _ostree_sysroot_get_runstate_path (deployment, _OSTREE_SYSROOT_DEPLOYMENT_RUNSTATE_FLAG_DEVELOPMENT);
         g_autofree char *devpath_parent = dirname (g_strdup (devpath));
 
         if (!glnx_shutil_mkdir_p_at (AT_FDCWD, devpath_parent, 0755, cancellable, error))

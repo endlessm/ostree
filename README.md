@@ -20,9 +20,9 @@ bootloader configuration.
 
 The core OSTree model is like git in that it checksums individual files and has
 a content-addressed-object store. It's unlike git in that it "checks out" the
-files via hardlinks, and they should thus be immutable. Therefore, another way
-to think of OSTree is that it's just a more polished version
-of
+files via hardlinks, and they thus need to be immutable to prevent corruption.
+Therefore, another way to think of OSTree is that it's just a more polished
+version of
 [Linux VServer hardlinks](http://linux-vserver.org/index.php?title=util-vserver:Vhashify&oldid=2285).
 
 **Features:**
@@ -113,5 +113,12 @@ See [Contributing](CONTRIBUTING.md).
 Licensing
 -------
 
-The license for the *code* of libostree can be found in [COPYING](COPYING).
-The license for the *documentation* of libostree is: `SPDX-License-Identifier: (CC-BY-SA-3.0 OR GFDL-1.3-or-later)`
+The licensing for the *code* of libostree can be canonically found in the individual files;
+and the overall status in the [COPYING](https://github.com/ostreedev/ostree/blob/master/COPYING)
+file in the source.  Currently, that's LGPLv2+.  This also covers the man pages and API docs.
+
+The license for the manual documentation in the `doc/` directory is:
+`SPDX-License-Identifier: (CC-BY-SA-3.0 OR GFDL-1.3-or-later)`
+This is intended to allow use by Wikipedia and other projects.
+
+In general, files should have a `SPDX-License-Identifier` and that is canonical.

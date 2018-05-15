@@ -193,7 +193,7 @@ _ostree_repo_prune_tmp (OstreeRepo *self,
  * targeting that commit; otherwise any static delta of non existing commits are
  * deleted.
  *
- * This function takes an exclusive lock on the @self repository.
+ * Locking: exclusive
  */
 gboolean
 ostree_repo_prune_static_deltas (OstreeRepo *self, const char *commit,
@@ -201,8 +201,7 @@ ostree_repo_prune_static_deltas (OstreeRepo *self, const char *commit,
                                  GError           **error)
 {
   g_autoptr(OstreeRepoAutoLock) lock =
-    ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable,
-                                error);
+    _ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable, error);
   if (!lock)
     return FALSE;
 
@@ -327,7 +326,7 @@ repo_prune_internal (OstreeRepo        *self,
  * statistics on objects that would be deleted, without actually
  * deleting them.
  *
- * This function takes an exclusive lock on the @self repository.
+ * Locking: exclusive
  */
 gboolean
 ostree_repo_prune (OstreeRepo        *self,
@@ -340,8 +339,7 @@ ostree_repo_prune (OstreeRepo        *self,
                    GError           **error)
 {
   g_autoptr(OstreeRepoAutoLock) lock =
-    ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable,
-                                error);
+    _ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable, error);
   if (!lock)
     return FALSE;
 
@@ -440,7 +438,7 @@ ostree_repo_prune (OstreeRepo        *self,
  * The %OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE flag may be specified to just determine
  * statistics on objects that would be deleted, without actually deleting them.
  *
- * This function takes an exclusive lock on the @self repository.
+ * Locking: exclusive
  */
 gboolean
 ostree_repo_prune_from_reachable (OstreeRepo        *self,
@@ -452,8 +450,7 @@ ostree_repo_prune_from_reachable (OstreeRepo        *self,
                                   GError           **error)
 {
   g_autoptr(OstreeRepoAutoLock) lock =
-    ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable,
-                                error);
+    _ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable, error);
   if (!lock)
     return FALSE;
 

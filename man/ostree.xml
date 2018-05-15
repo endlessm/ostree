@@ -111,14 +111,14 @@ Boston, MA 02111-1307, USA.
                 <term><option>--repo</option></term>
 
                 <listitem><para>
-                    For most commands,
-                    when run as non-root, repository is
-                    required.  If
-                    <command>ostree</command> is run as
-                    root, it is assumed operations will be
-                    performed on the
-                    <filename>/sysroot/ostree/repo</filename>
-                    repository.
+                    For most commands, a repository is
+                    required.  If unspecified, the current
+                    directory is used if it appears to be an
+                    OSTree repository. If it isn't, either
+                    the <envar>OSTREE_REPO</envar>
+                    environment variable is used, or the
+                    system repository located at
+                    <filename>/sysroot/ostree/repo</filename>.
                 </para></listitem>
             </varlistentry>
 
@@ -282,6 +282,15 @@ Boston, MA 02111-1307, USA.
                     &nbsp;Change settings.
                 </para></listitem>
             </varlistentry>
+
+            <!-- FIXME: Uncomment this when it's no longer experimental
+            <varlistentry>
+                <term><citerefentry><refentrytitle>ostree-create-usb</refentrytitle><manvolnum>1</manvolnum></citerefentry></term>
+
+                <listitem><para>
+                    &nbsp;Put the given refs on an external drive for P2P distribution.
+                </para></listitem>
+            </varlistentry>-->
 
             <varlistentry>
                 <term><citerefentry><refentrytitle>ostree-diff</refentrytitle><manvolnum>1</manvolnum></citerefentry></term>
