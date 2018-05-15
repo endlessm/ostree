@@ -1,5 +1,10 @@
-ostree (2018.4-3) UNRELEASED; urgency=medium
+ostree (2018.5-1) UNRELEASED; urgency=medium
 
+  * New upstream release
+    - d/copyright: Upstream clarified that only doc/ is CC-BY-SA-3.0 or
+      GFDL-1.3-or-later, and doc/ isn't included in dist tarballs, so
+      remove those licenses
+    - d/libostree-1-1.symbols: Update (and sort)
   * ostree-tests: Add Lintian override for library-not-linked-against-libc.
     libreaddir-rand.so genuinely doesn't use any libc ABIs directly, only
     via GLib.

@@ -1,12 +1,18 @@
 libostree-1.so.1 libostree-1-1 #MINVER#
 * Build-Depends-Package: libostree-dev
+ LIBOSTREE_2016.14@LIBOSTREE_2016.14 2016.14
  LIBOSTREE_2016.3@LIBOSTREE_2016.3 2016.4
  LIBOSTREE_2016.4@LIBOSTREE_2016.4 2016.4
  LIBOSTREE_2016.5@LIBOSTREE_2016.5 2016.5
  LIBOSTREE_2016.6@LIBOSTREE_2016.6 2016.6
  LIBOSTREE_2016.7@LIBOSTREE_2016.7 2016.7
  LIBOSTREE_2016.8@LIBOSTREE_2016.8 2016.8
- LIBOSTREE_2016.14@LIBOSTREE_2016.14 2016.14
+ LIBOSTREE_2017.10@LIBOSTREE_2017.10 2017.10
+ LIBOSTREE_2017.11@LIBOSTREE_2017.11 2017.11
+ LIBOSTREE_2017.12@LIBOSTREE_2017.12 2017.12
+ LIBOSTREE_2017.13@LIBOSTREE_2017.13 2017.13
+ LIBOSTREE_2017.14@LIBOSTREE_2017.14 2017.14
+ LIBOSTREE_2017.15@LIBOSTREE_2017.15 2017.15
  LIBOSTREE_2017.1@LIBOSTREE_2017.1 2017.1
  LIBOSTREE_2017.2@LIBOSTREE_2017.2 2017.2
  LIBOSTREE_2017.3@LIBOSTREE_2017.3 2017.3
@@ -15,15 +21,10 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2017.7@LIBOSTREE_2017.7 2017.7
  LIBOSTREE_2017.8@LIBOSTREE_2017.8 2017.8
  LIBOSTREE_2017.9@LIBOSTREE_2017.9 2017.9
- LIBOSTREE_2017.10@LIBOSTREE_2017.10 2017.10
- LIBOSTREE_2017.11@LIBOSTREE_2017.11 2017.11
- LIBOSTREE_2017.12@LIBOSTREE_2017.12 2017.12
- LIBOSTREE_2017.13@LIBOSTREE_2017.13 2017.13
- LIBOSTREE_2017.14@LIBOSTREE_2017.14 2017.14
- LIBOSTREE_2017.15@LIBOSTREE_2017.15 2017.15
  LIBOSTREE_2018.1@LIBOSTREE_2018.1 2018.1
  LIBOSTREE_2018.2@LIBOSTREE_2018.2 2018.2
  LIBOSTREE_2018.3@LIBOSTREE_2018.3 2018.3
+ LIBOSTREE_2018.5@LIBOSTREE_2018.5 2018.5
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
@@ -59,8 +60,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_checksum_bytes_peek_validate@LIBOSTREE_2016.3 2016.4
  ostree_checksum_file@LIBOSTREE_2016.3 2016.4
  ostree_checksum_file_async@LIBOSTREE_2016.3 2016.4
- ostree_checksum_file_at@LIBOSTREE_2017.13 2017.13
  ostree_checksum_file_async_finish@LIBOSTREE_2016.3 2016.4
+ ostree_checksum_file_at@LIBOSTREE_2017.13 2017.13
  ostree_checksum_file_from_input@LIBOSTREE_2016.3 2016.4
  ostree_checksum_from_bytes@LIBOSTREE_2016.3 2016.4
  ostree_checksum_from_bytes_v@LIBOSTREE_2016.3 2016.4
@@ -94,6 +95,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_deployment_get_unlocked@LIBOSTREE_2016.4 2016.4
  ostree_deployment_hash@LIBOSTREE_2016.3 2016.4
  ostree_deployment_is_pinned@LIBOSTREE_2018.3 2018.3
+ ostree_deployment_is_staged@LIBOSTREE_2018.5 2018.5
  ostree_deployment_new@LIBOSTREE_2016.3 2016.4
  ostree_deployment_origin_remove_transient_state@LIBOSTREE_2018.3 2018.3
  ostree_deployment_set_bootconfig@LIBOSTREE_2016.3 2016.4
@@ -265,7 +267,10 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_transaction_stats_get_type@LIBOSTREE_2016.3 2016.4
  ostree_repo_traverse_commit@LIBOSTREE_2016.3 2016.4
  ostree_repo_traverse_commit_union@LIBOSTREE_2016.3 2016.4
+ ostree_repo_traverse_commit_union_with_parents@LIBOSTREE_2018.5 2018.5
+ ostree_repo_traverse_new_parents@LIBOSTREE_2018.5 2018.5
  ostree_repo_traverse_new_reachable@LIBOSTREE_2016.3 2016.4
+ ostree_repo_traverse_parents_get_commits@LIBOSTREE_2018.5 2018.5
  ostree_repo_verify_commit@LIBOSTREE_2016.3 2016.4
  ostree_repo_verify_commit_ext@LIBOSTREE_2016.3 2016.4
  ostree_repo_verify_commit_for_remote@LIBOSTREE_2016.14 2016.14
@@ -314,6 +319,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sysroot_get_merge_deployment@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_get_path@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_get_repo@LIBOSTREE_2016.3 2016.4
+ ostree_sysroot_get_staged_deployment@LIBOSTREE_2018.5 2018.5
  ostree_sysroot_get_subbootversion@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_get_type@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_init_osname@LIBOSTREE_2016.4 2016.4
@@ -329,6 +335,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sysroot_query_deployments_for@LIBOSTREE_2017.7 2017.7
  ostree_sysroot_repo@LIBOSTREE_2017.7 2017.7
  ostree_sysroot_simple_write_deployment@LIBOSTREE_2016.3 2016.4
+ ostree_sysroot_stage_tree@LIBOSTREE_2018.5 2018.5
  ostree_sysroot_try_lock@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_unload@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_unlock@LIBOSTREE_2016.3 2016.4
