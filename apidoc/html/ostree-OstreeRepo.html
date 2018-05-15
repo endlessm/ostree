@@ -881,6 +881,22 @@
 </tr>
 <tr>
 <td class="function_type">
+<span class="returnvalue">GHashTable</span> *
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-traverse-new-parents" title="ostree_repo_traverse_new_parents ()">ostree_repo_traverse_new_parents</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">char</span> **
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-traverse-parents-get-commits" title="ostree_repo_traverse_parents_get_commits ()">ostree_repo_traverse_parents_get_commits</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
 <span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
@@ -893,6 +909,14 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-traverse-commit-union" title="ostree_repo_traverse_commit_union ()">ostree_repo_traverse_commit_union</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-traverse-commit-union-with-parents" title="ostree_repo_traverse_commit_union_with_parents ()">ostree_repo_traverse_commit_union_with_parents</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -2659,7 +2683,7 @@ checksum.</p>
 <p>There is an upfront cost to creating this mapping, as this will scan the
 entire objects directory. If your commit is composed of mostly hardlinks to
 existing ostree objects, then this will speed up considerably, so call it
-before you call <code class="function">ostree_write_directory_to_mtree()</code> or similar.  However,
+before you call <a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-directory-to-mtree" title="ostree_repo_write_directory_to_mtree ()"><code class="function">ostree_repo_write_directory_to_mtree()</code></a> or similar.  However,
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-devino-cache-new" title="ostree_repo_devino_cache_new ()"><code class="function">ostree_repo_devino_cache_new()</code></a> is better as it avoids scanning all objects.</p>
 <p>Multithreading: This function is *not* MT safe.</p>
 <div class="refsect3">
@@ -2709,10 +2733,9 @@ further writing refs is also not currently atomic.</p>
 of <code class="literal">OstreeRepo</code>; however, it is safe to have multiple threads writing objects
 on a single <code class="literal">OstreeRepo</code> instance as long as their lifetime is bounded by the
 transaction.</p>
-<p>Multithreading: This function is *not* MT safe; only one transaction can be
+<p>Locking: Acquires a <code class="literal">shared</code> lock; release via commit or abort
+Multithreading: This function is *not* MT safe; only one transaction can be
 active at a time.</p>
-<p>This function takes a shared lock on the <em class="parameter"><code>self</code></em>
- repository.</p>
 <div class="refsect3">
 <a name="ostree-repo-prepare-transaction.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -2761,7 +2784,8 @@ ostree_repo_commit_transaction (<em class="parameter"><code><a class="link" href
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-transaction-set-refspec" title="ostree_repo_transaction_set_refspec ()"><code class="function">ostree_repo_transaction_set_refspec()</code></a> will be written out.</p>
 <p>Note that if multiple threads are performing writes, all such threads must
 have terminated before this function is invoked.</p>
-<p>Multithreading: This function is *not* MT safe; only one transaction can be
+<p>Locking: Releases <code class="literal">shared</code> lock acquired by <code class="literal"><a class="link" href="ostree-OstreeRepo.html#ostree-repo-prepare-transaction" title="ostree_repo_prepare_transaction ()"><code class="function">ostree_repo_prepare_transaction()</code></a></code>
+Multithreading: This function is *not* MT safe; only one transaction can be
 active at a time.</p>
 <div class="refsect3">
 <a name="ostree-repo-commit-transaction.parameters"></a><h4>Parameters</h4>
@@ -3282,7 +3306,7 @@ ostree_repo_write_metadata (<em class="parameter"><code><a class="link" href="os
                             <em class="parameter"><code><span class="type">guchar</span> **out_csum</code></em>,
                             <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
                             <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
-<p>Store the metadata object <em class="parameter"><code>variant</code></em>
+<p>Store the metadata object <em class="parameter"><code>object</code></em>
 .  Return the checksum
 as <em class="parameter"><code>out_csum</code></em>
 .</p>
@@ -6202,6 +6226,38 @@ ostree_repo_traverse_new_reachable (<em class="parameter"><code><span class="typ
 </div>
 <hr>
 <div class="refsect2">
+<a name="ostree-repo-traverse-new-parents"></a><h3>ostree_repo_traverse_new_parents ()</h3>
+<pre class="programlisting"><span class="returnvalue">GHashTable</span> *
+ostree_repo_traverse_new_parents (<em class="parameter"><code><span class="type">void</span></code></em>);</pre>
+<p>This hash table is a mapping from <span class="type">GVariant</span> which can be accessed
+via <a class="link" href="ostree-Core-repository-independent-functions.html#ostree-object-name-deserialize" title="ostree_object_name_deserialize ()"><code class="function">ostree_object_name_deserialize()</code></a> to a <span class="type">GVariant</span> containing either
+a similar <span class="type">GVariant</span> or and array of them, listing the parents of the key.</p>
+<div class="refsect3">
+<a name="ostree-repo-traverse-new-parents.returns"></a><h4>Returns</h4>
+<p>A new hash table. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> GVariant GVariant]</span></p>
+</div>
+<p class="since">Since: 2018.5</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-traverse-parents-get-commits"></a><h3>ostree_repo_traverse_parents_get_commits ()</h3>
+<pre class="programlisting"><span class="returnvalue">char</span> **
+ostree_repo_traverse_parents_get_commits
+                               (<em class="parameter"><code><span class="type">GHashTable</span> *parents</code></em>,
+                                <em class="parameter"><code><span class="type">GVariant</span> *object</code></em>);</pre>
+<p>Gets all the commits that a certain object belongs to, as recorded
+by a parents table gotten from ostree_repo_traverse_commit_union_with_parents.</p>
+<div class="refsect3">
+<a name="ostree-repo-traverse-parents-get-commits.returns"></a><h4>Returns</h4>
+<p>An array of checksums for
+the commits the key belongs to. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1]</span></p>
+</div>
+<p class="since">Since: 2018.5</p>
+</div>
+<hr>
+<div class="refsect2">
 <a name="ostree-repo-traverse-commit"></a><h3>ostree_repo_traverse_commit ()</h3>
 <pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_repo_traverse_commit (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *repo</code></em>,
@@ -6316,6 +6372,76 @@ from <em class="parameter"><code>commit_checksum</code></em>
 </tbody>
 </table></div>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-traverse-commit-union-with-parents"></a><h3>ostree_repo_traverse_commit_union_with_parents ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_traverse_commit_union_with_parents
+                               (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *repo</code></em>,
+                                <em class="parameter"><code>const <span class="type">char</span> *commit_checksum</code></em>,
+                                <em class="parameter"><code><span class="type">int</span> maxdepth</code></em>,
+                                <em class="parameter"><code><span class="type">GHashTable</span> *inout_reachable</code></em>,
+                                <em class="parameter"><code><span class="type">GHashTable</span> *inout_parents</code></em>,
+                                <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Update the set <em class="parameter"><code>inout_reachable</code></em>
+ containing all objects reachable
+from <em class="parameter"><code>commit_checksum</code></em>
+, traversing <em class="parameter"><code>maxdepth</code></em>
+ parent commits.</p>
+<p>Additionally this constructs a mapping from each object to the parents
+of the object, which can be used to track which commits an object
+belongs to.</p>
+<p><span class="annotation">[<a href="http://foldoc.org/skip"><span class="acronym">skip</span></a>]</span></p>
+<div class="refsect3">
+<a name="ostree-repo-traverse-commit-union-with-parents.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>repo</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>commit_checksum</p></td>
+<td class="parameter_description"><p>ASCII SHA256 checksum</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>maxdepth</p></td>
+<td class="parameter_description"><p>Traverse this many parent commits, -1 for unlimited</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>inout_reachable</p></td>
+<td class="parameter_description"><p>Set of reachable objects</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>inout_parents</p></td>
+<td class="parameter_description"><p>Map from object to parent object</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2018.5</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -6584,8 +6710,7 @@ history from the repository.</p>
 <p>Use the <a class="link" href="ostree-OstreeRepo.html#OSTREE-REPO-PRUNE-FLAGS-NO-PRUNE:CAPS"><code class="literal">OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE</code></a> to just determine
 statistics on objects that would be deleted, without actually
 deleting them.</p>
-<p>This function takes an exclusive lock on the <em class="parameter"><code>self</code></em>
- repository.</p>
+<p>Locking: exclusive</p>
 <div class="refsect3">
 <a name="ostree-repo-prune.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -6650,8 +6775,7 @@ ostree_repo_prune_static_deltas (<em class="parameter"><code><a class="link" hre
 <p>Prune static deltas, if COMMIT is specified then delete static delta files only
 targeting that commit; otherwise any static delta of non existing commits are
 deleted.</p>
-<p>This function takes an exclusive lock on the <em class="parameter"><code>self</code></em>
- repository.</p>
+<p>Locking: exclusive</p>
 <div class="refsect3">
 <a name="ostree-repo-prune-static-deltas.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -6706,8 +6830,7 @@ retain all commits from a production branch, but just GC some history from
 your dev branch.</p>
 <p>The <a class="link" href="ostree-OstreeRepo.html#OSTREE-REPO-PRUNE-FLAGS-NO-PRUNE:CAPS"><code class="literal">OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE</code></a> flag may be specified to just determine
 statistics on objects that would be deleted, without actually deleting them.</p>
-<p>This function takes an exclusive lock on the <em class="parameter"><code>self</code></em>
- repository.</p>
+<p>Locking: exclusive</p>
 <div class="refsect3">
 <a name="ostree-repo-prune-from-reachable.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -7508,11 +7631,11 @@ will aid clients in working out when to check for updates.</p>
 <p>It is regenerated automatically after a commit if
 <code class="literal">core/commit-update-summary</code> is set.</p>
 <p>If the <code class="literal">core/collection-id</code> key is set in the configuration, it will be
-included as <code class="literal">OSTREE_SUMMARY_COLLECTION_ID</code> in the summary file. Refs from the
-<code class="literal">refs/mirrors</code> directory will be included in the generated summary file,
-listed under the <code class="literal">OSTREE_SUMMARY_COLLECTION_MAP</code> key. Collection IDs and refs
-in <code class="literal">OSTREE_SUMMARY_COLLECTION_MAP</code> are guaranteed to be in lexicographic
-order.</p>
+included as <code class="literal">OSTREE_SUMMARY_COLLECTION_ID</code> in the summary file. Refs that
+have associated collection IDs will be included in the generated summary
+file, listed under the <code class="literal">OSTREE_SUMMARY_COLLECTION_MAP</code> key. Collection IDs
+and refs in <code class="literal">OSTREE_SUMMARY_COLLECTION_MAP</code> are guaranteed to be in
+lexicographic order.</p>
 <div class="refsect3">
 <a name="ostree-repo-regenerate-summary.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">

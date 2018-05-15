@@ -598,27 +598,26 @@ create_regular_tmpfile_linkable_with_content (OstreeRepo *self,
 }
 
 static gboolean
-_check_support_reflink (OstreeRepo *self, gboolean *supported, GError **error)
+_check_support_reflink (OstreeRepo *dest, gboolean *supported, GError **error)
 {
-  /* We have not checked yet if the file system supports reflinks, do it here */
-  if (g_atomic_int_get (&self->fs_support_reflink) == 0)
+  /* We have not checked yet if the destination file system supports reflinks, do it here */
+  if (g_atomic_int_get (&dest->fs_support_reflink) == 0)
     {
-      g_auto(GLnxTmpfile) src_tmpf = { 0, };
+      glnx_autofd int src_fd = -1;
       g_auto(GLnxTmpfile) dest_tmpf = { 0, };
 
-      if (!glnx_open_tmpfile_linkable_at (commit_tmp_dfd (self), ".", O_RDWR|O_CLOEXEC,
-                                          &src_tmpf, error))
+      if (!glnx_openat_rdonly (dest->repo_dir_fd, "config", TRUE, &src_fd, error))
         return FALSE;
-      if (!glnx_open_tmpfile_linkable_at (commit_tmp_dfd (self), ".", O_WRONLY|O_CLOEXEC,
+      if (!glnx_open_tmpfile_linkable_at (commit_tmp_dfd (dest), ".", O_WRONLY|O_CLOEXEC,
                                           &dest_tmpf, error))
         return FALSE;
 
-      if (ioctl (dest_tmpf.fd, FICLONE, src_tmpf.fd) == 0)
-        g_atomic_int_set (&self->fs_support_reflink, 1);
+      if (ioctl (dest_tmpf.fd, FICLONE, src_fd) == 0)
+        g_atomic_int_set (&dest->fs_support_reflink, 1);
       else if (errno == EOPNOTSUPP)  /* Ignore other kind of errors as they might be temporary failures */
-        g_atomic_int_set (&self->fs_support_reflink, -1);
+        g_atomic_int_set (&dest->fs_support_reflink, -1);
     }
-  *supported = g_atomic_int_get (&self->fs_support_reflink) >= 0;
+  *supported = g_atomic_int_get (&dest->fs_support_reflink) >= 0;
   return TRUE;
 }
 
@@ -631,6 +630,7 @@ _create_payload_link (OstreeRepo   *self,
                       GError       **error)
 {
   gboolean reflinks_supported = FALSE;
+
   if (!_check_support_reflink (self, &reflinks_supported, error))
     return FALSE;
 
@@ -664,8 +664,8 @@ _create_payload_link (OstreeRepo   *self,
 }
 
 static gboolean
-_import_payload_link (OstreeRepo   *self,
-                      OstreeRepo   *source,
+_import_payload_link (OstreeRepo   *dest_repo,
+                      OstreeRepo   *src_repo,
                       const char   *checksum,
                       GCancellable *cancellable,
                       GError       **error)
@@ -676,20 +676,24 @@ _import_payload_link (OstreeRepo   *self,
   glnx_unref_object OtChecksumInstream *checksum_payload = NULL;
   g_autoptr(GFileInfo) file_info = NULL;
 
-  if (!_check_support_reflink (self, &reflinks_supported, error))
+  /* The two repositories are on different devices */
+  if (src_repo->device != dest_repo->device)
+    return TRUE;
+
+  if (!_check_support_reflink (dest_repo, &reflinks_supported, error))
     return FALSE;
 
   if (!reflinks_supported)
     return TRUE;
 
-  if (!G_IN_SET(self->mode, OSTREE_REPO_MODE_BARE, OSTREE_REPO_MODE_BARE_USER, OSTREE_REPO_MODE_BARE_USER_ONLY))
+  if (!G_IN_SET(dest_repo->mode, OSTREE_REPO_MODE_BARE, OSTREE_REPO_MODE_BARE_USER, OSTREE_REPO_MODE_BARE_USER_ONLY))
     return TRUE;
 
-  if (!ostree_repo_load_file (source, checksum, &is, &file_info, NULL, cancellable, error))
+  if (!ostree_repo_load_file (src_repo, checksum, &is, &file_info, NULL, cancellable, error))
     return FALSE;
 
   if (g_file_info_get_file_type (file_info) != G_FILE_TYPE_REGULAR
-      || g_file_info_get_size (file_info) < self->payload_link_threshold)
+      || g_file_info_get_size (file_info) < dest_repo->payload_link_threshold)
     return TRUE;
 
   checksum_payload = ot_checksum_instream_new (is, G_CHECKSUM_SHA256);
@@ -706,11 +710,12 @@ _import_payload_link (OstreeRepo   *self,
     }
   payload_checksum = ot_checksum_instream_get_string (checksum_payload);
 
-  return _create_payload_link (self, checksum, payload_checksum, file_info, cancellable, error);
+  return _create_payload_link (dest_repo, checksum, payload_checksum, file_info, cancellable, error);
 }
 
 static gboolean
 _try_clone_from_payload_link (OstreeRepo   *self,
+                              OstreeRepo   *dest_repo,
                               const char   *payload_checksum,
                               GFileInfo    *file_info,
                               GLnxTmpfile  *tmpf,
@@ -722,7 +727,11 @@ _try_clone_from_payload_link (OstreeRepo   *self,
   if (self->commit_stagedir.initialized)
     dfd_searches[0] = self->commit_stagedir.fd;
 
-  if (!_check_support_reflink (self, &reflinks_supported, error))
+  /* The two repositories are on different devices */
+  if (self->device != dest_repo->device)
+    return TRUE;
+
+  if (!_check_support_reflink (dest_repo, &reflinks_supported, error))
     return FALSE;
 
   if (!reflinks_supported)
@@ -778,7 +787,7 @@ _try_clone_from_payload_link (OstreeRepo   *self,
         }
     }
   if (self->parent_repo)
-    return _try_clone_from_payload_link (self->parent_repo, payload_checksum, file_info, tmpf, cancellable, error);
+    return _try_clone_from_payload_link (self->parent_repo, dest_repo, payload_checksum, file_info, tmpf, cancellable, error);
 
   return TRUE;
 }
@@ -1073,7 +1082,7 @@ write_content_object (OstreeRepo         *self,
 
       /* Check if a file with the same payload is present in the repository,
          and in case try to reflink it */
-      if (actual_payload_checksum && !_try_clone_from_payload_link (self, actual_payload_checksum, file_info, &tmpf, cancellable, error))
+      if (actual_payload_checksum && !_try_clone_from_payload_link (self, self, actual_payload_checksum, file_info, &tmpf, cancellable, error))
         return FALSE;
 
       /* This path is for regular files */
@@ -1246,7 +1255,7 @@ write_metadata_object (OstreeRepo         *self,
     }
   else
     {
-      OtChecksum checksum = { 0, };
+      g_auto(OtChecksum) checksum = { 0, };
       ot_checksum_init (&checksum);
       gsize len;
       const guint8*bufdata = g_bytes_get_data (buf, &len);
@@ -1440,7 +1449,8 @@ scan_loose_devino (OstreeRepo                     *self,
         return FALSE;
     }
 
-  if (self->mode == OSTREE_REPO_MODE_ARCHIVE)
+  if (self->mode == OSTREE_REPO_MODE_ARCHIVE &&
+      self->uncompressed_objects_dir_fd != -1)
     {
       if (!scan_one_loose_devino (self, self->uncompressed_objects_dir_fd, devino_cache,
                                   cancellable, error))
@@ -1500,7 +1510,7 @@ devino_cache_lookup (OstreeRepo           *self,
  * There is an upfront cost to creating this mapping, as this will scan the
  * entire objects directory. If your commit is composed of mostly hardlinks to
  * existing ostree objects, then this will speed up considerably, so call it
- * before you call ostree_write_directory_to_mtree() or similar.  However,
+ * before you call ostree_repo_write_directory_to_mtree() or similar.  However,
  * ostree_repo_devino_cache_new() is better as it avoids scanning all objects.
  *
  * Multithreading: This function is *not* MT safe.
@@ -1541,10 +1551,9 @@ ostree_repo_scan_hardlinks (OstreeRepo    *self,
  * on a single `OstreeRepo` instance as long as their lifetime is bounded by the
  * transaction.
  *
+ * Locking: Acquires a `shared` lock; release via commit or abort
  * Multithreading: This function is *not* MT safe; only one transaction can be
  * active at a time.
- *
- * This function takes a shared lock on the @self repository.
  */
 gboolean
 ostree_repo_prepare_transaction (OstreeRepo     *self,
@@ -1557,8 +1566,8 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
 
   memset (&self->txn.stats, 0, sizeof (OstreeRepoTransactionStats));
 
-  self->txn_locked = ostree_repo_lock_push (self, OSTREE_REPO_LOCK_SHARED,
-                                            cancellable, error);
+  self->txn_locked = _ostree_repo_lock_push (self, OSTREE_REPO_LOCK_SHARED,
+                                             cancellable, error);
   if (!self->txn_locked)
     return FALSE;
 
@@ -2070,6 +2079,7 @@ ostree_repo_set_collection_ref_immediate (OstreeRepo                 *self,
  * Note that if multiple threads are performing writes, all such threads must
  * have terminated before this function is invoked.
  *
+ * Locking: Releases `shared` lock acquired by `ostree_repo_prepare_transaction()`
  * Multithreading: This function is *not* MT safe; only one transaction can be
  * active at a time.
  */
@@ -2126,7 +2136,7 @@ ostree_repo_commit_transaction (OstreeRepo                  *self,
 
   if (self->txn_locked)
     {
-      if (!ostree_repo_lock_pop (self, cancellable, error))
+      if (!_ostree_repo_lock_pop (self, cancellable, error))
         return FALSE;
       self->txn_locked = FALSE;
     }
@@ -2179,7 +2189,7 @@ ostree_repo_abort_transaction (OstreeRepo     *self,
 
   if (self->txn_locked)
     {
-      if (!ostree_repo_lock_pop (self, cancellable, error))
+      if (!_ostree_repo_lock_pop (self, cancellable, error))
         return FALSE;
       self->txn_locked = FALSE;
     }
@@ -2216,7 +2226,7 @@ metadata_size_valid (OstreeObjectType objtype,
  * @cancellable: Cancellable
  * @error: Error
  *
- * Store the metadata object @variant.  Return the checksum
+ * Store the metadata object @object.  Return the checksum
  * as @out_csum.
  *
  * If @expected_checksum is not %NULL, verify it against the

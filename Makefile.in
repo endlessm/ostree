@@ -565,7 +565,7 @@ check_PROGRAMS = $(am__EXEEXT_13) $(am__EXEEXT_14) $(am__EXEEXT_15)
 # We still want to distribute the source, even if we are not building it
 @BUILDOPT_TRIVIAL_HTTPD_FALSE@@ENABLE_MAN_TRUE@am__append_87 = man/ostree-trivial-httpd.xml
 @BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_88 = rofiles-fuse.1
-@ENABLE_EXPERIMENTAL_API_TRUE@@ENABLE_MAN_TRUE@am__append_89 = ostree-find-remotes.1
+@ENABLE_EXPERIMENTAL_API_TRUE@@ENABLE_MAN_TRUE@am__append_89 = ostree-find-remotes.1 ostree-create-usb.1
 @ENABLE_MAN_TRUE@am__append_90 = $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
 @ENABLE_MAN_TRUE@am__append_91 = \
 @ENABLE_MAN_TRUE@	$(man1_MANS) \
@@ -994,12 +994,12 @@ am__ostree_SOURCES_DIST = src/ostree/main.c \
 	src/ostree/ot-builtin-static-delta.c src/ostree/ot-main.h \
 	src/ostree/ot-main.c src/ostree/ot-dump.h src/ostree/ot-dump.c \
 	src/ostree/ot-editor.c src/ostree/ot-editor.h \
-	src/ostree/parse-datetime.h src/ostree/parse-datetime.c \
-	src/ostree/ot-builtin-create-usb.c \
+	src/ostree/parse-datetime.h src/ostree/ot-builtin-create-usb.c \
 	src/ostree/ot-builtin-find-remotes.c \
 	src/ostree/ot-admin-builtin-init-fs.c \
 	src/ostree/ot-admin-builtin-diff.c \
 	src/ostree/ot-admin-builtin-deploy.c \
+	src/ostree/ot-admin-builtin-finalize-staged.c \
 	src/ostree/ot-admin-builtin-undeploy.c \
 	src/ostree/ot-admin-builtin-instutil.c \
 	src/ostree/ot-admin-builtin-cleanup.c \
@@ -1067,12 +1067,12 @@ am_ostree_OBJECTS = src/ostree/ostree-main.$(OBJEXT) \
 	src/ostree/ostree-ot-builtin-static-delta.$(OBJEXT) \
 	src/ostree/ostree-ot-main.$(OBJEXT) \
 	src/ostree/ostree-ot-dump.$(OBJEXT) \
-	src/ostree/ostree-ot-editor.$(OBJEXT) \
-	src/ostree/ostree-parse-datetime.$(OBJEXT) $(am__objects_1) \
+	src/ostree/ostree-ot-editor.$(OBJEXT) $(am__objects_1) \
 	$(am__objects_11) \
 	src/ostree/ostree-ot-admin-builtin-init-fs.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-diff.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-deploy.$(OBJEXT) \
+	src/ostree/ostree-ot-admin-builtin-finalize-staged.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-undeploy.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-instutil.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-cleanup.$(OBJEXT) \
@@ -1096,7 +1096,9 @@ am_ostree_OBJECTS = src/ostree/ostree-main.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-refs.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-summary.$(OBJEXT) \
 	$(am__objects_1) $(am__objects_12) $(am__objects_13)
-ostree_OBJECTS = $(am_ostree_OBJECTS)
+nodist_ostree_OBJECTS = src/ostree/ostree-parse-datetime.$(OBJEXT) \
+	$(am__objects_1)
+ostree_OBJECTS = $(am_ostree_OBJECTS) $(nodist_ostree_OBJECTS)
 ostree_DEPENDENCIES = $(am__DEPENDENCIES_11) libbsdiff.la \
 	libostree-kernel-args.la $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_8) $(am__DEPENDENCIES_4)
@@ -1431,8 +1433,8 @@ SOURCES = $(libbsdiff_la_SOURCES) $(libbupsplit_la_SOURCES) \
 	$(libostree_kernel_args_la_SOURCES) \
 	$(libostreetest_la_SOURCES) $(libotutil_la_SOURCES) \
 	$(libreaddir_rand_la_SOURCES) $(ostree_SOURCES) \
-	$(ostree_prepare_root_SOURCES) $(ostree_remount_SOURCES) \
-	$(ostree_system_generator_SOURCES) \
+	$(nodist_ostree_SOURCES) $(ostree_prepare_root_SOURCES) \
+	$(ostree_remount_SOURCES) $(ostree_system_generator_SOURCES) \
 	$(ostree_trivial_httpd_SOURCES) $(rofiles_fuse_SOURCES) \
 	$(test_libglnx_errors_SOURCES) $(test_libglnx_fdio_SOURCES) \
 	$(test_libglnx_macros_SOURCES) $(test_libglnx_shutil_SOURCES) \
@@ -2106,7 +2108,9 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/boot/dracut/module-setup.sh src/boot/dracut/ostree.conf \
 	src/boot/mkinitcpio/ostree \
 	src/boot/ostree-prepare-root.service \
-	src/boot/ostree-remount.service src/boot/grub2/grub2-15_ostree \
+	src/boot/ostree-remount.service \
+	src/boot/ostree-finalize-staged.service \
+	src/boot/grub2/grub2-15_ostree \
 	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_87) \
 	$(am__append_90)
 bin_SCRIPTS = 
@@ -2460,10 +2464,11 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-builtin-static-delta.c src/ostree/ot-main.h \
 	src/ostree/ot-main.c src/ostree/ot-dump.h src/ostree/ot-dump.c \
 	src/ostree/ot-editor.c src/ostree/ot-editor.h \
-	src/ostree/parse-datetime.h src/ostree/parse-datetime.c \
-	$(NULL) $(am__append_49) src/ostree/ot-admin-builtin-init-fs.c \
+	src/ostree/parse-datetime.h $(NULL) $(am__append_49) \
+	src/ostree/ot-admin-builtin-init-fs.c \
 	src/ostree/ot-admin-builtin-diff.c \
 	src/ostree/ot-admin-builtin-deploy.c \
+	src/ostree/ot-admin-builtin-finalize-staged.c \
 	src/ostree/ot-admin-builtin-undeploy.c \
 	src/ostree/ot-admin-builtin-instutil.c \
 	src/ostree/ot-admin-builtin-cleanup.c \
@@ -2490,6 +2495,10 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-remote-builtin-refs.c \
 	src/ostree/ot-remote-builtin-summary.c $(NULL) \
 	$(am__append_50) $(am__append_51)
+nodist_ostree_SOURCES = \
+	src/ostree/parse-datetime.c \
+	$(NULL)
+
 ostree_bin_shared_cflags = $(AM_CFLAGS) -I$(srcdir)/src/libotutil -I$(srcdir)/src/libostree \
 	-I$(builddir)/src/libostree -I$(srcdir)/src/ostree -I$(srcdir)/libglnx $(OT_INTERNAL_GIO_UNIX_CFLAGS) \
 	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"
@@ -2763,7 +2772,7 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 @BUILDOPT_MKINITCPIO_TRUE@mkinitcpioconfdir = $(sysconfdir)
 @BUILDOPT_MKINITCPIO_TRUE@mkinitcpioconf_DATA = src/boot/mkinitcpio/ostree-mkinitcpio.conf
 @BUILDOPT_SYSTEMD_TRUE@systemdsystemunit_DATA = src/boot/ostree-prepare-root.service \
-@BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-remount.service
+@BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-remount.service src/boot/ostree-finalize-staged.service
 
 @BUILDOPT_SYSTEMD_TRUE@systemdtmpfilesdir = $(prefix)/lib/tmpfiles.d
 @BUILDOPT_SYSTEMD_TRUE@dist_systemdtmpfiles_DATA = src/boot/ostree-tmpfiles.conf
@@ -3733,9 +3742,6 @@ src/ostree/ostree-ot-dump.$(OBJEXT): src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-editor.$(OBJEXT): src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
-src/ostree/ostree-parse-datetime.$(OBJEXT):  \
-	src/ostree/$(am__dirstamp) \
-	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-builtin-create-usb.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
@@ -3749,6 +3755,9 @@ src/ostree/ostree-ot-admin-builtin-diff.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-admin-builtin-deploy.$(OBJEXT):  \
+	src/ostree/$(am__dirstamp) \
+	src/ostree/$(DEPDIR)/$(am__dirstamp)
+src/ostree/ostree-ot-admin-builtin-finalize-staged.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-admin-builtin-undeploy.$(OBJEXT):  \
@@ -3830,6 +3839,9 @@ src/ostree/ostree-ot-builtin-pull.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-builtin-trivial-httpd.$(OBJEXT):  \
+	src/ostree/$(am__dirstamp) \
+	src/ostree/$(DEPDIR)/$(am__dirstamp)
+src/ostree/ostree-parse-datetime.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
 
@@ -4423,6 +4435,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-cleanup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-deploy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-diff.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-init-fs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-instutil.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-os-init.Po@am__quote@
@@ -5507,20 +5520,6 @@ src/ostree/ostree-ot-editor.obj: src/ostree/ot-editor.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-editor.obj `if test -f 'src/ostree/ot-editor.c'; then $(CYGPATH_W) 'src/ostree/ot-editor.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-editor.c'; fi`
 
-src/ostree/ostree-parse-datetime.o: src/ostree/parse-datetime.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-parse-datetime.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-parse-datetime.Tpo -c -o src/ostree/ostree-parse-datetime.o `test -f 'src/ostree/parse-datetime.c' || echo '$(srcdir)/'`src/ostree/parse-datetime.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-parse-datetime.Tpo src/ostree/$(DEPDIR)/ostree-parse-datetime.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/parse-datetime.c' object='src/ostree/ostree-parse-datetime.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-parse-datetime.o `test -f 'src/ostree/parse-datetime.c' || echo '$(srcdir)/'`src/ostree/parse-datetime.c
-
-src/ostree/ostree-parse-datetime.obj: src/ostree/parse-datetime.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-parse-datetime.obj -MD -MP -MF src/ostree/$(DEPDIR)/ostree-parse-datetime.Tpo -c -o src/ostree/ostree-parse-datetime.obj `if test -f 'src/ostree/parse-datetime.c'; then $(CYGPATH_W) 'src/ostree/parse-datetime.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/parse-datetime.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-parse-datetime.Tpo src/ostree/$(DEPDIR)/ostree-parse-datetime.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/parse-datetime.c' object='src/ostree/ostree-parse-datetime.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-parse-datetime.obj `if test -f 'src/ostree/parse-datetime.c'; then $(CYGPATH_W) 'src/ostree/parse-datetime.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/parse-datetime.c'; fi`
-
 src/ostree/ostree-ot-builtin-create-usb.o: src/ostree/ot-builtin-create-usb.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-builtin-create-usb.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-builtin-create-usb.Tpo -c -o src/ostree/ostree-ot-builtin-create-usb.o `test -f 'src/ostree/ot-builtin-create-usb.c' || echo '$(srcdir)/'`src/ostree/ot-builtin-create-usb.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-builtin-create-usb.Tpo src/ostree/$(DEPDIR)/ostree-ot-builtin-create-usb.Po
@@ -5590,6 +5589,20 @@ src/ostree/ostree-ot-admin-builtin-deploy.obj: src/ostree/ot-admin-builtin-deplo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-builtin-deploy.c' object='src/ostree/ostree-ot-admin-builtin-deploy.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-builtin-deploy.obj `if test -f 'src/ostree/ot-admin-builtin-deploy.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-builtin-deploy.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-builtin-deploy.c'; fi`
+
+src/ostree/ostree-ot-admin-builtin-finalize-staged.o: src/ostree/ot-admin-builtin-finalize-staged.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-builtin-finalize-staged.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Tpo -c -o src/ostree/ostree-ot-admin-builtin-finalize-staged.o `test -f 'src/ostree/ot-admin-builtin-finalize-staged.c' || echo '$(srcdir)/'`src/ostree/ot-admin-builtin-finalize-staged.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Tpo src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-builtin-finalize-staged.c' object='src/ostree/ostree-ot-admin-builtin-finalize-staged.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-builtin-finalize-staged.o `test -f 'src/ostree/ot-admin-builtin-finalize-staged.c' || echo '$(srcdir)/'`src/ostree/ot-admin-builtin-finalize-staged.c
+
+src/ostree/ostree-ot-admin-builtin-finalize-staged.obj: src/ostree/ot-admin-builtin-finalize-staged.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-builtin-finalize-staged.obj -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Tpo -c -o src/ostree/ostree-ot-admin-builtin-finalize-staged.obj `if test -f 'src/ostree/ot-admin-builtin-finalize-staged.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-builtin-finalize-staged.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-builtin-finalize-staged.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Tpo src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-builtin-finalize-staged.c' object='src/ostree/ostree-ot-admin-builtin-finalize-staged.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-builtin-finalize-staged.obj `if test -f 'src/ostree/ot-admin-builtin-finalize-staged.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-builtin-finalize-staged.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-builtin-finalize-staged.c'; fi`
 
 src/ostree/ostree-ot-admin-builtin-undeploy.o: src/ostree/ot-admin-builtin-undeploy.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-builtin-undeploy.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-undeploy.Tpo -c -o src/ostree/ostree-ot-admin-builtin-undeploy.o `test -f 'src/ostree/ot-admin-builtin-undeploy.c' || echo '$(srcdir)/'`src/ostree/ot-admin-builtin-undeploy.c
@@ -5968,6 +5981,20 @@ src/ostree/ostree-ot-builtin-trivial-httpd.obj: src/ostree/ot-builtin-trivial-ht
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-builtin-trivial-httpd.c' object='src/ostree/ostree-ot-builtin-trivial-httpd.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-builtin-trivial-httpd.obj `if test -f 'src/ostree/ot-builtin-trivial-httpd.c'; then $(CYGPATH_W) 'src/ostree/ot-builtin-trivial-httpd.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-builtin-trivial-httpd.c'; fi`
+
+src/ostree/ostree-parse-datetime.o: src/ostree/parse-datetime.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-parse-datetime.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-parse-datetime.Tpo -c -o src/ostree/ostree-parse-datetime.o `test -f 'src/ostree/parse-datetime.c' || echo '$(srcdir)/'`src/ostree/parse-datetime.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-parse-datetime.Tpo src/ostree/$(DEPDIR)/ostree-parse-datetime.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/parse-datetime.c' object='src/ostree/ostree-parse-datetime.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-parse-datetime.o `test -f 'src/ostree/parse-datetime.c' || echo '$(srcdir)/'`src/ostree/parse-datetime.c
+
+src/ostree/ostree-parse-datetime.obj: src/ostree/parse-datetime.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-parse-datetime.obj -MD -MP -MF src/ostree/$(DEPDIR)/ostree-parse-datetime.Tpo -c -o src/ostree/ostree-parse-datetime.obj `if test -f 'src/ostree/parse-datetime.c'; then $(CYGPATH_W) 'src/ostree/parse-datetime.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/parse-datetime.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-parse-datetime.Tpo src/ostree/$(DEPDIR)/ostree-parse-datetime.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/parse-datetime.c' object='src/ostree/ostree-parse-datetime.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-parse-datetime.obj `if test -f 'src/ostree/parse-datetime.c'; then $(CYGPATH_W) 'src/ostree/parse-datetime.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/parse-datetime.c'; fi`
 
 src/switchroot/ostree_prepare_root-ostree-prepare-root.o: src/switchroot/ostree-prepare-root.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ostree_prepare_root_CPPFLAGS) $(CPPFLAGS) $(ostree_prepare_root_CFLAGS) $(CFLAGS) -MT src/switchroot/ostree_prepare_root-ostree-prepare-root.o -MD -MP -MF src/switchroot/$(DEPDIR)/ostree_prepare_root-ostree-prepare-root.Tpo -c -o src/switchroot/ostree_prepare_root-ostree-prepare-root.o `test -f 'src/switchroot/ostree-prepare-root.c' || echo '$(srcdir)/'`src/switchroot/ostree-prepare-root.c

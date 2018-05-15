@@ -2913,6 +2913,7 @@ repo_remote_fetch_summary (OstreeRepo    *self,
                            GVariant      *options,
                            GBytes       **out_summary,
                            GBytes       **out_signatures,
+                           gboolean      *out_from_cache,
                            GCancellable  *cancellable,
                            GError       **error)
 {
@@ -3015,32 +3016,13 @@ repo_remote_fetch_summary (OstreeRepo    *self,
         goto out;
     }
 
-  if (!from_cache && *out_summary && *out_signatures)
-    {
-      g_autoptr(GError) temp_error = NULL;
-
-      if (!_ostree_repo_cache_summary (self,
-                                       name,
-                                       *out_summary,
-                                       *out_signatures,
-                                       cancellable,
-                                       &temp_error))
-        {
-          if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED))
-            g_debug ("No permissions to save summary cache");
-          else
-            {
-              g_propagate_error (error, g_steal_pointer (&temp_error));
-              goto out;
-            }
-        }
-    }
-
   ret = TRUE;
 
  out:
   if (mainctx)
     g_main_context_pop_thread_default (mainctx);
+
+  *out_from_cache = from_cache;
   return ret;
 }
 
@@ -4704,7 +4686,20 @@ ostree_repo_find_remotes_async (OstreeRepo                     *self,
 
       if (local_error != NULL)
         {
-          g_warning ("Avahi finder failed; removing it: %s", local_error->message);
+          /* See ostree-repo-finder-avahi.c:ostree_repo_finder_avahi_start, we
+           * intentionally throw this so as to distinguish between the Avahi
+           * finder failing because the Avahi daemon wasn't running and
+           * the Avahi finder failing because of some actual error.
+           *
+           * We need to distinguish between g_debug and g_warning here because
+           * unit tests that use this code may set G_DEBUG=fatal-warnings which
+           * would cause client code to abort if a warning were emitted.
+           */
+          if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+            g_debug ("Avahi finder failed under normal operation; removing it: %s", local_error->message);
+          else
+            g_warning ("Avahi finder failed abnormally; removing it: %s", local_error->message);
+
           default_finders[2] = NULL;
           g_clear_object (&finder_avahi);
         }
@@ -4764,7 +4759,7 @@ find_remotes_process_refs (OstreeRepo                        *self,
   for (j = 0, n = g_variant_n_children (summary_refs); j < n; j++)
     {
       const guchar *csum_bytes;
-      g_autoptr(GVariant) ref_v = NULL, csum_v = NULL, commit_metadata_v = NULL, stored_commit_metadata_v = NULL;
+      g_autoptr(GVariant) ref_v = NULL, csum_v = NULL, commit_metadata_v = NULL, stored_commit_v = NULL;
       guint64 commit_size, commit_timestamp;
       gchar tmp_checksum[OSTREE_SHA256_STRING_LEN + 1];
       gsize ref_index;
@@ -4801,9 +4796,9 @@ find_remotes_process_refs (OstreeRepo                        *self,
       if (!collection_refv_contains (refs, summary_collection_id, ref_name, &ref_index))
         continue;
 
-      /* Load the commit metadata from disk if possible, for verification. */
-      if (!ostree_repo_load_commit (self, tmp_checksum, &stored_commit_metadata_v, NULL, NULL))
-        stored_commit_metadata_v = NULL;
+      /* Load the commit from disk if possible, for verification. */
+      if (!ostree_repo_load_commit (self, tmp_checksum, &stored_commit_v, NULL, NULL))
+        stored_commit_v = NULL;
 
       /* Check the additional metadata. */
       if (!g_variant_lookup (commit_metadata_v, OSTREE_COMMIT_TIMESTAMP, "t", &commit_timestamp))
@@ -4826,7 +4821,7 @@ find_remotes_process_refs (OstreeRepo                        *self,
       if (commit_metadata == NULL)
         {
           commit_metadata = commit_metadata_new (tmp_checksum, commit_size,
-                                                 (stored_commit_metadata_v != NULL) ? ostree_commit_get_timestamp (stored_commit_metadata_v) : 0,
+                                                 (stored_commit_v != NULL) ? ostree_commit_get_timestamp (stored_commit_v) : 0,
                                                  NULL);
           g_hash_table_insert (commit_metadatas, commit_metadata->checksum,
                                commit_metadata  /* transfer */);
@@ -4880,6 +4875,7 @@ find_remotes_cb (GObject      *obj,
   g_autoptr(GHashTable) commit_metadatas = NULL;  /* (element-type commit-checksum CommitMetadata) */
   g_autoptr(OstreeFetcher) fetcher = NULL;
   g_autofree const gchar **ref_to_latest_commit = NULL;  /* indexed as @refs; (element-type commit-checksum) */
+  g_autofree guint64 *ref_to_latest_timestamp = NULL;  /* indexed as @refs; (element-type commit-timestamp) */
   gsize n_refs;
   g_autofree char **override_commit_ids = NULL;
   g_autoptr(GPtrArray) remotes_to_remove = NULL;  /* (element-type OstreeRemote) */
@@ -5035,6 +5031,7 @@ find_remotes_cb (GObject      *obj,
        * it’s been moved to @refs_and_remotes_table and is now potentially out
        * of date. */
       g_clear_pointer (&result->ref_to_checksum, g_hash_table_unref);
+      g_clear_pointer (&result->ref_to_timestamp, g_hash_table_unref);
       result->summary_last_modified = summary_last_modified;
     }
 
@@ -5171,8 +5168,12 @@ find_remotes_cb (GObject      *obj,
    *
    * @ref_to_latest_commit is indexed by @ref_index, and its values are the
    * latest checksum for each ref. If override-commit-ids was used,
-   * @ref_to_latest_commit won't be initialized or used.*/
+   * @ref_to_latest_commit won't be initialized or used.
+   *
+   * @ref_to_latest_timestamp is also indexed by @ref_index, and its values are
+   * the latest timestamp for each ref, when available.*/
   ref_to_latest_commit = g_new0 (const gchar *, n_refs);
+  ref_to_latest_timestamp = g_new0 (guint64, n_refs);
 
   for (i = 0; i < n_refs; i++)
     {
@@ -5213,6 +5214,11 @@ find_remotes_cb (GObject      *obj,
        * the summary or commit metadata files above. */
       ref_to_latest_commit[i] = latest_checksum;
 
+      if (latest_checksum != NULL && latest_commit_metadata != NULL)
+        ref_to_latest_timestamp[i] = latest_commit_metadata->timestamp;
+      else
+        ref_to_latest_timestamp[i] = 0;
+
       if (latest_commit_metadata != NULL)
         {
           latest_commit_timestamp_str = uint64_secs_to_iso8601 (latest_commit_metadata->timestamp);
@@ -5235,7 +5241,8 @@ find_remotes_cb (GObject      *obj,
   for (i = 0; i < results->len; i++)
     {
       OstreeRepoFinderResult *result = g_ptr_array_index (results, i);
-      g_autoptr(GHashTable) validated_ref_to_checksum = NULL;  /* (element-type utf8 utf8) */
+      g_autoptr(GHashTable) validated_ref_to_checksum = NULL;  /* (element-type OstreeCollectionRef utf8) */
+      g_autoptr(GHashTable) validated_ref_to_timestamp = NULL;  /* (element-type OstreeCollectionRef guint64) */
       gsize j, n_latest_refs;
 
       /* Previous error processing this result? */
@@ -5249,11 +5256,24 @@ find_remotes_cb (GObject      *obj,
                                                          (GDestroyNotify) ostree_collection_ref_free,
                                                          g_free);
 
+      validated_ref_to_timestamp = g_hash_table_new_full (ostree_collection_ref_hash,
+                                                          ostree_collection_ref_equal,
+                                                          (GDestroyNotify) ostree_collection_ref_free,
+                                                          g_free);
       if (override_commit_ids)
         {
           for (j = 0; refs[j] != NULL; j++)
-            g_hash_table_insert (validated_ref_to_checksum, ostree_collection_ref_dup (refs[j]),
-                                 g_strdup (override_commit_ids[j]));
+            {
+              guint64 *timestamp_ptr;
+
+              g_hash_table_insert (validated_ref_to_checksum, ostree_collection_ref_dup (refs[j]),
+                                   g_strdup (override_commit_ids[j]));
+
+              timestamp_ptr = g_malloc (sizeof (guint64));
+              *timestamp_ptr = 0;
+              g_hash_table_insert (validated_ref_to_timestamp, ostree_collection_ref_dup (refs[j]),
+                                   timestamp_ptr);
+            }
         }
       else
         {
@@ -5262,6 +5282,7 @@ find_remotes_cb (GObject      *obj,
           for (j = 0; refs[j] != NULL; j++)
             {
               const gchar *latest_commit_for_ref = ref_to_latest_commit[j];
+              guint64 *timestamp_ptr;
 
               if (pointer_table_get (refs_and_remotes_table, j, i) != latest_commit_for_ref)
                 latest_commit_for_ref = NULL;
@@ -5270,6 +5291,14 @@ find_remotes_cb (GObject      *obj,
 
               g_hash_table_insert (validated_ref_to_checksum, ostree_collection_ref_dup (refs[j]),
                                    g_strdup (latest_commit_for_ref));
+
+              timestamp_ptr = g_malloc (sizeof (guint64));
+              if (latest_commit_for_ref != NULL)
+                *timestamp_ptr = GUINT64_TO_BE (ref_to_latest_timestamp[j]);
+              else
+                *timestamp_ptr = 0;
+              g_hash_table_insert (validated_ref_to_timestamp, ostree_collection_ref_dup (refs[j]),
+                                   timestamp_ptr);
             }
 
           if (n_latest_refs == 0)
@@ -5282,6 +5311,7 @@ find_remotes_cb (GObject      *obj,
         }
 
       result->ref_to_checksum = g_steal_pointer (&validated_ref_to_checksum);
+      result->ref_to_timestamp = g_steal_pointer (&validated_ref_to_timestamp);
       g_ptr_array_add (final_results, g_steal_pointer (&g_ptr_array_index (results, i)));
     }
 
@@ -5396,6 +5426,13 @@ copy_option (GVariantDict       *master_options,
  *   * `flags` (`i`): #OstreeRepoPullFlags to apply to the pull operation
  *   * `inherit-transaction` (`b`): %TRUE to inherit an ongoing transaction on
  *     the #OstreeRepo, rather than encapsulating the pull in a new one
+ *   * `depth` (`i`): How far in the history to traverse; default is 0, -1 means infinite
+ *   * `disable-static-deltas` (`b`): Do not use static deltas
+ *   * `http-headers` (`a(ss)`): Additional headers to add to all HTTP requests
+ *   * `subdirs` (`as`): Pull just these subdirectories
+ *   * `update-frequency` (`u`): Frequency to call the async progress callback in
+ *     milliseconds, if any; only values higher than 0 are valid
+ *   * `append-user-agent` (`s`): Additional string to append to the user agent
  *
  * Since: 2017.8
  */
@@ -5756,6 +5793,7 @@ ostree_repo_remote_fetch_summary_with_options (OstreeRepo    *self,
   g_autoptr(GBytes) signatures = NULL;
   gboolean ret = FALSE;
   gboolean gpg_verify_summary;
+  gboolean summary_is_from_cache;
 
   g_return_val_if_fail (OSTREE_REPO (self), FALSE);
   g_return_val_if_fail (name != NULL, FALSE);
@@ -5770,12 +5808,20 @@ ostree_repo_remote_fetch_summary_with_options (OstreeRepo    *self,
                                   options,
                                   &summary,
                                   &signatures,
+                                  &summary_is_from_cache,
                                   cancellable,
                                   error))
     goto out;
 
   if (!ostree_repo_remote_get_gpg_verify_summary (self, name, &gpg_verify_summary, error))
     goto out;
+
+  if (gpg_verify_summary && summary == NULL)
+    {
+      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                   "GPG verification enabled, but no summary found (check that the configured URL in remote config is correct)");
+      goto out;
+    }
 
   if (gpg_verify_summary && signatures == NULL)
     {
@@ -5797,6 +5843,27 @@ ostree_repo_remote_fetch_summary_with_options (OstreeRepo    *self,
                                            error);
       if (!ostree_gpg_verify_result_require_valid_signature (result, error))
         goto out;
+    }
+
+  if (!summary_is_from_cache && summary && signatures)
+    {
+      g_autoptr(GError) temp_error = NULL;
+
+      if (!_ostree_repo_cache_summary (self,
+                                       name,
+                                       summary,
+                                       signatures,
+                                       cancellable,
+                                       &temp_error))
+        {
+          if (g_error_matches (temp_error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED))
+            g_debug ("No permissions to save summary cache");
+          else
+            {
+              g_propagate_error (error, g_steal_pointer (&temp_error));
+              goto out;
+            }
+        }
     }
 
   if (out_summary != NULL)

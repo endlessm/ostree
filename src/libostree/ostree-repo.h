@@ -109,48 +109,6 @@ OstreeRepo *  ostree_repo_create_at (int             dfd,
 
 #ifdef OSTREE_ENABLE_EXPERIMENTAL_API
 
-/**
- * OstreeRepoLockType:
- * @OSTREE_REPO_LOCK_SHARED: A shared lock
- * @OSTREE_REPO_LOCK_EXCLUSIVE: An exclusive lock
- *
- * The type of repository lock to acquire.
- *
- * Since: 2017.14
- */
-typedef enum {
-  OSTREE_REPO_LOCK_SHARED,
-  OSTREE_REPO_LOCK_EXCLUSIVE
-} OstreeRepoLockType;
-
-_OSTREE_PUBLIC
-gboolean      ostree_repo_lock_push (OstreeRepo          *self,
-                                     OstreeRepoLockType   lock_type,
-                                     GCancellable        *cancellable,
-                                     GError             **error);
-_OSTREE_PUBLIC
-gboolean      ostree_repo_lock_pop (OstreeRepo    *self,
-                                    GCancellable  *cancellable,
-                                    GError       **error);
-
-/**
- * OstreeRepoAutoLock: (skip)
- *
- * This is simply an alias to #OstreeRepo used for automatic lock cleanup.
- * See ostree_repo_auto_lock_push() for its intended usage.
- *
- * Since: 2017.14
- */
-typedef OstreeRepo OstreeRepoAutoLock;
-
-_OSTREE_PUBLIC
-OstreeRepoAutoLock * ostree_repo_auto_lock_push (OstreeRepo          *self,
-                                                 OstreeRepoLockType   lock_type,
-                                                 GCancellable        *cancellable,
-                                                 GError             **error);
-_OSTREE_PUBLIC
-void          ostree_repo_auto_lock_cleanup (OstreeRepoAutoLock *lock);
-
 _OSTREE_PUBLIC
 const gchar * ostree_repo_get_collection_id (OstreeRepo   *self);
 _OSTREE_PUBLIC
@@ -1113,6 +1071,12 @@ _OSTREE_PUBLIC
 GHashTable *ostree_repo_traverse_new_reachable (void);
 
 _OSTREE_PUBLIC
+GHashTable *ostree_repo_traverse_new_parents (void);
+
+_OSTREE_PUBLIC
+char ** ostree_repo_traverse_parents_get_commits (GHashTable *parents, GVariant *object);
+
+_OSTREE_PUBLIC
 gboolean ostree_repo_traverse_commit (OstreeRepo         *repo,
                                       const char         *commit_checksum,
                                       int                 maxdepth,
@@ -1127,6 +1091,14 @@ gboolean ostree_repo_traverse_commit_union (OstreeRepo         *repo,
                                             GHashTable         *inout_reachable,
                                             GCancellable       *cancellable,
                                             GError            **error);
+_OSTREE_PUBLIC
+gboolean ostree_repo_traverse_commit_union_with_parents (OstreeRepo         *repo,
+                                                         const char         *commit_checksum,
+                                                         int                 maxdepth,
+                                                         GHashTable         *inout_reachable,
+                                                         GHashTable         *inout_parents,
+                                                         GCancellable       *cancellable,
+                                                         GError            **error);
 
 struct _OstreeRepoCommitTraverseIter {
   gboolean initialized;

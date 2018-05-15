@@ -21,7 +21,7 @@
 
 set -euo pipefail
 
-echo "1..$((23 + ${extra_admin_tests:-0}))"
+echo "1..$((25 + ${extra_admin_tests:-0}))"
 
 function validate_bootloader() {
     cd ${test_tmpdir};
@@ -77,6 +77,12 @@ assert_file_has_content sysroot/ostree/boot.1/testos/${bootcsum}/0/etc/os-releas
 assert_ostree_deployment_refs 1/1/0
 ${CMD_PREFIX} ostree admin status
 echo "ok layout"
+
+if ${CMD_PREFIX} ostree admin deploy --stage --os=testos testos:testos/buildmaster/x86_64-runtime 2>err.txt; then
+    fatal "staged when not booted"
+fi
+assert_file_has_content_literal err.txt "Cannot stage a deployment when not currently booted into an OSTree system"
+echo "ok staging does not work when not booted"
 
 orig_mtime=$(stat -c '%.Y' sysroot/ostree/deploy)
 ${CMD_PREFIX} ostree admin deploy --os=testos testos:testos/buildmaster/x86_64-runtime
@@ -147,8 +153,13 @@ ln -s /ENOENT sysroot/ostree/deploy/testos/deploy/${rev}.3/etc/a-new-broken-syml
 ${CMD_PREFIX} ostree admin deploy --retain --os=testos testos:testos/buildmaster/x86_64-runtime
 assert_not_has_dir sysroot/boot/loader.0
 assert_has_dir sysroot/boot/loader.1
-linktarget=$(readlink sysroot/ostree/deploy/testos/deploy/${rev}.4/etc/a-new-broken-symlink)
-test "${linktarget}" = /ENOENT
+link=sysroot/ostree/deploy/testos/deploy/${rev}.4/etc/a-new-broken-symlink
+if ! test -L ${link}; then
+    ls -al ${link}
+    fatal "Not a symlink: ${link}"
+fi
+linktarget=$(readlink ${link})
+assert_streq "${linktarget}" /ENOENT
 assert_file_has_content sysroot/ostree/deploy/testos/deploy/${rev}.3/etc/os-release 'NAME=TestOS'
 assert_file_has_content sysroot/ostree/deploy/testos/deploy/${rev}.4/etc/os-release 'NAME=TestOS'
 assert_file_has_content sysroot/ostree/deploy/testos/deploy/${rev}.4/etc/a-new-config-file 'a new local config file'
@@ -204,6 +215,11 @@ validate_bootloader
 echo "ok upgrade bare"
 
 os_repository_new_commit
+if env OSTREE_EX_STAGE_DEPLOYMENTS=1 ${CMD_PREFIX} ostree admin upgrade --os=testos 2>err.txt; then
+    fatal "staged when not booted"
+fi
+echo "ok upgrade failed when staged"
+
 ${CMD_PREFIX} ostree --repo=sysroot/ostree/repo remote add --set=gpg-verify=false testos file://$(pwd)/testos-repo testos/buildmaster/x86_64-runtime
 ${CMD_PREFIX} ostree admin upgrade --os=testos
 origrev=${rev}
