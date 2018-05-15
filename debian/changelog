@@ -5,6 +5,7 @@ ostree (2018.5-1) UNRELEASED; urgency=medium
       GFDL-1.3-or-later, and doc/ isn't included in dist tarballs, so
       remove those licenses
     - d/libostree-1-1.symbols: Update (and sort)
+    - d/p/Don-t-write-to-parent-repo.patch: Drop, applied upstream
   * ostree-tests: Add Lintian override for library-not-linked-against-libc.
     libreaddir-rand.so genuinely doesn't use any libc ABIs directly, only
     via GLib.
