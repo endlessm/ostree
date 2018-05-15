@@ -1,4 +1,4 @@
-ostree (2018.5-1) UNRELEASED; urgency=medium
+ostree (2018.5-1) unstable; urgency=medium
 
   * New upstream release
     - d/copyright: Upstream clarified that only doc/ is CC-BY-SA-3.0 or
@@ -15,7 +15,7 @@ ostree (2018.5-1) UNRELEASED; urgency=medium
     via GLib.
   * Standards-Version: 4.1.4 (no changes required)
 
- -- Simon McVittie <smcv@debian.org>  Tue, 24 Apr 2018 08:21:54 +0100
+ -- Simon McVittie <smcv@debian.org>  Tue, 15 May 2018 11:30:03 +0100
 
 ostree (2018.4-2) unstable; urgency=medium
 
