@@ -6,6 +6,10 @@ ostree (2018.5-1) UNRELEASED; urgency=medium
       remove those licenses
     - d/libostree-1-1.symbols: Update (and sort)
     - d/p/Don-t-write-to-parent-repo.patch: Drop, applied upstream
+    - d/ostree-boot.install: Add new systemd service
+      lib/systemd/system/ostree-finalize-staged.service
+    - d/rules: Remove lib/systemd/system/ostree-finalize-staged.service
+      until we build ostree-boot
   * ostree-tests: Add Lintian override for library-not-linked-against-libc.
     libreaddir-rand.so genuinely doesn't use any libc ABIs directly, only
     via GLib.
