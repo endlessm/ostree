@@ -1972,14 +1972,13 @@ enqueue_one_object_request (OtPullData                *pull_data,
     {
       g_debug ("queuing fetch of %s.%s%s%s%s", checksum,
                ostree_object_type_to_string (objtype),
-               (fetchtype == OSTREE_FETCH_OBJECT_DETACHED_METADATA) ? " (detached)" : "",
-               (fetchtype == OSTREE_FETCH_OBJECT_COMPAT_SIZES) ? " (compat sizes)" : "",
-               (fetchtype == OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE) ? " (compat signature)" : "");
+               (fetch_data->type == OSTREE_FETCH_OBJECT_DETACHED_METADATA) ? " (detached)" : "",
+               (fetch_data->type == OSTREE_FETCH_OBJECT_COMPAT_SIZES) ? " (compat sizes)" : "",
+               (fetch_data->type == OSTREE_FETCH_OBJECT_COMPAT_SIGNATURE) ? " (compat signature)" : "");
 
       if (is_meta)
         {
-          GVariant *objname = ostree_object_name_serialize (checksum, objtype);
-          g_hash_table_insert (pull_data->pending_fetch_metadata, objname, fetch_data);
+          g_hash_table_insert (pull_data->pending_fetch_metadata, g_variant_ref (fetch_data->object), fetch_data);
         }
       else
         {
