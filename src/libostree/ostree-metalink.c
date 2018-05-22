@@ -48,6 +48,7 @@ struct OstreeMetalink
   OstreeFetcher *fetcher;
   char *requested_file;
   guint64 max_size;
+  guint n_network_retries;
 };
 
 G_DEFINE_TYPE (OstreeMetalink, _ostree_metalink, G_TYPE_OBJECT)
@@ -399,7 +400,8 @@ OstreeMetalink *
 _ostree_metalink_new (OstreeFetcher  *fetcher,
                       const char     *requested_file,
                       guint64         max_size,
-                      OstreeFetcherURI *uri)
+                      OstreeFetcherURI *uri,
+                      guint             n_network_retries)
 {
   OstreeMetalink *self = (OstreeMetalink*)g_object_new (OSTREE_TYPE_METALINK, NULL);
 
@@ -407,6 +409,7 @@ _ostree_metalink_new (OstreeFetcher  *fetcher,
   self->requested_file = g_strdup (requested_file);
   self->max_size = max_size;
   self->uri = _ostree_fetcher_uri_clone (uri);
+  self->n_network_retries = n_network_retries;
 
   return self;
 }
@@ -430,7 +433,9 @@ try_one_url (OstreeMetalinkRequest *self,
   gssize n_bytes;
 
   if (!_ostree_fetcher_request_uri_to_membuf (self->metalink->fetcher,
-                                              uri, 0, &bytes,
+                                              uri, 0,
+                                              self->metalink->n_network_retries,
+                                              &bytes,
                                               self->metalink->max_size,
                                               self->cancellable,
                                               error))
@@ -611,6 +616,7 @@ _ostree_metalink_request_sync (OstreeMetalink        *self,
   request.parser = g_markup_parse_context_new (&metalink_parser, G_MARKUP_PREFIX_ERROR_POSITION, &request, NULL);
 
   if (!_ostree_fetcher_request_uri_to_membuf (self->fetcher, self->uri, 0,
+                                              self->n_network_retries,
                                               &contents, self->max_size,
                                               cancellable, error))
     goto out;

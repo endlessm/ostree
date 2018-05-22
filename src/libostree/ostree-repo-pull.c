@@ -58,6 +58,12 @@
 #define OSTREE_REPO_PULL_CONTENT_PRIORITY  (OSTREE_FETCHER_DEFAULT_PRIORITY)
 #define OSTREE_REPO_PULL_METADATA_PRIORITY (OSTREE_REPO_PULL_CONTENT_PRIORITY - 100)
 
+/* Arbitrarily chosen number of retries for all download operations when they
+ * receive a transient network error (such as a socket timeout) — see
+ * _ostree_fetcher_should_retry_request(). This is the default value for the
+ * `n-network-retries` pull option. */
+#define DEFAULT_N_NETWORK_RETRIES 5
+
 typedef enum {
   OSTREE_FETCHER_SECURITY_STATE_CA_PINNED,
   OSTREE_FETCHER_SECURITY_STATE_TLS,
@@ -88,6 +94,7 @@ typedef struct {
   gboolean      dry_run;
   gboolean      dry_run_emitted_progress;
   gboolean      legacy_transaction_resuming;
+  guint         n_network_retries;
   enum {
     OSTREE_PULL_PHASE_FETCHING_REFS,
     OSTREE_PULL_PHASE_FETCHING_OBJECTS
@@ -178,6 +185,7 @@ typedef struct {
   gboolean     object_is_stored;
 
   OstreeCollectionRef *requested_ref;  /* (nullable) */
+  guint n_retries_remaining;
 } FetchObjectData;
 
 typedef struct {
@@ -188,6 +196,7 @@ typedef struct {
   char *to_revision;
   guint i;
   guint64 size;
+  guint n_retries_remaining;
 } FetchStaticDeltaData;
 
 typedef struct {
@@ -486,6 +495,8 @@ idle_worker (gpointer user_data)
                               scan_data->requested_ref,
                               pull_data->cancellable,
                               &error);
+
+  /* No need to retry scan tasks, since they’re local. */
   check_outstanding_requests_handle_error (pull_data, &error);
   scan_object_queue_data_free (scan_data);
 
@@ -516,6 +527,7 @@ static gboolean
 fetch_mirrored_uri_contents_utf8_sync (OstreeFetcher  *fetcher,
                                        GPtrArray      *mirrorlist,
                                        const char     *filename,
+                                       guint           n_network_retries,
                                        char          **out_contents,
                                        GCancellable   *cancellable,
                                        GError        **error)
@@ -523,6 +535,7 @@ fetch_mirrored_uri_contents_utf8_sync (OstreeFetcher  *fetcher,
   g_autoptr(GBytes) bytes = NULL;
   if (!_ostree_fetcher_mirrored_request_to_membuf (fetcher, mirrorlist,
                                                    filename, OSTREE_FETCHER_REQUEST_NUL_TERMINATION,
+                                                   n_network_retries,
                                                    &bytes,
                                                    OSTREE_MAX_METADATA_SIZE,
                                                    cancellable, error))
@@ -541,6 +554,7 @@ fetch_mirrored_uri_contents_utf8_sync (OstreeFetcher  *fetcher,
 static gboolean
 fetch_uri_contents_utf8_sync (OstreeFetcher  *fetcher,
                               OstreeFetcherURI *uri,
+                              guint           n_network_retries,
                               char          **out_contents,
                               GCancellable   *cancellable,
                               GError        **error)
@@ -548,7 +562,8 @@ fetch_uri_contents_utf8_sync (OstreeFetcher  *fetcher,
   g_autoptr(GPtrArray) mirrorlist = g_ptr_array_new ();
   g_ptr_array_add (mirrorlist, uri); /* no transfer */
   return fetch_mirrored_uri_contents_utf8_sync (fetcher, mirrorlist,
-                                                NULL, out_contents,
+                                                NULL, n_network_retries,
+                                                out_contents,
                                                 cancellable, error);
 }
 
@@ -717,6 +732,7 @@ on_local_object_imported (GObject        *object,
   pull_data->n_imported_content++;
   g_assert_cmpint (pull_data->n_outstanding_content_write_requests, >, 0);
   pull_data->n_outstanding_content_write_requests--;
+  /* No retries for local reads. */
   check_outstanding_requests_handle_error (pull_data, &local_error);
 }
 
@@ -885,7 +901,8 @@ fetch_ref_contents (OtPullData                 *pull_data,
 
       if (!fetch_mirrored_uri_contents_utf8_sync (pull_data->fetcher,
                                                   pull_data->meta_mirrorlist,
-                                                  filename, &ret_contents,
+                                                  filename, pull_data->n_network_retries,
+                                                  &ret_contents,
                                                   cancellable, error))
         return FALSE;
 
@@ -1014,6 +1031,7 @@ content_fetch_on_write_complete (GObject        *object,
     pull_data->n_fetched_deltapart_fallbacks++;
  out:
   pull_data->n_outstanding_content_write_requests--;
+  /* No retries for local writes. */
   check_outstanding_requests_handle_error (pull_data, &local_error);
   fetch_object_data_free (fetch_data);
 }
@@ -1115,9 +1133,14 @@ content_fetch_on_complete (GObject        *object,
 
  out:
   pull_data->n_outstanding_content_fetches--;
-  check_outstanding_requests_handle_error (pull_data, &local_error);
+
+  if (_ostree_fetcher_should_retry_request (local_error, fetch_data->n_retries_remaining--))
+    enqueue_one_object_request_s (pull_data, g_steal_pointer (&fetch_data));
+  else
+    check_outstanding_requests_handle_error (pull_data, &local_error);
+
   if (free_fetch_data)
-    fetch_object_data_free (fetch_data);
+    g_clear_pointer (&fetch_data, fetch_object_data_free);
 }
 
 static void
@@ -1161,6 +1184,7 @@ on_metadata_written (GObject           *object,
   pull_data->n_outstanding_metadata_write_requests--;
   fetch_object_data_free (fetch_data);
 
+  /* No need to retry local write operations. */
   check_outstanding_requests_handle_error (pull_data, &local_error);
 }
 
@@ -1335,10 +1359,17 @@ meta_fetch_on_complete (GObject           *object,
  out:
   g_assert (pull_data->n_outstanding_metadata_fetches > 0);
   pull_data->n_outstanding_metadata_fetches--;
-  pull_data->n_fetched_metadata++;
-  check_outstanding_requests_handle_error (pull_data, &local_error);
+
+  if (local_error == NULL)
+    pull_data->n_fetched_metadata++;
+
+  if (_ostree_fetcher_should_retry_request (local_error, fetch_data->n_retries_remaining--))
+    enqueue_one_object_request_s (pull_data, g_steal_pointer (&fetch_data));
+  else
+    check_outstanding_requests_handle_error (pull_data, &local_error);
+
   if (free_fetch_data)
-    fetch_object_data_free (fetch_data);
+    g_clear_pointer (&fetch_data, fetch_object_data_free);
 }
 
 static void
@@ -1370,6 +1401,7 @@ on_static_delta_written (GObject           *object,
  out:
   g_assert (pull_data->n_outstanding_deltapart_write_requests > 0);
   pull_data->n_outstanding_deltapart_write_requests--;
+  /* No need to retry on failure to write locally. */
   check_outstanding_requests_handle_error (pull_data, &local_error);
   /* Always free state */
   fetch_static_delta_data_free (fetch_data);
@@ -1422,10 +1454,17 @@ static_deltapart_fetch_on_complete (GObject           *object,
  out:
   g_assert (pull_data->n_outstanding_deltapart_fetches > 0);
   pull_data->n_outstanding_deltapart_fetches--;
-  pull_data->n_fetched_deltaparts++;
-  check_outstanding_requests_handle_error (pull_data, &local_error);
+
+  if (local_error == NULL)
+    pull_data->n_fetched_deltaparts++;
+
+  if (_ostree_fetcher_should_retry_request (local_error, fetch_data->n_retries_remaining--))
+    enqueue_one_static_delta_part_request_s (pull_data, g_steal_pointer (&fetch_data));
+  else
+    check_outstanding_requests_handle_error (pull_data, &local_error);
+
   if (free_fetch_data)
-    fetch_static_delta_data_free (fetch_data);
+    g_clear_pointer (&fetch_data, fetch_static_delta_data_free);
 }
 
 static gboolean
@@ -2006,10 +2045,9 @@ enqueue_one_object_request (OtPullData                *pull_data,
   fetch_data->type = fetchtype;
   fetch_data->object_is_stored = object_is_stored;
   fetch_data->requested_ref = (ref != NULL) ? ostree_collection_ref_dup (ref) : NULL;
+  fetch_data->n_retries_remaining = pull_data->n_network_retries;
 
-  gboolean is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
-
-  if (is_meta)
+  if (OSTREE_OBJECT_TYPE_IS_META (objtype))
     pull_data->n_requested_metadata++;
   else
     pull_data->n_requested_content++;
@@ -2105,8 +2143,8 @@ load_remote_repo_config (OtPullData    *pull_data,
 
   if (!fetch_mirrored_uri_contents_utf8_sync (pull_data->fetcher,
                                               pull_data->meta_mirrorlist,
-                                              "config", &contents,
-                                              cancellable, error))
+                                              "config", pull_data->n_network_retries,
+                                              &contents, cancellable, error))
     return FALSE;
 
   g_autoptr(GKeyFile) ret_keyfile = g_key_file_new ();
@@ -2304,6 +2342,7 @@ process_one_static_delta (OtPullData                 *pull_data,
         fetch_data->type = OSTREE_FETCH_OBJECT_CORE;
         fetch_data->object_is_stored = FALSE;
         fetch_data->requested_ref = (ref != NULL) ? ostree_collection_ref_dup (ref) : NULL;
+        fetch_data->n_retries_remaining = pull_data->n_network_retries;
 
         ostree_repo_write_metadata_async (pull_data->repo, OSTREE_OBJECT_TYPE_COMMIT, to_checksum,
                                           to_commit,
@@ -2386,6 +2425,7 @@ process_one_static_delta (OtPullData                 *pull_data,
       fetch_data->expected_checksum = ostree_checksum_from_bytes_v (csum_v);
       fetch_data->size = size;
       fetch_data->i = i;
+      fetch_data->n_retries_remaining = pull_data->n_network_retries;
 
       if (inline_part_bytes != NULL)
         {
@@ -2624,7 +2664,11 @@ on_superblock_fetched (GObject   *src,
  out:
   g_assert (pull_data->n_outstanding_metadata_fetches > 0);
   pull_data->n_outstanding_metadata_fetches--;
-  pull_data->n_fetched_metadata++;
+
+  if (local_error == NULL)
+    pull_data->n_fetched_metadata++;
+
+  /* FIXME: This should check _ostree_fetcher_should_retry_request(). */
   check_outstanding_requests_handle_error (pull_data, &local_error);
 
   g_clear_pointer (&fetch_data, fetch_delta_super_data_free);
@@ -2848,6 +2892,7 @@ _ostree_preload_metadata_file (OstreeRepo    *self,
                                GPtrArray     *mirrorlist,
                                const char    *filename,
                                gboolean      is_metalink,
+                               guint         n_network_retries,
                                GBytes        **out_bytes,
                                GCancellable  *cancellable,
                                GError        **error)
@@ -2863,7 +2908,7 @@ _ostree_preload_metadata_file (OstreeRepo    *self,
        * element */
       metalink = _ostree_metalink_new (fetcher, filename,
                                        OSTREE_MAX_METADATA_SIZE,
-                                       mirrorlist->pdata[0]);
+                                       mirrorlist->pdata[0], n_network_retries);
 
       _ostree_metalink_request_sync (metalink, NULL, out_bytes,
                                      cancellable, &local_error);
@@ -2884,6 +2929,7 @@ _ostree_preload_metadata_file (OstreeRepo    *self,
       ret = _ostree_fetcher_mirrored_request_to_membuf (fetcher, mirrorlist,
                                                         filename,
                                                         OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
+                                                        n_network_retries,
                                                         out_bytes,
                                                         OSTREE_MAX_METADATA_SIZE,
                                                         cancellable, error);
@@ -2900,6 +2946,7 @@ out:
 static gboolean
 fetch_mirrorlist (OstreeFetcher  *fetcher,
                   const char     *mirrorlist_url,
+                  guint           n_network_retries,
                   GPtrArray     **out_mirrorlist,
                   GCancellable   *cancellable,
                   GError        **error)
@@ -2915,8 +2962,8 @@ fetch_mirrorlist (OstreeFetcher  *fetcher,
   if (!mirrorlist)
     goto out;
 
-  if (!fetch_uri_contents_utf8_sync (fetcher, mirrorlist, &contents,
-                                     cancellable, error))
+  if (!fetch_uri_contents_utf8_sync (fetcher, mirrorlist, n_network_retries,
+                                     &contents, cancellable, error))
     {
       g_prefix_error (error, "While fetching mirrorlist '%s': ",
                       mirrorlist_url);
@@ -2965,8 +3012,8 @@ fetch_mirrorlist (OstreeFetcher  *fetcher,
           GError *local_error = NULL;
           g_autoptr(OstreeFetcherURI) config_uri = _ostree_fetcher_uri_new_subpath (mirror_uri, "config");
 
-          if (fetch_uri_contents_utf8_sync (fetcher, config_uri, NULL,
-                                            cancellable, &local_error))
+          if (fetch_uri_contents_utf8_sync (fetcher, config_uri, n_network_retries,
+                                            NULL, cancellable, &local_error))
             g_ptr_array_add (ret_mirrorlist, g_steal_pointer (&mirror_uri));
           else
             {
@@ -3013,11 +3060,13 @@ repo_remote_fetch_summary (OstreeRepo    *self,
   const char *url_override = NULL;
   g_autoptr(GVariant) extra_headers = NULL;
   g_autoptr(GPtrArray) mirrorlist = NULL;
+  guint n_network_retries = DEFAULT_N_NETWORK_RETRIES;
 
   if (options)
     {
       (void) g_variant_lookup (options, "override-url", "&s", &url_override);
       (void) g_variant_lookup (options, "http-headers", "@a(ss)", &extra_headers);
+      (void) g_variant_lookup (options, "n-network-retries", "&u", &n_network_retries);
     }
 
   mainctx = g_main_context_new ();
@@ -3043,7 +3092,7 @@ repo_remote_fetch_summary (OstreeRepo    *self,
         g_str_has_prefix (url_string, "mirrorlist="))
       {
         if (!fetch_mirrorlist (fetcher, url_string + strlen ("mirrorlist="),
-                               &mirrorlist, cancellable, error))
+                               n_network_retries, &mirrorlist, cancellable, error))
           goto out;
       }
     else
@@ -3069,6 +3118,7 @@ repo_remote_fetch_summary (OstreeRepo    *self,
                                       mirrorlist,
                                       "summary.sig",
                                       metalink_url_string ? TRUE : FALSE,
+                                      n_network_retries,
                                       out_signatures,
                                       cancellable,
                                       error))
@@ -3094,6 +3144,7 @@ repo_remote_fetch_summary (OstreeRepo    *self,
                                           mirrorlist,
                                           "summary",
                                           metalink_url_string ? TRUE : FALSE,
+                                          n_network_retries,
                                           out_summary,
                                           cancellable,
                                           error))
@@ -3311,6 +3362,9 @@ initiate_request (OtPullData                 *pull_data,
  *   * http-headers (a(ss)): Additional headers to add to all HTTP requests
  *   * update-frequency (u): Frequency to call the async progress callback in milliseconds, if any; only values higher than 0 are valid
  *   * localcache-repos (as): File paths for local repos to use as caches when doing remote fetches
+ *   * n-network-retries (u): Number of times to retry each download on receiving
+ *     a transient network error, such as a socket timeout; default is 5, 0
+ *     means return errors without retrying
  */
 gboolean
 ostree_repo_pull_with_options (OstreeRepo             *self,
@@ -3344,6 +3398,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   gboolean opt_gpg_verify_set = FALSE;
   gboolean opt_gpg_verify_summary_set = FALSE;
   gboolean opt_collection_refs_set = FALSE;
+  gboolean opt_n_network_retries_set = FALSE;
   const char *main_collection_id = NULL;
   const char *url_override = NULL;
   gboolean inherit_transaction = FALSE;
@@ -3382,6 +3437,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       (void) g_variant_lookup (options, "update-frequency", "u", &update_frequency);
       (void) g_variant_lookup (options, "localcache-repos", "^a&s", &opt_localcache_repos);
       (void) g_variant_lookup (options, "timestamp-check", "b", &pull_data->timestamp_check);
+      opt_n_network_retries_set =
+        g_variant_lookup (options, "n-network-retries", "u", &pull_data->n_network_retries);
 
       if (pull_data->remote_refspec_name != NULL)
         pull_data->remote_name = g_strdup (pull_data->remote_refspec_name);
@@ -3421,6 +3478,9 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     pull_data->async_error = NULL;
   pull_data->main_context = g_main_context_ref_thread_default ();
   pull_data->flags = flags;
+
+  if (!opt_n_network_retries_set)
+    pull_data->n_network_retries = DEFAULT_N_NETWORK_RETRIES;
 
   pull_data->repo = self;
   pull_data->progress = progress;
@@ -3565,6 +3625,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         {
           if (!fetch_mirrorlist (pull_data->fetcher,
                                  baseurl + strlen ("mirrorlist="),
+                                 pull_data->n_network_retries,
                                  &pull_data->meta_mirrorlist,
                                  cancellable, error))
             goto out;
@@ -3591,7 +3652,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         goto out;
 
       metalink = _ostree_metalink_new (pull_data->fetcher, "summary",
-                                       OSTREE_MAX_METADATA_SIZE, metalink_uri);
+                                       OSTREE_MAX_METADATA_SIZE, metalink_uri,
+                                       pull_data->n_network_retries);
 
       if (! _ostree_metalink_request_sync (metalink,
                                            &target_uri,
@@ -3637,6 +3699,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
           {
             if (!fetch_mirrorlist (pull_data->fetcher,
                                    contenturl + strlen ("mirrorlist="),
+                                   pull_data->n_network_retries,
                                    &pull_data->content_mirrorlist,
                                    cancellable, error))
               goto out;
@@ -3762,6 +3825,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         if (!_ostree_fetcher_mirrored_request_to_membuf (pull_data->fetcher,
                                                          pull_data->meta_mirrorlist,
                                                          "summary.sig", OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
+                                                         pull_data->n_network_retries,
                                                          &bytes_sig,
                                                          OSTREE_MAX_METADATA_SIZE,
                                                          cancellable, error))
@@ -3786,6 +3850,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         if (!_ostree_fetcher_mirrored_request_to_membuf (pull_data->fetcher,
                                                          pull_data->meta_mirrorlist,
                                                          "summary", OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
+                                                         pull_data->n_network_retries,
                                                          &bytes_summary,
                                                          OSTREE_MAX_METADATA_SIZE,
                                                          cancellable, error))
@@ -4558,6 +4623,7 @@ typedef struct
   GVariant *options;
   OstreeAsyncProgress *progress;
   OstreeRepoFinder *default_finder_avahi;
+  guint n_network_retries;
 } FindRemotesData;
 
 static void
@@ -4577,7 +4643,8 @@ static FindRemotesData *
 find_remotes_data_new (const OstreeCollectionRef * const *refs,
                        GVariant                      *options,
                        OstreeAsyncProgress           *progress,
-                       OstreeRepoFinder              *default_finder_avahi)
+                       OstreeRepoFinder              *default_finder_avahi,
+                       guint                          n_network_retries)
 {
   g_autoptr(FindRemotesData) data = NULL;
 
@@ -4586,6 +4653,7 @@ find_remotes_data_new (const OstreeCollectionRef * const *refs,
   data->options = (options != NULL) ? g_variant_ref (options) : NULL;
   data->progress = (progress != NULL) ? g_object_ref (progress) : NULL;
   data->default_finder_avahi = (default_finder_avahi != NULL) ? g_object_ref (default_finder_avahi) : NULL;
+  data->n_network_retries = n_network_retries;
 
   return g_steal_pointer (&data);
 }
@@ -4665,6 +4733,9 @@ static void find_remotes_cb (GObject      *obj,
  *   * `override-commit-ids` (`as`): Array of specific commit IDs to fetch. The nth
  *   commit ID applies to the nth ref, so this must be the same length as @refs, if
  *   provided.
+ *   * `n-network-retries` (`u`): Number of times to retry each download on
+ *   receiving a transient network error, such as a socket timeout; default is
+ *   5, 0 means return errors without retrying.
  *
  * @finders must be a non-empty %NULL-terminated array of the #OstreeRepoFinder
  * instances to use, or %NULL to use the system default set of finders, which
@@ -4694,6 +4765,7 @@ ostree_repo_find_remotes_async (OstreeRepo                     *self,
   g_autoptr(OstreeRepoFinder) finder_mount = NULL;
   g_autoptr(OstreeRepoFinder) finder_avahi = NULL;
   g_autofree char **override_commit_ids = NULL;
+  guint n_network_retries = DEFAULT_N_NETWORK_RETRIES;
 
   g_return_if_fail (OSTREE_IS_REPO (self));
   g_return_if_fail (is_valid_collection_ref_array (refs));
@@ -4707,6 +4779,8 @@ ostree_repo_find_remotes_async (OstreeRepo                     *self,
     {
       (void) g_variant_lookup (options, "override-commit-ids", "^a&s", &override_commit_ids);
       g_return_if_fail (override_commit_ids == NULL || g_strv_length ((gchar **) refs) == g_strv_length (override_commit_ids));
+
+      (void) g_variant_lookup (options, "n-network-retries", "u", &n_network_retries);
     }
 
   /* Set up a task for the whole operation. */
@@ -4762,7 +4836,7 @@ ostree_repo_find_remotes_async (OstreeRepo                     *self,
   /* We need to keep a pointer to the default Avahi finder so we can stop it
    * again after the operation, which happens implicitly by dropping the final
    * ref. */
-  data = find_remotes_data_new (refs, options, progress, finder_avahi);
+  data = find_remotes_data_new (refs, options, progress, finder_avahi, n_network_retries);
   g_task_set_task_data (task, g_steal_pointer (&data), (GDestroyNotify) find_remotes_data_free);
 
   /* Asynchronously resolve all possible remotes for the given refs. */
@@ -5153,6 +5227,7 @@ find_remotes_cb (GObject      *obj,
                                                                mirrorlist,
                                                                commit_filename,
                                                                OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
+                                                               data->n_network_retries,
                                                                &commit_bytes,
                                                                0,  /* no maximum size */
                                                                cancellable,
@@ -5562,6 +5637,7 @@ ostree_repo_pull_from_remotes_async (OstreeRepo                           *self,
       copy_option (&options_dict, &local_options_dict, "http-headers", G_VARIANT_TYPE ("a(ss)"));
       copy_option (&options_dict, &local_options_dict, "subdirs", G_VARIANT_TYPE ("as"));
       copy_option (&options_dict, &local_options_dict, "update-frequency", G_VARIANT_TYPE ("u"));
+      copy_option (&options_dict, &local_options_dict, "n-network-retries", G_VARIANT_TYPE ("u"));
 
       local_options = g_variant_dict_end (&local_options_dict);
 
@@ -5784,6 +5860,9 @@ ostree_repo_resolve_keyring_for_collection (OstreeRepo    *self,
  *
  * - override-url (s): Fetch summary from this URL if remote specifies no metalink in options
  * - http-headers (a(ss)): Additional headers to add to all HTTP requests
+ * - n-network-retries (u): Number of times to retry each download on receiving
+ *   a transient network error, such as a socket timeout; default is 5, 0
+ *   means return errors without retrying
  *
  * Returns: %TRUE on success, %FALSE on failure
  */
