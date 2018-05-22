@@ -209,6 +209,8 @@ static void queue_scan_one_metadata_object (OtPullData                *pull_data
                                             guint                      recursion_depth,
                                             const OstreeCollectionRef *ref);
 
+static void queue_scan_one_metadata_object_s (OtPullData                *pull_data,
+                                              ScanObjectQueueData       *scan_data);
 static void queue_scan_one_metadata_object_c (OtPullData                *pull_data,
                                               const guchar              *csum,
                                               OstreeObjectType           objtype,
@@ -1797,6 +1799,14 @@ queue_scan_one_metadata_object (OtPullData                *pull_data,
 }
 
 static void
+queue_scan_one_metadata_object_s (OtPullData          *pull_data,
+                                  ScanObjectQueueData *scan_data)
+{
+  g_queue_push_tail (&pull_data->scan_object_queue, scan_data);
+  ensure_idle_queued (pull_data);
+}
+
+static void
 queue_scan_one_metadata_object_c (OtPullData                *pull_data,
                                   const guchar              *csum,
                                   OstreeObjectType           objtype,
@@ -1812,8 +1822,7 @@ queue_scan_one_metadata_object_c (OtPullData                *pull_data,
   scan_data->recursion_depth = recursion_depth;
   scan_data->requested_ref = (ref != NULL) ? ostree_collection_ref_dup (ref) : NULL;
 
-  g_queue_push_tail (&pull_data->scan_object_queue, scan_data);
-  ensure_idle_queued (pull_data);
+  queue_scan_one_metadata_object_s (pull_data, g_steal_pointer (&scan_data));
 }
 
 static gboolean
