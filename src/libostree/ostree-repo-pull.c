@@ -213,6 +213,7 @@ typedef struct {
   char *from_revision;
   char *to_revision;
   OstreeCollectionRef *requested_ref;  /* (nullable) */
+  guint n_retries_remaining;
 } FetchDeltaSuperData;
 
 static void start_fetch (OtPullData *pull_data, FetchObjectData *fetch);
@@ -2686,8 +2687,10 @@ on_superblock_fetched (GObject   *src,
   if (local_error == NULL)
     pull_data->n_fetched_metadata++;
 
-  /* FIXME: This should check _ostree_fetcher_should_retry_request(). */
-  check_outstanding_requests_handle_error (pull_data, &local_error);
+  if (_ostree_fetcher_should_retry_request (local_error, fetch_data->n_retries_remaining--))
+    enqueue_one_static_delta_superblock_request_s (pull_data, g_steal_pointer (&fetch_data));
+  else
+    check_outstanding_requests_handle_error (pull_data, &local_error);
 
   g_clear_pointer (&fetch_data, fetch_delta_super_data_free);
 }
@@ -2741,6 +2744,7 @@ enqueue_one_static_delta_superblock_request (OtPullData                *pull_dat
   fdata->from_revision = g_strdup (from_revision);
   fdata->to_revision = g_strdup (to_revision);
   fdata->requested_ref = (ref != NULL) ? ostree_collection_ref_dup (ref) : NULL;
+  fdata->n_retries_remaining = pull_data->n_network_retries;
 
   enqueue_one_static_delta_superblock_request_s (pull_data, g_steal_pointer (&fdata));
 }
