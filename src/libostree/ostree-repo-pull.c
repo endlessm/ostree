@@ -1121,6 +1121,7 @@ content_fetch_on_complete (GObject        *object,
     }
 
  out:
+  g_assert (pull_data->n_outstanding_content_fetches > 0);
   pull_data->n_outstanding_content_fetches--;
 
   if (_ostree_fetcher_should_retry_request (local_error, fetch_data->n_retries_remaining--))
@@ -1170,6 +1171,7 @@ on_metadata_written (GObject           *object,
   queue_scan_one_metadata_object_c (pull_data, csum, objtype, fetch_data->path, 0, fetch_data->requested_ref);
 
  out:
+  g_assert (pull_data->n_outstanding_metadata_write_requests > 0);
   pull_data->n_outstanding_metadata_write_requests--;
   fetch_object_data_free (fetch_data);
 
