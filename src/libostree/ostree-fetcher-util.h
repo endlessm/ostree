@@ -39,6 +39,7 @@ gboolean _ostree_fetcher_mirrored_request_to_membuf (OstreeFetcher *fetcher,
                                                      GPtrArray     *mirrorlist,
                                                      const char    *filename,
                                                      OstreeFetcherRequestFlags flags,
+                                                     guint          n_network_retries,
                                                      GBytes         **out_contents,
                                                      guint64        max_size,
                                                      GCancellable   *cancellable,
@@ -47,6 +48,7 @@ gboolean _ostree_fetcher_mirrored_request_to_membuf (OstreeFetcher *fetcher,
 gboolean _ostree_fetcher_request_uri_to_membuf (OstreeFetcher *fetcher,
                                                 OstreeFetcherURI *uri,
                                                 OstreeFetcherRequestFlags flags,
+                                                guint          n_network_retries,
                                                 GBytes         **out_contents,
                                                 guint64        max_size,
                                                 GCancellable   *cancellable,
@@ -56,6 +58,10 @@ void _ostree_fetcher_journal_failure (const char *remote_name,
                                       const char *url,
                                       const char *msg);
 
+gboolean _ostree_fetcher_should_retry_request (const GError *error,
+                                               guint         n_retries_remaining);
+
+GIOError _ostree_fetcher_http_status_code_to_io_error (guint status_code);
 
 G_END_DECLS
 
