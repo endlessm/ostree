@@ -203,6 +203,7 @@
     <keyword type="function" name="ostree_repo_commit_traverse_iter_next ()" link="ostree-OstreeRepo.html#ostree-repo-commit-traverse-iter-next"/>
     <keyword type="function" name="ostree_repo_prune ()" link="ostree-OstreeRepo.html#ostree-repo-prune"/>
     <keyword type="function" name="ostree_repo_prune_static_deltas ()" link="ostree-OstreeRepo.html#ostree-repo-prune-static-deltas"/>
+    <keyword type="function" name="ostree_repo_traverse_reachable_refs ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-reachable-refs" since="2018.6"/>
     <keyword type="function" name="ostree_repo_prune_from_reachable ()" link="ostree-OstreeRepo.html#ostree-repo-prune-from-reachable"/>
     <keyword type="function" name="ostree_repo_pull ()" link="ostree-OstreeRepo.html#ostree-repo-pull"/>
     <keyword type="function" name="ostree_repo_pull_one_dir ()" link="ostree-OstreeRepo.html#ostree-repo-pull-one-dir"/>
@@ -272,6 +273,7 @@
     <keyword type="function" name="ostree_sysroot_get_deployment_origin_path ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-deployment-origin-path"/>
     <keyword type="function" name="ostree_sysroot_cleanup ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-cleanup"/>
     <keyword type="function" name="ostree_sysroot_prepare_cleanup ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-prepare-cleanup"/>
+    <keyword type="function" name="ostree_sysroot_cleanup_prune_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-cleanup-prune-repo" since="2018.6"/>
     <keyword type="function" name="ostree_sysroot_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-repo"/>
     <keyword type="function" name="ostree_sysroot_get_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-repo"/>
     <keyword type="function" name="ostree_sysroot_get_staged_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-staged-deployment"/>
