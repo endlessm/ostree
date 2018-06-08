@@ -15,12 +15,18 @@ configure_options = \
 	GJS=some-nonexistent-gjs-binary \
 	--enable-installed-tests \
 	--libexecdir='$${prefix}/lib' \
+	--with-avahi \
 	--with-dracut \
 	--with-grub2 \
 	--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
+	--with-libarchive \
 	--with-libsystemd \
+	--with-libmount \
+	--with-soup \
+	--with-selinux \
 	--with-systemdsystemgeneratordir=/lib/systemd/system-generators \
 	--with-systemdsystemunitdir=/lib/systemd/system \
+	--without-smack \
 	$(NULL)
 
 ifneq ($(filter libostree-doc,$(binaries)),)

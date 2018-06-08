@@ -6,6 +6,7 @@ ostree (2018.5+42+gecdebeb2-1) UNRELEASED; urgency=medium
     - d/copyright: Update
     - d/libostree-1-1.symbols: Update
     - Build-depend on Avahi libraries
+  * d/rules: Explicitly enable various desired libraries
 
  -- Simon McVittie <smcv@debian.org>  Fri, 08 Jun 2018 09:10:21 +0100
 
