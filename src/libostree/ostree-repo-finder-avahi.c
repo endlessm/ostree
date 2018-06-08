@@ -36,7 +36,6 @@
 #include <avahi-common/strlst.h>
 #include <avahi-glib/glib-malloc.h>
 #include <avahi-glib/glib-watch.h>
-#include <libsoup/soup.h>
 #include <netinet/in.h>
 #include <string.h>
 #endif  /* HAVE_AVAHI */
@@ -44,6 +43,7 @@
 #include <gio/gio.h>
 #include <glib.h>
 #include <glib-object.h>
+#include <libglnx.h>
 
 #include "ostree-autocleanups.h"
 #include "ostree-repo-finder.h"
@@ -55,6 +55,7 @@
 #include "ostree-repo-private.h"
 #include "ostree-repo.h"
 #include "ostree-repo-finder-avahi-private.h"
+#include "ostree-soup-uri.h"
 #include "otutil.h"
 #endif  /* HAVE_AVAHI */
 
@@ -98,7 +99,7 @@
  * and the resolver is used to retrieve information about services advertised by
  * each peer, including the services’ TXT records.
  *
- * Since: 2017.8
+ * Since: 2018.6
  */
 
 #ifdef HAVE_AVAHI
@@ -1363,7 +1364,7 @@ ostree_repo_finder_avahi_init (OstreeRepoFinderAvahi *self)
  * If @context is %NULL, the current thread-default #GMainContext is used.
  *
  * Returns: (transfer full): a new #OstreeRepoFinderAvahi
- * Since: 2017.8
+ * Since: 2018.6
  */
 OstreeRepoFinderAvahi *
 ostree_repo_finder_avahi_new (GMainContext *context)
@@ -1412,7 +1413,7 @@ ostree_repo_finder_avahi_new (GMainContext *context)
  * #OstreeRepoFinderAvahi instance, or to call it after
  * ostree_repo_finder_avahi_stop().
  *
- * Since: 2017.8
+ * Since: 2018.6
  */
 void
 ostree_repo_finder_avahi_start (OstreeRepoFinderAvahi  *self,
@@ -1494,7 +1495,7 @@ static gboolean stop_cb (gpointer user_data);
  * #OstreeRepoFinderAvahi instance, or to call it before
  * ostree_repo_finder_avahi_start().
  *
- * Since: 2017.8
+ * Since: 2018.6
  */
 void
 ostree_repo_finder_avahi_stop (OstreeRepoFinderAvahi *self)

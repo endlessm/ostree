@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Colin Walters <walters@verbum.org>
+ * Copyright © 2018 Endless Mobile, Inc.
  *
  * SPDX-License-Identifier: LGPL-2.0+
  *
@@ -18,26 +18,28 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  *
- * Author: Colin Walters <walters@verbum.org>
+ * Authors:
+ *  - Matthew Leeds <matthew.leeds@endlessm.com>
  */
 
-#pragma once
+#include "config.h"
 
-#include <gio/gio.h>
+#include <glib.h>
+#include <locale.h>
+#include <ostree.h>
 
-#ifndef _OSTREE_PUBLIC
-#define _OSTREE_PUBLIC extern
-#endif
+static void
+test_include_ostree_h_compiled (void)
+{
+}
 
-G_BEGIN_DECLS
+/* Just ensure that we can compile with ostree.h included */
+int main (int argc, char **argv)
+{
+  setlocale (LC_ALL, "");
+  g_test_init (&argc, &argv, NULL);
 
-typedef struct OstreeRepo OstreeRepo;
-typedef struct OstreeRepoDevInoCache OstreeRepoDevInoCache;
-typedef struct OstreeSePolicy OstreeSePolicy;
-typedef struct OstreeSysroot OstreeSysroot;
-typedef struct OstreeSysrootUpgrader OstreeSysrootUpgrader;
-typedef struct OstreeMutableTree OstreeMutableTree;
-typedef struct OstreeRepoFile OstreeRepoFile;
-typedef struct OstreeRemote OstreeRemote;
+  g_test_add_func ("/include-ostree-h/compiled", test_include_ostree_h_compiled);
 
-G_END_DECLS
+  return g_test_run();
+}
