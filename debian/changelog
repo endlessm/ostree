@@ -1,6 +1,11 @@
-ostree (2018.5-2) UNRELEASED; urgency=medium
+ostree (2018.5+42+gecdebeb2-1) UNRELEASED; urgency=medium
 
   * Switch to experimental branch
+  * New upstream git snapshot with support for peer-to-peer software
+    collections, required by Flatpak's peer-to-peer app sharing feature
+    - d/copyright: Update
+    - d/libostree-1-1.symbols: Update
+    - Build-depend on Avahi libraries
 
  -- Simon McVittie <smcv@debian.org>  Fri, 08 Jun 2018 09:10:21 +0100
 
