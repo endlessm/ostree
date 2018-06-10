@@ -11,4 +11,20 @@ unset http_proxy
 unset https_proxy
 unset no_proxy
 
-exec gnome-desktop-testing-runner libostree
+e=0
+
+tests="$(gnome-desktop-testing-runner -l libostree | while read t; do
+	t="${t%% *}"
+
+	case "$t" in
+		(libostree/test-concurrency.py.test)
+			# https://bugs.debian.org/901170
+			# https://github.com/ostreedev/ostree/issues/1620
+			continue
+			;;
+	esac
+
+	echo "$t"
+done)"
+
+exec gnome-desktop-testing-runner $tests
