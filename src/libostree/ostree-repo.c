@@ -1571,8 +1571,8 @@ impl_repo_remote_add (OstreeRepo     *self,
   remote = ostree_remote_new (name);
 
   /* Only add repos in remotes.d if the repo option
-   * add-remotes-config-dir is true. This is the default for system
-   * repos.
+   * add-remotes-config-dir is true. This is the default for all repos (this
+   * is an Endless modification: see https://phabricator.endlessm.com/T22258).
    */
   g_autoptr(GFile) etc_ostree_remotes_d = get_remotes_d_dir (self, sysroot);
   if (etc_ostree_remotes_d && self->add_remotes_config_dir)
@@ -2816,14 +2816,18 @@ reload_core_config (OstreeRepo          *self,
         }
     }
 
-  /* By default, only add remotes in a remotes config directory for
-   * system repos. This is to preserve legacy behavior for non-system
-   * repos that specify a remotes config dir (flatpak).
+  /* By default, do not add remotes in a remotes config directory.
+   * This is an Endless modification which is necessary due to us using the
+   * same repository for the OS and the flatpak system repository — we do not
+   * want some remote config to end up in /etc/flatpak/remotes.d. We want it all
+   * in /ostree/repo/config.
+   *
+   * See: https://phabricator.endlessm.com/T22258
    */
-  { gboolean is_system = ostree_repo_is_system (self);
+  {
 
     if (!ot_keyfile_get_boolean_with_default (self->config, "core", "add-remotes-config-dir",
-                                              is_system, &self->add_remotes_config_dir, error))
+                                              FALSE, &self->add_remotes_config_dir, error))
       return FALSE;
   }
 
