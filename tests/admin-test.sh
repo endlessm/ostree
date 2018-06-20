@@ -21,7 +21,7 @@
 
 set -euo pipefail
 
-echo "1..$((23 + ${extra_admin_tests:-0}))"
+echo "1..$((24 + ${extra_admin_tests:-0}))"
 
 function validate_bootloader() {
     cd ${test_tmpdir};
@@ -298,8 +298,8 @@ echo "ok remote add physical sysroot"
 ln -sr sysroot ${deployment}/sysroot
 ln -s sysroot/ostree ${deployment}/ostree
 ${CMD_PREFIX} ostree --sysroot=${deployment} remote add --set=gpg-verify=false remote-test-nonphysical file://$(pwd)/testos-repo
-assert_not_file_has_content sysroot/ostree/repo/config remote-test-nonphysical
-assert_file_has_content ${deployment}/etc/ostree/remotes.d/remote-test-nonphysical.conf testos-repo
+assert_not_has_file ${deployment}/etc/ostree/remotes.d/remote-test-nonphysical.conf
+assert_file_has_content sysroot/ostree/repo/config remote-test-nonphysical
 echo "ok remote add nonphysical sysroot"
 
 # Test that setting add-remotes-config-dir to false adds a remote in the
@@ -310,6 +310,14 @@ ${CMD_PREFIX} ostree --sysroot=${deployment} remote add --set=gpg-verify=false r
 assert_not_has_file ${deployment}/etc/ostree/remotes.d/remote-test-config-dir.conf testos-repo
 assert_file_has_content sysroot/ostree/repo/config remote-test-config-dir
 echo "ok remote add nonphysical sysroot add-remotes-config-dir false"
+
+# And test that explicitly setting add-remotes-config-dir to true adds a remote
+# in the remotes config dir as with upstream OSTree.
+${CMD_PREFIX} ostree --repo=sysroot/ostree/repo config set core.add-remotes-config-dir true
+${CMD_PREFIX} ostree --sysroot=${deployment} remote add --set=gpg-verify=false remote-test-config-dir2 file://$(pwd)/testos-repo
+assert_file_has_content ${deployment}/etc/ostree/remotes.d/remote-test-config-dir2.conf testos-repo
+assert_not_file_has_content sysroot/ostree/repo/config remote-test-config-dir2
+echo "ok remote add nonphysical sysroot add-remotes-config-dir2 false"
 
 if env OSTREE_SYSROOT_DEBUG="${OSTREE_SYSROOT_DEBUG},test-fifreeze" \
        ${CMD_PREFIX} ostree admin deploy --os=testos testos:testos/buildmaster/x86_64-runtime 2>err.txt; then
