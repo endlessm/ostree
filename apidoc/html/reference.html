@@ -3,12 +3,12 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>API Reference: OSTree API references</title>
-<meta name="generator" content="DocBook XSL Stylesheets Vsnapshot">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="index.html" title="OSTree API references">
 <link rel="up" href="index.html" title="OSTree API references">
 <link rel="prev" href="index.html" title="OSTree API references">
 <link rel="next" href="ostree-Core-repository-independent-functions.html" title="Core repository-independent functions">
-<meta name="generator" content="GTK-Doc V1.27 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.28 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -254,15 +254,43 @@
 </dt>
 <dd></dd>
 <dt>
-OSTREE_CHECK_VERSION, macro in ostree-version
-</dt>
-<dd></dd>
-<dt>
 <a class="link" href="ostree-Core-repository-independent-functions.html#ostree-check-version" title="ostree_check_version ()">ostree_check_version</a>, function in <a class="link" href="ostree-Core-repository-independent-functions.html" title="Core repository-independent functions">Core repository-independent functions</a>
 </dt>
 <dd></dd>
 <dt>
 <a class="link" href="ostree-Core-repository-independent-functions.html#ostree-cmp-checksum-bytes" title="ostree_cmp_checksum_bytes ()">ostree_cmp_checksum_bytes</a>, function in <a class="link" href="ostree-Core-repository-independent-functions.html" title="Core repository-independent functions">Core repository-independent functions</a>
+</dt>
+<dd></dd>
+<dt>
+OstreeCollectionRefv, typedef in ostree-ref
+</dt>
+<dd></dd>
+<dt>
+ostree_collection_ref_dup, function in ostree-ref
+</dt>
+<dd></dd>
+<dt>
+ostree_collection_ref_dupv, function in ostree-ref
+</dt>
+<dd></dd>
+<dt>
+ostree_collection_ref_equal, function in ostree-ref
+</dt>
+<dd></dd>
+<dt>
+ostree_collection_ref_free, function in ostree-ref
+</dt>
+<dd></dd>
+<dt>
+ostree_collection_ref_freev, function in ostree-ref
+</dt>
+<dd></dd>
+<dt>
+ostree_collection_ref_hash, function in ostree-ref
+</dt>
+<dd></dd>
+<dt>
+ostree_collection_ref_new, function in ostree-ref
 </dt>
 <dd></dd>
 <dt>
@@ -614,7 +642,23 @@ OSTREE_CHECK_VERSION, macro in ostree-version
 </dt>
 <dd></dd>
 <dt>
-OSTREE_RELEASE_VERSION, macro in ostree-version
+OstreeRemote, struct in ostree-remote
+</dt>
+<dd></dd>
+<dt>
+ostree_remote_get_name, function in ostree-remote
+</dt>
+<dd></dd>
+<dt>
+ostree_remote_get_url, function in ostree-remote
+</dt>
+<dd></dd>
+<dt>
+ostree_remote_ref, function in ostree-remote
+</dt>
+<dd></dd>
+<dt>
+ostree_remote_unref, function in ostree-remote
 </dt>
 <dd></dd>
 <dt>
@@ -667,6 +711,30 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 <dd></dd>
 <dt>
 <a class="link" href="ostree-ostree-repo-file.html#OstreeRepoFile" title="OstreeRepoFile">OstreeRepoFile</a>, typedef in <a class="link" href="ostree-ostree-repo-file.html" title="ostree-repo-file">ostree-repo-file</a>
+</dt>
+<dd></dd>
+<dt>
+OstreeRepoFinder, struct in ostree-repo-finder
+</dt>
+<dd></dd>
+<dt>
+OstreeRepoFinderAvahi, struct in OstreeRepoFinderAvahi
+</dt>
+<dd></dd>
+<dt>
+OstreeRepoFinderConfig, struct in OstreeRepoFinderConfig
+</dt>
+<dd></dd>
+<dt>
+OstreeRepoFinderMount, struct in OstreeRepoFinderMount
+</dt>
+<dd></dd>
+<dt>
+OstreeRepoFinderOverride, struct in OstreeRepoFinderOverride
+</dt>
+<dd></dd>
+<dt>
+OstreeRepoFinderResultv, typedef in ostree-repo-finder
 </dt>
 <dd></dd>
 <dt>
@@ -878,7 +946,55 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 </dt>
 <dd></dd>
 <dt>
+ostree_repo_finder_resolve_all_async, function in ostree-repo-finder
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_finder_resolve_all_finish, function in ostree-repo-finder
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_finder_resolve_async, function in ostree-repo-finder
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_finder_resolve_finish, function in ostree-repo-finder
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_finder_result_compare, function in ostree-repo-finder
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_finder_result_dup, function in ostree-repo-finder
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_finder_result_free, function in ostree-repo-finder
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_finder_result_freev, function in ostree-repo-finder
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_finder_result_new, function in ostree-repo-finder
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_find_remotes_async, function in ostree-repo-experimental
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_find_remotes_finish, function in ostree-repo-experimental
+</dt>
+<dd></dd>
+<dt>
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-fsck-object" title="ostree_repo_fsck_object ()">ostree_repo_fsck_object</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_get_collection_id, function in ostree-misc-experimental
 </dt>
 <dd></dd>
 <dt>
@@ -950,6 +1066,10 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 </dt>
 <dd></dd>
 <dt>
+ostree_repo_list_collection_refs, function in ostree-misc-experimental
+</dt>
+<dd></dd>
+<dt>
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-list-commit-objects-starting-with" title="ostree_repo_list_commit_objects_starting_with ()">ostree_repo_list_commit_objects_starting_with</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
@@ -998,6 +1118,10 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 </dt>
 <dd></dd>
 <dt>
+OSTREE_REPO_METADATA_REF, macro in ostree-repo-experimental
+</dt>
+<dd></dd>
+<dt>
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-mode-from-string" title="ostree_repo_mode_from_string ()">ostree_repo_mode_from_string</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
@@ -1043,6 +1167,14 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 <dd></dd>
 <dt>
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-pull-default-console-progress-changed" title="ostree_repo_pull_default_console_progress_changed ()">ostree_repo_pull_default_console_progress_changed</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_pull_from_remotes_async, function in ostree-repo-experimental
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_pull_from_remotes_finish, function in ostree-repo-experimental
 </dt>
 <dd></dd>
 <dt>
@@ -1114,7 +1246,19 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 </dt>
 <dd></dd>
 <dt>
+ostree_repo_remote_list_collection_refs, function in ostree-misc-experimental
+</dt>
+<dd></dd>
+<dt>
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-remote-list-refs" title="ostree_repo_remote_list_refs ()">ostree_repo_remote_list_refs</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_resolve_collection_ref, function in ostree-misc-experimental
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_resolve_keyring_for_collection, function in ostree-repo-experimental
 </dt>
 <dd></dd>
 <dt>
@@ -1135,6 +1279,14 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 <dd></dd>
 <dt>
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-set-cache-dir" title="ostree_repo_set_cache_dir ()">ostree_repo_set_cache_dir</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_set_collection_id, function in ostree-misc-experimental
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_set_collection_ref_immediate, function in ostree-misc-experimental
 </dt>
 <dd></dd>
 <dt>
@@ -1159,6 +1311,10 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 <dd></dd>
 <dt>
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-static-delta-generate" title="ostree_repo_static_delta_generate ()">ostree_repo_static_delta_generate</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
+</dt>
+<dd></dd>
+<dt>
+ostree_repo_transaction_set_collection_ref, function in ostree-misc-experimental
 </dt>
 <dd></dd>
 <dt>
@@ -1191,6 +1347,10 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 <dd></dd>
 <dt>
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-traverse-parents-get-commits" title="ostree_repo_traverse_parents_get_commits ()">ostree_repo_traverse_parents_get_commits</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-traverse-reachable-refs" title="ostree_repo_traverse_reachable_refs ()">ostree_repo_traverse_reachable_refs</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
 <dt>
@@ -1356,6 +1516,10 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 <dd></dd>
 <dt>
 <a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-cleanup" title="ostree_sysroot_cleanup ()">ostree_sysroot_cleanup</a>, function in <a class="link" href="ostree-Root-partition-mount-point.html" title="Root partition mount point">Root partition mount point</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-cleanup-prune-repo" title="ostree_sysroot_cleanup_prune_repo ()">ostree_sysroot_cleanup_prune_repo</a>, function in <a class="link" href="ostree-Root-partition-mount-point.html" title="Root partition mount point">Root partition mount point</a>
 </dt>
 <dd></dd>
 <dt>
@@ -1569,6 +1733,10 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 </dt>
 <dd></dd>
 <dt>
+ostree_validate_collection_id, function in ostree-misc-experimental
+</dt>
+<dd></dd>
+<dt>
 <a class="link" href="ostree-Core-repository-independent-functions.html#ostree-validate-remote-name" title="ostree_validate_remote_name ()">ostree_validate_remote_name</a>, function in <a class="link" href="ostree-Core-repository-independent-functions.html" title="Core repository-independent functions">Core repository-independent functions</a>
 </dt>
 <dd></dd>
@@ -1604,26 +1772,9 @@ OSTREE_RELEASE_VERSION, macro in ostree-version
 <a class="link" href="ostree-Core-repository-independent-functions.html#ostree-validate-structureof-objtype" title="ostree_validate_structureof_objtype ()">ostree_validate_structureof_objtype</a>, function in <a class="link" href="ostree-Core-repository-independent-functions.html" title="Core repository-independent functions">Core repository-independent functions</a>
 </dt>
 <dd></dd>
-<dt>
-OSTREE_VERSION, macro in ostree-version
-</dt>
-<dd></dd>
-<dt>
-OSTREE_VERSION_HEX, macro in ostree-version
-</dt>
-<dd></dd>
-<dt>
-OSTREE_VERSION_S, macro in ostree-version
-</dt>
-<dd></dd>
-<a name="idxY"></a><h3 class="title">Y</h3>
-<dt>
-OSTREE_YEAR_VERSION, macro in ostree-version
-</dt>
-<dd></dd>
 </div>
 </div>
 <div class="footer">
-<hr>Generated by GTK-Doc V1.27</div>
+<hr>Generated by GTK-Doc V1.28</div>
 </body>
 </html>

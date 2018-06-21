@@ -25,6 +25,8 @@ Build-Depends:
  gtk-doc-tools <!nodoc>,
  libarchive-dev,
  libattr1-dev,
+ libavahi-client-dev (>= 0.6.31),
+ libavahi-glib-dev (>= 0.6.31),
  libcap-dev,
  libfuse-dev,
  libgirepository1.0-dev,
@@ -46,7 +48,7 @@ Build-Depends-Indep:
 Rules-Requires-Root: no
 Standards-Version: 4.1.4
 Homepage: https://github.com/ostreedev/ostree/
-Vcs-Git: https://salsa.debian.org/debian/ostree.git
+Vcs-Git: https://salsa.debian.org/debian/ostree.git -b debian/experimental
 Vcs-Browser: https://salsa.debian.org/debian/ostree
 
 Package: gir1.2-ostree-1.0

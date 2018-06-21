@@ -1070,15 +1070,27 @@ on_request_sent (GObject        *object,
                 soup_uri_to_string (soup_request_get_uri (pending->request), FALSE);
 
               GIOErrorEnum code;
+
               switch (msg->status_code)
                 {
-                case 404:
-                case 403:
-                case 410:
-                  code = G_IO_ERROR_NOT_FOUND;
+                /* These statuses are internal to libsoup, and not standard HTTP ones: */
+                case SOUP_STATUS_CANCELLED:
+                  code = G_IO_ERROR_CANCELLED;
+                  break;
+                case SOUP_STATUS_CANT_RESOLVE:
+                case SOUP_STATUS_CANT_CONNECT:
+                  code = G_IO_ERROR_HOST_NOT_FOUND;
+                  break;
+                case SOUP_STATUS_IO_ERROR:
+#if !GLIB_CHECK_VERSION(2, 44, 0)
+                  code = G_IO_ERROR_BROKEN_PIPE;
+#else
+                  code = G_IO_ERROR_CONNECTION_CLOSED;
+#endif
                   break;
                 default:
-                  code = G_IO_ERROR_FAILED;
+                  code = _ostree_fetcher_http_status_code_to_io_error (msg->status_code);
+                  break;
                 }
 
               {
