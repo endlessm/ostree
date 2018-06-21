@@ -1701,6 +1701,7 @@ am__EXEEXT_23 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-gpg-signed-commit.sh \
 	tests/test-admin-upgrade-unconfigured.sh \
 	tests/test-admin-upgrade-endoflife.sh \
+	tests/test-admin-upgrade-systemd-update.sh \
 	tests/test-admin-deploy-syslinux.sh \
 	tests/test-admin-deploy-2.sh tests/test-admin-deploy-karg.sh \
 	tests/test-admin-deploy-switch.sh \
@@ -1997,7 +1998,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 rustc = @rustc@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
@@ -2558,6 +2558,7 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-gpg-signed-commit.sh \
 	tests/test-admin-upgrade-unconfigured.sh \
 	tests/test-admin-upgrade-endoflife.sh \
+	tests/test-admin-upgrade-systemd-update.sh \
 	tests/test-admin-deploy-syslinux.sh \
 	tests/test-admin-deploy-2.sh tests/test-admin-deploy-karg.sh \
 	tests/test-admin-deploy-switch.sh \
@@ -7647,6 +7648,13 @@ tests/test-admin-upgrade-unconfigured.sh.log: tests/test-admin-upgrade-unconfigu
 tests/test-admin-upgrade-endoflife.sh.log: tests/test-admin-upgrade-endoflife.sh
 	@p='tests/test-admin-upgrade-endoflife.sh'; \
 	b='tests/test-admin-upgrade-endoflife.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-admin-upgrade-systemd-update.sh.log: tests/test-admin-upgrade-systemd-update.sh
+	@p='tests/test-admin-upgrade-systemd-update.sh'; \
+	b='tests/test-admin-upgrade-systemd-update.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
