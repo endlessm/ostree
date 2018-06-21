@@ -1,6 +1,5 @@
 ostree (2018.5+42+gecdebeb2-1) UNRELEASED; urgency=medium
 
-  * Switch to experimental branch
   * New upstream git snapshot with support for peer-to-peer software
     collections, required by Flatpak's peer-to-peer app sharing feature
     - d/copyright: Update
