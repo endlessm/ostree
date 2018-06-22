@@ -1,4 +1,4 @@
-ostree (2018.6-1) UNRELEASED; urgency=medium
+ostree (2018.6-1) unstable; urgency=medium
 
   * New upstream release with support for peer-to-peer software
     collections, required by Flatpak's peer-to-peer app sharing feature
@@ -10,7 +10,7 @@ ostree (2018.6-1) UNRELEASED; urgency=medium
     Add patch to avoid Flatpak test failures with this ostree if Avahi
     (or dbus-daemon --system) is not available on the build/test system
 
- -- Simon McVittie <smcv@debian.org>  Fri, 08 Jun 2018 09:10:21 +0100
+ -- Simon McVittie <smcv@debian.org>  Fri, 22 Jun 2018 21:05:29 +0100
 
 ostree (2018.5-2) unstable; urgency=medium
 
