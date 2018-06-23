@@ -10,6 +10,7 @@ when we try to use the client.
 Bug: https://github.com/ostreedev/ostree/issues/1618
 Signed-off-by: Simon McVittie <smcv@debian.org>
 Forwarded: https://github.com/ostreedev/ostree/pull/1639
+Applied-upstream: 2018.7, commit:https://github.com/ostreedev/ostree/commit/e120a6b1198aaa785533c76316898f15a804dae1
 ---
  src/libostree/ostree-repo-finder-avahi.c | 3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
