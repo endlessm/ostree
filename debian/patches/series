@@ -1,2 +1,3 @@
 lib-repo-Fix-32-bit-format-string-error.patch
 avahi-Fail-immediately-if-we-can-t-talk-to-D-Bus-or-Avahi.patch
+OstreeRepoFinderConfig-Fix-guint-gsize-confusion.patch

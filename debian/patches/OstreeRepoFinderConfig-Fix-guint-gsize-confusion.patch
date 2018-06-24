@@ -1,0 +1,52 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Sun, 24 Jun 2018 12:56:49 +0100
+Subject: OstreeRepoFinderConfig: Fix guint/gsize confusion
+
+If a function has a guint "out argument", passing a pointer to a gsize
+is not, in general, valid. On an ILP64 platform there is no problem
+since guint and gsize are identical, but on an LP64 platform it will
+overwrite only the first word of the gsize, leaving the second word
+unaffected. On little-endian machines, if the second word is
+zero-initialized (as it is here), the result is numerically equal to
+the guint, but on big-endian machines the result is around 4 billion
+times what it should be, resulting in
+ostree_repo_finder_config_resolve_async() reading past the end of
+the array and causing undefined behaviour.
+
+In practice this caused assertion failures (and consequently test
+failures) on Debian's s390x (z/Architecture), ppc64 (64-bit PowerPC)
+and sparc64 (64-bit SPARC) ports.
+
+Bug: https://github.com/ostreedev/ostree/issues/1640
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=902209
+Forwarded: https://github.com/ostreedev/ostree/pull/1641
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ src/libostree/ostree-repo-finder-config.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/libostree/ostree-repo-finder-config.c b/src/libostree/ostree-repo-finder-config.c
+index 4366d72..06f6165 100644
+--- a/src/libostree/ostree-repo-finder-config.c
++++ b/src/libostree/ostree-repo-finder-config.c
+@@ -96,7 +96,7 @@ ostree_repo_finder_config_resolve_async (OstreeRepoFinder                  *find
+   GHashTableIter iter;
+   const gchar *remote_name;
+   g_auto(GStrv) remotes = NULL;
+-  gsize n_remotes = 0;
++  guint n_remotes = 0;
+ 
+   task = g_task_new (finder, cancellable, callback, user_data);
+   g_task_set_source_tag (task, ostree_repo_finder_config_resolve_async);
+@@ -106,9 +106,9 @@ ostree_repo_finder_config_resolve_async (OstreeRepoFinder                  *find
+ 
+   /* List all remotes in this #OstreeRepo and see which of their ref lists
+    * intersect with @refs. */
+-  remotes = ostree_repo_remote_list (parent_repo, (guint *) &n_remotes);
++  remotes = ostree_repo_remote_list (parent_repo, &n_remotes);
+ 
+-  g_debug ("%s: Checking %" G_GSIZE_FORMAT " remotes", G_STRFUNC, n_remotes);
++  g_debug ("%s: Checking %u remotes", G_STRFUNC, n_remotes);
+ 
+   for (i = 0; i < n_remotes; i++)
+     {
