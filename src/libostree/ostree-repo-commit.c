@@ -1727,8 +1727,14 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
                                  GCancellable   *cancellable,
                                  GError        **error)
 {
+  g_autoptr(_OstreeRepoAutoTransaction) txn = NULL;
 
   g_return_val_if_fail (self->in_transaction == FALSE, FALSE);
+
+  g_debug ("Preparing transaction in repository %p", self);
+
+  /* Set up to abort the transaction if we return early from this function. */
+  txn = self;
 
   memset (&self->txn.stats, 0, sizeof (OstreeRepoTransactionStats));
 
@@ -1743,6 +1749,7 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
       struct statvfs stvfsbuf;
       if (TEMP_FAILURE_RETRY (fstatvfs (self->repo_dir_fd, &stvfsbuf)) < 0)
         return glnx_throw_errno_prefix (error, "fstatvfs");
+
       g_mutex_lock (&self->txn_lock);
       self->txn.blocksize = stvfsbuf.f_bsize;
       /* Convert fragment to blocks to compute the total */
@@ -1770,6 +1777,9 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
                                      &ret_transaction_resume,
                                      cancellable, error))
     return FALSE;
+
+  /* Success: do not abort the transaction when returning. */
+  txn = NULL;
 
   if (out_transaction_resume)
     *out_transaction_resume = ret_transaction_resume;
@@ -2256,6 +2266,8 @@ ostree_repo_commit_transaction (OstreeRepo                  *self,
 {
   g_return_val_if_fail (self->in_transaction == TRUE, FALSE);
 
+  g_debug ("Committing transaction in repository %p", self);
+
   if ((self->test_error_flags & OSTREE_REPO_TEST_ERROR_PRE_COMMIT) > 0)
     return glnx_throw (error, "OSTREE_REPO_TEST_ERROR_PRE_COMMIT specified");
 
@@ -2339,6 +2351,8 @@ ostree_repo_abort_transaction (OstreeRepo     *self,
   /* Note early return */
   if (!self->in_transaction)
     return TRUE;
+
+  g_debug ("Aborting transaction in repository %p", self);
 
   /* Do not propagate failures from cleanup_tmpdir() immediately, as we want
    * to clean up the rest of the internal transaction state first. */
