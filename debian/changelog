@@ -2,6 +2,7 @@ ostree (2018.6-4) UNRELEASED; urgency=medium
 
   * Use upstream default ${libexecdir} now that Debian Policy allows
     /usr/libexec (via FHS 3.0)
+  * Standards-Version: 4.1.5 (no changes required)
 
  -- Simon McVittie <smcv@debian.org>  Wed, 04 Jul 2018 13:37:44 +0100
 
