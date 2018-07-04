@@ -5,7 +5,7 @@ lib/systemd/system/ostree-finalize-staged.service
 lib/systemd/system/ostree-prepare-root.service
 lib/systemd/system/ostree-remount.service
 usr/lib/dracut/modules.d/98ostree
-usr/lib/libostree/grub2-15_ostree
 usr/lib/ostree/ostree-prepare-root
 usr/lib/ostree/ostree-remount
 usr/lib/tmpfiles.d/ostree-tmpfiles.conf
+usr/libexec/libostree/grub2-15_ostree

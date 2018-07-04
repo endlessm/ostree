@@ -1,3 +1,10 @@
+ostree (2018.6-4) UNRELEASED; urgency=medium
+
+  * Use upstream default ${libexecdir} now that Debian Policy allows
+    /usr/libexec (via FHS 3.0)
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 04 Jul 2018 13:37:44 +0100
+
 ostree (2018.6-3) unstable; urgency=medium
 
   * d/p/avahi-Fail-immediately-if-we-can-t-talk-to-D-Bus-or-Avahi.patch:
