@@ -1,3 +1,19 @@
+ostree (2018.6-3endless1) master; urgency=medium
+
+  * Resync Debian packaging changes (T23138):
+    - Drop all Debian patches since they're both upstream and in our fork
+    - Drop the Endless patch adding the locking API symbols to
+      libostree-1-1.symbols, since they were made private
+    - Move the new systemd service ostree-finalize-staged.service from
+      ostree-boot to ostree
+  * New upstream release
+    - Drop the Endless patch that added --enable-experimental-api since
+      the P2P API is public now
+    - Drop the experimental symbols from libostree-1-1.symbols now that
+      they're public
+
+ -- Matthew Leeds <matthew.leeds@endlessm.com>  Thu, 19 Jul 2018 16:30:00 -0700
+
 ostree (2018.6-3) unstable; urgency=medium
 
   * d/p/avahi-Fail-immediately-if-we-can-t-talk-to-D-Bus-or-Avahi.patch:
