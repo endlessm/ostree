@@ -1,5 +1,7 @@
 ostree (2018.7-1) UNRELEASED; urgency=medium
 
+  * Use upstream default ${libexecdir} now that Debian Policy allows
+    /usr/libexec (via FHS 3.0)
   * Standards-Version: 4.1.5 (no changes required)
   * New upstream release
     - d/libostree-1-1.symbols: Update
