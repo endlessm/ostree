@@ -6,6 +6,8 @@ ostree (2018.7-1) UNRELEASED; urgency=medium
   * New upstream release
     - d/libostree-1-1.symbols: Update
     - Drop all patches, applied upstream
+  * d/p/lib-pull-Fix-minor-memleak-in-error-path.patch:
+    Apply a memory leak fix from upstream
 
  -- Simon McVittie <smcv@debian.org>  Wed, 04 Jul 2018 13:37:44 +0100
 
