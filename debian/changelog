@@ -1,15 +1,17 @@
-ostree (2018.7-1) UNRELEASED; urgency=medium
+ostree (2018.7-1) unstable; urgency=medium
 
-  * Use upstream default ${libexecdir} now that Debian Policy allows
-    /usr/libexec (via FHS 3.0)
-  * Standards-Version: 4.1.5 (no changes required)
   * New upstream release
     - d/libostree-1-1.symbols: Update
     - Drop all patches, applied upstream
+    - d/copyright: Remove details of Rust files not included in this
+      release
   * d/p/lib-pull-Fix-minor-memleak-in-error-path.patch:
     Apply a memory leak fix from upstream
+  * Use upstream default ${libexecdir} now that Debian Policy allows
+    /usr/libexec (via FHS 3.0)
+  * Standards-Version: 4.1.5 (no changes required)
 
- -- Simon McVittie <smcv@debian.org>  Wed, 04 Jul 2018 13:37:44 +0100
+ -- Simon McVittie <smcv@debian.org>  Wed, 25 Jul 2018 23:46:29 +0100
 
 ostree (2018.6-3) unstable; urgency=medium
 
