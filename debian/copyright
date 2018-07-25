@@ -72,25 +72,10 @@ License: GPL-3+ with Autoconf exception
 
 Files:
  bsdiff/*
- rust/src/bupsplit.rs
 Copyright:
  © 2003-2005 Colin Percival
- © 2011 Avery Pennarun
  © 2012 Matthew Endsley
- © 2017 Colin Walters
 License: BSD-2-clause
-
-Files:
- rust/vendor/libc/*
-Copyright:
- © 2012-2017 The Rust Project Developers
-License: Apache-2.0 or Expat
-Comment:
- Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
- http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
- <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
- option. This file may not be copied, modified, or distributed
- except according to those terms.
 
 Files: debian/*
 Copyright:
@@ -262,35 +247,3 @@ License: BSD-3-clause
  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-License: Apache-2.0
- Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
- http://www.apache.org/licenses/LICENSE-2.0>
-Comment:
- On Debian systems, the full text of the Apache License version 2.0
- can be found in the file '/usr/share/common-licenses/Apache-2.0'.
-
-License: Expat
- Permission is hereby granted, free of charge, to any
- person obtaining a copy of this software and associated
- documentation files (the "Software"), to deal in the
- Software without restriction, including without
- limitation the rights to use, copy, modify, merge,
- publish, distribute, sublicense, and/or sell copies of
- the Software, and to permit persons to whom the Software
- is furnished to do so, subject to the following
- conditions:
- .
- The above copyright notice and this permission notice
- shall be included in all copies or substantial portions
- of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
- ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
- TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
- PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
- SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
- IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- DEALINGS IN THE SOFTWARE.
