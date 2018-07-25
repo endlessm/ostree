@@ -26,6 +26,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2018.3@LIBOSTREE_2018.3 2018.3
  LIBOSTREE_2018.5@LIBOSTREE_2018.5 2018.5
  LIBOSTREE_2018.6@LIBOSTREE_2018.6 2018.6
+ LIBOSTREE_2018.7@LIBOSTREE_2018.7 2018.7
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
@@ -131,8 +132,10 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_gpg_verify_result_require_valid_signature@LIBOSTREE_2016.6 2016.6
  ostree_hash_object_name@LIBOSTREE_2016.3 2016.4
  ostree_metadata_variant_type@LIBOSTREE_2016.3 2016.4
+ ostree_mutable_tree_check_error@LIBOSTREE_2018.7 2018.7
  ostree_mutable_tree_ensure_dir@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_ensure_parent_dirs@LIBOSTREE_2016.3 2016.4
+ ostree_mutable_tree_fill_empty_from_dirtree@LIBOSTREE_2018.7 2018.7
  ostree_mutable_tree_get_contents_checksum@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_get_files@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_get_metadata_checksum@LIBOSTREE_2016.3 2016.4
@@ -140,6 +143,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_mutable_tree_get_type@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_lookup@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_new@LIBOSTREE_2016.3 2016.4
+ ostree_mutable_tree_new_from_checksum@LIBOSTREE_2018.7 2018.7
  ostree_mutable_tree_replace_file@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_set_contents_checksum@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_set_metadata_checksum@LIBOSTREE_2016.3 2016.4
