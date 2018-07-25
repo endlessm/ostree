@@ -239,6 +239,8 @@
     <keyword type="enum" name="enum OstreeRepoPruneFlags" link="ostree-OstreeRepo.html#OstreeRepoPruneFlags"/>
     <keyword type="enum" name="enum OstreeRepoPullFlags" link="ostree-OstreeRepo.html#OstreeRepoPullFlags"/>
     <keyword type="function" name="ostree_mutable_tree_new ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-new"/>
+    <keyword type="function" name="ostree_mutable_tree_new_from_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-new-from-checksum"/>
+    <keyword type="function" name="ostree_mutable_tree_check_error ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-check-error" since="2018.7"/>
     <keyword type="function" name="ostree_mutable_tree_set_metadata_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-set-metadata-checksum"/>
     <keyword type="function" name="ostree_mutable_tree_get_metadata_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-get-metadata-checksum"/>
     <keyword type="function" name="ostree_mutable_tree_set_contents_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-set-contents-checksum"/>
@@ -250,6 +252,7 @@
     <keyword type="function" name="ostree_mutable_tree_walk ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-walk"/>
     <keyword type="function" name="ostree_mutable_tree_get_subdirs ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-get-subdirs"/>
     <keyword type="function" name="ostree_mutable_tree_get_files ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-get-files"/>
+    <keyword type="function" name="ostree_mutable_tree_fill_empty_from_dirtree ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-fill-empty-from-dirtree"/>
     <keyword type="typedef" name="OstreeMutableTree" link="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree"/>
     <keyword type="function" name="ostree_sysroot_new ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-new"/>
     <keyword type="function" name="ostree_sysroot_new_default ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-new-default"/>

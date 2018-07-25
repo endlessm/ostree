@@ -121,15 +121,18 @@ Boston, MA 02111-1307, USA.
         <term><varname>min-free-space-percent</varname></term>
         <listitem><para>Integer percentage value (0-99) that specifies a minimum
         percentage of total space (in blocks) in the underlying filesystem to
-        keep free. The default value is 3.</para></listitem>
+        keep free. The default value is 3.</para>
+        <para>In case this option is co-existing with min-free-space-size (see below),
+        it would be ignored and min-free-space-size check would be enforced instead.
+        </para></listitem>
       </varlistentry>
 
      <varlistentry>
         <term><varname>min-free-space-size</varname></term>
-        <listitem><para>Value (in MB, GB or TB) that specifies a minimum space (in blocks)
-        in the underlying filesystem to keep free. Also, note that min-free-space-percent
+        <listitem><para>Value (in MB, GB or TB) that specifies a minimum space in the
+        underlying filesystem to keep free. Also, note that min-free-space-percent
         and min-free-space-size are mutually exclusive. Examples of acceptable values:
-        500MB, 1GB etc.
+        500MB, 1GB etc. The default value is 0MB, which disables this check.
         </para></listitem>
       </varlistentry>
 
@@ -158,6 +161,15 @@ Boston, MA 02111-1307, USA.
         <term><varname>payload-link-threshold</varname></term>
         <listitem><para>An integer value that specifies a minimum file size for creating
         a payload link.  By default it is disabled.
+        </para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>collection-id</varname></term>
+        <listitem><para>A reverse DNS domain name under your control, which enables peer
+        to peer distribution of refs in this repository. See the
+        <literal>--collection-id</literal> section in
+        <citerefentry><refentrytitle>ostree-init</refentrytitle><manvolnum>1</manvolnum></citerefentry>
         </para></listitem>
       </varlistentry>
 

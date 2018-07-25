@@ -46,13 +46,8 @@ main(int argc, char *argv[])
   struct stat stbuf;
   int i;
 
-  /* See comments in ostree-prepare-root.c for this.
-   *
-   * This service is triggered via
-   * ConditionKernelCommandLine=ostree
-   * but it's a lot easier for various bits of userspace to check for
-   * a file versus parsing the kernel cmdline.  So let's ensure
-   * the stamp file is created here too.
+  /* When systemd is in use this is normally created via the generator, but
+   * we ensure it's created here as well for redundancy.
    */
   touch_run_ostree ();
 
@@ -94,7 +89,7 @@ main(int argc, char *argv[])
       /* It's a mounted, read-only fs; remount it */
       if (mount (target, target, NULL, MS_REMOUNT | MS_SILENT, NULL) < 0)
         {
-          /* Also ignore ENINVAL - if the target isn't a mountpoint
+          /* Also ignore EINVAL - if the target isn't a mountpoint
            * already, then assume things are OK.
            */
           if (errno != EINVAL)

@@ -34,6 +34,14 @@ else
 fi
 . ${test_srcdir}/libtest-core.sh
 
+save_core() {
+  if [ -e core ]; then
+    cp core "$test_srcdir/core"
+  fi
+}
+
+trap save_core EXIT;
+
 test_tmpdir=$(pwd)
 
 # Sanity check that we're in a tmpdir that has
@@ -639,4 +647,13 @@ assert_not_ref () {
     if ${CMD_PREFIX} ostree rev-parse --repo=$1 $2 2>/dev/null; then
         fatal "rev-parse $2 unexpectedly succeeded!"
     fi
+}
+
+assert_fail () {
+  set +e
+  $@
+  if [ $? = 0 ] ; then
+    echo 1>&2 "$@ did not fail"; exit 1
+  fi
+  set -euo pipefail
 }

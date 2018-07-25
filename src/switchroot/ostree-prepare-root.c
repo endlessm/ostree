@@ -151,13 +151,16 @@ main(int argc, char *argv[])
   if (chdir (deploy_path) < 0)
     err (EXIT_FAILURE, "failed to chdir to deploy_path");
 
+  /* Default to true, but in the systemd case, default to false because it's handled by
+   * ostree-system-generator. */
   bool mount_var = true;
-  /* In the systemd case, this is handled by ostree-system-generator by default */
-#ifndef HAVE_SYSTEMD_AND_LIBMOUNT
-  /* file in /run can override that behaviour */
-  if (lstat (INITRAMFS_MOUNT_VAR, &stbuf) < 0)
-    mount_var = false;
+#ifdef HAVE_SYSTEMD_AND_LIBMOUNT
+  mount_var = false;
 #endif
+
+  /* file in /run can override the default behaviour so that we definitely mount /var */
+  if (lstat (INITRAMFS_MOUNT_VAR, &stbuf) == 0)
+    mount_var = true;
 
   /* Link to the deployment's /var */
   if (mount_var && mount ("../../var", "var", NULL, MS_MGC_VAL|MS_BIND, NULL) < 0)
@@ -207,8 +210,9 @@ main(int argc, char *argv[])
 
 
   /* We only stamp /run now if we're running in an initramfs, i.e. we're
-   * not pid 1.  Otherwise it's handled later via ostree-remount.service.
+   * not pid 1.  Otherwise it's handled later via ostree-system-generator.
    * https://mail.gnome.org/archives/ostree-list/2018-March/msg00012.html
+   * https://github.com/ostreedev/ostree/pull/1675
    */
   if (!running_as_pid1)
     touch_run_ostree ();
