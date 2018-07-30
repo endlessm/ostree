@@ -1,3 +1,12 @@
+ostree (2018.7-2) UNRELEASED; urgency=medium
+
+  * d/p/debian/Skip-test-pull-repeated-during-CI.patch:
+    Skip a test that is non-deterministic and can spuriously fail,
+    which is not suitable for build-time testing or gating migration in
+    autopkgtest.
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 30 Jul 2018 16:51:32 +0100
+
 ostree (2018.7-1) unstable; urgency=medium
 
   * New upstream release
