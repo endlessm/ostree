@@ -23,6 +23,10 @@ set -euo pipefail
 
 . $(dirname $0)/libtest.sh
 
+if [ "${OSTREE_TEST_ALLOW_RANDOM:-}" != 1 ]; then
+    skip "Non-deterministic test will fail if we are unlucky"
+fi
+
 COMMIT_SIGN=""
 if has_gpgme; then
     COMMIT_SIGN="--gpg-homedir=${TEST_GPG_KEYHOME} --gpg-sign=${TEST_GPG_KEYID_1}"
