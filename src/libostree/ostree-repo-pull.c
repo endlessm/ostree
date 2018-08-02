@@ -4000,7 +4000,10 @@ ostree_repo_pull_with_options_internal (OstreeRepo           *self,
       goto out;
 
     if (bytes_summary)
-      summary_from_cache = TRUE;
+      {
+        g_debug ("Loaded %s summary from cache", remote_name_or_baseurl);
+        summary_from_cache = TRUE;
+      }
 
     if (!pull_data->summary && !bytes_summary)
       {
