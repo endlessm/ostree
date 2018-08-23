@@ -2486,7 +2486,10 @@ process_one_static_delta (OtPullData                 *pull_data,
                                                OSTREE_STATIC_DELTA_OPEN_FLAGS_SKIP_CHECKSUM,
                                                NULL, &inline_delta_part,
                                                cancellable, error))
-            return FALSE;
+            {
+              fetch_static_delta_data_free (fetch_data);
+              return FALSE;
+            }
 
           _ostree_static_delta_part_execute_async (pull_data->repo,
                                                    fetch_data->objects,
@@ -3345,6 +3348,19 @@ initiate_request (OtPullData                 *pull_data,
       return TRUE;
     }
 
+  /* If doing a delta from a ref, look up the from-revision, since we need it
+   * on most paths below. */
+  if (ref != NULL)
+    {
+      g_autofree char *refspec = NULL;
+      if (pull_data->remote_name != NULL)
+        refspec = g_strdup_printf ("%s:%s", pull_data->remote_name, ref->ref_name);
+      if (!ostree_repo_resolve_rev (pull_data->repo,
+                                    refspec ?: ref->ref_name, TRUE,
+                                    &delta_from_revision, error))
+        return FALSE;
+    }
+
   /* If we have a summary, we can use the newer logic */
   if (pull_data->summary)
     {
@@ -3372,7 +3388,16 @@ initiate_request (OtPullData                 *pull_data,
           enqueue_one_static_delta_superblock_request (pull_data, deltares.from_revision, to_revision, ref);
           break;
         case DELTA_SEARCH_RESULT_SCRATCH:
-          enqueue_one_static_delta_superblock_request (pull_data, NULL, to_revision, ref);
+          {
+            /* If a from-scratch delta is available, we don’t want to use it if
+             * the ref already exists locally, since we are likely only a few
+             * commits out of date; so doing an object pull is likely more
+             * bandwidth efficient. */
+            if (delta_from_revision != NULL)
+              queue_scan_one_metadata_object (pull_data, to_revision, OSTREE_OBJECT_TYPE_COMMIT, NULL, 0, ref);
+            else
+              enqueue_one_static_delta_superblock_request (pull_data, NULL, to_revision, ref);
+          }
           break;
         case DELTA_SEARCH_RESULT_UNCHANGED:
           {
@@ -3392,13 +3417,6 @@ initiate_request (OtPullData                 *pull_data,
     {
       /* Are we doing a delta via a ref?  In that case we can fall back to the older
        * logic of just using the current tip of the ref as a delta FROM source. */
-      g_autofree char *refspec = NULL;
-      if (pull_data->remote_name != NULL)
-        refspec = g_strdup_printf ("%s:%s", pull_data->remote_name, ref->ref_name);
-      if (!ostree_repo_resolve_rev (pull_data->repo,
-                                    refspec ?: ref->ref_name, TRUE,
-                                    &delta_from_revision, error))
-        return FALSE;
 
       /* Determine whether the from revision we have is partial; this
        * can happen if e.g. one uses `ostree pull --commit-metadata-only`.
@@ -3983,7 +4001,10 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       goto out;
 
     if (bytes_summary)
-      summary_from_cache = TRUE;
+      {
+        g_debug ("Loaded %s summary from cache", remote_name_or_baseurl);
+        summary_from_cache = TRUE;
+      }
 
     if (!pull_data->summary && !bytes_summary)
       {
@@ -4021,12 +4042,53 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     if (pull_data->gpg_verify_summary && bytes_summary && bytes_sig)
       {
         g_autoptr(OstreeGpgVerifyResult) result = NULL;
+        g_autoptr(GError) temp_error = NULL;
 
         result = ostree_repo_verify_summary (self, pull_data->remote_name,
                                              bytes_summary, bytes_sig,
-                                             cancellable, error);
-        if (!ostree_gpg_verify_result_require_valid_signature (result, error))
-          goto out;
+                                             cancellable, &temp_error);
+        if (!ostree_gpg_verify_result_require_valid_signature (result, &temp_error))
+          {
+            if (summary_from_cache)
+              {
+                /* The cached summary doesn't match, fetch a new one and verify again */
+                if ((self->test_error_flags & OSTREE_REPO_TEST_ERROR_INVALID_CACHE) > 0)
+                  {
+                    g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                                 "Remote %s cached summary invalid and "
+                                 "OSTREE_REPO_TEST_ERROR_INVALID_CACHE specified",
+                                 pull_data->remote_name);
+                    goto out;
+                  }
+                else
+                  g_debug ("Remote %s cached summary invalid, pulling new version",
+                           pull_data->remote_name);
+
+                summary_from_cache = FALSE;
+                g_clear_pointer (&bytes_summary, (GDestroyNotify)g_bytes_unref);
+                if (!_ostree_fetcher_mirrored_request_to_membuf (pull_data->fetcher,
+                                                                 pull_data->meta_mirrorlist,
+                                                                 "summary",
+                                                                 OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
+                                                                 pull_data->n_network_retries,
+                                                                 &bytes_summary,
+                                                                 OSTREE_MAX_METADATA_SIZE,
+                                                                 cancellable, error))
+                  goto out;
+
+                g_autoptr(OstreeGpgVerifyResult) retry =
+                  ostree_repo_verify_summary (self, pull_data->remote_name,
+                                              bytes_summary, bytes_sig,
+                                              cancellable, error);
+                if (!ostree_gpg_verify_result_require_valid_signature (retry, error))
+                  goto out;
+              }
+            else
+              {
+                g_propagate_error (error, g_steal_pointer (&temp_error));
+                goto out;
+              }
+          }
       }
 
     if (bytes_summary)
@@ -4131,7 +4193,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
           {
             const char *delta;
             g_autoptr(GVariant) csum_v = NULL;
-            guchar *csum_data = g_malloc (OSTREE_SHA256_DIGEST_LEN);
             g_autoptr(GVariant) ref = g_variant_get_child_value (deltas, i);
 
             g_variant_get_child (ref, 0, "&s", &delta);
@@ -4140,6 +4201,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
             if (!validate_variant_is_csum (csum_v, error))
               goto out;
 
+            guchar *csum_data = g_malloc (OSTREE_SHA256_DIGEST_LEN);
             memcpy (csum_data, ostree_checksum_bytes_peek (csum_v), 32);
             g_hash_table_insert (pull_data->summary_deltas_checksums,
                                  g_strdup (delta),
@@ -5255,8 +5317,9 @@ find_remotes_cb (GObject      *obj,
                                             summary_bytes, FALSE);
 
       /* Check the summary’s additional metadata and set up @commit_metadata
-       * and @refs_and_remotes_table with all the refs listed in the summary
-       * file which intersect with @refs. */
+       * and @refs_and_remotes_table with the refs listed in the summary file,
+       * filtered by the keyring associated with this result and the
+       * intersection with @refs. */
       additional_metadata_v = g_variant_get_child_value (summary_v, 1);
 
       if (g_variant_lookup (additional_metadata_v, OSTREE_SUMMARY_COLLECTION_ID, "s", &summary_collection_id))
@@ -5277,6 +5340,13 @@ find_remotes_cb (GObject      *obj,
       while (summary_collection_map != NULL &&
              g_variant_iter_loop (summary_collection_map, "{s@a(s(taya{sv}))}", &summary_collection_id, &summary_refs))
         {
+          /* Exclude refs that don't use the associated keyring if this is a
+           * dynamic remote, by comparing against the collection ID of the
+           * remote this one inherits from */
+          if (result->remote->refspec_name != NULL &&
+              !check_remote_matches_collection_id (self, result->remote->refspec_name, summary_collection_id))
+            continue;
+
           if (!find_remotes_process_refs (self, refs, result, i, summary_collection_id, summary_refs,
                                           commit_metadatas, refs_and_remotes_table))
             {
@@ -5656,7 +5726,7 @@ copy_option (GVariantDict       *master_options,
 {
   g_autoptr(GVariant) option_v = g_variant_dict_lookup_value (master_options, key, expected_type);
   if (option_v != NULL)
-    g_variant_dict_insert_value (slave_options, key, g_steal_pointer (&option_v));
+    g_variant_dict_insert_value (slave_options, key, option_v);
 }
 
 /**

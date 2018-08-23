@@ -1187,6 +1187,7 @@ ostree_repo_init (OstreeRepo *self)
   static gsize gpgme_initialized;
   const GDebugKey test_error_keys[] = {
     { "pre-commit", OSTREE_REPO_TEST_ERROR_PRE_COMMIT },
+    { "invalid-cache", OSTREE_REPO_TEST_ERROR_INVALID_CACHE },
   };
 
   if (g_once_init_enter (&gpgme_initialized))
@@ -1440,12 +1441,10 @@ ostree_repo_copy_config (OstreeRepo *self)
 /**
  * ostree_repo_write_config:
  * @self: Repo
- * @new_config: Overwrite the config file with this data.  Do not change later!
+ * @new_config: Overwrite the config file with this data
  * @error: a #GError
  *
- * Save @new_config in place of this repository's config file.  Note
- * that @new_config should not be modified after - this function
- * simply adds a reference.
+ * Save @new_config in place of this repository's config file.
  */
 gboolean
 ostree_repo_write_config (OstreeRepo *self,
@@ -4611,8 +4610,9 @@ ostree_repo_pull_default_console_progress_changed (OstreeAsyncProgress *progress
 
           if (bytes_sec > 0)
             {
-              /* MAX(0, value) here just to be defensive */
-              guint64 est_time_remaining = MAX(0, (total_delta_part_size - fetched_delta_part_size)) / bytes_sec;
+              guint64 est_time_remaining = 0;
+              if (total_delta_part_size > fetched_delta_part_size)
+                est_time_remaining = (total_delta_part_size - fetched_delta_part_size) / bytes_sec;
               g_autofree char *formatted_est_time_remaining = _formatted_time_remaining_from_seconds (est_time_remaining);
               /* No space between %s and remaining, since formatted_est_time_remaining has a trailing space */
               g_string_append_printf (buf, "Receiving delta parts: %u/%u %s/%s %s/s %sremaining",
@@ -4891,7 +4891,7 @@ ostree_repo_add_gpg_signature_summary (OstreeRepo     *self,
   g_autoptr(GVariant) metadata = NULL;
   if (!ot_openat_ignore_enoent (self->repo_dir_fd, "summary.sig", &fd, error))
     return FALSE;
-  if (fd != -1)
+  if (fd >= 0)
     {
       if (!ot_variant_read_fd (fd, 0, G_VARIANT_TYPE (OSTREE_SUMMARY_SIG_GVARIANT_STRING),
                                FALSE, &metadata, error))
@@ -5384,8 +5384,8 @@ summary_add_ref_entry (OstreeRepo       *self,
  * regular, setting the `ostree.summary.expires` key in @additional_metadata
  * will aid clients in working out when to check for updates.
  *
- * It is regenerated automatically after a commit if
- * `core/commit-update-summary` is set.
+ * It is regenerated automatically after any ref is
+ * added, removed, or updated if `core/auto-update-summary` is set.
  *
  * If the `core/collection-id` key is set in the configuration, it will be
  * included as %OSTREE_SUMMARY_COLLECTION_ID in the summary file. Refs that
@@ -5393,6 +5393,8 @@ summary_add_ref_entry (OstreeRepo       *self,
  * file, listed under the %OSTREE_SUMMARY_COLLECTION_MAP key. Collection IDs
  * and refs in %OSTREE_SUMMARY_COLLECTION_MAP are guaranteed to be in
  * lexicographic order.
+ *
+ * Locking: exclusive
  */
 gboolean
 ostree_repo_regenerate_summary (OstreeRepo     *self,
@@ -5400,6 +5402,18 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
                                 GCancellable   *cancellable,
                                 GError        **error)
 {
+  /* Take an exclusive lock. This makes sure the commits and deltas don't get
+   * deleted while generating the summary. It also means we can be sure refs
+   * won't be created/updated/deleted during the operation, without having to
+   * add exclusive locks to those operations which would prevent concurrent
+   * commits from working.
+   */
+  g_autoptr(OstreeRepoAutoLock) lock = NULL;
+  lock = _ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE,
+                                      cancellable, error);
+  if (!lock)
+    return FALSE;
+
   g_auto(GVariantDict) additional_metadata_builder = OT_VARIANT_BUILDER_INITIALIZER;
   g_variant_dict_init (&additional_metadata_builder, additional_metadata);
   g_autoptr(GVariantBuilder) refs_builder = g_variant_builder_new (G_VARIANT_TYPE ("a(s(taya{sv}))"));
@@ -5572,6 +5586,37 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
     return FALSE;
 
   if (!ot_ensure_unlinked_at (self->repo_dir_fd, "summary.sig", error))
+    return FALSE;
+
+  return TRUE;
+}
+
+/* Regenerate the summary if `core/auto-update-summary` is set. We default to FALSE for
+ * this setting because OSTree supports multiple processes committing to the same repo (but
+ * different refs) concurrently, and in fact gnome-continuous actually does this.  In that
+ * context it's best to update the summary explicitly once at the end of multiple
+ * transactions instead of automatically here.  `auto-update-summary` only updates
+ * atomically within a transaction. */
+gboolean
+_ostree_repo_maybe_regenerate_summary (OstreeRepo    *self,
+                                       GCancellable  *cancellable,
+                                       GError       **error)
+{
+  gboolean auto_update_summary;
+  if (!ot_keyfile_get_boolean_with_default (self->config, "core",
+                                            "auto-update-summary", FALSE,
+                                            &auto_update_summary, error))
+    return FALSE;
+
+  /* Deprecated alias for `auto-update-summary`. */
+  gboolean commit_update_summary;
+  if (!ot_keyfile_get_boolean_with_default (self->config, "core",
+                                            "commit-update-summary", FALSE,
+                                            &commit_update_summary, error))
+    return FALSE;
+
+  if ((auto_update_summary || commit_update_summary) &&
+      !ostree_repo_regenerate_summary (self, NULL, cancellable, error))
     return FALSE;
 
   return TRUE;
