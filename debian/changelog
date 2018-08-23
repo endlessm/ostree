@@ -1,11 +1,12 @@
-ostree (2018.8-1) UNRELEASED; urgency=medium
+ostree (2018.8-1) unstable; urgency=medium
 
   * New upstream release
     - d/p/debian/Skip-test-pull-repeated-during-CI.patch:
       Drop, applied upstream
     - d/copyright: Update
+  * Standards-Version: 4.2.0 (no changes required)
 
- -- Simon McVittie <smcv@debian.org>  Thu, 23 Aug 2018 13:17:19 +0100
+ -- Simon McVittie <smcv@debian.org>  Thu, 23 Aug 2018 13:19:00 +0100
 
 ostree (2018.7-2) unstable; urgency=medium
 
