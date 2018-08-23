@@ -1737,9 +1737,9 @@ am__EXEEXT_23 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-remote-add-collections.sh \
 	tests/test-repo-finder-mount-integration.sh \
 	tests/test-summary-collections.sh \
-	tests/test-pull-collections.sh $(am__EXEEXT_2) \
-	$(am__EXEEXT_20) $(am__append_67) $(am__append_70) \
-	$(am__EXEEXT_22)
+	tests/test-pull-collections.sh tests/test-config.sh \
+	$(am__EXEEXT_2) $(am__EXEEXT_20) $(am__append_67) \
+	$(am__append_70) $(am__EXEEXT_22)
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_24 =  \
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_23)
 am__EXEEXT_25 = $(am__EXEEXT_2) $(am__EXEEXT_24)
@@ -2597,8 +2597,9 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-remote-add-collections.sh \
 	tests/test-repo-finder-mount-integration.sh \
 	tests/test-summary-collections.sh \
-	tests/test-pull-collections.sh $(NULL) $(am__append_65) \
-	$(am__append_67) $(am__append_70) $(am__append_71)
+	tests/test-pull-collections.sh tests/test-config.sh $(NULL) \
+	$(am__append_65) $(am__append_67) $(am__append_70) \
+	$(am__append_71)
 experimental_test_scripts = \
 	$(NULL)
 
@@ -7944,6 +7945,13 @@ tests/test-pull-collections.sh.log: tests/test-pull-collections.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-config.sh.log: tests/test-config.sh
+	@p='tests/test-config.sh'; \
+	b='tests/test-config.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/test-rofiles-fuse.sh.log: tests/test-rofiles-fuse.sh
 	@p='tests/test-rofiles-fuse.sh'; \
 	b='tests/test-rofiles-fuse.sh'; \
@@ -8575,7 +8583,8 @@ src/ostree/parse-datetime.c: src/ostree/parse-datetime.y Makefile
 @BUILDOPT_USE_STATIC_COMPILER_TRUE@	$(STATIC_COMPILER) -o $@ -static $(top_srcdir)/src/switchroot/ostree-prepare-root.c $(ostree_prepare_root_CPPFLAGS) $(AM_CFLAGS) $(DEFAULT_INCLUDES)
 
 tests/libreaddir-rand.so: Makefile
-	$(AM_V_GEN) ln -fns ../.libs/libreaddir-rand.so tests
+	mkdir -p tests/
+	$(AM_V_GEN) ln -fns ../.libs/libreaddir-rand.so tests/
 
 tests/%-symlink-stamp: % Makefile
 	$(AM_V_GEN) set -e; \

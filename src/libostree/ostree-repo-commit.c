@@ -445,10 +445,10 @@ throw_min_free_space_error (OstreeRepo  *self,
   else
     err_msg  = "would be exceeded";
 
-  if (self->min_free_space_percent > 0)
-    return glnx_throw (error, "min-free-space-percent '%u%%' %s", self->min_free_space_percent, err_msg);
-  else
+  if (self->min_free_space_mb > 0)
     return glnx_throw (error, "min-free-space-size %" G_GUINT64_FORMAT "MB %s", self->min_free_space_mb, err_msg);
+  else
+    return glnx_throw (error, "min-free-space-percent '%u%%' %s", self->min_free_space_percent, err_msg);
 }
 
 typedef struct {
@@ -1295,6 +1295,7 @@ write_metadata_object (OstreeRepo         *self,
   char actual_checksum[OSTREE_SHA256_STRING_LEN+1];
   if (is_tombstone)
     {
+      g_assert (expected_checksum != NULL);
       memcpy (actual_checksum, expected_checksum, sizeof (actual_checksum));
     }
   else
@@ -2194,11 +2195,19 @@ ostree_repo_commit_transaction (OstreeRepo                  *self,
   if (self->txn.refs)
     if (!_ostree_repo_update_refs (self, self->txn.refs, cancellable, error))
       return FALSE;
-  g_clear_pointer (&self->txn.refs, g_hash_table_destroy);
 
   if (self->txn.collection_refs)
     if (!_ostree_repo_update_collection_refs (self, self->txn.collection_refs, cancellable, error))
       return FALSE;
+
+  /* Update the summary if auto-update-summary is set, because doing so was
+   * delayed for each ref change during the transaction.
+   */
+  if ((self->txn.refs || self->txn.collection_refs) &&
+      !_ostree_repo_maybe_regenerate_summary (self, cancellable, error))
+    return FALSE;
+
+  g_clear_pointer (&self->txn.refs, g_hash_table_destroy);
   g_clear_pointer (&self->txn.collection_refs, g_hash_table_destroy);
 
   self->in_transaction = FALSE;
@@ -3309,6 +3318,7 @@ write_dir_entry_to_mtree_internal (OstreeRepo                  *self,
     }
   else
     {
+      g_assert (dfd_iter != NULL);
       g_auto(GLnxDirFdIterator) child_dfd_iter = { 0, };
 
       if (!glnx_dirfd_iterator_init_at (dfd_iter->fd, name, FALSE, &child_dfd_iter, error))

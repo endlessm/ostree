@@ -1144,6 +1144,11 @@ _ostree_repo_write_ref (OstreeRepo                 *self,
   if (!_ostree_repo_update_mtime (self, error))
     return FALSE;
 
+  /* Update the summary after updating the mtime so the summary doesn't look
+   * out of date */
+  if (!self->in_transaction && !_ostree_repo_maybe_regenerate_summary (self, cancellable, error))
+    return FALSE;
+
   return TRUE;
 }
 
@@ -1153,17 +1158,10 @@ _ostree_repo_update_refs (OstreeRepo        *self,
                           GCancellable      *cancellable,
                           GError           **error)
 {
-  GHashTableIter hash_iter;
-  gpointer key, value;
-
-  g_hash_table_iter_init (&hash_iter, refs);
-  while (g_hash_table_iter_next (&hash_iter, &key, &value))
+  GLNX_HASH_TABLE_FOREACH_KV (refs, const char*, refspec, const char*, rev)
     {
-      const char *refspec = key;
-      const char *rev = value;
       g_autofree char *remote = NULL;
       g_autofree char *ref_name = NULL;
-
       if (!ostree_parse_refspec (refspec, &remote, &ref_name, error))
         return FALSE;
 
@@ -1253,7 +1251,6 @@ ostree_repo_list_collection_refs (OstreeRepo                 *self,
                                         (GDestroyNotify) ostree_collection_ref_free,
                                         g_free);
 
-  g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
   g_autoptr(GString) base_path = g_string_new ("");
 
   const gchar *main_collection_id = ostree_repo_get_collection_id (self);
@@ -1279,6 +1276,8 @@ ostree_repo_list_collection_refs (OstreeRepo                 *self,
     {
       const char *refs_dir = *iter;
       gboolean refs_dir_exists = FALSE;
+      g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
+
       if (!ot_dfd_iter_init_allow_noent (self->repo_dir_fd, refs_dir,
                                          &dfd_iter, &refs_dir_exists, error))
         return FALSE;

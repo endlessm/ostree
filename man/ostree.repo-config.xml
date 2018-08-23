@@ -87,10 +87,20 @@ Boston, MA 02111-1307, USA.
       </varlistentry>
 
       <varlistentry>
-        <term><varname>commit-update-summary</varname></term>
+        <term><varname>auto-update-summary</varname></term>
         <listitem><para>Boolean value controlling whether or not to
-        automatically update the summary file after a commit.  Defaults
-        to <literal>false</literal>.</para></listitem>
+        automatically update the summary file after any ref is added,
+        removed, or updated. Other modifications which may render a
+        summary file stale (like static deltas, or collection IDs) do
+        not currently trigger an auto-update.
+        </para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>commit-update-summary</varname></term>
+        <listitem><para>This option is deprecated. Use
+        <literal>auto-update-summary</literal> instead, for which this
+        option is now an alias.</para></listitem>
       </varlistentry>
 
       <varlistentry>
@@ -119,21 +129,36 @@ Boston, MA 02111-1307, USA.
 
       <varlistentry>
         <term><varname>min-free-space-percent</varname></term>
-        <listitem><para>Integer percentage value (0-99) that specifies a minimum
-        percentage of total space (in blocks) in the underlying filesystem to
-        keep free. The default value is 3.</para>
-        <para>In case this option is co-existing with min-free-space-size (see below),
-        it would be ignored and min-free-space-size check would be enforced instead.
-        </para></listitem>
+        <listitem>
+          <para>
+            Integer percentage value (0-99) that specifies a minimum percentage
+            of total space (in blocks) in the underlying filesystem to keep
+            free. The default value is 3, which is enforced when neither this
+            option nor <varname>min-free-space-size</varname> are set.
+          </para>
+          <para>
+            If <varname>min-free-space-size</varname> is set to a non-zero
+            value, <varname>min-free-space-percent</varname> is ignored.
+          </para>
+        </listitem>
       </varlistentry>
 
      <varlistentry>
         <term><varname>min-free-space-size</varname></term>
-        <listitem><para>Value (in MB, GB or TB) that specifies a minimum space in the
-        underlying filesystem to keep free. Also, note that min-free-space-percent
-        and min-free-space-size are mutually exclusive. Examples of acceptable values:
-        500MB, 1GB etc. The default value is 0MB, which disables this check.
-        </para></listitem>
+        <listitem>
+          <para>
+            Value (in power-of-2 MB, GB or TB) that specifies a minimum space
+            in the underlying filesystem to keep free. Examples of acceptable
+            values: <literal>500MB</literal> (524 288 000 bytes),
+            <literal>1GB</literal> (1 073 741 824 bytes),
+            <literal>1TB</literal> (1 099 511 627 776 bytes).
+          </para>
+          <para>
+            If this option is set to a non-zero value, and
+            <varname>min-free-space-percent</varname> is also set, this option
+            takes priority.
+          </para>
+        </listitem>
       </varlistentry>
 
       <varlistentry>

@@ -2644,10 +2644,7 @@ ostree_repo_write_config (<em class="parameter"><code><a class="link" href="ostr
                           <em class="parameter"><code><span class="type">GKeyFile</span> *new_config</code></em>,
                           <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Save <em class="parameter"><code>new_config</code></em>
- in place of this repository's config file.  Note
-that <em class="parameter"><code>new_config</code></em>
- should not be modified after - this function
-simply adds a reference.</p>
+ in place of this repository's config file.</p>
 <div class="refsect3">
 <a name="ostree-repo-write-config.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -2664,7 +2661,7 @@ simply adds a reference.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>new_config</p></td>
-<td class="parameter_description"><p>Overwrite the config file with this data.  Do not change later!</p></td>
+<td class="parameter_description"><p>Overwrite the config file with this data</p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 <tr>
@@ -7693,14 +7690,15 @@ describes the available branches and other metadata.</p>
 regular, setting the <code class="literal">ostree.summary.expires</code> key in <em class="parameter"><code>additional_metadata</code></em>
 
 will aid clients in working out when to check for updates.</p>
-<p>It is regenerated automatically after a commit if
-<code class="literal">core/commit-update-summary</code> is set.</p>
+<p>It is regenerated automatically after any ref is
+added, removed, or updated if <code class="literal">core/auto-update-summary</code> is set.</p>
 <p>If the <code class="literal">core/collection-id</code> key is set in the configuration, it will be
 included as <code class="literal">OSTREE_SUMMARY_COLLECTION_ID</code> in the summary file. Refs that
 have associated collection IDs will be included in the generated summary
 file, listed under the <code class="literal">OSTREE_SUMMARY_COLLECTION_MAP</code> key. Collection IDs
 and refs in <code class="literal">OSTREE_SUMMARY_COLLECTION_MAP</code> are guaranteed to be in
 lexicographic order.</p>
+<p>Locking: exclusive</p>
 <div class="refsect3">
 <a name="ostree-repo-regenerate-summary.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">

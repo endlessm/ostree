@@ -61,7 +61,8 @@ G_BEGIN_DECLS
 #define OSTREE_COMMIT_TIMESTAMP "ostree.commit.timestamp"
 
 typedef enum {
-  OSTREE_REPO_TEST_ERROR_PRE_COMMIT = (1 << 0)
+  OSTREE_REPO_TEST_ERROR_PRE_COMMIT = (1 << 0),
+  OSTREE_REPO_TEST_ERROR_INVALID_CACHE = (1 << 1),
 } OstreeRepoTestErrorFlags;
 
 struct OstreeRepoCommitModifier {
@@ -436,6 +437,11 @@ OstreeRemote *
 _ostree_repo_get_remote_inherited (OstreeRepo  *self,
                                    const char  *name,
                                    GError     **error);
+
+gboolean
+_ostree_repo_maybe_regenerate_summary (OstreeRepo    *self,
+                                       GCancellable  *cancellable,
+                                       GError       **error);
 
 /* Locking APIs are currently private.
  * See https://github.com/ostreedev/ostree/pull/1555
