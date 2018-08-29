@@ -151,11 +151,11 @@ Description: content-addressed filesystem for operating system binaries
 Package: ostree-boot
 Architecture: linux-any
 Depends:
- dracut,
  ostree (= ${binary:Version}),
  ${misc:Depends},
  ${shlibs:Depends},
 Recommends:
+ dracut,
  grub-efi-amd64 | grub-pc | extlinux | syslinux | u-boot,
 Breaks:
  ostree (<< ${binary:Version}),
