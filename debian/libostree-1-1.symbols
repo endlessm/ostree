@@ -235,6 +235,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_get_config@LIBOSTREE_2016.3 2016.4
  ostree_repo_get_dfd@LIBOSTREE_2016.4 2016.4
  ostree_repo_get_disable_fsync@LIBOSTREE_2016.3 2016.3
+ ostree_repo_get_min_free_space_bytes@LIBOSTREE_2018.9 2018.6-3endless2
  ostree_repo_get_mode@LIBOSTREE_2016.3 2016.4
  ostree_repo_get_parent@LIBOSTREE_2016.3 2016.4
  ostree_repo_get_path@LIBOSTREE_2016.3 2016.4
