@@ -69,6 +69,13 @@ ostree (2018.7-1) unstable; urgency=medium
 
  -- Simon McVittie <smcv@debian.org>  Wed, 25 Jul 2018 23:46:29 +0100
 
+ostree (2018.6-3endless2) eos; urgency=medium
+
+  * Add backported symbols ostree_mutable_tree_remove and
+    ostree_repo_get_min_free_space_bytes to libostree-1-1.symbols.
+
+ -- Robert McQueen <rob@endlessm.com>  Thu, 20 Sep 2018 15:50:19 +0100
+
 ostree (2018.6-3endless1) master; urgency=medium
 
   * Resync Debian packaging changes (T23138):
