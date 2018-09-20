@@ -141,6 +141,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_mutable_tree_get_type@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_lookup@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_new@LIBOSTREE_2016.3 2016.4
+ ostree_mutable_tree_remove@LIBOSTREE_2018.9 2018.6-3xenial1
  ostree_mutable_tree_replace_file@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_set_contents_checksum@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_set_metadata_checksum@LIBOSTREE_2016.3 2016.4
