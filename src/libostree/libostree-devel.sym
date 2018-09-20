@@ -27,6 +27,7 @@ global:
 
 LIBOSTREE_2018.9 {
  global:
+    ostree_mutable_tree_remove;
     ostree_repo_get_min_free_space_bytes;
 } LIBOSTREE_2018.7;
 
