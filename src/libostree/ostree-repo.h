@@ -1223,6 +1223,7 @@ gboolean ostree_repo_prune_from_reachable (OstreeRepo             *self,
  * @OSTREE_REPO_PULL_FLAGS_UNTRUSTED: Do verify checksums of local (filesystem-accessible) repositories (defaults on for HTTP)
  * @OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES: Since 2017.7.  Reject writes of content objects with modes outside of 0775.
  * @OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP: Don't verify checksums of objects HTTP repositories (Since: 2017.12)
+ * @OSTREE_REPO_PULL_FLAGS_DISABLE_MIN_FREE_SPACE: Disables min_free_space-* check (Since 2018.x).
  */
 typedef enum {
   OSTREE_REPO_PULL_FLAGS_NONE,
@@ -1231,6 +1232,7 @@ typedef enum {
   OSTREE_REPO_PULL_FLAGS_UNTRUSTED = (1 << 2),
   OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES = (1 << 3),
   OSTREE_REPO_PULL_FLAGS_TRUSTED_HTTP = (1 << 4),
+  OSTREE_REPO_PULL_FLAGS_DISABLE_MIN_FREE_SPACE = (1 << 5)
 } OstreeRepoPullFlags;
 
 _OSTREE_PUBLIC

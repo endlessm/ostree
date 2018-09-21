@@ -3600,6 +3600,7 @@ ostree_repo_pull_with_options_internal (OstreeRepo           *self,
 
   pull_data->is_mirror = (flags & OSTREE_REPO_PULL_FLAGS_MIRROR) > 0;
   pull_data->is_commit_only = (flags & OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY) > 0;
+  self->disable_min_free_space_check = (flags & OSTREE_REPO_PULL_FLAGS_DISABLE_MIN_FREE_SPACE) > 0;
   /* See our processing of OSTREE_REPO_PULL_FLAGS_UNTRUSTED below */
   if ((flags & OSTREE_REPO_PULL_FLAGS_BAREUSERONLY_FILES) > 0)
     pull_data->importflags |= _OSTREE_REPO_IMPORT_FLAGS_VERIFY_BAREUSERONLY;

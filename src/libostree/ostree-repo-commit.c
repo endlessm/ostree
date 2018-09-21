@@ -691,7 +691,9 @@ _ostree_repo_bare_content_commit (OstreeRepo                 *self,
   OstreeRealRepoBareContent *real = (OstreeRealRepoBareContent*) barewrite;
   g_assert (real->initialized);
 
-  if ((self->min_free_space_percent > 0 || self->min_free_space_mb > 0) && self->in_transaction)
+  if (!self->disable_min_free_space_check &&
+      (self->min_free_space_percent > 0 || self->min_free_space_mb > 0) &&
+      self->in_transaction)
     {
       struct stat st_buf;
       if (!glnx_fstat (real->tmpf.fd, &st_buf, error))
@@ -1092,7 +1094,9 @@ write_content_object (OstreeRepo         *self,
     size = 0;
 
   /* Free space check; only applies during transactions */
-  if ((self->min_free_space_percent > 0 || self->min_free_space_mb > 0) && self->in_transaction)
+  if (!self->disable_min_free_space_check &&
+      (self->min_free_space_percent > 0 || self->min_free_space_mb > 0) &&
+      self->in_transaction)
     {
       g_mutex_lock (&self->txn_lock);
       g_assert_cmpint (self->txn.blocksize, >, 0);
@@ -1848,7 +1852,7 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
   guint64 bfree = (getuid () != 0 ? stvfsbuf.f_bavail : stvfsbuf.f_bfree);
   if (bfree > self->reserved_blocks)
     self->txn.max_blocks = bfree - self->reserved_blocks;
-  else
+  else if (!self->disable_min_free_space_check)
     {
       self->cleanup_stagedir = TRUE;
       g_mutex_unlock (&self->txn_lock);
