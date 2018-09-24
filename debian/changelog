@@ -1,3 +1,22 @@
+ostree (2018.6-3xenial1) xenial; urgency=medium
+
+  * Resync changes for xenial (T23863):
+    - Drop debhelper compat back to 9 since 10 is not in xenial.
+      + debian/compat: Drop back to debhelper 9.
+      + debian/control: Add back dh-autoreconf and dh-systemd deps.
+      + debian/rules: Add back --with autoreconf and systemd.
+    - Disable use of O_TMPFILE in the jessie backport. O_TMPFILE was
+      still a new thing when jessie was released, and fails on
+      the arm64, armel, armhf, powerpc and ppc64el buildds.
+    - Switch libgpgme-dev build-dependency back to libgpgme11-dev
+    - Add downstream ostree_repo_get_commit_sizes to symbol file
+    - Disable rofiles-fuse on armhf (T18830)
+    - Drop all debian patches applied to main branch
+    - Backport ostree_repo_get_min_free_space_bytes symbol (T23694)
+    - Backport ostree_mutable_tree_remove symbol (T23819)
+
+ -- Dan Nicholson <nicholson@endlessm.com>  Mon, 24 Sep 2018 16:18:53 +0000
+
 ostree (2018.6-3) unstable; urgency=medium
 
   * d/p/avahi-Fail-immediately-if-we-can-t-talk-to-D-Bus-or-Avahi.patch:
