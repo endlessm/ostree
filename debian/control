@@ -156,7 +156,7 @@ Depends:
  cpio,
  fuse,
  gir1.2-ostree-1.0,
- gjs [!sparc64],
+ gjs [!s390x !sparc64],
  gnupg,
  ostree,
  python3,

@@ -6,8 +6,11 @@ ostree-tests: extra-license-file usr/libexec/installed-tests/libostree/gpg-verif
 # This is deliberate, working around the assumption of recursive make
 ostree-tests: symlink-is-self-recursive usr/libexec/installed-tests/libostree/tests .
 
-# We won't run this on sparc64 currently
-[sparc64]: missing-dep-for-interpreter gjs => gjs (usr/libexec/installed-tests/libostree/corrupt-repo-ref.js)
+# gjs has been broken on sparc64 for a while, and is likely to be removed
+# from s390x because mozjs60 doesn't work there.
+# The test that runs this script is automatically skipped if gjs isn't
+# present.
+[s390x sparc64]: missing-dep-for-interpreter gjs => gjs (usr/libexec/installed-tests/libostree/corrupt-repo-ref.js)
 
 # This shared object genuinely doesn't use any libc ABIs directly,
 # only via GLib
