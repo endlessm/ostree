@@ -4,7 +4,7 @@ set -e
 exec 2>&1
 set -x
 
-cd "$ADTTMP"
+cd "$AUTOPKGTEST_TMP"
 
 cat > trivial.c <<EOF
 #include <ostree.h>
