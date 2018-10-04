@@ -5,6 +5,7 @@ ostree (2018.8-2) UNRELEASED; urgency=medium
     mozjs60 doesn't work on s390x, so gjs is in danger of being removed
     from that architecture (see #909536). The test that uses JS is
     automatically skipped if the interpreter is missing.
+    (Closes: #910286)
 
   [ Ondřej Nový ]
   * d/tests: Use AUTOPKGTEST_TMP instead of ADTTMP
