@@ -6,6 +6,7 @@ ostree (2018.8-2) UNRELEASED; urgency=medium
     from that architecture (see #909536). The test that uses JS is
     automatically skipped if the interpreter is missing.
     (Closes: #910286)
+  * Standards-Version: 4.2.1 (no changes required)
 
   [ Ondřej Nový ]
   * d/tests: Use AUTOPKGTEST_TMP instead of ADTTMP
