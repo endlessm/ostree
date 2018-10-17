@@ -1,3 +1,9 @@
+ostree (2018.8-3) UNRELEASED; urgency=medium
+
+  * d/tests/build: Mark as superficial (see #904979)
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 17 Oct 2018 08:34:52 +0100
+
 ostree (2018.8-2) unstable; urgency=medium
 
   [ Simon McVittie ]
