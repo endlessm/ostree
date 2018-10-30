@@ -2075,6 +2075,7 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/boot/dracut/module-setup.sh src/boot/dracut/ostree.conf \
 	src/boot/mkinitcpio/ostree \
 	src/boot/ostree-prepare-root.service \
+	src/boot/ostree-finalize-staged.path \
 	src/boot/ostree-remount.service \
 	src/boot/ostree-finalize-staged.service \
 	src/boot/grub2/grub2-15_ostree \
@@ -2764,7 +2765,10 @@ tests_test_gpg_verify_result_LDADD = $(TESTS_LDADD) $(OT_INTERNAL_GPGME_LIBS)
 @BUILDOPT_MKINITCPIO_TRUE@mkinitcpioconfdir = $(sysconfdir)
 @BUILDOPT_MKINITCPIO_TRUE@mkinitcpioconf_DATA = src/boot/mkinitcpio/ostree-mkinitcpio.conf
 @BUILDOPT_SYSTEMD_TRUE@systemdsystemunit_DATA = src/boot/ostree-prepare-root.service \
-@BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-remount.service src/boot/ostree-finalize-staged.service
+@BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-remount.service \
+@BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-finalize-staged.service \
+@BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-finalize-staged.path \
+@BUILDOPT_SYSTEMD_TRUE@	$(NULL)
 
 @BUILDOPT_SYSTEMD_TRUE@systemdtmpfilesdir = $(prefix)/lib/tmpfiles.d
 @BUILDOPT_SYSTEMD_TRUE@dist_systemdtmpfiles_DATA = src/boot/ostree-tmpfiles.conf

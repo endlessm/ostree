@@ -113,6 +113,9 @@ gboolean      ostree_repo_set_collection_id (OstreeRepo   *self,
                                              GError      **error);
 
 _OSTREE_PUBLIC
+const gchar * const * ostree_repo_get_default_repo_finders (OstreeRepo   *self);
+
+_OSTREE_PUBLIC
 GFile *       ostree_repo_get_path (OstreeRepo  *self);
 
 _OSTREE_PUBLIC
@@ -127,6 +130,10 @@ gboolean      ostree_repo_equal (OstreeRepo *a,
 _OSTREE_PUBLIC
 OstreeRepoMode ostree_repo_get_mode (OstreeRepo  *self);
 
+_OSTREE_PUBLIC
+gboolean       ostree_repo_get_min_free_space_bytes (OstreeRepo *self,
+                                                     guint64 *out_reserved_bytes,
+                                                     GError **error);
 _OSTREE_PUBLIC
 GKeyFile *    ostree_repo_get_config (OstreeRepo *self);
 
@@ -929,7 +936,8 @@ typedef struct {
   gboolean no_copy_fallback;
   gboolean force_copy; /* Since: 2017.6 */
   gboolean bareuseronly_dirs; /* Since: 2017.7 */
-  gboolean unused_bools[5];
+  gboolean force_copy_zerosized; /* Since: 2018.9 */
+  gboolean unused_bools[4];
   /* 4 byte hole on 64 bit */
 
   const char *subpath;
@@ -1394,6 +1402,29 @@ gboolean ostree_repo_regenerate_summary (OstreeRepo     *self,
  * Since: 2018.6
  */
 #define OSTREE_REPO_METADATA_REF "ostree-metadata"
+
+/**
+ * OSTREE_META_KEY_DEPLOY_COLLECTION_ID:
+ *
+ * GVariant type `s`. This key can be used in the repo metadata which is stored
+ * in OSTREE_REPO_METADATA_REF as well as in the summary. The semantics of this
+ * are that the remote repository wants clients to update their remote config
+ * to add this collection ID (clients can't do P2P operations involving a
+ * remote without a collection ID configured on it, even if one is configured
+ * on the server side). Clients must never change or remove a collection ID
+ * already set in their remote config.
+ *
+ * Currently, OSTree does not implement changing a remote config based on this
+ * key, but it may do so in a later release, and until then clients such as
+ * Flatpak may implement it.
+ *
+ * This is a replacement for the similar metadata key implemented by flatpak,
+ * `xa.collection-id`, which is now deprecated as clients which supported it had
+ * bugs with their P2P implementations.
+ *
+ * Since: 2018.9
+ */
+#define OSTREE_META_KEY_DEPLOY_COLLECTION_ID "ostree.deploy-collection-id"
 
 G_END_DECLS
 

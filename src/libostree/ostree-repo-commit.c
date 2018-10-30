@@ -245,16 +245,7 @@ commit_loose_regfile_object (OstreeRepo        *self,
                              GCancellable      *cancellable,
                              GError           **error)
 {
-  /* We may be writing as root to a non-root-owned repository; if so,
-   * automatically inherit the non-root ownership.
-   */
-  if (self->mode == OSTREE_REPO_MODE_ARCHIVE
-      && self->target_owner_uid != -1)
-    {
-      if (fchown (tmpf->fd, self->target_owner_uid, self->target_owner_gid) < 0)
-        return glnx_throw_errno_prefix (error, "fchown");
-    }
-  else if (self->mode == OSTREE_REPO_MODE_BARE)
+  if (self->mode == OSTREE_REPO_MODE_BARE)
     {
       if (TEMP_FAILURE_RETRY (fchown (tmpf->fd, uid, gid)) < 0)
         return glnx_throw_errno_prefix (error, "fchown");
@@ -1336,18 +1327,6 @@ write_metadata_object (OstreeRepo         *self,
   gsize len;
   const guint8 *bufp = g_bytes_get_data (buf, &len);
 
-  /* Do the size warning here, to avoid warning for already extant metadata */
-  if (G_UNLIKELY (len > OSTREE_MAX_METADATA_WARN_SIZE))
-    {
-      g_autofree char *metasize = g_format_size (len);
-      g_autofree char *warnsize = g_format_size (OSTREE_MAX_METADATA_WARN_SIZE);
-      g_autofree char *maxsize = g_format_size (OSTREE_MAX_METADATA_SIZE);
-      g_warning ("metadata object %s is %s, which is larger than the warning threshold of %s." \
-                 "  The hard limit on metadata size is %s.  Put large content in the tree itself, not in metadata.",
-                 actual_checksum,
-                 metasize, warnsize, maxsize);
-    }
-
   /* Write the metadata to a temporary file */
   g_auto(GLnxTmpfile) tmpf = { 0, };
   if (!glnx_open_tmpfile_linkable_at (commit_tmp_dfd (self), ".", O_WRONLY|O_CLOEXEC,
@@ -1536,25 +1515,6 @@ devino_cache_lookup (OstreeRepo           *self,
   return dev_ino_val->checksum;
 }
 
-static guint64
-min_free_space_calculate_reserved_blocks (OstreeRepo *self, struct statvfs *stvfsbuf)
-{
-  guint64 reserved_blocks = 0;
-
-  if (self->min_free_space_mb > 0)
-    {
-      reserved_blocks = (self->min_free_space_mb << 20) / stvfsbuf->f_bsize;
-    }
-  else if (self->min_free_space_percent > 0)
-    {
-      /* Convert fragment to blocks to compute the total */
-      guint64 total_blocks = (stvfsbuf->f_frsize * stvfsbuf->f_blocks) / stvfsbuf->f_bsize;
-      reserved_blocks = ((double)total_blocks) * (self->min_free_space_percent/100.0);
-    }
-
-  return reserved_blocks;
-}
-
 /**
  * ostree_repo_scan_hardlinks:
  * @self: An #OstreeRepo
@@ -1626,6 +1586,7 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
                                  GError        **error)
 {
   g_autoptr(_OstreeRepoAutoTransaction) txn = NULL;
+  guint64 reserved_bytes = 0;
 
   g_return_val_if_fail (self->in_transaction == FALSE, FALSE);
 
@@ -1650,11 +1611,17 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
 
   g_mutex_lock (&self->txn_lock);
   self->txn.blocksize = stvfsbuf.f_bsize;
-  guint64 reserved_blocks = min_free_space_calculate_reserved_blocks (self, &stvfsbuf);
+  if (!ostree_repo_get_min_free_space_bytes (self, &reserved_bytes, error))
+    {
+      g_mutex_unlock (&self->txn_lock);
+      return FALSE;
+    }
+  self->reserved_blocks = reserved_bytes / self->txn.blocksize;
+
   /* Use the appropriate free block count if we're unprivileged */
   guint64 bfree = (getuid () != 0 ? stvfsbuf.f_bavail : stvfsbuf.f_bfree);
-  if (bfree > reserved_blocks)
-    self->txn.max_blocks = bfree - reserved_blocks;
+  if (bfree > self->reserved_blocks)
+    self->txn.max_blocks = bfree - self->reserved_blocks;
   else
     {
       self->cleanup_stagedir = TRUE;
@@ -2290,25 +2257,6 @@ ostree_repo_abort_transaction (OstreeRepo     *self,
   return TRUE;
 }
 
-/* These limits were introduced since in some cases we may be processing
- * malicious metadata, and we want to make disk space exhaustion attacks harder.
- */
-static gboolean
-metadata_size_valid (OstreeObjectType objtype,
-                     gsize len,
-                     GError **error)
-{
-  if (G_UNLIKELY (len > OSTREE_MAX_METADATA_SIZE))
-    {
-      g_autofree char *input_bytes = g_format_size (len);
-      g_autofree char *max_bytes = g_format_size (OSTREE_MAX_METADATA_SIZE);
-      return glnx_throw (error, "Metadata object of type '%s' is %s; maximum metadata size is %s",
-                         ostree_object_type_to_string (objtype), input_bytes, max_bytes);
-    }
-
-  return TRUE;
-}
-
 /**
  * ostree_repo_write_metadata:
  * @self: Repo
@@ -2361,9 +2309,6 @@ ostree_repo_write_metadata (OstreeRepo         *self,
       normalized = g_variant_get_normal_form (object);
     }
 
-  if (!metadata_size_valid (objtype, g_variant_get_size (normalized), error))
-    return FALSE;
-
   /* For untrusted objects, verify their structure here */
   if (expected_checksum)
     {
@@ -2401,9 +2346,6 @@ ostree_repo_write_metadata_stream_trusted (OstreeRepo        *self,
                                            GCancellable      *cancellable,
                                            GError           **error)
 {
-  if (length > 0 && !metadata_size_valid (objtype, length, error))
-    return FALSE;
-
   /* This is all pretty ridiculous, but we're keeping this API for backwards
    * compatibility, it doesn't really need to be fast.
    */
@@ -4305,11 +4247,12 @@ import_one_object_direct (OstreeRepo    *dest_repo,
         }
 
       /* Don't want to copy xattrs for archive repos, nor for
-       * bare-user-only.
+       * bare-user-only.  We also only do this for content
+       * objects.
        */
       const gboolean src_is_bare_or_bare_user =
         G_IN_SET (src_repo->mode, OSTREE_REPO_MODE_BARE, OSTREE_REPO_MODE_BARE_USER);
-      if (src_is_bare_or_bare_user)
+      if (src_is_bare_or_bare_user && !OSTREE_OBJECT_TYPE_IS_META(objtype))
         {
           g_autoptr(GVariant) xattrs = NULL;
 

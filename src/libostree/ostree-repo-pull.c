@@ -150,6 +150,7 @@ typedef struct {
 
   gboolean          timestamp_check; /* Verify commit timestamps */
   int               maxdepth;
+  guint64           max_metadata_size;
   guint64           start_time;
 
   gboolean          is_mirror;
@@ -2193,7 +2194,7 @@ start_fetch (OtPullData *pull_data,
   if (expected_max_size_p)
     expected_max_size = *expected_max_size_p;
   else if (OSTREE_OBJECT_TYPE_IS_META (objtype))
-    expected_max_size = OSTREE_MAX_METADATA_SIZE;
+    expected_max_size = pull_data->max_metadata_size;
   else
     expected_max_size = 0;
 
@@ -3488,6 +3489,7 @@ initiate_request (OtPullData                 *pull_data,
  *   * require-static-deltas (b): Require static deltas
  *   * override-commit-ids (as): Array of specific commit IDs to fetch for refs
  *   * timestamp-check (b): Verify commit timestamps are newer than current (when pulling via ref); Since: 2017.11
+ *   * metadata-size-restriction (t): Restrict metadata objects to a maximum number of bytes; 0 to disable.  Since: 2018.9
  *   * dry-run (b): Only print information on what will be downloaded (requires static deltas)
  *   * override-url (s): Fetch objects from this URL if remote specifies no metalink in options
  *   * inherit-transaction (b): Don't initiate, finish or abort a transaction, useful to do multiple pulls in one transaction.
@@ -3543,6 +3545,9 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
    */
   const char *the_ref_to_fetch = NULL;
 
+  /* Default */
+  pull_data->max_metadata_size = OSTREE_MAX_METADATA_SIZE;
+
   if (options)
     {
       int flags_i = OSTREE_REPO_PULL_FLAGS_NONE;
@@ -3570,6 +3575,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       (void) g_variant_lookup (options, "update-frequency", "u", &update_frequency);
       (void) g_variant_lookup (options, "localcache-repos", "^a&s", &opt_localcache_repos);
       (void) g_variant_lookup (options, "timestamp-check", "b", &pull_data->timestamp_check);
+      (void) g_variant_lookup (options, "max-metadata-size", "t", &pull_data->max_metadata_size);
       (void) g_variant_lookup (options, "append-user-agent", "s", &pull_data->append_user_agent);
       opt_n_network_retries_set =
         g_variant_lookup (options, "n-network-retries", "u", &pull_data->n_network_retries);
@@ -4993,45 +4999,56 @@ ostree_repo_find_remotes_async (OstreeRepo                     *self,
   /* Are we using #OstreeRepoFinders provided by the user, or the defaults? */
   if (finders == NULL)
     {
+      guint finder_index = 0;
 #ifdef HAVE_AVAHI
+      guint avahi_index;
       GMainContext *context = g_main_context_get_thread_default ();
       g_autoptr(GError) local_error = NULL;
 #endif  /* HAVE_AVAHI */
 
-      finder_config = OSTREE_REPO_FINDER (ostree_repo_finder_config_new ());
-      finder_mount = OSTREE_REPO_FINDER (ostree_repo_finder_mount_new (NULL));
+      if (g_strv_contains ((const char * const *)self->repo_finders, "config"))
+        default_finders[finder_index++] = finder_config = OSTREE_REPO_FINDER (ostree_repo_finder_config_new ());
+
+      if (g_strv_contains ((const char * const *)self->repo_finders, "mount"))
+        default_finders[finder_index++] = finder_mount = OSTREE_REPO_FINDER (ostree_repo_finder_mount_new (NULL));
+
 #ifdef HAVE_AVAHI
-      finder_avahi = OSTREE_REPO_FINDER (ostree_repo_finder_avahi_new (context));
+      if (g_strv_contains ((const char * const *)self->repo_finders, "lan"))
+        {
+          avahi_index = finder_index;
+          default_finders[finder_index++] = finder_avahi = OSTREE_REPO_FINDER (ostree_repo_finder_avahi_new (context));
+        }
 #endif  /* HAVE_AVAHI */
 
-      default_finders[0] = finder_config;
-      default_finders[1] = finder_mount;
-      default_finders[2] = finder_avahi;
-
+      /* self->repo_finders is guaranteed to be non-empty */
+      g_assert (default_finders != NULL);
       finders = default_finders;
 
 #ifdef HAVE_AVAHI
-      ostree_repo_finder_avahi_start (OSTREE_REPO_FINDER_AVAHI (finder_avahi),
-                                      &local_error);
-
-      if (local_error != NULL)
+      if (finder_avahi != NULL)
         {
-          /* See ostree-repo-finder-avahi.c:ostree_repo_finder_avahi_start, we
-           * intentionally throw this so as to distinguish between the Avahi
-           * finder failing because the Avahi daemon wasn't running and
-           * the Avahi finder failing because of some actual error.
-           *
-           * We need to distinguish between g_debug and g_warning here because
-           * unit tests that use this code may set G_DEBUG=fatal-warnings which
-           * would cause client code to abort if a warning were emitted.
-           */
-          if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-            g_debug ("Avahi finder failed under normal operation; removing it: %s", local_error->message);
-          else
-            g_warning ("Avahi finder failed abnormally; removing it: %s", local_error->message);
+          ostree_repo_finder_avahi_start (OSTREE_REPO_FINDER_AVAHI (finder_avahi),
+                                          &local_error);
 
-          default_finders[2] = NULL;
-          g_clear_object (&finder_avahi);
+          if (local_error != NULL)
+            {
+              /* See ostree-repo-finder-avahi.c:ostree_repo_finder_avahi_start, we
+               * intentionally throw this so as to distinguish between the Avahi
+               * finder failing because the Avahi daemon wasn't running and
+               * the Avahi finder failing because of some actual error.
+               *
+               * We need to distinguish between g_debug and g_warning here because
+               * unit tests that use this code may set G_DEBUG=fatal-warnings which
+               * would cause client code to abort if a warning were emitted.
+               */
+              if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+                g_debug ("Avahi finder failed under normal operation; removing it: %s", local_error->message);
+              else
+                g_warning ("Avahi finder failed abnormally; removing it: %s", local_error->message);
+
+              default_finders[avahi_index] = NULL;
+              g_clear_object (&finder_avahi);
+            }
         }
 #endif  /* HAVE_AVAHI */
     }

@@ -98,8 +98,10 @@
     <keyword type="function" name="ostree_repo_create ()" link="ostree-OstreeRepo.html#ostree-repo-create"/>
     <keyword type="function" name="ostree_repo_get_path ()" link="ostree-OstreeRepo.html#ostree-repo-get-path"/>
     <keyword type="function" name="ostree_repo_get_mode ()" link="ostree-OstreeRepo.html#ostree-repo-get-mode"/>
+    <keyword type="function" name="ostree_repo_get_min_free_space_bytes ()" link="ostree-OstreeRepo.html#ostree-repo-get-min-free-space-bytes"/>
     <keyword type="function" name="ostree_repo_get_config ()" link="ostree-OstreeRepo.html#ostree-repo-get-config"/>
     <keyword type="function" name="ostree_repo_get_dfd ()" link="ostree-OstreeRepo.html#ostree-repo-get-dfd"/>
+    <keyword type="function" name="ostree_repo_get_default_repo_finders ()" link="ostree-OstreeRepo.html#ostree-repo-get-default-repo-finders" since="2018.9"/>
     <keyword type="function" name="ostree_repo_hash ()" link="ostree-OstreeRepo.html#ostree-repo-hash" since="2017.12"/>
     <keyword type="function" name="ostree_repo_equal ()" link="ostree-OstreeRepo.html#ostree-repo-equal" since="2017.12"/>
     <keyword type="function" name="ostree_repo_copy_config ()" link="ostree-OstreeRepo.html#ostree-repo-copy-config"/>
@@ -246,6 +248,7 @@
     <keyword type="function" name="ostree_mutable_tree_set_contents_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-set-contents-checksum"/>
     <keyword type="function" name="ostree_mutable_tree_get_contents_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-get-contents-checksum"/>
     <keyword type="function" name="ostree_mutable_tree_replace_file ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-replace-file"/>
+    <keyword type="function" name="ostree_mutable_tree_remove ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-remove"/>
     <keyword type="function" name="ostree_mutable_tree_ensure_dir ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-ensure-dir"/>
     <keyword type="function" name="ostree_mutable_tree_lookup ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-lookup"/>
     <keyword type="function" name="ostree_mutable_tree_ensure_parent_dirs ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-ensure-parent-dirs"/>
