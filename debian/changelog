@@ -1,4 +1,4 @@
-ostree (2018.9.1-1) UNRELEASED; urgency=medium
+ostree (2018.9.1-1) unstable; urgency=medium
 
   * d/tests/build: Mark as superficial (see #904979)
   * New upstream release
@@ -9,7 +9,7 @@ ostree (2018.9.1-1) UNRELEASED; urgency=medium
     not being in /usr/share/doc: it documents the directory in which it is
     located
 
- -- Simon McVittie <smcv@debian.org>  Wed, 17 Oct 2018 08:34:52 +0100
+ -- Simon McVittie <smcv@debian.org>  Tue, 30 Oct 2018 16:04:19 +0000
 
 ostree (2018.8-2) unstable; urgency=medium
 
