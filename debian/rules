@@ -74,6 +74,7 @@ override_dh_install:
 	rm -f debian/tmp/etc/dracut.conf.d/ostree.conf
 	rm -f debian/tmp/etc/grub.d/15_ostree
 	rm -f debian/tmp/lib/systemd/system-generators/ostree-system-generator
+	rm -f debian/tmp/lib/systemd/system/ostree-finalize-staged.path
 	rm -f debian/tmp/lib/systemd/system/ostree-finalize-staged.service
 	rm -f debian/tmp/lib/systemd/system/ostree-prepare-root.service
 	rm -f debian/tmp/lib/systemd/system/ostree-remount.service
