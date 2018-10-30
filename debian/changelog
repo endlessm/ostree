@@ -2,6 +2,7 @@ ostree (2018.9.1-1) UNRELEASED; urgency=medium
 
   * d/tests/build: Mark as superficial (see #904979)
   * New upstream release
+    - d/libostree-1-1.symbols: Update
   * Skip installation of new ostree-finalize-staged.path unit, which
     should be in ostree-boot when added (see #824650)
   * Override lintian warning for /usr/share/ostree/trusted.gpg.d/README-gpg
