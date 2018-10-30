@@ -196,6 +196,7 @@ static gboolean
 create_file_copy_from_input_at (OstreeRepo     *repo,
                                 OstreeRepoCheckoutAtOptions  *options,
                                 CheckoutState  *state,
+                                const char     *checksum,
                                 GFileInfo      *file_info,
                                 GVariant       *xattrs,
                                 GInputStream   *input,
@@ -358,8 +359,35 @@ create_file_copy_from_input_at (OstreeRepo     *repo,
           replace_mode = GLNX_LINK_TMPFILE_NOREPLACE_IGNORE_EXIST;
           break;
         case OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_IDENTICAL:
-          /* We don't support copying in union identical */
-          g_assert_not_reached ();
+          {
+            replace_mode = GLNX_LINK_TMPFILE_NOREPLACE;
+            struct stat dest_stbuf;
+            if (!glnx_fstatat_allow_noent (destination_dfd, destination_name, &dest_stbuf,
+                                           AT_SYMLINK_NOFOLLOW, error))
+              return FALSE;
+            if (errno == 0)
+              {
+                /* We do a checksum comparison; see also equivalent code in
+                 * checkout_file_hardlink().
+                 */
+                OstreeChecksumFlags flags = 0;
+                if (repo->disable_xattrs)
+                  flags |= OSTREE_CHECKSUM_FLAGS_IGNORE_XATTRS;
+
+                g_autofree char *actual_checksum = NULL;
+                if (!ostree_checksum_file_at (destination_dfd, destination_name,
+                                              &dest_stbuf, OSTREE_OBJECT_TYPE_FILE,
+                                              flags, &actual_checksum, cancellable, error))
+                  return FALSE;
+
+                if (g_str_equal (checksum, actual_checksum))
+                  return TRUE;
+
+                /* Otherwise, fall through and do the link, we should
+                 * get EEXIST.
+                 */
+              }
+          }
           break;
         }
 
@@ -586,6 +614,7 @@ checkout_one_file_at (OstreeRepo                        *repo,
   const gboolean is_symlink = (g_file_info_get_file_type (source_info) == G_FILE_TYPE_SYMBOLIC_LINK);
   const gboolean is_whiteout = (!is_symlink && options->process_whiteouts &&
                                 g_str_has_prefix (destination_name, WHITEOUT_PREFIX));
+  const gboolean is_reg_zerosized = (!is_symlink && g_file_info_get_size (source_info) == 0);
 
   /* First, see if it's a Docker whiteout,
    * https://github.com/docker/docker/blob/1a714e76a2cb9008cd19609059e9988ff1660b78/pkg/archive/whiteouts.go
@@ -603,6 +632,10 @@ checkout_one_file_at (OstreeRepo                        *repo,
         return FALSE;
 
       need_copy = FALSE;
+    }
+  else if (options->force_copy_zerosized && is_reg_zerosized)
+    {
+      need_copy = TRUE;
     }
   else if (!options->force_copy)
     {
@@ -699,6 +732,7 @@ checkout_one_file_at (OstreeRepo                        *repo,
   if (can_cache
       && !is_whiteout
       && !is_symlink
+      && !is_reg_zerosized
       && need_copy
       && repo->mode == OSTREE_REPO_MODE_ARCHIVE
       && options->mode == OSTREE_REPO_CHECKOUT_MODE_USER)
@@ -762,12 +796,12 @@ checkout_one_file_at (OstreeRepo                        *repo,
        * succeeded at hardlinking above.
        */
       if (options->no_copy_fallback)
-        g_assert (is_bare_user_symlink);
+        g_assert (is_bare_user_symlink || is_reg_zerosized);
       if (!ostree_repo_load_file (repo, checksum, &input, NULL, &xattrs,
                                   cancellable, error))
         return FALSE;
 
-      if (!create_file_copy_from_input_at (repo, options, state, source_info, xattrs, input,
+      if (!create_file_copy_from_input_at (repo, options, state, checksum, source_info, xattrs, input,
                                            destination_dfd, destination_name,
                                            cancellable, error))
         return glnx_prefix_error (error, "Copy checkout of %s to %s", checksum, destination_name);

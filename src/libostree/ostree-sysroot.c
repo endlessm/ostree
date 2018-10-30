@@ -189,6 +189,7 @@ ostree_sysroot_init (OstreeSysroot *self)
     { "mutable-deployments", OSTREE_SYSROOT_DEBUG_MUTABLE_DEPLOYMENTS },
     { "test-fifreeze", OSTREE_SYSROOT_DEBUG_TEST_FIFREEZE },
     { "no-xattrs", OSTREE_SYSROOT_DEBUG_NO_XATTRS },
+    { "test-staged-path", OSTREE_SYSROOT_DEBUG_TEST_STAGED_PATH },
   };
 
   self->debug_flags = g_parse_debug_string (g_getenv ("OSTREE_SYSROOT_DEBUG"),
@@ -376,12 +377,11 @@ _ostree_sysroot_read_current_subbootversion (OstreeSysroot *self,
 
   g_autofree char *ostree_bootdir_name = g_strdup_printf ("ostree/boot.%d", bootversion);
   struct stat stbuf;
-  if (fstatat (self->sysroot_fd, ostree_bootdir_name, &stbuf, AT_SYMLINK_NOFOLLOW) != 0)
+  if (!glnx_fstatat_allow_noent (self->sysroot_fd, ostree_bootdir_name, &stbuf, AT_SYMLINK_NOFOLLOW, error))
+    return FALSE;
+  if (errno == ENOENT)
     {
-      if (errno == ENOENT)
-        *out_subbootversion = 0;
-      else
-        return glnx_throw_errno (error);
+      *out_subbootversion = 0;
     }
   else
     {
@@ -499,10 +499,10 @@ read_current_bootversion (OstreeSysroot *self,
   int ret_bootversion;
   struct stat stbuf;
 
-  if (fstatat (self->sysroot_fd, "boot/loader", &stbuf, AT_SYMLINK_NOFOLLOW) != 0)
+  if (!glnx_fstatat_allow_noent (self->sysroot_fd, "boot/loader", &stbuf, AT_SYMLINK_NOFOLLOW, error))
+    return FALSE;
+  if (errno == ENOENT)
     {
-      if (errno != ENOENT)
-        return glnx_throw_errno (error);
       ret_bootversion = 0;
     }
   else
@@ -612,6 +612,10 @@ parse_deployment (OstreeSysroot       *self,
                        &osname, &bootcsum, &treebootserial,
                        error))
     return FALSE;
+
+  g_autofree char *errprefix =
+    g_strdup_printf ("Parsing deployment %i in stateroot '%s'", treebootserial, osname);
+  GLNX_AUTO_PREFIX_ERROR(errprefix, error);
 
   const char *relative_boot_link = boot_link;
   if (*relative_boot_link == '/')
@@ -976,11 +980,12 @@ ostree_sysroot_load_if_changed (OstreeSysroot  *self,
       /* Otherwise - check for /sysroot which should only exist in a deployment,
        * not in ${sysroot} (a metavariable for the real physical root).
        */
-      else if (fstatat (self->sysroot_fd, "sysroot", &stbuf, 0) < 0)
+      else
         {
-          if (errno != ENOENT)
-            return glnx_throw_errno_prefix (error, "fstatat");
-          self->is_physical = TRUE;
+          if (!glnx_fstatat_allow_noent (self->sysroot_fd, "sysroot", &stbuf, 0, error))
+            return FALSE;
+          if (errno == ENOENT)
+            self->is_physical = TRUE;
         }
       /* Otherwise, the default is FALSE */
     }

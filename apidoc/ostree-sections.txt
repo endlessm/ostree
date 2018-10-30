@@ -257,6 +257,7 @@ ostree_mutable_tree_get_metadata_checksum
 ostree_mutable_tree_set_contents_checksum
 ostree_mutable_tree_get_contents_checksum
 ostree_mutable_tree_replace_file
+ostree_mutable_tree_remove
 ostree_mutable_tree_ensure_dir
 ostree_mutable_tree_lookup
 ostree_mutable_tree_ensure_parent_dirs
@@ -294,8 +295,10 @@ ostree_repo_create_at
 ostree_repo_create
 ostree_repo_get_path
 ostree_repo_get_mode
+ostree_repo_get_min_free_space_bytes
 ostree_repo_get_config
 ostree_repo_get_dfd
+ostree_repo_get_default_repo_finders
 ostree_repo_hash
 ostree_repo_equal
 ostree_repo_copy_config
@@ -596,6 +599,7 @@ ostree_repo_pull_from_remotes_async
 ostree_repo_pull_from_remotes_finish
 ostree_repo_resolve_keyring_for_collection
 OSTREE_REPO_METADATA_REF
+OSTREE_META_KEY_DEPLOY_COLLECTION_ID
 </SECTION>
 
 <SECTION>

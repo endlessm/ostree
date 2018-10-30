@@ -172,6 +172,9 @@ _ostree_fetcher_finalize (GObject *object)
 
   curl_multi_cleanup (self->multi);
   g_free (self->remote_name);
+  g_free (self->tls_ca_db_path);
+  g_free (self->tls_client_cert_path);
+  g_free (self->tls_client_key_path);
   g_free (self->cookie_jar_path);
   g_free (self->proxy);
   g_assert_cmpint (g_hash_table_size (self->outstanding_requests), ==, 0);
@@ -319,17 +322,15 @@ check_multi_info (OstreeFetcher *fetcher)
             {
               /* Handle file not found */
               g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
-                                       "%s",
-                                         curl_easy_strerror (curlres));
+                                       "%s", curl_easy_strerror (curlres));
             }
           else
             {
-              g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_FAILED, "[%u] %s",
-                                       curlres,
+              g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_FAILED,
+                                       "While fetching %s: [%u] %s", eff_url, curlres,
                                        curl_easy_strerror (curlres));
-              if (req->fetcher->remote_name)
-                _ostree_fetcher_journal_failure (req->fetcher->remote_name,
-                                                 eff_url, curl_easy_strerror (curlres));
+              _ostree_fetcher_journal_failure (req->fetcher->remote_name,
+                                               eff_url, curl_easy_strerror (curlres));
             }
         }
       else

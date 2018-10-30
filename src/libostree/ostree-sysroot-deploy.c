@@ -49,9 +49,10 @@
 #include "libglnx.h"
 
 #ifdef HAVE_LIBSYSTEMD
-#define OSTREE_VARRELABEL_ID          SD_ID128_MAKE(da,67,9b,08,ac,d3,45,04,b7,89,d9,6f,81,8e,a7,81)
-#define OSTREE_CONFIGMERGE_ID         SD_ID128_MAKE(d3,86,3b,ae,c1,3e,44,49,ab,03,84,68,4a,8a,f3,a7)
-#define OSTREE_DEPLOYMENT_COMPLETE_ID SD_ID128_MAKE(dd,44,0e,3e,54,90,83,b6,3d,0e,fc,7d,c1,52,55,f1)
+#define OSTREE_VARRELABEL_ID            SD_ID128_MAKE(da,67,9b,08,ac,d3,45,04,b7,89,d9,6f,81,8e,a7,81)
+#define OSTREE_CONFIGMERGE_ID           SD_ID128_MAKE(d3,86,3b,ae,c1,3e,44,49,ab,03,84,68,4a,8a,f3,a7)
+#define OSTREE_DEPLOYMENT_COMPLETE_ID   SD_ID128_MAKE(dd,44,0e,3e,54,90,83,b6,3d,0e,fc,7d,c1,52,55,f1)
+#define OSTREE_DEPLOYMENT_FINALIZING_ID SD_ID128_MAKE(e8,64,6c,d6,3d,ff,46,25,b7,79,09,a8,e7,a4,09,94)
 #endif
 
 /*
@@ -2509,6 +2510,47 @@ sysroot_initialize_deployment (OstreeSysroot     *self,
   return TRUE;
 }
 
+/* Get a directory fd for the /var of @deployment.
+ * Before we supported having /var be a separate mount point,
+ * this was easy. However, as https://github.com/ostreedev/ostree/issues/1729
+ * raised, in the primary case where we're
+ * doing a new deployment for the booted stateroot,
+ * we need to use /var/.  This code doesn't correctly
+ * handle the case of `ostree admin --sysroot upgrade`,
+ * nor (relatedly) the case of upgrading a separate stateroot.
+ */
+static gboolean
+get_var_dfd (OstreeSysroot      *self,
+             int                 osdeploy_dfd,
+             OstreeDeployment   *deployment,
+             int                *ret_fd,
+             GError            **error)
+{
+  const char *booted_stateroot =
+    self->booted_deployment ? ostree_deployment_get_osname (self->booted_deployment) : NULL;
+
+  int base_dfd;
+  const char *base_path;
+  /* The common case is when we're doing a new deployment for the same stateroot (osname).
+   * If we have a separate mounted /var, then we need to use it - the /var in the
+   * stateroot will probably just be an empty directory.
+   *
+   * If the stateroot doesn't match, just fall back to /var in the target's stateroot.
+   */
+  if (g_strcmp0 (booted_stateroot, ostree_deployment_get_osname (deployment)) == 0)
+    {
+      base_dfd = AT_FDCWD;
+      base_path = "/var";
+    }
+  else
+    {
+      base_dfd = osdeploy_dfd;
+      base_path = "var";
+    }
+
+  return glnx_opendirat (base_dfd, base_path, TRUE, ret_fd, error);
+}
+
 static gboolean
 sysroot_finalize_deployment (OstreeSysroot     *self,
                              OstreeDeployment  *deployment,
@@ -2547,6 +2589,9 @@ sysroot_finalize_deployment (OstreeSysroot     *self,
   glnx_autofd int os_deploy_dfd = -1;
   if (!glnx_opendirat (self->sysroot_fd, osdeploypath, TRUE, &os_deploy_dfd, error))
     return FALSE;
+  glnx_autofd int var_dfd = -1;
+  if (!get_var_dfd (self, os_deploy_dfd, deployment, &var_dfd, error))
+    return FALSE;
 
   /* Ensure that the new deployment does not have /etc/.updated or
    * /var/.updated so that systemd ConditionNeedsUpdate=/etc|/var services run
@@ -2554,7 +2599,7 @@ sysroot_finalize_deployment (OstreeSysroot     *self,
    */
   if (!ot_ensure_unlinked_at (deployment_dfd, "etc/.updated", error))
     return FALSE;
-  if (!ot_ensure_unlinked_at (os_deploy_dfd, "var/.updated", error))
+  if (!ot_ensure_unlinked_at (var_dfd, ".updated", error))
     return FALSE;
 
   g_autoptr(OstreeSePolicy) sepolicy = ostree_sepolicy_new_at (deployment_dfd, cancellable, error);
@@ -2716,6 +2761,10 @@ ostree_sysroot_stage_tree (OstreeSysroot     *self,
   if (booted_deployment == NULL)
     return glnx_throw (error, "Cannot stage a deployment when not currently booted into an OSTree system");
 
+  /* This is used by the testsuite to exercise the path unit, until it becomes the default
+   * (which is pending on the preset making it everywhere). */
+  if ((self->debug_flags & OSTREE_SYSROOT_DEBUG_TEST_STAGED_PATH) == 0)
+    {
   /* This is a bit of a hack.  When adding a new service we have to end up getting
    * into the presets for downstream distros; see e.g. https://src.fedoraproject.org/rpms/ostree/pull-request/7
    *
@@ -2728,6 +2777,11 @@ ostree_sysroot_stage_tree (OstreeSysroot     *self,
     return FALSE;
   if (!g_spawn_check_exit_status (estatus, error))
     return FALSE;
+    }
+  else
+    {
+      g_print ("test-staged-path: Not running `systemctl start`\n");
+    } /* OSTREE_SYSROOT_DEBUG_TEST_STAGED_PATH */
 
   g_autoptr(OstreeDeployment) deployment = NULL;
   if (!sysroot_initialize_deployment (self, osname, revision, origin, override_kernel_argv,
@@ -2817,6 +2871,21 @@ _ostree_sysroot_finalize_staged (OstreeSysroot *self,
    */
   if (!self->staged_deployment)
     return TRUE;
+
+  /* Notice we send this *after* the trivial `return TRUE` above; this msg implies we've
+   * committed to finalizing the deployment. */
+#ifdef HAVE_LIBSYSTEMD
+    sd_journal_send ("MESSAGE_ID=" SD_ID128_FORMAT_STR,
+                     SD_ID128_FORMAT_VAL(OSTREE_DEPLOYMENT_FINALIZING_ID),
+                     "MESSAGE=Finalizing staged deployment",
+                     "OSTREE_OSNAME=%s",
+                     ostree_deployment_get_osname (self->staged_deployment),
+                     "OSTREE_CHECKSUM=%s",
+                     ostree_deployment_get_csum (self->staged_deployment),
+                     "OSTREE_DEPLOYSERIAL=%u",
+                     ostree_deployment_get_deployserial (self->staged_deployment),
+                     NULL);
+#endif
 
   g_assert (self->staged_deployment_data);
 

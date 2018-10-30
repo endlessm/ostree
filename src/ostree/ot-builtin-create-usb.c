@@ -33,11 +33,13 @@
 
 static gboolean opt_disable_fsync = FALSE;
 static char *opt_destination_repo = NULL;
+static char *opt_commit = NULL;
 
 static GOptionEntry options[] =
   {
     { "disable-fsync", 0, 0, G_OPTION_ARG_NONE, &opt_disable_fsync, "Do not invoke fsync()", NULL },
     { "destination-repo", 0, 0, G_OPTION_ARG_FILENAME, &opt_destination_repo, "Use custom repository directory within the mount", "DEST" },
+    { "commit", 0, 0, G_OPTION_ARG_STRING, &opt_commit, "Pull a specific commit (only works when a single ref is specified)", "COMMIT" },
     { NULL }
   };
 
@@ -78,6 +80,12 @@ ostree_builtin_create_usb (int            argc,
       return FALSE;
     }
 
+  if (opt_commit && argc > 4)
+    {
+      ot_util_usage_error (context, "The --commit option can only be used when a single COLLECTION-ID REF pair is specified", error);
+      return FALSE;
+    }
+
   /* Open the USB stick, which must exist. Allow automounting and following symlinks. */
   const char *mount_root_path = argv[1];
   struct stat mount_root_stbuf;
@@ -102,21 +110,17 @@ ostree_builtin_create_usb (int            argc,
 
   /* Open the destination repository on the USB stick or create it if it doesn’t exist.
    * Check it’s below @mount_root_path, and that it’s not the same as the source
-   * repository.
-   *
-   * If the destination file system supports xattrs (for example, ext4), we use
-   * a BARE_USER repository; if it doesn’t (for example, FAT), we use ARCHIVE.
-   * In either case, we want a lossless repository. */
+   * repository. */
   const char *dest_repo_path = (opt_destination_repo != NULL) ? opt_destination_repo : ".ostree/repo";
 
   if (!glnx_shutil_mkdir_p_at (mount_root_dfd, dest_repo_path, 0755, cancellable, error))
     return FALSE;
 
-  OstreeRepoMode mode = OSTREE_REPO_MODE_BARE_USER;
-
-  if (TEMP_FAILURE_RETRY (fgetxattr (mount_root_dfd, "user.test", NULL, 0)) < 0 &&
-      (errno == ENOTSUP || errno == EOPNOTSUPP))
-    mode = OSTREE_REPO_MODE_ARCHIVE;
+  /* Always use the archive repo mode, which works on FAT file systems that
+   * don't support xattrs, compresses files to save space, doesn't store
+   * permission info directly in the file attributes, and is at least sometimes
+   * more performant than bare-user */
+  OstreeRepoMode mode = OSTREE_REPO_MODE_ARCHIVE;
 
   g_debug ("%s: Creating repository in mode %u", G_STRFUNC, mode);
 
@@ -158,7 +162,7 @@ ostree_builtin_create_usb (int            argc,
       const OstreeCollectionRef *ref = g_ptr_array_index (refs, i);
 
       g_variant_builder_add (&refs_builder, "(sss)",
-                             ref->collection_id, ref->ref_name, "");
+                             ref->collection_id, ref->ref_name, opt_commit ?: "");
     }
 
   {

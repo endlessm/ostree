@@ -2420,17 +2420,17 @@ ostree_check_version (<em class="parameter"><code><span class="type">guint</span
 <a name="OSTREE-MAX-METADATA-SIZE:CAPS"></a><h3>OSTREE_MAX_METADATA_SIZE</h3>
 <pre class="programlisting">#define OSTREE_MAX_METADATA_SIZE (10 * 1024 * 1024)
 </pre>
-<p>Maximum permitted size in bytes of metadata objects.  This is an
-arbitrary number, but really, no one should be putting humongous
-data in metadata.</p>
+<p>Default limit for maximum permitted size in bytes of metadata objects fetched
+over HTTP (including repo/config files, refs, and commit/dirtree/dirmeta
+objects). This is an arbitrary number intended to mitigate disk space
+exhaustion attacks.</p>
 </div>
 <hr>
 <div class="refsect2">
 <a name="OSTREE-MAX-METADATA-WARN-SIZE:CAPS"></a><h3>OSTREE_MAX_METADATA_WARN_SIZE</h3>
 <pre class="programlisting">#define OSTREE_MAX_METADATA_WARN_SIZE (7 * 1024 * 1024)
 </pre>
-<p>Objects committed above this size will be allowed, but a warning
-will be emitted.</p>
+<p>This variable is no longer meaningful, it is kept only for compatibility.</p>
 </div>
 <hr>
 <div class="refsect2">

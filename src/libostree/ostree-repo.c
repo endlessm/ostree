@@ -90,17 +90,19 @@ G_STATIC_ASSERT(sizeof(OstreeRepoPruneOptions) ==
  * The #OstreeRepo is like git, a content-addressed object store.
  * Unlike git, it records uid, gid, and extended attributes.
  *
- * There are three possible "modes" for an #OstreeRepo;
- * %OSTREE_REPO_MODE_BARE is very simple - content files are
- * represented exactly as they are, and checkouts are just hardlinks.
- * %OSTREE_REPO_MODE_BARE_USER is similar, except the uid/gids are not
- * set on the files, and checkouts as hardlinks hardlinks work only for user checkouts.
- * A %OSTREE_REPO_MODE_ARCHIVE_Z2 repository in contrast stores
- * content files zlib-compressed.  It is suitable for non-root-owned
+ * There are four possible "modes" for an #OstreeRepo; %OSTREE_REPO_MODE_BARE
+ * is very simple - content files are represented exactly as they are, and
+ * checkouts are just hardlinks. %OSTREE_REPO_MODE_BARE_USER is similar, except
+ * the uid/gids are not set on the files, and checkouts as hardlinks work only
+ * for user checkouts. %OSTREE_REPO_MODE_BARE_USER_ONLY is the same as
+ * BARE_USER, but all metadata is not stored, so it can only be used for user
+ * checkouts. This mode does not require xattrs. A %OSTREE_REPO_MODE_ARCHIVE
+ * (also known as %OSTREE_REPO_MODE_ARCHIVE_Z2) repository in contrast stores
+ * content files zlib-compressed. It is suitable for non-root-owned
  * repositories that can be served via a static HTTP server.
  *
  * Creating an #OstreeRepo does not invoke any file I/O, and thus needs
- * to be initialized, either from an existing contents or with a new
+ * to be initialized, either from existing contents or as a new
  * repository. If you have an existing repo, use ostree_repo_open()
  * to load it from disk and check its validity. To initialize a new
  * repository in the given filepath, use ostree_repo_create() instead.
@@ -452,9 +454,9 @@ pop_repo_lock (OstreeRepo  *self,
  * state is not changed and the stack is simply updated.
  *
  * ostree_repo_lock_push() waits for the lock depending on the repository's
- * lock-timeout configuration. When lock-timeout is -1, a blocking lock is
+ * lock-timeout-secs configuration. When lock-timeout-secs is -1, a blocking lock is
  * attempted. Otherwise, the lock is taken non-blocking and
- * ostree_repo_lock_push() will sleep synchronously up to lock-timeout seconds
+ * ostree_repo_lock_push() will sleep synchronously up to lock-timeout-secs seconds
  * attempting to acquire the lock. If the lock cannot be acquired within the
  * timeout, a %G_IO_ERROR_WOULD_BLOCK error is returned.
  *
@@ -542,9 +544,9 @@ _ostree_repo_lock_push (OstreeRepo          *self,
  * lock.
  *
  * ostree_repo_lock_pop() waits for the lock depending on the repository's
- * lock-timeout configuration. When lock-timeout is -1, a blocking lock is
+ * lock-timeout-secs configuration. When lock-timeout-secs is -1, a blocking lock is
  * attempted. Otherwise, the lock is removed non-blocking and
- * ostree_repo_lock_pop() will sleep synchronously up to lock-timeout seconds
+ * ostree_repo_lock_pop() will sleep synchronously up to lock-timeout-secs seconds
  * attempting to remove the lock. If the lock cannot be removed within the
  * timeout, a %G_IO_ERROR_WOULD_BLOCK error is returned.
  *
@@ -1033,6 +1035,7 @@ ostree_repo_finalize (GObject *object)
   g_mutex_clear (&self->cache_lock);
   g_mutex_clear (&self->txn_lock);
   g_free (self->collection_id);
+  g_strfreev (self->repo_finders);
 
   g_clear_pointer (&self->remotes, g_hash_table_destroy);
   g_mutex_clear (&self->remotes_lock);
@@ -2654,6 +2657,37 @@ get_remotes_d_dir (OstreeRepo          *self,
 }
 
 static gboolean
+min_free_space_calculate_reserved_bytes (OstreeRepo *self, guint64 *bytes, GError **error)
+{
+  guint64 reserved_bytes = 0;
+
+  struct statvfs stvfsbuf;
+  if (TEMP_FAILURE_RETRY (fstatvfs (self->repo_dir_fd, &stvfsbuf)) < 0)
+    return glnx_throw_errno_prefix (error, "fstatvfs");
+
+  if (self->min_free_space_mb > 0)
+    {
+      if (self->min_free_space_mb > (G_MAXUINT64 >> 20))
+        return glnx_throw (error, "min-free-space value is greater than the maximum allowed value of %" G_GUINT64_FORMAT " bytes",
+                           (G_MAXUINT64 >> 20));
+
+      reserved_bytes = self->min_free_space_mb << 20;
+    }
+  else if (self->min_free_space_percent > 0)
+    {
+      if (stvfsbuf.f_frsize > (G_MAXUINT64 / stvfsbuf.f_blocks))
+        return glnx_throw (error, "Filesystem's size is greater than the maximum allowed value of %" G_GUINT64_FORMAT " bytes",
+                           (G_MAXUINT64 / stvfsbuf.f_blocks));
+
+      guint64 total_bytes = (stvfsbuf.f_frsize * stvfsbuf.f_blocks);
+      reserved_bytes = ((double)total_bytes) * (self->min_free_space_percent/100.0);
+    }
+
+  *bytes = reserved_bytes;
+  return TRUE;
+}
+
+static gboolean
 min_free_space_size_validate_and_convert (OstreeRepo    *self,
                                           const char    *min_free_space_size_str,
                                           GError       **error)
@@ -2799,7 +2833,7 @@ reload_core_config (OstreeRepo          *self,
                                                 &lock_timeout_seconds, error))
           return FALSE;
 
-        self->lock_timeout_seconds = g_ascii_strtoull (lock_timeout_seconds, NULL, 10);
+        self->lock_timeout_seconds = g_ascii_strtoll (lock_timeout_seconds, NULL, 10);
       }
   }
 
@@ -2903,6 +2937,40 @@ reload_core_config (OstreeRepo          *self,
       return FALSE;
 
     self->payload_link_threshold = g_ascii_strtoull (payload_threshold, NULL, 10);
+  }
+
+  { g_auto(GStrv) configured_finders = NULL;
+    g_autoptr(GError) local_error = NULL;
+
+    configured_finders = g_key_file_get_string_list (self->config, "core", "default-repo-finders",
+                                                     NULL, &local_error);
+    if (g_error_matches (local_error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_KEY_NOT_FOUND))
+      g_clear_error (&local_error);
+    else if (local_error != NULL)
+      {
+        g_propagate_error (error, g_steal_pointer (&local_error));
+        return FALSE;
+      }
+
+    if (configured_finders != NULL && *configured_finders == NULL)
+      return glnx_throw (error, "Invalid empty default-repo-finders configuration");
+
+    for (char **iter = configured_finders; iter && *iter; iter++)
+      {
+        const char *repo_finder = *iter;
+
+        if (strcmp (repo_finder, "config") != 0 &&
+            strcmp (repo_finder, "lan") != 0 &&
+            strcmp (repo_finder, "mount") != 0)
+          return glnx_throw (error, "Invalid configured repo-finder '%s'", repo_finder);
+      }
+
+    /* Fall back to a default set of finders */
+    if (configured_finders == NULL)
+      configured_finders = g_strsplit ("config;mount", ";", -1);
+
+    g_clear_pointer (&self->repo_finders, g_strfreev);
+    self->repo_finders = g_steal_pointer (&configured_finders);
   }
 
   return TRUE;
@@ -3046,16 +3114,6 @@ ostree_repo_open (OstreeRepo    *self,
   if (!glnx_fstat (self->objects_dir_fd, &stbuf, error))
     return FALSE;
   self->owner_uid = stbuf.st_uid;
-
-  if (stbuf.st_uid != getuid () || stbuf.st_gid != getgid ())
-    {
-      self->target_owner_uid = stbuf.st_uid;
-      self->target_owner_gid = stbuf.st_gid;
-    }
-  else
-    {
-      self->target_owner_uid = self->target_owner_gid = -1;
-    }
 
   if (self->writable)
     {
@@ -3290,6 +3348,30 @@ ostree_repo_get_mode (OstreeRepo  *self)
   g_return_val_if_fail (self->inited, FALSE);
 
   return self->mode;
+}
+
+/**
+ * ostree_repo_get_min_free_space:
+ * @self: Repo
+ * @out_reserved_bytes: (out): Location to store the result
+ * @error: Return location for a #GError
+ *
+ * It can be used to query the value (in bytes) of min-free-space-* config option.
+ *
+ * Returns: %TRUE on success, %FALSE otherwise.
+ * Since: 2018.9
+ */
+gboolean
+ostree_repo_get_min_free_space_bytes (OstreeRepo  *self, guint64 *out_reserved_bytes, GError **error)
+{
+  g_return_val_if_fail (OSTREE_IS_REPO (self), FALSE);
+  g_return_val_if_fail (out_reserved_bytes != NULL, FALSE);
+  g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+  if (!min_free_space_calculate_reserved_bytes (self, out_reserved_bytes, error))
+    return glnx_prefix_error (error, "Error calculating min-free-space bytes");
+
+  return TRUE;
 }
 
 /**
@@ -5867,4 +5949,23 @@ ostree_repo_set_collection_id (OstreeRepo   *self,
     }
 
   return TRUE;
+}
+
+/**
+ * ostree_repo_get_default_repo_finders:
+ * @self: an #OstreeRepo
+ *
+ * Get the set of default repo finders configured. See the documentation for
+ * the "core.default-repo-finders" config key.
+ *
+ * Returns: (array zero-terminated=1) (element-type utf8):
+ *    %NULL-terminated array of strings.
+ * Since: 2018.9
+ */
+const gchar * const *
+ostree_repo_get_default_repo_finders (OstreeRepo *self)
+{
+  g_return_val_if_fail (OSTREE_IS_REPO (self), NULL);
+
+  return (const gchar * const *)self->repo_finders;
 }
