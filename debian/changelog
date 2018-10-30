@@ -4,6 +4,9 @@ ostree (2018.9.1-1) UNRELEASED; urgency=medium
   * New upstream release
   * Skip installation of new ostree-finalize-staged.path unit, which
     should be in ostree-boot when added (see #824650)
+  * Override lintian warning for /usr/share/ostree/trusted.gpg.d/README-gpg
+    not being in /usr/share/doc: it documents the directory in which it is
+    located
 
  -- Simon McVittie <smcv@debian.org>  Wed, 17 Oct 2018 08:34:52 +0100
 

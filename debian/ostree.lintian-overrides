@@ -1,0 +1,2 @@
+# Documentation about the directory it's in
+ostree: package-contains-documentation-outside-usr-share-doc usr/share/ostree/trusted.gpg.d/README-gpg
