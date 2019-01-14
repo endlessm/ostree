@@ -6,7 +6,7 @@
 /* Define if we are enabling ostree trivial-httpd entrypoint */
 #undef BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE
 
-/* Define if we enable http2 */
+/* Define if we enable http2 by default */
 #undef BUILDOPT_HTTP2
 
 /* Define if doing a development build */

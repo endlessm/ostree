@@ -1624,9 +1624,18 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
     self->txn.max_blocks = bfree - self->reserved_blocks;
   else
     {
-      self->cleanup_stagedir = TRUE;
-      g_mutex_unlock (&self->txn_lock);
-      return throw_min_free_space_error (self, 0, error);
+      self->txn.max_blocks = 0;
+      /* Don't throw_min_free_space_error here; reason being that
+       * this transaction could be just committing metadata objects
+       * which are relatively small in size and we do not really
+       * want to block them via min-free-space-* value. Metadata
+       * objects helps in housekeeping and hence should be kept
+       * out of the strict min-free-space values.
+       *
+       * The main drivers for writing content objects will always honor
+       * the min-free-space value and throw_min_free_space_error in
+       * case of overstepping the number of reserved blocks.
+       */
     }
   g_mutex_unlock (&self->txn_lock);
 
@@ -3338,6 +3347,9 @@ write_content_to_mtree_internal (OstreeRepo                  *self,
               if (!glnx_shutil_rm_rf_at (dfd_iter->fd, name, cancellable, error))
                 return FALSE;
             }
+          g_mutex_lock (&self->txn_lock);
+          self->txn.stats.devino_cache_hits++;
+          g_mutex_unlock (&self->txn_lock);
           return TRUE; /* Early return */
         }
     }
@@ -3469,6 +3481,10 @@ write_content_to_mtree_internal (OstreeRepo                  *self,
       if (!ostree_mutable_tree_replace_file (mtree, name, loose_checksum,
                                              error))
         return FALSE;
+
+      g_mutex_lock (&self->txn_lock);
+      self->txn.stats.devino_cache_hits++;
+      g_mutex_unlock (&self->txn_lock);
     }
   /* Next fast path - we can "adopt" the file */
   else if (can_adopt)
@@ -4094,12 +4110,18 @@ import_is_bareuser_only_conversion (OstreeRepo *src_repo,
     && objtype == OSTREE_OBJECT_TYPE_FILE;
 }
 
-/* Returns TRUE if we can potentially just call link() to copy an object. */
+/* Returns TRUE if we can potentially just call link() to copy an object;
+ * if untrusted the repos must be owned by the same uid.
+ */
 static gboolean
 import_via_reflink_is_possible (OstreeRepo *src_repo,
                                 OstreeRepo *dest_repo,
-                                OstreeObjectType objtype)
+                                OstreeObjectType objtype,
+                                gboolean    trusted)
 {
+  /* Untrusted pulls require matching ownership */
+  if (!trusted && (src_repo->owner_uid != dest_repo->owner_uid))
+    return FALSE;
   /* Equal modes are always compatible, and metadata
    * is identical between all modes.
    */
@@ -4159,13 +4181,6 @@ import_one_object_direct (OstreeRepo    *dest_repo,
   GLNX_AUTO_PREFIX_ERROR (errprefix, error);
   char loose_path_buf[_OSTREE_LOOSE_PATH_MAX];
   _ostree_loose_path (loose_path_buf, checksum, objtype, dest_repo->mode);
-
-  if (!import_via_reflink_is_possible (src_repo, dest_repo, objtype))
-    {
-      /* If we can't reflink, nothing to do here */
-      *out_was_supported = FALSE;
-      return TRUE;
-    }
 
   /* hardlinks require the owner to match and to be on the same device */
   const gboolean can_hardlink =
@@ -4254,15 +4269,29 @@ import_one_object_direct (OstreeRepo    *dest_repo,
         G_IN_SET (src_repo->mode, OSTREE_REPO_MODE_BARE, OSTREE_REPO_MODE_BARE_USER);
       if (src_is_bare_or_bare_user && !OSTREE_OBJECT_TYPE_IS_META(objtype))
         {
-          g_autoptr(GVariant) xattrs = NULL;
+          if (src_repo == OSTREE_REPO_MODE_BARE)
+            {
+              g_autoptr(GVariant) xattrs = NULL;
+              if (!glnx_fd_get_all_xattrs (src_fd, &xattrs,
+                                           cancellable, error))
+                return FALSE;
+              if (!glnx_fd_set_all_xattrs (tmp_dest.fd, xattrs,
+                                           cancellable, error))
+                return FALSE;
+            }
+          else
+            {
+              /* bare-user; we just want ostree.usermeta */
+              g_autoptr(GBytes) bytes =
+                glnx_fgetxattr_bytes (src_fd, "user.ostreemeta", error);
+              if (bytes == NULL)
+                return FALSE;
 
-          if (!glnx_fd_get_all_xattrs (src_fd, &xattrs,
-                                       cancellable, error))
-            return FALSE;
-
-          if (!glnx_fd_set_all_xattrs (tmp_dest.fd, xattrs,
-                                       cancellable, error))
-            return FALSE;
+              if (TEMP_FAILURE_RETRY (fsetxattr (src_fd, "user.ostreemeta",
+                                                 (char*)g_bytes_get_data (bytes, NULL),
+                                                 g_bytes_get_size (bytes), 0)) != 0)
+                return glnx_throw_errno_prefix (error, "fsetxattr");
+            }
         }
 
       if (fchmod (tmp_dest.fd, stbuf.st_mode & ~S_IFMT) != 0)
@@ -4318,7 +4347,7 @@ _ostree_repo_import_object (OstreeRepo           *self,
    */
   const gboolean is_bareuseronly_conversion =
     import_is_bareuser_only_conversion (source, self, objtype);
-  gboolean try_direct = trusted;
+  gboolean try_direct = TRUE;
 
   /* If we need to do bareuseronly verification, or we're potentially doing a
    * bareuseronly conversion, let's verify those first so we don't complicate
@@ -4358,11 +4387,20 @@ _ostree_repo_import_object (OstreeRepo           *self,
         }
     }
 
-   /* We try to import via reflink/hardlink. If the remote is explicitly not trusted
-   * (i.e.) their checksums may be incorrect, we skip that.
-   */
-  if (try_direct)
+  /* First, let's see if we can import via reflink/hardlink. */
+  if (try_direct && import_via_reflink_is_possible (source, self, objtype, trusted))
     {
+      /* For local repositories, if the untrusted flag is set, we verify the
+       * checksum first. This assumes then that the files are immutable - the
+       * above check verified that the owner uids match.
+       */
+      if (!trusted)
+        {
+          if (!ostree_repo_fsck_object (source, objtype, checksum,
+                                        cancellable, error))
+            return FALSE;
+        }
+
       gboolean direct_was_supported = FALSE;
       if (!import_one_object_direct (self, source, checksum, objtype,
                                      &direct_was_supported,

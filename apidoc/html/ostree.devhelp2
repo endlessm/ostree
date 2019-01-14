@@ -501,6 +501,7 @@
     <keyword type="member" name="OstreeRepoTransactionStats.content-objects-total" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.content-objects-total"/>
     <keyword type="member" name="OstreeRepoTransactionStats.content-objects-written" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.content-objects-written"/>
     <keyword type="member" name="OstreeRepoTransactionStats.content-bytes-written" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.content-bytes-written"/>
+    <keyword type="member" name="OstreeRepoTransactionStats.devino-cache-hits" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.devino-cache-hits"/>
     <keyword type="member" name="OstreeRepoTransactionStats.padding1" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.padding1"/>
     <keyword type="member" name="OstreeRepoTransactionStats.padding2" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.padding2"/>
     <keyword type="member" name="OstreeRepoTransactionStats.padding3" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.padding3"/>

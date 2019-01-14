@@ -2948,9 +2948,14 @@ _ostree_repo_remote_new_fetcher (OstreeRepo  *self,
   if (gzip)
     fetcher_flags |= OSTREE_FETCHER_FLAGS_TRANSFER_GZIP;
 
-  { gboolean http2 = TRUE;
+  { gboolean http2_default = TRUE;
+#ifndef BUILDOPT_HTTP2
+    http2_default = FALSE;
+#endif
+    gboolean http2;
+
     if (!ostree_repo_get_remote_boolean_option (self, remote_name,
-                                                "http2", TRUE,
+                                                "http2", http2_default,
                                                 &http2, error))
       goto out;
     if (!http2)
@@ -4643,6 +4648,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   g_clear_object (&pull_data->cancellable);
   g_clear_pointer (&pull_data->localcache_repos, (GDestroyNotify)g_ptr_array_unref);
   g_clear_object (&pull_data->remote_repo_local);
+  g_free (pull_data->remote_refspec_name);
   g_free (pull_data->remote_name);
   g_free (pull_data->append_user_agent);
   g_clear_pointer (&pull_data->meta_mirrorlist, (GDestroyNotify) g_ptr_array_unref);
