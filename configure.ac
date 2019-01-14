@@ -3,8 +3,8 @@ dnl If doing a final release, remember to follow the instructions to
 dnl update libostree-released.sym from libostree-devel.sym, and update the checksum
 dnl in test-symbols.sh, and also set is_release_build=yes below.  Then make
 dnl another post-release commit to bump the version, and set is_release_build=no.
-m4_define([year_version], [2018])
-m4_define([release_version], [9])
+m4_define([year_version], [2019])
+m4_define([release_version], [1])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -141,7 +141,7 @@ AS_HELP_STRING([--disable-http2],
   [Disable use of http2 (default: no)]),,
   [enable_http2=yes])
 AS_IF([test x$enable_http2 != xno ], [
-  AC_DEFINE([BUILDOPT_HTTP2], 1, [Define if we enable http2])
+  AC_DEFINE([BUILDOPT_HTTP2], 1, [Define if we enable http2 by default])
 ], [
   OSTREE_FEATURES="$OSTREE_FEATURES no-http2"
 ])

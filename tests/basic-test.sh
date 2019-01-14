@@ -21,7 +21,7 @@
 
 set -euo pipefail
 
-echo "1..$((85 + ${extra_basic_tests:-0}))"
+echo "1..$((88 + ${extra_basic_tests:-0}))"
 
 CHECKOUT_U_ARG=""
 CHECKOUT_H_ARGS="-H"
@@ -364,6 +364,39 @@ if ! skip_one_without_user_xattrs; then
     echo "ok pull-local --bareuseronly-files"
 fi
 
+rm repo2 -rf
+ostree_repo_init repo2 --mode="$mode"
+$CMD_PREFIX ostree --repo=repo2 pull-local --untrusted repo test2
+target_file_object=$(ostree_file_path_to_relative_object_path repo test2 baz/saucer)
+target_file_checksum=$(ostree_file_path_to_checksum repo test2 baz/saucer)
+assert_files_hardlinked repo{,2}/${target_file_object}
+echo "ok pull-local hardlinking, untrusted"
+
+if grep -q 'mode=bare' repo/config; then
+    # Now copy/corrupt an object in a 3rd repo, pull into 2nd (leaving the first pristine)
+    rm repo{2,3} -rf
+    ostree_repo_init repo2 --mode="$mode"
+    ostree_repo_init repo3 --mode="$mode"
+    # Pull into 3rd repo, corrupt an object
+    $CMD_PREFIX ostree --repo=repo3 pull-local repo test2
+    cp -a --reflink=auto repo3/${target_file_object}{,.tmp}
+    mv repo3/${target_file_object}{.tmp,}
+    echo blah >> repo3/${target_file_object}
+    if $CMD_PREFIX ostree --repo=repo2 pull-local --untrusted repo3 2>err.txt; then
+        assert_not_reached "pulled --untrusted from corrupted repo"
+    fi
+    assert_file_has_content err.txt 'Corrupted.*'${target_file_checksum}
+    rm -f err.txt
+    # But this one should succeed
+    $CMD_PREFIX ostree --repo=repo2 pull-local repo3
+    if $CMD_PREFIX ostree --repo=repo2 fsck 2>err.txt; then
+        fatal "repo should have pulled corrupted object"
+    fi
+    assert_file_has_content err.txt 'Corrupted.*'${target_file_checksum}
+fi
+echo "ok pull-local --untrusted corruption"
+rm repo{2,3} -rf
+
 # This is mostly a copy of the suid test in test-basic-user-only.sh,
 # but for the `pull --bareuseronly-files` case.
 cd ${test_tmpdir}
@@ -385,7 +418,7 @@ echo "ok pull-local (bareuseronly files)"
 
 if ! skip_one_without_user_xattrs; then
     cd ${test_tmpdir}
-    ${CMD_PREFIX} ostree --repo=repo2 checkout ${CHECKOUT_U_ARG} test2 test2-checkout-from-local-clone
+    ${CMD_PREFIX} ostree --repo=repo checkout ${CHECKOUT_U_ARG} test2 test2-checkout-from-local-clone
     cd test2-checkout-from-local-clone
     assert_file_has_content yet/another/tree/green 'leaf'
     echo "ok local clone checkout"
@@ -762,7 +795,19 @@ echo "ok subdir noent"
 
 if ! skip_one_without_user_xattrs; then
     cd ${test_tmpdir}
-    mkdir repo3
+    mkdir repo4
+    ostree_repo_init repo4 --mode=bare-user
+    ${CMD_PREFIX} ostree --repo=repo4 pull-local --commit-metadata-only repo test2
+    csum1=$($OSTREE rev-parse test2)
+    csum2=$(${CMD_PREFIX} ostree --repo=repo4 rev-parse test2)
+    assert_streq "${csum1}" "${csum2}"
+    test -f repo4/state/$csum1.commitpartial
+    echo "ok pull-local --commit-metadata-only"
+    rm -rf repo4
+fi
+
+if ! skip_one_without_user_xattrs; then
+    cd ${test_tmpdir}
     ostree_repo_init repo3 --mode=bare-user
     ${CMD_PREFIX} ostree --repo=repo3 pull-local --remote=aremote repo test2
     ${CMD_PREFIX} ostree --repo=repo3 rev-parse aremote/test2
@@ -1034,7 +1079,7 @@ echo "ok test error pre commit/bootid"
 # Whiteouts
 cd ${test_tmpdir}
 mkdir -p overlay/baz/
-if touch overlay/baz/.wh.cow && touch overlay/.wh.deeper; then
+if touch overlay/baz/.wh.cow && touch overlay/.wh.deeper && touch overlay/baz/another/.wh..wh..opq; then
     touch overlay/anewfile
     mkdir overlay/anewdir/
     touch overlay/anewdir/blah
@@ -1050,6 +1095,7 @@ if touch overlay/baz/.wh.cow && touch overlay/.wh.deeper; then
     assert_not_has_dir overlay-co/deeper
     assert_has_file overlay-co/anewdir/blah
     assert_has_file overlay-co/anewfile
+    assert_not_has_file overlay-co/baz/another/y
 
     # And test replacing a directory wholesale with a symlink as well as a regular file
     mkdir overlay
