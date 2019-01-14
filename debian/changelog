@@ -1,10 +1,10 @@
-ostree (2019.1-1) UNRELEASED; urgency=medium
+ostree (2019.1-1) unstable; urgency=medium
 
   * New upstream release
   * d/copyright: Update
   * Standards-Version: 4.3.0 (no changes required)
 
- -- Simon McVittie <smcv@debian.org>  Mon, 14 Jan 2019 08:01:29 +0000
+ -- Simon McVittie <smcv@debian.org>  Mon, 14 Jan 2019 08:23:44 +0000
 
 ostree (2018.9.1-1) unstable; urgency=medium
 
