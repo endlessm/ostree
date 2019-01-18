@@ -1,0 +1,8 @@
+---
+Name: libostree
+Repository: https://github.com/ostreedev/ostree
+Repository-Browse: https://github.com/ostreedev/ostree
+Bug-Database: https://github.com/ostreedev/ostree/issues
+Bug-Submit: https://github.com/ostreedev/ostree/issues/new
+...
+# vim:set ft=yaml:
