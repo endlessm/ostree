@@ -1,3 +1,18 @@
+ostree (2019.1-1endless1) master; urgency=medium
+
+  * Resync Debian packaging changes:
+    - Move the new systemd unit ostree-finalize-staged.path from
+      ostree-boot to ostree
+    - Remove the build dependency on gjs on s390x. Debian did this for the
+      runtime dependency (they removed the build one). The test is skipped when
+      the interpreter isn't available.
+    - Change usr/lib/libostree/grub2-15_ostree to
+      usr/libexec/libostree/grub2-15_ostree in README.Endless
+  * New upstream releases
+  * https://phabricator.endlessm.com/T25195
+
+ -- Matthew Leeds <matthew.leeds@endlessm.com>  Tue, 22 Jan 2019 13:41:00 -0800
+
 ostree (2019.1-1) unstable; urgency=medium
 
   * New upstream release
