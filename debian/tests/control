@@ -1,3 +1,7 @@
+Tests: flaky
+Restrictions: flaky
+Depends: gnome-desktop-testing, ostree-tests
+
 Tests: gnome-desktop-testing
 Depends: gnome-desktop-testing, ostree-tests
 
