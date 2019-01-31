@@ -1,3 +1,10 @@
+ostree (2018.6-3endless3) eos; urgency=medium
+
+  * Revert to version shipped in Endless OS 3.5.4.
+    https://phabricator.endlessm.com/T25195#674277
+
+ -- Will Thompson <wjt@endlessm.com>  Fri, 01 Feb 2019 06:48:17 +0000
+
 ostree (2018.6-3endless2) eos; urgency=medium
 
   * Add backported symbols ostree_mutable_tree_remove and
