@@ -96,6 +96,7 @@
     <keyword type="function" name="ostree_repo_is_writable ()" link="ostree-OstreeRepo.html#ostree-repo-is-writable"/>
     <keyword type="function" name="ostree_repo_create_at ()" link="ostree-OstreeRepo.html#ostree-repo-create-at"/>
     <keyword type="function" name="ostree_repo_create ()" link="ostree-OstreeRepo.html#ostree-repo-create"/>
+    <keyword type="function" name="ostree_repo_get_bootloader ()" link="ostree-OstreeRepo.html#ostree-repo-get-bootloader" since="2019.2"/>
     <keyword type="function" name="ostree_repo_get_path ()" link="ostree-OstreeRepo.html#ostree-repo-get-path"/>
     <keyword type="function" name="ostree_repo_get_mode ()" link="ostree-OstreeRepo.html#ostree-repo-get-mode"/>
     <keyword type="function" name="ostree_repo_get_min_free_space_bytes ()" link="ostree-OstreeRepo.html#ostree-repo-get-min-free-space-bytes"/>
@@ -209,7 +210,7 @@
     <keyword type="function" name="ostree_repo_prune_from_reachable ()" link="ostree-OstreeRepo.html#ostree-repo-prune-from-reachable"/>
     <keyword type="function" name="ostree_repo_pull ()" link="ostree-OstreeRepo.html#ostree-repo-pull"/>
     <keyword type="function" name="ostree_repo_pull_one_dir ()" link="ostree-OstreeRepo.html#ostree-repo-pull-one-dir"/>
-    <keyword type="function" name="ostree_repo_pull_with_options ()" link="ostree-OstreeRepo.html#ostree-repo-pull-with-options"/>
+    <keyword type="function" name="ostree_repo_pull_with_options ()" link="ostree-OstreeRepo.html#ostree-repo-pull-with-options" since="2019.2"/>
     <keyword type="function" name="ostree_repo_pull_default_console_progress_changed ()" link="ostree-OstreeRepo.html#ostree-repo-pull-default-console-progress-changed"/>
     <keyword type="function" name="ostree_repo_sign_commit ()" link="ostree-OstreeRepo.html#ostree-repo-sign-commit"/>
     <keyword type="function" name="ostree_repo_append_gpg_signature ()" link="ostree-OstreeRepo.html#ostree-repo-append-gpg-signature"/>
@@ -422,10 +423,13 @@
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS" link="ostree-OstreeRepo.html#OSTREE-REPO-REMOTE-CHANGE-ADD-IF-NOT-EXISTS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_DELETE" link="ostree-OstreeRepo.html#OSTREE-REPO-REMOTE-CHANGE-DELETE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_DELETE_IF_EXISTS" link="ostree-OstreeRepo.html#OSTREE-REPO-REMOTE-CHANGE-DELETE-IF-EXISTS:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_REPLACE" link="ostree-OstreeRepo.html#OSTREE-REPO-REMOTE-CHANGE-REPLACE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_RESOLVE_REV_EXT_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-RESOLVE-REV-EXT-NONE:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_RESOLVE_REV_EXT_LOCAL_ONLY" link="ostree-OstreeRepo.html#OSTREE-REPO-RESOLVE-REV-EXT-LOCAL-ONLY:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_ALIASES" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-ALIASES:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-EXCLUDE-REMOTES:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_MIRRORS" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-EXCLUDE-MIRRORS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_NORMAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-STATE-NORMAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_PARTIAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-STATE-PARTIAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_ALLOW" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-FILTER-ALLOW:CAPS"/>

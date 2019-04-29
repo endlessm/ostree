@@ -1036,6 +1036,7 @@ ostree_repo_finalize (GObject *object)
   g_mutex_clear (&self->txn_lock);
   g_free (self->collection_id);
   g_strfreev (self->repo_finders);
+  g_free (self->bootloader);
 
   g_clear_pointer (&self->remotes, g_hash_table_destroy);
   g_mutex_clear (&self->remotes_lock);
@@ -1735,6 +1736,88 @@ ostree_repo_remote_delete (OstreeRepo     *self,
   return impl_repo_remote_delete (self, NULL, FALSE, name, cancellable, error);
 }
 
+
+static gboolean
+impl_repo_remote_replace (OstreeRepo     *self,
+                          GFile          *sysroot,
+                          const char     *name,
+                          const char     *url,
+                          GVariant       *options,
+                          GCancellable   *cancellable,
+                          GError        **error)
+{
+  g_return_val_if_fail (name != NULL, FALSE);
+  g_return_val_if_fail (url != NULL, FALSE);
+  g_return_val_if_fail (options == NULL || g_variant_is_of_type (options, G_VARIANT_TYPE ("a{sv}")), FALSE);
+
+  if (!ostree_validate_remote_name (name, error))
+    return FALSE;
+
+  g_autoptr(GError) local_error = NULL;
+  g_autoptr(OstreeRemote) remote = _ostree_repo_get_remote (self, name, &local_error);
+  if (remote == NULL)
+    {
+      if (!g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        {
+          g_propagate_error (error, g_steal_pointer (&local_error));
+          return FALSE;
+        }
+      g_clear_error (&local_error);
+      if (!impl_repo_remote_add (self, sysroot, FALSE, name, url, options,
+                                 cancellable, error))
+        return FALSE;
+    }
+  else
+    {
+      /* Replace the entire option group */
+      if (!g_key_file_remove_group (remote->options, remote->group, error))
+        return FALSE;
+
+      if (g_str_has_prefix (url, "metalink="))
+        g_key_file_set_string (remote->options, remote->group, "metalink",
+                               url + strlen ("metalink="));
+      else
+        g_key_file_set_string (remote->options, remote->group, "url", url);
+
+      if (options != NULL)
+        keyfile_set_from_vardict (remote->options, remote->group, options);
+
+      /* Write out updated settings */
+      if (remote->file != NULL)
+        {
+          gsize length;
+          g_autofree char *data = g_key_file_to_data (remote->options, &length,
+                                                      NULL);
+
+          if (!g_file_replace_contents (remote->file, data, length,
+                                        NULL, FALSE, 0, NULL,
+                                        cancellable, error))
+            return FALSE;
+        }
+      else
+        {
+          g_autoptr(GKeyFile) config = ostree_repo_copy_config (self);
+
+          /* Remove the existing group if it exists */
+          if (!g_key_file_remove_group (config, remote->group, &local_error))
+            {
+              if (!g_error_matches (local_error, G_KEY_FILE_ERROR,
+                                    G_KEY_FILE_ERROR_GROUP_NOT_FOUND))
+                {
+                  g_propagate_error (error, g_steal_pointer (&local_error));
+                  return FALSE;
+                }
+            }
+
+          ot_keyfile_copy_group (remote->options, config, remote->group);
+          if (!ostree_repo_write_config (self, config, error))
+            return FALSE;
+        }
+    }
+
+  return TRUE;
+}
+
 /**
  * ostree_repo_remote_change:
  * @self: Repo
@@ -1776,6 +1859,9 @@ ostree_repo_remote_change (OstreeRepo     *self,
     case OSTREE_REPO_REMOTE_CHANGE_DELETE_IF_EXISTS:
       return impl_repo_remote_delete (self, sysroot, TRUE, name,
                                       cancellable, error);
+    case OSTREE_REPO_REMOTE_CHANGE_REPLACE:
+      return impl_repo_remote_replace (self, sysroot, name, url, options,
+                                       cancellable, error);
     }
   g_assert_not_reached ();
 }
@@ -3028,6 +3114,33 @@ reload_remote_config (OstreeRepo          *self,
   return TRUE;
 }
 
+static gboolean
+reload_sysroot_config (OstreeRepo          *self,
+                       GCancellable        *cancellable,
+                       GError             **error)
+{
+  { g_autofree char *bootloader = NULL;
+
+    if (!ot_keyfile_get_value_with_default_group_optional (self->config, "sysroot",
+                                                           "bootloader", "auto",
+                                                           &bootloader, error))
+      return FALSE;
+
+    /* TODO: possibly later add support for specifying a generic bootloader
+     * binary "x" in /usr/lib/ostree/bootloaders/x). See:
+     * https://github.com/ostreedev/ostree/issues/1719
+     * https://github.com/ostreedev/ostree/issues/1801
+     */
+    if (!(g_str_equal (bootloader, "auto") || g_str_equal (bootloader, "none")))
+      return glnx_throw (error, "Invalid bootloader configuration: '%s'", bootloader);
+
+    g_free (self->bootloader);
+    self->bootloader = g_steal_pointer (&bootloader);
+  }
+
+  return TRUE;
+}
+
 /**
  * ostree_repo_reload_config:
  * @self: repo
@@ -3045,6 +3158,8 @@ ostree_repo_reload_config (OstreeRepo          *self,
   if (!reload_core_config (self, cancellable, error))
     return FALSE;
   if (!reload_remote_config (self, cancellable, error))
+    return FALSE;
+  if (!reload_sysroot_config (self, cancellable, error))
     return FALSE;
   return TRUE;
 }
@@ -5101,8 +5216,12 @@ _ostree_repo_gpg_verify_data_internal (OstreeRepo    *self,
 
       g_auto(GStrv) gpgkeypath_list = NULL;
 
-      if (!ot_keyfile_get_string_as_list (remote->options, remote->group, "gpgkeypath",
-                                          ";,", &gpgkeypath_list, error))
+      if (!ot_keyfile_get_string_list_with_separator_choice (remote->options,
+                                                             remote->group,
+                                                             "gpgkeypath",
+                                                             ";,",
+                                                             &gpgkeypath_list,
+                                                             error))
         return NULL;
 
       if (gpgkeypath_list)
@@ -5974,4 +6093,22 @@ ostree_repo_get_default_repo_finders (OstreeRepo *self)
   g_return_val_if_fail (OSTREE_IS_REPO (self), NULL);
 
   return (const gchar * const *)self->repo_finders;
+}
+
+/**
+ * ostree_repo_get_bootloader:
+ * @self: an #OstreeRepo
+ * 
+ * Get the bootloader configured. See the documentation for the
+ * "sysroot.bootloader" config key.
+ * 
+ * Returns: bootloader configuration for the sysroot
+ * Since: 2019.2
+ */
+const gchar *
+ostree_repo_get_bootloader (OstreeRepo   *self)
+{
+  g_return_val_if_fail (OSTREE_IS_REPO (self), NULL);
+
+  return self->bootloader;
 }

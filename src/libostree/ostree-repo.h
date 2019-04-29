@@ -116,6 +116,9 @@ _OSTREE_PUBLIC
 const gchar * const * ostree_repo_get_default_repo_finders (OstreeRepo   *self);
 
 _OSTREE_PUBLIC
+const gchar * ostree_repo_get_bootloader (OstreeRepo   *self);
+
+_OSTREE_PUBLIC
 GFile *       ostree_repo_get_path (OstreeRepo  *self);
 
 _OSTREE_PUBLIC
@@ -166,12 +169,14 @@ gboolean      ostree_repo_remote_delete (OstreeRepo     *self,
  * @OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS: Like above, but do nothing if the remote exists
  * @OSTREE_REPO_REMOTE_CHANGE_DELETE: Delete a remote
  * @OSTREE_REPO_REMOTE_CHANGE_DELETE_IF_EXISTS: Delete a remote, do nothing if the remote does not exist
+ * @OSTREE_REPO_REMOTE_CHANGE_REPLACE: Add or replace a remote (Since: 2019.2)
  */
 typedef enum {
   OSTREE_REPO_REMOTE_CHANGE_ADD,
   OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS,
   OSTREE_REPO_REMOTE_CHANGE_DELETE,
-  OSTREE_REPO_REMOTE_CHANGE_DELETE_IF_EXISTS
+  OSTREE_REPO_REMOTE_CHANGE_DELETE_IF_EXISTS,
+  OSTREE_REPO_REMOTE_CHANGE_REPLACE,
 } OstreeRepoRemoteChange;
 
 _OSTREE_PUBLIC
@@ -460,9 +465,11 @@ gboolean      ostree_repo_resolve_rev (OstreeRepo  *self,
 /**
  * OstreeRepoResolveRevExtFlags:
  * @OSTREE_REPO_RESOLVE_REV_EXT_NONE: No flags.
+ * @OSTREE_REPO_RESOLVE_REV_EXT_LOCAL_ONLY: Exclude remote and mirrored refs. Since: 2019.2
  */
 typedef enum {
   OSTREE_REPO_RESOLVE_REV_EXT_NONE = 0,
+  OSTREE_REPO_RESOLVE_REV_EXT_LOCAL_ONLY = (1 << 0),
 } OstreeRepoResolveRevExtFlags;
 
 _OSTREE_PUBLIC
@@ -494,11 +501,13 @@ gboolean      ostree_repo_list_refs (OstreeRepo       *self,
  * @OSTREE_REPO_LIST_REFS_EXT_NONE: No flags.
  * @OSTREE_REPO_LIST_REFS_EXT_ALIASES: Only list aliases.  Since: 2017.10
  * @OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES: Exclude remote refs.  Since: 2017.11
+ * @OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_MIRRORS: Exclude mirrored refs.  Since: 2019.2
  */
 typedef enum {
   OSTREE_REPO_LIST_REFS_EXT_NONE = 0,
   OSTREE_REPO_LIST_REFS_EXT_ALIASES = (1 << 0),
   OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES = (1 << 1),
+  OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_MIRRORS = (1 << 2),
 } OstreeRepoListRefsExtFlags;
 
 _OSTREE_PUBLIC

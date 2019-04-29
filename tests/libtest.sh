@@ -355,6 +355,11 @@ setup_os_boot_grub2() {
     esac
 }
 
+setup_os_boot_configured_bootloader() {
+    bootloader_keyval=$1
+    ${CMD_PREFIX} ostree --repo=sysroot/ostree/repo config set ${bootloader_keyval}
+}
+
 setup_os_repository () {
     mode=$1
     shift
@@ -448,6 +453,9 @@ EOF
         *grub2*)
         setup_os_boot_grub2 "${bootmode}"
             ;;
+        sysroot\.bootloader*)
+        setup_os_boot_configured_bootloader "${bootmode}"
+            ;;
     esac
 
     cd ${test_tmpdir}
@@ -465,6 +473,7 @@ os_repository_new_commit ()
     boot_checksum_iteration=${1:-0}
     content_iteration=${2:-0}
     branch=${3:-testos/buildmaster/x86_64-runtime}
+    export version=${4:-$(date "+%Y%m%d.${content_iteration}")}
     echo "BOOT ITERATION: $boot_checksum_iteration"
     cd ${test_tmpdir}/osdata
     kver=3.6.0
@@ -498,8 +507,6 @@ os_repository_new_commit ()
     echo "a new default dir and file" > usr/etc/new-default-dir/moo
 
     echo "content iteration ${content_iteration}" > usr/bin/content-iteration
-
-    export version=$(date "+%Y%m%d.${content_iteration}")
 
     ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit  --add-metadata-string "version=${version}" -b $branch -s "Build"
     cd ${test_tmpdir}
