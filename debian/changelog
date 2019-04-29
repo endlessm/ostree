@@ -1,5 +1,6 @@
-ostree (2019.1-2) UNRELEASED; urgency=medium
+ostree (2019.2-1) UNRELEASED; urgency=medium
 
+  * New upstream release
   * d/upstream/metadata: Add DEP-12 metadata
 
  -- Simon McVittie <smcv@debian.org>  Fri, 18 Jan 2019 08:48:31 +0000
