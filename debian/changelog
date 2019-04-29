@@ -4,6 +4,7 @@ ostree (2019.2-1) UNRELEASED; urgency=medium
   * d/upstream/metadata: Add DEP-12 metadata
   * d/copyright: Update
   * d/libostree-1-1.symbols: Update
+  * Use debian/experimental branch for new upstream release during freeze
 
  -- Simon McVittie <smcv@debian.org>  Fri, 18 Jan 2019 08:48:31 +0000
 
