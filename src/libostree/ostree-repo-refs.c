@@ -479,6 +479,9 @@ ostree_repo_resolve_rev (OstreeRepo     *self,
  * the parameter @out_rev. Differently from ostree_repo_resolve_rev(),
  * this will not fall back to searching through remote repos if a
  * local ref is specified but not found.
+ *
+ * The flag %OSTREE_REPO_RESOLVE_REV_EXT_LOCAL_ONLY is implied so
+ * using it has no effect.
  */
 gboolean
 ostree_repo_resolve_rev_ext (OstreeRepo                    *self,
@@ -511,7 +514,9 @@ ostree_repo_resolve_rev_ext (OstreeRepo                    *self,
  * the given @ref cannot be found, a %G_IO_ERROR_NOT_FOUND error will be
  * returned.
  *
- * There are currently no @flags which affect the behaviour of this function.
+ * If you want to check only local refs, not remote or mirrored ones, use the
+ * flag %OSTREE_REPO_RESOLVE_REV_EXT_LOCAL_ONLY. This is analogous to using
+ * ostree_repo_resolve_rev_ext() but for collection-refs.
  *
  * Returns: %TRUE on success, %FALSE on failure
  * Since: 2018.6
@@ -525,19 +530,63 @@ ostree_repo_resolve_collection_ref (OstreeRepo                    *self,
                                     GCancellable                  *cancellable,
                                     GError                       **error)
 {
+  g_autofree char *ret_contents = NULL;
+
   g_return_val_if_fail (OSTREE_IS_REPO (self), FALSE);
   g_return_val_if_fail (ref != NULL, FALSE);
   g_return_val_if_fail (ref->collection_id != NULL && ref->ref_name != NULL, FALSE);
   g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), FALSE);
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
-  g_autoptr(GHashTable) refs = NULL;  /* (element-type OstreeCollectionRef utf8) */
-  if (!ostree_repo_list_collection_refs (self, ref->collection_id, &refs,
-                                         OSTREE_REPO_LIST_REFS_EXT_NONE,
-                                         cancellable, error))
-    return FALSE;
+  /* Check for the ref in the current transaction in case it hasn't been
+   * written to disk, to match the behavior of ostree_repo_resolve_rev() */
+  if (self->in_transaction)
+    {
+      g_mutex_lock (&self->txn_lock);
+      if (self->txn.collection_refs)
+        {
+          const char *repo_collection_id = ostree_repo_get_collection_id (self);
+          /* If the collection ID doesn't match it's a remote ref */
+          if (!(flags & OSTREE_REPO_RESOLVE_REV_EXT_LOCAL_ONLY) ||
+              repo_collection_id == NULL ||
+              g_strcmp0 (repo_collection_id, ref->collection_id) == 0)
+            {
+              ret_contents = g_strdup (g_hash_table_lookup (self->txn.collection_refs, ref));
+            }
+         }
+      g_mutex_unlock (&self->txn_lock);
+    }
 
-  const char *ret_contents = g_hash_table_lookup (refs, ref);
+  /* Check for the ref on disk in the repo */
+  if (ret_contents == NULL)
+    {
+      g_autoptr(GHashTable) refs = NULL;  /* (element-type OstreeCollectionRef utf8) */
+      OstreeRepoListRefsExtFlags list_refs_flags;
+
+      if (flags & OSTREE_REPO_RESOLVE_REV_EXT_LOCAL_ONLY)
+        list_refs_flags = OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES | OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_MIRRORS;
+      else
+        list_refs_flags = OSTREE_REPO_LIST_REFS_EXT_NONE;
+
+      if (!ostree_repo_list_collection_refs (self, ref->collection_id, &refs,
+                                             list_refs_flags, cancellable, error))
+        return FALSE;
+
+      ret_contents = g_strdup (g_hash_table_lookup (refs, ref));
+    }
+
+  /* Check for the ref in the parent repo */
+  if (ret_contents == NULL && self->parent_repo != NULL)
+    {
+      if (!ostree_repo_resolve_collection_ref (self->parent_repo,
+                                               ref,
+                                               TRUE,
+                                               flags,
+                                               &ret_contents,
+                                               cancellable,
+                                               error))
+        return FALSE;
+    }
 
   if (ret_contents == NULL && !allow_noent)
     {
@@ -548,7 +597,7 @@ ostree_repo_resolve_collection_ref (OstreeRepo                    *self,
     }
 
   if (out_rev != NULL)
-    *out_rev = g_strdup (ret_contents);
+    *out_rev = g_steal_pointer (&ret_contents);
   return TRUE;
 }
 
@@ -1218,7 +1267,9 @@ _ostree_repo_update_collection_refs (OstreeRepo        *self,
  * (ostree_repo_get_collection_id()).
  *
  * If you want to exclude refs from `refs/remotes`, use
- * %OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES in @flags.
+ * %OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES in @flags. Similarly use
+ * %OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_MIRRORS to exclude refs from
+ * `refs/mirrors`.
  *
  * Returns: %TRUE on success, %FALSE otherwise
  * Since: 2018.6
@@ -1240,9 +1291,12 @@ ostree_repo_list_collection_refs (OstreeRepo                 *self,
   if (match_collection_id != NULL && !ostree_validate_collection_id (match_collection_id, error))
     return FALSE;
 
-  const gchar *refs_dirs[] = { "refs/mirrors", "refs/remotes", NULL };
-  if (flags & OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES)
-    refs_dirs[1] = NULL;
+  g_autoptr(GPtrArray) refs_dirs = g_ptr_array_new ();
+  if (!(flags & OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_MIRRORS))
+    g_ptr_array_add (refs_dirs, "refs/mirrors");
+  if (!(flags & OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES))
+    g_ptr_array_add (refs_dirs, "refs/remotes");
+  g_ptr_array_add (refs_dirs, NULL);
 
   g_autoptr(GHashTable) ret_all_refs = NULL;
 
@@ -1272,7 +1326,7 @@ ostree_repo_list_collection_refs (OstreeRepo                 *self,
 
   g_string_truncate (base_path, 0);
 
-  for (const char **iter = refs_dirs; iter && *iter; iter++)
+  for (const char **iter = (const char **)refs_dirs->pdata; iter && *iter; iter++)
     {
       const char *refs_dir = *iter;
       gboolean refs_dir_exists = FALSE;
