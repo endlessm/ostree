@@ -661,34 +661,40 @@ static gboolean
 read_current_bootversion (OstreeSysroot *self, int *out_bootversion, GCancellable *cancellable,
                           GError **error)
 {
-  int ret_bootversion;
+  int ret_bootversion = 0;
   struct stat stbuf;
+  g_autofree char *target = NULL;
 
   if (!glnx_fstatat_allow_noent (self->sysroot_fd, "boot/loader", &stbuf, AT_SYMLINK_NOFOLLOW,
                                  error))
     return FALSE;
   if (errno == ENOENT)
     {
-      g_debug ("Didn't find $sysroot/boot/loader symlink; assuming bootversion 0");
-      ret_bootversion = 0;
+      /* Don't share the error because we want error handling to be the same as before we
+       * added fake symlinks */
+      g_debug ("Didn't find $sysroot/boot/loader symlink; trying fake symlink");
+      target = glnx_file_get_contents_utf8_at (self->sysroot_fd, "boot/loader.sln", NULL,
+                                               cancellable, NULL);
+      if (!target)
+        goto not_found;
     }
   else
     {
       if (!S_ISLNK (stbuf.st_mode))
         return glnx_throw (error, "Not a symbolic link: boot/loader");
-
-      g_autofree char *target
-          = glnx_readlinkat_malloc (self->sysroot_fd, "boot/loader", cancellable, error);
+      target = glnx_readlinkat_malloc (self->sysroot_fd, "boot/loader", cancellable, error);
       if (!target)
         return FALSE;
-      if (g_strcmp0 (target, "loader.0") == 0)
-        ret_bootversion = 0;
-      else if (g_strcmp0 (target, "loader.1") == 0)
-        ret_bootversion = 1;
-      else
-        return glnx_throw (error, "Invalid target '%s' in boot/loader", target);
     }
 
+  if (g_strcmp0 (target, "loader.0") == 0)
+    ret_bootversion = 0;
+  else if (g_strcmp0 (target, "loader.1") == 0)
+    ret_bootversion = 1;
+  else
+    return glnx_throw (error, "Invalid target '%s' in boot/loader", target);
+
+not_found:
   *out_bootversion = ret_bootversion;
   return TRUE;
 }

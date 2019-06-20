@@ -23,12 +23,14 @@
 #include <gio/gunixinputstream.h>
 #include <gio/gunixoutputstream.h>
 #include <glib-unix.h>
+#include <linux/magic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/ioctl.h>
 #include <sys/mount.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
+#include <sys/statfs.h>
 #include <sys/statvfs.h>
 
 #ifdef HAVE_LIBMOUNT
@@ -59,6 +61,31 @@
   SD_ID128_MAKE (e8, 64, 6c, d6, 3d, ff, 46, 25, b7, 79, 09, a8, e7, a4, 09, 94)
 #endif
 
+static gboolean
+fs_is_fat (int parent_dfd)
+{
+  struct statfs buf;
+
+  if (TEMP_FAILURE_RETRY (fstatfs (parent_dfd, &buf)) < 0)
+    return FALSE;
+
+  if (buf.f_type == MSDOS_SUPER_MAGIC)
+    return TRUE;
+
+  return FALSE;
+}
+
+static gboolean
+symlink_fat (const char *target, int parent_dfd, const char *linkpath, GCancellable *cancellable,
+             GError **error)
+{
+  if (!glnx_file_replace_contents_at (parent_dfd, linkpath, (guint8 *)target, -1,
+                                      GLNX_FILE_REPLACE_DATASYNC_NEW, cancellable, error))
+    return FALSE;
+
+  return TRUE;
+}
+
 /*
  * Like symlinkat() but overwrites (atomically) an existing
  * symlink.
@@ -67,6 +94,9 @@ static gboolean
 symlink_at_replace (const char *oldpath, int parent_dfd, const char *newpath,
                     GCancellable *cancellable, GError **error)
 {
+  g_autofree char *dest_dir = g_path_get_dirname (newpath);
+  glnx_autofd int dest_dir_dfd = -1;
+  gboolean fat;
   /* Possibly in the future generate a temporary random name here,
    * would need to move "generate a temporary name" code into
    * libglnx or glib?
@@ -76,12 +106,36 @@ symlink_at_replace (const char *oldpath, int parent_dfd, const char *newpath,
   /* Clean up any stale temporary links */
   (void)unlinkat (parent_dfd, temppath, 0);
 
+  /* Clean up any stale FAT "symlinks" */
+  g_autofree char *temp_fat_path = g_strconcat (temppath, ".sln", NULL);
+  (void)unlinkat (parent_dfd, temp_fat_path, 0);
+
+  if (!glnx_opendirat (parent_dfd, dest_dir, TRUE, &dest_dir_dfd, error))
+    return FALSE;
+
+  fat = fs_is_fat (dest_dir_dfd);
+
   /* Create the temp link */
-  if (TEMP_FAILURE_RETRY (symlinkat (oldpath, parent_dfd, temppath)) < 0)
-    return glnx_throw_errno_prefix (error, "symlinkat");
+  if (!fat)
+    {
+      if (TEMP_FAILURE_RETRY (symlinkat (oldpath, parent_dfd, temppath)) < 0)
+        return glnx_throw_errno_prefix (error, "symlinkat");
+    }
+  else
+    {
+      if (!symlink_fat (oldpath, parent_dfd, temp_fat_path, cancellable, error))
+        return glnx_throw_errno_prefix (error, "symlinkat");
+    }
 
   /* Rename it into place */
-  if (!glnx_renameat (parent_dfd, temppath, parent_dfd, newpath, error))
+  if (fat)
+    {
+      g_autofree char *new_fat_path = g_strconcat (newpath, ".sln", NULL);
+      if (!glnx_renameat (parent_dfd, temp_fat_path, parent_dfd, new_fat_path, error))
+        return FALSE;
+      return TRUE;
+    }
+  else if (!glnx_renameat (parent_dfd, temppath, parent_dfd, newpath, error))
     return FALSE;
 
   return TRUE;
@@ -2220,12 +2274,23 @@ swap_bootloader (OstreeSysroot *sysroot, OstreeBootloader *bootloader, int curre
   if (!_ostree_sysroot_ensure_boot_fd (sysroot, error))
     return FALSE;
 
+  gboolean fat = fs_is_fat (sysroot->boot_fd);
+
   /* The symlink was already written, and we used syncfs() to ensure
    * its data is in place.  Renaming now should give us atomic semantics;
    * see https://bugzilla.gnome.org/show_bug.cgi?id=755595
    */
-  if (!glnx_renameat (sysroot->boot_fd, "loader.tmp", sysroot->boot_fd, "loader", error))
-    return FALSE;
+  if (!fat)
+    {
+      if (!glnx_renameat (sysroot->boot_fd, "loader.tmp", sysroot->boot_fd, "loader", error))
+        return FALSE;
+    }
+  else
+    {
+      if (!glnx_renameat (sysroot->boot_fd, "loader.tmp.sln", sysroot->boot_fd, "loader.sln",
+                          error))
+        return FALSE;
+    }
 
   /* Now we explicitly fsync this directory, even though it
    * isn't required for atomicity, for two reasons:
