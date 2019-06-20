@@ -55,6 +55,21 @@
 #define OSTREE_DEPLOYMENT_FINALIZING_ID SD_ID128_MAKE(e8,64,6c,d6,3d,ff,46,25,b7,79,09,a8,e7,a4,09,94)
 #endif
 
+static gboolean
+symlink_fat (const char    *target,
+             int            parent_dfd,
+             const char    *linkpath,
+             GCancellable  *cancellable,
+             GError       **error)
+{
+  if (!glnx_file_replace_contents_at(parent_dfd, linkpath, (guint8*)target,
+                                     -1, GLNX_FILE_REPLACE_DATASYNC_NEW,
+                                     cancellable, error))
+    return FALSE;
+
+  return TRUE;
+}
+
 /*
  * Like symlinkat() but overwrites (atomically) an existing
  * symlink.
@@ -66,6 +81,7 @@ symlink_at_replace (const char    *oldpath,
                     GCancellable  *cancellable,
                     GError       **error)
 {
+  gboolean fat = FALSE;
   /* Possibly in the future generate a temporary random name here,
    * would need to move "generate a temporary name" code into
    * libglnx or glib?
@@ -75,12 +91,26 @@ symlink_at_replace (const char    *oldpath,
   /* Clean up any stale temporary links */
   (void) unlinkat (parent_dfd, temppath, 0);
 
+  /* Clean up any stale FAT "symlinks" */
+  g_autofree char *temp_fat_path = g_strconcat (temppath, ".sln", NULL);
+  (void) unlinkat (parent_dfd, temp_fat_path, 0);
+
   /* Create the temp link */
   if (TEMP_FAILURE_RETRY (symlinkat (oldpath, parent_dfd, temppath)) < 0)
-    return glnx_throw_errno_prefix (error, "symlinkat");
-
+    {
+      if (symlink_fat (oldpath, parent_dfd, temp_fat_path, cancellable, error))
+        fat = TRUE;
+      else return glnx_throw_errno_prefix (error, "symlinkat");
+    }
   /* Rename it into place */
-  if (!glnx_renameat (parent_dfd, temppath, parent_dfd, newpath, error))
+  if (fat)
+    {
+      g_autofree char *new_fat_path = g_strconcat (newpath, ".sln", NULL);
+      if (!glnx_renameat (parent_dfd, temp_fat_path, parent_dfd, new_fat_path, error))
+        return FALSE;
+      return TRUE;
+    }
+  else if (!glnx_renameat (parent_dfd, temppath, parent_dfd, newpath, error))
     return FALSE;
 
   return TRUE;
@@ -1850,9 +1880,9 @@ swap_bootloader (OstreeSysroot  *sysroot,
    * its data is in place.  Renaming now should give us atomic semantics;
    * see https://bugzilla.gnome.org/show_bug.cgi?id=755595
    */
-  if (!glnx_renameat (boot_dfd, "loader.tmp", boot_dfd, "loader", error))
-    return FALSE;
-
+  if (TEMP_FAILURE_RETRY (renameat (boot_dfd, "loader.tmp", boot_dfd, "loader")) != 0)
+    if (!glnx_renameat (boot_dfd, "loader.tmp.sln", boot_dfd, "loader.sln", error))
+      return FALSE;
   /* Now we explicitly fsync this directory, even though it
    * isn't required for atomicity, for two reasons:
    *  - It should be very cheap as we're just syncing whatever
