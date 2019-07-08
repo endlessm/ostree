@@ -1,6 +1,8 @@
 ostree (2019.2-2) UNRELEASED; urgency=medium
 
   * d/salsa-ci.yml: Request standard CI on salsa.debian.org
+    - Disable build-time tests with DEB_BUILD_OPTIONS=nocheck for now:
+      they don't currently work in the salsa-ci infrastructure.
 
  -- Simon McVittie <smcv@debian.org>  Sun, 23 Jun 2019 20:07:33 +0100
 
