@@ -2,5 +2,12 @@ include:
   - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/salsa-ci.yml
   - https://salsa.debian.org/salsa-ci-team/pipeline/raw/master/pipeline-jobs.yml
 
+autopkgtest:
+  # https://github.com/ostreedev/ostree/issues/1885
+  except:
+    variables:
+      - $DISABLED == "https://github.com/ostreedev/ostree/issues/1885"
+
 variables:
+  # https://github.com/ostreedev/ostree/issues/1885
   DEB_BUILD_OPTIONS: 'nocheck'
