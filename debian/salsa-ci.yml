@@ -4,7 +4,7 @@ include:
 
 autopkgtest:
   # https://github.com/ostreedev/ostree/issues/1885
-  except:
+  only:
     variables:
       - $DISABLED == "https://github.com/ostreedev/ostree/issues/1885"
 
