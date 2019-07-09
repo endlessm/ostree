@@ -64,11 +64,11 @@ assertEquals(nSizes, 4);
 let expectedUncompressedSizes = [12, 18];
 let foundFiles = 0;
 for (let i = 0; i < nSizes; i++) {
-    let sizeEntry = sizes.get_child_value(i).deep_unpack();
-    assertEquals(sizeEntry.length, 35);
-    let compressedSize = sizeEntry[32];
-    let uncompressedSize = sizeEntry[33];
-    let objType = sizeEntry[34];
+    let sizeEntry = sizes.get_child_value(i);
+    assertEquals(sizeEntry.n_children(), 35);
+    let compressedSize = sizeEntry.get_child_value(32).get_byte();
+    let uncompressedSize = sizeEntry.get_child_value(33).get_byte();
+    let objType = sizeEntry.get_child_value(34).get_byte();
     print("compressed = " + compressedSize);
     print("uncompressed = " + uncompressedSize);
     print("object type = " + objType);
