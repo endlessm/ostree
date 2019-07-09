@@ -14,7 +14,6 @@ override_dh_autoreconf:
 configure_options = \
 	GJS=some-nonexistent-gjs-binary \
 	--enable-installed-tests \
-	--libexecdir='$${prefix}/libexec' \
 	--with-avahi \
 	--with-dracut \
 	--with-grub2 \
@@ -99,5 +98,5 @@ override_dh_fixperms-arch:
 	find debian/tmp -type f -name '*.js' -print0 | \
 		xargs -0r chmod -v go=rX,u+rw,a-s
 
-override_dh_systemd_start:
-	dh_systemd_start --no-start
+override_dh_installsystemd:
+	dh_installsystemd --no-start

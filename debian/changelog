@@ -7,6 +7,9 @@ ostree (2019.2-2) UNRELEASED; urgency=medium
       can't reproduce and debug the failure in a local Docker container.
     - Similarly, disable the autopkgtest for now.
   * Standards-Version: 4.4.0 (no changes required)
+  * Use debhelper-compat 12
+    - Override dh_installsystemd instead of dh_systemd_start
+    - Stop overriding libexecdir
 
  -- Simon McVittie <smcv@debian.org>  Sun, 23 Jun 2019 20:07:33 +0100
 

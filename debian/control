@@ -13,7 +13,7 @@ Build-Depends:
  bison,
  ca-certificates,
  cpio,
- debhelper (>= 10~),
+ debhelper-compat (= 12),
  dh-exec (>= 0.23~),
  docbook-xml <!nodoc>,
  docbook-xsl <!nodoc>,
