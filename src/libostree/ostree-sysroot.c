@@ -348,7 +348,7 @@ validate_boot_fd (OstreeSysroot *self, int fd, GError **error)
   if (fstatfs (fd, &stbuf) < 0)
     return glnx_throw_errno_prefix (error, "fstatfs(boot)");
   self->boot_is_vfat = (stbuf.f_type == MSDOS_SUPER_MAGIC);
-  if (self->boot_is_vfat)
+  if (self->boot_is_vfat && !is_payg_deployment (NULL))
     return glnx_throw (error, "/boot cannot currently be a vfat filesystem");
   return TRUE;
 }

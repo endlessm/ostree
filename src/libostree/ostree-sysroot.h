@@ -285,4 +285,7 @@ _OSTREE_PUBLIC
 gboolean ostree_sysroot_deployment_kexec_load (OstreeSysroot *self, OstreeDeployment *deployment,
                                                GCancellable *cancellable, GError **error);
 
+_OSTREE_PUBLIC
+gboolean is_payg_deployment (GCancellable *cancellable);
+
 G_END_DECLS
