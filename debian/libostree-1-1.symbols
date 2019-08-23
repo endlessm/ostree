@@ -29,6 +29,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2018.7@LIBOSTREE_2018.7 2018.7
  LIBOSTREE_2018.9@LIBOSTREE_2018.9 2018.9
  LIBOSTREE_2019.2@LIBOSTREE_2019.2 2019.2
+ LIBOSTREE_2019.3@LIBOSTREE_2019.3 2019.3
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
@@ -133,6 +134,24 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_gpg_verify_result_lookup@LIBOSTREE_2016.3 2016.4
  ostree_gpg_verify_result_require_valid_signature@LIBOSTREE_2016.6 2016.6
  ostree_hash_object_name@LIBOSTREE_2016.3 2016.4
+ ostree_kernel_args_append@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_append_argv@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_append_argv_filtered@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_append_proc_cmdline@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_cleanup@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_delete@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_delete_key_entry@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_free@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_from_string@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_get_last_value@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_new@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_new_replace@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_parse_append@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_replace@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_replace_argv@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_replace_take@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_to_string@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_to_strv@LIBOSTREE_2019.3 2019.3
  ostree_metadata_variant_type@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_check_error@LIBOSTREE_2018.7 2018.7
  ostree_mutable_tree_ensure_dir@LIBOSTREE_2016.3 2016.4
@@ -335,6 +354,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_verify_commit_for_remote@LIBOSTREE_2016.14 2016.14
  ostree_repo_verify_summary@LIBOSTREE_2016.3 2016.4
  ostree_repo_write_archive_to_mtree@LIBOSTREE_2016.3 2016.4
+ ostree_repo_write_archive_to_mtree_from_fd@LIBOSTREE_2019.3 2019.3
  ostree_repo_write_commit@LIBOSTREE_2016.3 2016.4
  ostree_repo_write_commit_detached_metadata@LIBOSTREE_2016.3 2016.4
  ostree_repo_write_commit_with_time@LIBOSTREE_2016.3 2016.4
