@@ -855,6 +855,15 @@ _ostree_sysroot_reload_staged (OstreeSysroot *self,
   return TRUE;
 }
 
+/**
+ * ostree_sysroot_load_if_changed:
+ * @self: #OstreeSysroot
+ * @out_changed: (out caller-allocates):
+ * @cancellable: Cancellable
+ * @error: Error
+ *
+ * Since: 2016.4
+ */
 gboolean
 ostree_sysroot_load_if_changed (OstreeSysroot  *self,
                                 gboolean       *out_changed,
@@ -1033,6 +1042,8 @@ ostree_sysroot_get_booted_deployment (OstreeSysroot       *self)
  * @self: Sysroot
  *
  * Returns: (transfer none): The currently staged deployment, or %NULL if none
+ *
+ * Since: 2018.5
  */
 OstreeDeployment *
 ostree_sysroot_get_staged_deployment (OstreeSysroot       *self)
@@ -1144,6 +1155,8 @@ ostree_sysroot_get_repo (OstreeSysroot         *self,
  * has been invoked successfully.
  *
  * Returns: (transfer none): The OSTree repository in sysroot @self.
+ *
+ * Since: 2017.7
  */
 OstreeRepo *
 ostree_sysroot_repo (OstreeSysroot *self)
@@ -1475,6 +1488,8 @@ ostree_sysroot_lock_finish (OstreeSysroot         *self,
  * Initialize the directory structure for an "osname", which is a
  * group of operating system deployments, with a shared `/var`.  One
  * is required for generating a deployment.
+ *
+ * Since: 2016.4
  */
 gboolean
 ostree_sysroot_init_osname (OstreeSysroot       *self,
@@ -1673,12 +1688,12 @@ clone_deployment (OstreeSysroot  *sysroot,
   /* Copy the bootloader config options */
   OstreeBootconfigParser *bootconfig = ostree_deployment_get_bootconfig (merge_deployment);
   g_auto(GStrv) previous_args = g_strsplit (ostree_bootconfig_parser_get (bootconfig, "options"), " ", -1);
-  g_autoptr(OstreeKernelArgs) kargs = _ostree_kernel_args_new ();
-  _ostree_kernel_args_append_argv (kargs, previous_args);
+  g_autoptr(OstreeKernelArgs) kargs = ostree_kernel_args_new ();
+  ostree_kernel_args_append_argv (kargs, previous_args);
 
   /* Deploy the copy */
   g_autoptr(OstreeDeployment) new_deployment = NULL;
-  g_auto(GStrv) kargs_strv = _ostree_kernel_args_to_strv (kargs);
+  g_auto(GStrv) kargs_strv = ostree_kernel_args_to_strv (kargs);
   if (!ostree_sysroot_deploy_tree (sysroot,
                                    ostree_deployment_get_osname (target_deployment),
                                    ostree_deployment_get_csum (target_deployment),
@@ -1729,6 +1744,8 @@ static gboolean mkdir_unmasked (int                   dfd,
  *
  * The `OSTREE_DEPLOYMENT_UNLOCKED_HOTFIX` state is persistent
  * across reboots.
+ *
+ * Since: 2016.4
  */
 gboolean
 ostree_sysroot_deployment_unlock (OstreeSysroot     *self,

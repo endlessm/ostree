@@ -132,6 +132,9 @@
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
+/* Define to disable internal GPGME support */
+#undef OSTREE_DISABLE_GPGME
+
 /* Define if experimental API should be enabled */
 #undef OSTREE_ENABLE_EXPERIMENTAL_API
 

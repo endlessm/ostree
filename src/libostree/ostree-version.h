@@ -43,7 +43,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_RELEASE_VERSION (2)
+#define OSTREE_RELEASE_VERSION (3)
 
 /**
  * OSTREE_VERSION
@@ -52,7 +52,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION (2019.2)
+#define OSTREE_VERSION (2019.3)
 
 /**
  * OSTREE_VERSION_S:
@@ -62,7 +62,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION_S "2019.2"
+#define OSTREE_VERSION_S "2019.3"
 
 #define OSTREE_ENCODE_VERSION(year,release) \
         ((year) << 16 | (release))
@@ -91,3 +91,13 @@
 #define OSTREE_CHECK_VERSION(year,release)   \
         (OSTREE_YEAR_VERSION > (year) || \
          (OSTREE_YEAR_VERSION == (year) && OSTREE_RELEASE_VERSION >= (release)))
+
+/**
+ * OSTREE_BUILT_FEATURES:
+ *
+ * Whitespace separated set of features this libostree was configured with at build time.
+ * Consult the source code in configure.ac (or the CLI `ostree --version`) for examples.
+ *
+ * Since: 2019.3
+ */
+#define OSTREE_BUILT_FEATURES "libcurl libsoup gpgme libarchive selinux openssl libmount release p2p"

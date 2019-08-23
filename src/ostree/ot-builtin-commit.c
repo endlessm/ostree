@@ -28,7 +28,6 @@
 #include "ot-editor.h"
 #include "ostree.h"
 #include "otutil.h"
-#include "ot-tool-util.h"
 #include "parse-datetime.h"
 #include "ostree-repo-private.h"
 #include "ostree-libarchive-private.h"
@@ -61,8 +60,10 @@ static char **opt_trees;
 static gint opt_owner_uid = -1;
 static gint opt_owner_gid = -1;
 static gboolean opt_table_output;
+#ifndef OSTREE_DISABLE_GPGME
 static char **opt_key_ids;
 static char *opt_gpg_homedir;
+#endif
 static gboolean opt_generate_sizes;
 static gboolean opt_disable_fsync;
 static char *opt_timestamp;
@@ -115,8 +116,10 @@ static GOptionEntry options[] = {
   { "skip-list", 0, 0, G_OPTION_ARG_FILENAME, &opt_skiplist_file, "File containing list of files to skip", "PATH" },
   { "consume", 0, 0, G_OPTION_ARG_NONE, &opt_consume, "Consume (delete) content after commit (for local directories)", NULL },
   { "table-output", 0, 0, G_OPTION_ARG_NONE, &opt_table_output, "Output more information in a KEY: VALUE format", NULL },
+#ifndef OSTREE_DISABLE_GPGME
   { "gpg-sign", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_key_ids, "GPG Key ID to sign the commit with", "KEY-ID"},
   { "gpg-homedir", 0, 0, G_OPTION_ARG_FILENAME, &opt_gpg_homedir, "GPG Homedir to use when looking for keyrings", "HOMEDIR"},
+#endif
   { "generate-sizes", 0, 0, G_OPTION_ARG_NONE, &opt_generate_sizes, "Generate size information along with commit metadata", NULL },
   { "disable-fsync", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE, &opt_disable_fsync, "Do not invoke fsync()", NULL },
   { "fsync", 0, 0, G_OPTION_ARG_CALLBACK, parse_fsync_cb, "Specify how to invoke fsync()", "POLICY" },
@@ -636,11 +639,22 @@ ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocatio
             {
               if (!opt_tar_pathname_filter)
                 {
-                  object_to_commit = g_file_new_for_path (tree);
-                  if (!ostree_repo_write_archive_to_mtree (repo, object_to_commit, mtree, modifier,
-                                                           opt_tar_autocreate_parents,
-                                                           cancellable, error))
-                    goto out;
+                  if (strcmp (tree, "-") == 0)
+                    {
+                      if (!ostree_repo_write_archive_to_mtree_from_fd (repo, STDIN_FILENO, mtree, modifier,
+                                                                       opt_tar_autocreate_parents,
+                                                                       cancellable, error))
+                        goto out;
+                    }
+                  else
+                    {
+                      object_to_commit = g_file_new_for_path (tree);
+
+                      if (!ostree_repo_write_archive_to_mtree (repo, object_to_commit, mtree, modifier,
+                                                               opt_tar_autocreate_parents,
+                                                               cancellable, error))
+                        goto out;
+                    }
                 }
               else
                 {
@@ -666,7 +680,13 @@ ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocatio
                       goto out;
                     }
                   opts.translate_pathname_user_data = &tpdata;
-                  g_autoptr(OtAutoArchiveRead) archive = ot_open_archive_read (tree, error);
+
+                  g_autoptr(OtAutoArchiveRead) archive;
+                  if (strcmp (tree, "-") == 0)
+                    archive = ot_open_archive_read_fd (STDIN_FILENO, error);
+                  else
+                    archive = ot_open_archive_read (tree, error);
+
                   if (!archive)
                     goto out;
                   if (!ostree_repo_import_archive_to_mtree (repo, &opts, archive, mtree,
@@ -797,6 +817,7 @@ ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocatio
             goto out;
         }
 
+#ifndef OSTREE_DISABLE_GPGME
       if (opt_key_ids)
         {
           char **iter;
@@ -814,6 +835,7 @@ ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocatio
                 goto out;
             }
         }
+#endif
 
       if (opt_branch)
         ostree_repo_transaction_set_ref (repo, NULL, opt_branch, commit_checksum);

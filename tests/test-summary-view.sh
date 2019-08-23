@@ -28,7 +28,11 @@ set -euo pipefail
 
 echo "1..2"
 
-COMMIT_SIGN="--gpg-homedir=${TEST_GPG_KEYHOME} --gpg-sign=${TEST_GPG_KEYID_1}"
+COMMIT_SIGN=""
+if has_gpgme; then
+    COMMIT_SIGN="--gpg-homedir=${TEST_GPG_KEYHOME} --gpg-sign=${TEST_GPG_KEYID_1}"
+fi
+
 setup_fake_remote_repo1 "archive" "${COMMIT_SIGN}"
 
 # Set up a second branch.
@@ -62,5 +66,3 @@ assert_file_has_content_literal raw-summary.txt "('main', ("
 assert_file_has_content_literal raw-summary.txt "('other', ("
 assert_file_has_content_literal raw-summary.txt "{'ostree.summary.last-modified': <uint64"
 echo "ok view summary raw"
-
-libtest_cleanup_gpg

@@ -152,11 +152,6 @@ ostree_run (int    argc,
             }
         }
 
-      else if (g_str_equal (argv[in], "--"))
-        {
-          break;
-        }
-
       argv[out] = argv[in];
     }
 
@@ -348,6 +343,22 @@ ostree_option_context_parse (GOptionContext *context,
   if (!g_option_context_parse (context, argc, argv, error))
     return FALSE;
 
+  /* Filter out the first -- we see; g_option_context_parse() leaves it in */
+  int in, out;
+  gboolean removed_double_dashes = FALSE;
+  for (in = 1, out = 1; in < *argc; in++, out++)
+    {
+      if (g_str_equal ((*argv)[in], "--") && !removed_double_dashes)
+        {
+          removed_double_dashes = TRUE;
+          out--;
+          continue;
+        }
+
+      (*argv)[out] = (*argv)[in];
+    }
+  *argc = out;
+
   if (opt_version)
     {
       /* This should now be YAML, like `docker version`, so it's both nice to read
@@ -491,6 +502,7 @@ ostree_ensure_repo_writable (OstreeRepo *repo,
   return TRUE;
 }
 
+#ifndef OSTREE_DISABLE_GPGME
 void
 ostree_print_gpg_verify_result (OstreeGpgVerifyResult *result)
 {
@@ -511,6 +523,7 @@ ostree_print_gpg_verify_result (OstreeGpgVerifyResult *result)
 
   g_print ("%s", buffer->str);
 }
+#endif /* OSTREE_DISABLE_GPGME */
 
 gboolean
 ot_enable_tombstone_commits (OstreeRepo *repo, GError **error)

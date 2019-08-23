@@ -514,6 +514,7 @@ it will handle the <code class="literal">NULL</code> <em class="parameter"><code
 was not <code class="literal">NULL</code> and had at least one
 signature from trusted keyring, otherwise <code class="literal">FALSE</code></p>
 </div>
+<p class="since">Since: 2016.6</p>
 </div>
 </div>
 <div class="refsect1">
@@ -673,6 +674,24 @@ The attribute's <span class="type">GVariantType</span> is shown in brackets.</p>
   (will be the same as OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT if the
   the signature is already from the primary key rather than a subkey,
   and will be the empty string if the key is missing.)</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-KEY-EXP-TIMESTAMP:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_KEY_EXP_TIMESTAMP</p></td>
+<td class="enum_member_description">
+<p>  [<span class="type">G_VARIANT_TYPE_INT64</span>] Key expiration Unix timestamp (0 if no
+  expiration or if the key is missing)</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-GPG-SIGNATURE-ATTR-KEY-EXP-TIMESTAMP-PRIMARY:CAPS"></a>OSTREE_GPG_SIGNATURE_ATTR_KEY_EXP_TIMESTAMP_PRIMARY</p></td>
+<td class="enum_member_description">
+<p>  [<span class="type">G_VARIANT_TYPE_INT64</span>] Key expiration Unix timestamp of the signing key's
+  primary key (will be the same as OSTREE_GPG_SIGNATURE_ATTR_KEY_EXP_TIMESTAMP
+  if the signing key is the primary key and 0 if no expiration or if the key
+  is missing)</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
