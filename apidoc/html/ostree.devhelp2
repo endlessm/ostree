@@ -31,8 +31,8 @@
     <keyword type="function" name="ostree_checksum_inplace_to_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-inplace-to-bytes"/>
     <keyword type="function" name="ostree_checksum_bytes_peek ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-bytes-peek"/>
     <keyword type="function" name="ostree_checksum_bytes_peek_validate ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-bytes-peek-validate"/>
-    <keyword type="function" name="ostree_checksum_b64_from_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-b64-from-bytes"/>
-    <keyword type="function" name="ostree_checksum_b64_to_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-b64-to-bytes"/>
+    <keyword type="function" name="ostree_checksum_b64_from_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-b64-from-bytes" since="2016.8"/>
+    <keyword type="function" name="ostree_checksum_b64_to_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-b64-to-bytes" since="2016.8"/>
     <keyword type="function" name="ostree_checksum_b64_inplace_from_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-b64-inplace-from-bytes"/>
     <keyword type="function" name="ostree_checksum_b64_inplace_to_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-b64-inplace-to-bytes"/>
     <keyword type="function" name="ostree_cmp_checksum_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-cmp-checksum-bytes"/>
@@ -49,7 +49,7 @@
     <keyword type="function" name="ostree_content_stream_parse ()" link="ostree-Core-repository-independent-functions.html#ostree-content-stream-parse"/>
     <keyword type="function" name="ostree_content_file_parse ()" link="ostree-Core-repository-independent-functions.html#ostree-content-file-parse"/>
     <keyword type="function" name="ostree_content_file_parse_at ()" link="ostree-Core-repository-independent-functions.html#ostree-content-file-parse-at"/>
-    <keyword type="function" name="ostree_raw_file_to_archive_z2_stream ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-archive-z2-stream"/>
+    <keyword type="function" name="ostree_raw_file_to_archive_z2_stream ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-archive-z2-stream" since="2016.6"/>
     <keyword type="function" name="ostree_raw_file_to_archive_z2_stream_with_options ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-archive-z2-stream-with-options" since="2017.3"/>
     <keyword type="function" name="ostree_raw_file_to_content_stream ()" link="ostree-Core-repository-independent-functions.html#ostree-raw-file-to-content-stream"/>
     <keyword type="function" name="ostree_break_hardlink ()" link="ostree-Core-repository-independent-functions.html#ostree-break-hardlink" since="2017.15"/>
@@ -68,8 +68,8 @@
     <keyword type="function" name="ostree_validate_structureof_dirmeta ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-structureof-dirmeta"/>
     <keyword type="function" name="ostree_commit_get_parent ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-parent"/>
     <keyword type="function" name="ostree_commit_get_timestamp ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-timestamp"/>
-    <keyword type="function" name="ostree_commit_get_content_checksum ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-content-checksum"/>
-    <keyword type="function" name="ostree_check_version ()" link="ostree-Core-repository-independent-functions.html#ostree-check-version"/>
+    <keyword type="function" name="ostree_commit_get_content_checksum ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-content-checksum" since="2018.2"/>
+    <keyword type="function" name="ostree_check_version ()" link="ostree-Core-repository-independent-functions.html#ostree-check-version" since="2017.4"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-SIZE:CAPS"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_WARN_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-WARN-SIZE:CAPS"/>
     <keyword type="enum" name="enum OstreeObjectType" link="ostree-Core-repository-independent-functions.html#OstreeObjectType"/>
@@ -85,7 +85,7 @@
     <keyword type="macro" name="OSTREE_SUMMARY_GVARIANT_STRING" link="ostree-Core-repository-independent-functions.html#OSTREE-SUMMARY-GVARIANT-STRING:CAPS"/>
     <keyword type="macro" name="OSTREE_SUMMARY_GVARIANT_FORMAT" link="ostree-Core-repository-independent-functions.html#OSTREE-SUMMARY-GVARIANT-FORMAT:CAPS"/>
     <keyword type="function" name="ostree_repo_mode_from_string ()" link="ostree-OstreeRepo.html#ostree-repo-mode-from-string"/>
-    <keyword type="function" name="ostree_repo_open_at ()" link="ostree-OstreeRepo.html#ostree-repo-open-at"/>
+    <keyword type="function" name="ostree_repo_open_at ()" link="ostree-OstreeRepo.html#ostree-repo-open-at" since="2017.10"/>
     <keyword type="function" name="ostree_repo_new ()" link="ostree-OstreeRepo.html#ostree-repo-new"/>
     <keyword type="function" name="ostree_repo_new_for_sysroot_path ()" link="ostree-OstreeRepo.html#ostree-repo-new-for-sysroot-path"/>
     <keyword type="function" name="ostree_repo_new_default ()" link="ostree-OstreeRepo.html#ostree-repo-new-default"/>
@@ -94,14 +94,14 @@
     <keyword type="function" name="ostree_repo_get_disable_fsync ()" link="ostree-OstreeRepo.html#ostree-repo-get-disable-fsync"/>
     <keyword type="function" name="ostree_repo_is_system ()" link="ostree-OstreeRepo.html#ostree-repo-is-system"/>
     <keyword type="function" name="ostree_repo_is_writable ()" link="ostree-OstreeRepo.html#ostree-repo-is-writable"/>
-    <keyword type="function" name="ostree_repo_create_at ()" link="ostree-OstreeRepo.html#ostree-repo-create-at"/>
+    <keyword type="function" name="ostree_repo_create_at ()" link="ostree-OstreeRepo.html#ostree-repo-create-at" since="2017.10"/>
     <keyword type="function" name="ostree_repo_create ()" link="ostree-OstreeRepo.html#ostree-repo-create"/>
     <keyword type="function" name="ostree_repo_get_bootloader ()" link="ostree-OstreeRepo.html#ostree-repo-get-bootloader" since="2019.2"/>
     <keyword type="function" name="ostree_repo_get_path ()" link="ostree-OstreeRepo.html#ostree-repo-get-path"/>
     <keyword type="function" name="ostree_repo_get_mode ()" link="ostree-OstreeRepo.html#ostree-repo-get-mode"/>
-    <keyword type="function" name="ostree_repo_get_min_free_space_bytes ()" link="ostree-OstreeRepo.html#ostree-repo-get-min-free-space-bytes"/>
+    <keyword type="function" name="ostree_repo_get_min_free_space_bytes ()" link="ostree-OstreeRepo.html#ostree-repo-get-min-free-space-bytes" since="2018.9"/>
     <keyword type="function" name="ostree_repo_get_config ()" link="ostree-OstreeRepo.html#ostree-repo-get-config"/>
-    <keyword type="function" name="ostree_repo_get_dfd ()" link="ostree-OstreeRepo.html#ostree-repo-get-dfd"/>
+    <keyword type="function" name="ostree_repo_get_dfd ()" link="ostree-OstreeRepo.html#ostree-repo-get-dfd" since="2016.4"/>
     <keyword type="function" name="ostree_repo_get_default_repo_finders ()" link="ostree-OstreeRepo.html#ostree-repo-get-default-repo-finders" since="2018.9"/>
     <keyword type="function" name="ostree_repo_hash ()" link="ostree-OstreeRepo.html#ostree-repo-hash" since="2017.12"/>
     <keyword type="function" name="ostree_repo_equal ()" link="ostree-OstreeRepo.html#ostree-repo-equal" since="2017.12"/>
@@ -115,11 +115,11 @@
     <keyword type="function" name="ostree_repo_remote_get_gpg_verify_summary ()" link="ostree-OstreeRepo.html#ostree-repo-remote-get-gpg-verify-summary"/>
     <keyword type="function" name="ostree_repo_remote_gpg_import ()" link="ostree-OstreeRepo.html#ostree-repo-remote-gpg-import"/>
     <keyword type="function" name="ostree_repo_remote_fetch_summary ()" link="ostree-OstreeRepo.html#ostree-repo-remote-fetch-summary"/>
-    <keyword type="function" name="ostree_repo_remote_fetch_summary_with_options ()" link="ostree-OstreeRepo.html#ostree-repo-remote-fetch-summary-with-options"/>
-    <keyword type="function" name="ostree_repo_reload_config ()" link="ostree-OstreeRepo.html#ostree-repo-reload-config"/>
-    <keyword type="function" name="ostree_repo_get_remote_boolean_option ()" link="ostree-OstreeRepo.html#ostree-repo-get-remote-boolean-option"/>
-    <keyword type="function" name="ostree_repo_get_remote_list_option ()" link="ostree-OstreeRepo.html#ostree-repo-get-remote-list-option"/>
-    <keyword type="function" name="ostree_repo_get_remote_option ()" link="ostree-OstreeRepo.html#ostree-repo-get-remote-option"/>
+    <keyword type="function" name="ostree_repo_remote_fetch_summary_with_options ()" link="ostree-OstreeRepo.html#ostree-repo-remote-fetch-summary-with-options" since="2016.6"/>
+    <keyword type="function" name="ostree_repo_reload_config ()" link="ostree-OstreeRepo.html#ostree-repo-reload-config" since="2017.2"/>
+    <keyword type="function" name="ostree_repo_get_remote_boolean_option ()" link="ostree-OstreeRepo.html#ostree-repo-get-remote-boolean-option" since="2016.5"/>
+    <keyword type="function" name="ostree_repo_get_remote_list_option ()" link="ostree-OstreeRepo.html#ostree-repo-get-remote-list-option" since="2016.5"/>
+    <keyword type="function" name="ostree_repo_get_remote_option ()" link="ostree-OstreeRepo.html#ostree-repo-get-remote-option" since="2016.5"/>
     <keyword type="function" name="ostree_repo_get_parent ()" link="ostree-OstreeRepo.html#ostree-repo-get-parent"/>
     <keyword type="function" name="ostree_repo_write_config ()" link="ostree-OstreeRepo.html#ostree-repo-write-config"/>
     <keyword type="function" name="ostree_repo_scan_hardlinks ()" link="ostree-OstreeRepo.html#ostree-repo-scan-hardlinks"/>
@@ -129,8 +129,8 @@
     <keyword type="function" name="ostree_repo_transaction_set_refspec ()" link="ostree-OstreeRepo.html#ostree-repo-transaction-set-refspec"/>
     <keyword type="function" name="ostree_repo_transaction_set_ref ()" link="ostree-OstreeRepo.html#ostree-repo-transaction-set-ref"/>
     <keyword type="function" name="ostree_repo_set_ref_immediate ()" link="ostree-OstreeRepo.html#ostree-repo-set-ref-immediate"/>
-    <keyword type="function" name="ostree_repo_set_alias_ref_immediate ()" link="ostree-OstreeRepo.html#ostree-repo-set-alias-ref-immediate"/>
-    <keyword type="function" name="ostree_repo_set_cache_dir ()" link="ostree-OstreeRepo.html#ostree-repo-set-cache-dir"/>
+    <keyword type="function" name="ostree_repo_set_alias_ref_immediate ()" link="ostree-OstreeRepo.html#ostree-repo-set-alias-ref-immediate" since="2017.10"/>
+    <keyword type="function" name="ostree_repo_set_cache_dir ()" link="ostree-OstreeRepo.html#ostree-repo-set-cache-dir" since="2016.5"/>
     <keyword type="function" name="ostree_repo_sign_delta ()" link="ostree-OstreeRepo.html#ostree-repo-sign-delta"/>
     <keyword type="function" name="ostree_repo_has_object ()" link="ostree-OstreeRepo.html#ostree-repo-has-object"/>
     <keyword type="function" name="ostree_repo_mark_commit_partial ()" link="ostree-OstreeRepo.html#ostree-repo-mark-commit-partial" since="2017.15"/>
@@ -144,9 +144,9 @@
     <keyword type="function" name="ostree_repo_write_content_async ()" link="ostree-OstreeRepo.html#ostree-repo-write-content-async"/>
     <keyword type="function" name="ostree_repo_write_content_finish ()" link="ostree-OstreeRepo.html#ostree-repo-write-content-finish"/>
     <keyword type="function" name="ostree_repo_resolve_rev ()" link="ostree-OstreeRepo.html#ostree-repo-resolve-rev"/>
-    <keyword type="function" name="ostree_repo_resolve_rev_ext ()" link="ostree-OstreeRepo.html#ostree-repo-resolve-rev-ext"/>
+    <keyword type="function" name="ostree_repo_resolve_rev_ext ()" link="ostree-OstreeRepo.html#ostree-repo-resolve-rev-ext" since="2016.7"/>
     <keyword type="function" name="ostree_repo_list_refs ()" link="ostree-OstreeRepo.html#ostree-repo-list-refs"/>
-    <keyword type="function" name="ostree_repo_list_refs_ext ()" link="ostree-OstreeRepo.html#ostree-repo-list-refs-ext"/>
+    <keyword type="function" name="ostree_repo_list_refs_ext ()" link="ostree-OstreeRepo.html#ostree-repo-list-refs-ext" since="2016.4"/>
     <keyword type="function" name="ostree_repo_remote_list_refs ()" link="ostree-OstreeRepo.html#ostree-repo-remote-list-refs"/>
     <keyword type="function" name="ostree_repo_load_variant ()" link="ostree-OstreeRepo.html#ostree-repo-load-variant"/>
     <keyword type="function" name="ostree_repo_load_commit ()" link="ostree-OstreeRepo.html#ostree-repo-load-commit"/>
@@ -155,7 +155,7 @@
     <keyword type="function" name="ostree_repo_load_object_stream ()" link="ostree-OstreeRepo.html#ostree-repo-load-object-stream"/>
     <keyword type="function" name="ostree_repo_query_object_storage_size ()" link="ostree-OstreeRepo.html#ostree-repo-query-object-storage-size"/>
     <keyword type="function" name="ostree_repo_import_object_from ()" link="ostree-OstreeRepo.html#ostree-repo-import-object-from"/>
-    <keyword type="function" name="ostree_repo_import_object_from_with_trust ()" link="ostree-OstreeRepo.html#ostree-repo-import-object-from-with-trust"/>
+    <keyword type="function" name="ostree_repo_import_object_from_with_trust ()" link="ostree-OstreeRepo.html#ostree-repo-import-object-from-with-trust" since="2016.5"/>
     <keyword type="function" name="ostree_repo_import_archive_to_mtree ()" link="ostree-OstreeRepo.html#ostree-repo-import-archive-to-mtree"/>
     <keyword type="function" name="ostree_repo_export_tree_to_archive ()" link="ostree-OstreeRepo.html#ostree-repo-export-tree-to-archive"/>
     <keyword type="function" name="ostree_repo_delete_object ()" link="ostree-OstreeRepo.html#ostree-repo-delete-object"/>
@@ -175,15 +175,16 @@
     <keyword type="function" name="ostree_repo_write_directory_to_mtree ()" link="ostree-OstreeRepo.html#ostree-repo-write-directory-to-mtree"/>
     <keyword type="function" name="ostree_repo_write_dfd_to_mtree ()" link="ostree-OstreeRepo.html#ostree-repo-write-dfd-to-mtree"/>
     <keyword type="function" name="ostree_repo_write_archive_to_mtree ()" link="ostree-OstreeRepo.html#ostree-repo-write-archive-to-mtree"/>
+    <keyword type="function" name="ostree_repo_write_archive_to_mtree_from_fd ()" link="ostree-OstreeRepo.html#ostree-repo-write-archive-to-mtree-from-fd"/>
     <keyword type="function" name="ostree_repo_write_mtree ()" link="ostree-OstreeRepo.html#ostree-repo-write-mtree"/>
     <keyword type="function" name="ostree_repo_write_commit ()" link="ostree-OstreeRepo.html#ostree-repo-write-commit"/>
     <keyword type="function" name="ostree_repo_write_commit_with_time ()" link="ostree-OstreeRepo.html#ostree-repo-write-commit-with-time"/>
     <keyword type="function" name="ostree_repo_read_commit_detached_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-read-commit-detached-metadata"/>
     <keyword type="function" name="ostree_repo_write_commit_detached_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-write-commit-detached-metadata"/>
-    <keyword type="function" name="ostree_repo_checkout_at_options_set_devino ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-at-options-set-devino"/>
+    <keyword type="function" name="ostree_repo_checkout_at_options_set_devino ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-at-options-set-devino" since="2017.13"/>
     <keyword type="function" name="ostree_repo_checkout_tree ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-tree"/>
     <keyword type="function" name="ostree_repo_checkout_tree_at ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-tree-at" deprecated=""/>
-    <keyword type="function" name="ostree_repo_checkout_at ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-at"/>
+    <keyword type="function" name="ostree_repo_checkout_at ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-at" since="2016.8"/>
     <keyword type="function" name="ostree_repo_checkout_gc ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-gc"/>
     <keyword type="function" name="ostree_repo_read_commit ()" link="ostree-OstreeRepo.html#ostree-repo-read-commit"/>
     <keyword type="function" name="ostree_repo_list_objects ()" link="ostree-OstreeRepo.html#ostree-repo-list-objects"/>
@@ -207,7 +208,7 @@
     <keyword type="function" name="ostree_repo_prune ()" link="ostree-OstreeRepo.html#ostree-repo-prune"/>
     <keyword type="function" name="ostree_repo_prune_static_deltas ()" link="ostree-OstreeRepo.html#ostree-repo-prune-static-deltas"/>
     <keyword type="function" name="ostree_repo_traverse_reachable_refs ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-reachable-refs" since="2018.6"/>
-    <keyword type="function" name="ostree_repo_prune_from_reachable ()" link="ostree-OstreeRepo.html#ostree-repo-prune-from-reachable"/>
+    <keyword type="function" name="ostree_repo_prune_from_reachable ()" link="ostree-OstreeRepo.html#ostree-repo-prune-from-reachable" since="2017.1"/>
     <keyword type="function" name="ostree_repo_pull ()" link="ostree-OstreeRepo.html#ostree-repo-pull"/>
     <keyword type="function" name="ostree_repo_pull_one_dir ()" link="ostree-OstreeRepo.html#ostree-repo-pull-one-dir"/>
     <keyword type="function" name="ostree_repo_pull_with_options ()" link="ostree-OstreeRepo.html#ostree-repo-pull-with-options" since="2019.2"/>
@@ -215,10 +216,10 @@
     <keyword type="function" name="ostree_repo_sign_commit ()" link="ostree-OstreeRepo.html#ostree-repo-sign-commit"/>
     <keyword type="function" name="ostree_repo_append_gpg_signature ()" link="ostree-OstreeRepo.html#ostree-repo-append-gpg-signature"/>
     <keyword type="function" name="ostree_repo_add_gpg_signature_summary ()" link="ostree-OstreeRepo.html#ostree-repo-add-gpg-signature-summary"/>
-    <keyword type="function" name="ostree_repo_gpg_verify_data ()" link="ostree-OstreeRepo.html#ostree-repo-gpg-verify-data"/>
+    <keyword type="function" name="ostree_repo_gpg_verify_data ()" link="ostree-OstreeRepo.html#ostree-repo-gpg-verify-data" since="2016.6"/>
     <keyword type="function" name="ostree_repo_verify_commit ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit"/>
     <keyword type="function" name="ostree_repo_verify_commit_ext ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit-ext"/>
-    <keyword type="function" name="ostree_repo_verify_commit_for_remote ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit-for-remote"/>
+    <keyword type="function" name="ostree_repo_verify_commit_for_remote ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit-for-remote" since="2016.14"/>
     <keyword type="function" name="ostree_repo_verify_summary ()" link="ostree-OstreeRepo.html#ostree-repo-verify-summary"/>
     <keyword type="function" name="ostree_repo_regenerate_summary ()" link="ostree-OstreeRepo.html#ostree-repo-regenerate-summary"/>
     <keyword type="typedef" name="OstreeRepo" link="ostree-OstreeRepo.html#OstreeRepo"/>
@@ -242,27 +243,27 @@
     <keyword type="enum" name="enum OstreeRepoPruneFlags" link="ostree-OstreeRepo.html#OstreeRepoPruneFlags"/>
     <keyword type="enum" name="enum OstreeRepoPullFlags" link="ostree-OstreeRepo.html#OstreeRepoPullFlags"/>
     <keyword type="function" name="ostree_mutable_tree_new ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-new"/>
-    <keyword type="function" name="ostree_mutable_tree_new_from_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-new-from-checksum"/>
+    <keyword type="function" name="ostree_mutable_tree_new_from_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-new-from-checksum" since="2018.7"/>
     <keyword type="function" name="ostree_mutable_tree_check_error ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-check-error" since="2018.7"/>
     <keyword type="function" name="ostree_mutable_tree_set_metadata_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-set-metadata-checksum"/>
     <keyword type="function" name="ostree_mutable_tree_get_metadata_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-get-metadata-checksum"/>
     <keyword type="function" name="ostree_mutable_tree_set_contents_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-set-contents-checksum"/>
     <keyword type="function" name="ostree_mutable_tree_get_contents_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-get-contents-checksum"/>
     <keyword type="function" name="ostree_mutable_tree_replace_file ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-replace-file"/>
-    <keyword type="function" name="ostree_mutable_tree_remove ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-remove"/>
+    <keyword type="function" name="ostree_mutable_tree_remove ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-remove" since="2018.9"/>
     <keyword type="function" name="ostree_mutable_tree_ensure_dir ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-ensure-dir"/>
     <keyword type="function" name="ostree_mutable_tree_lookup ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-lookup"/>
     <keyword type="function" name="ostree_mutable_tree_ensure_parent_dirs ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-ensure-parent-dirs"/>
     <keyword type="function" name="ostree_mutable_tree_walk ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-walk"/>
     <keyword type="function" name="ostree_mutable_tree_get_subdirs ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-get-subdirs"/>
     <keyword type="function" name="ostree_mutable_tree_get_files ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-get-files"/>
-    <keyword type="function" name="ostree_mutable_tree_fill_empty_from_dirtree ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-fill-empty-from-dirtree"/>
+    <keyword type="function" name="ostree_mutable_tree_fill_empty_from_dirtree ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-fill-empty-from-dirtree" since="2018.7"/>
     <keyword type="typedef" name="OstreeMutableTree" link="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree"/>
     <keyword type="function" name="ostree_sysroot_new ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-new"/>
     <keyword type="function" name="ostree_sysroot_new_default ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-new-default"/>
     <keyword type="function" name="ostree_sysroot_get_path ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-path"/>
     <keyword type="function" name="ostree_sysroot_load ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-load"/>
-    <keyword type="function" name="ostree_sysroot_load_if_changed ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-load-if-changed"/>
+    <keyword type="function" name="ostree_sysroot_load_if_changed ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-load-if-changed" since="2016.4"/>
     <keyword type="function" name="ostree_sysroot_lock ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-lock"/>
     <keyword type="function" name="ostree_sysroot_try_lock ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-try-lock"/>
     <keyword type="function" name="ostree_sysroot_lock_async ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-lock-async"/>
@@ -281,18 +282,18 @@
     <keyword type="function" name="ostree_sysroot_cleanup ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-cleanup"/>
     <keyword type="function" name="ostree_sysroot_prepare_cleanup ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-prepare-cleanup"/>
     <keyword type="function" name="ostree_sysroot_cleanup_prune_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-cleanup-prune-repo" since="2018.6"/>
-    <keyword type="function" name="ostree_sysroot_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-repo"/>
+    <keyword type="function" name="ostree_sysroot_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-repo" since="2017.7"/>
     <keyword type="function" name="ostree_sysroot_get_repo ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-repo"/>
-    <keyword type="function" name="ostree_sysroot_get_staged_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-staged-deployment"/>
-    <keyword type="function" name="ostree_sysroot_init_osname ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-init-osname"/>
+    <keyword type="function" name="ostree_sysroot_get_staged_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-staged-deployment" since="2018.5"/>
+    <keyword type="function" name="ostree_sysroot_init_osname ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-init-osname" since="2016.4"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_kargs ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-kargs"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_mutable ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-mutable"/>
-    <keyword type="function" name="ostree_sysroot_deployment_unlock ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-unlock"/>
+    <keyword type="function" name="ostree_sysroot_deployment_unlock ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-unlock" since="2016.4"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_pinned ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-pinned" since="2018.3"/>
     <keyword type="function" name="ostree_sysroot_write_deployments ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments"/>
-    <keyword type="function" name="ostree_sysroot_write_deployments_with_options ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments-with-options"/>
+    <keyword type="function" name="ostree_sysroot_write_deployments_with_options ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments-with-options" since="2017.4"/>
     <keyword type="function" name="ostree_sysroot_write_origin_file ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-origin-file"/>
-    <keyword type="function" name="ostree_sysroot_stage_tree ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-stage-tree"/>
+    <keyword type="function" name="ostree_sysroot_stage_tree ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-stage-tree" since="2018.5"/>
     <keyword type="function" name="ostree_sysroot_deploy_tree ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deploy-tree"/>
     <keyword type="function" name="ostree_sysroot_get_merge_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-merge-deployment"/>
     <keyword type="function" name="ostree_sysroot_query_deployments_for ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-query-deployments-for" since="2017.7"/>
@@ -315,11 +316,11 @@
     <keyword type="function" name="ostree_async_progress_finish ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-finish"/>
     <keyword type="typedef" name="OstreeAsyncProgress" link="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress"/>
     <keyword type="function" name="ostree_sepolicy_new ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-new"/>
-    <keyword type="function" name="ostree_sepolicy_new_at ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-new-at"/>
+    <keyword type="function" name="ostree_sepolicy_new_at ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-new-at" since="2017.4"/>
     <keyword type="function" name="ostree_sepolicy_get_path ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-path"/>
     <keyword type="function" name="ostree_sepolicy_get_name ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-name"/>
     <keyword type="function" name="ostree_sepolicy_get_label ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-label"/>
-    <keyword type="function" name="ostree_sepolicy_get_csum ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-csum"/>
+    <keyword type="function" name="ostree_sepolicy_get_csum ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-csum" since="2016.5"/>
     <keyword type="function" name="ostree_sepolicy_restorecon ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-restorecon"/>
     <keyword type="function" name="ostree_sepolicy_setfscreatecon ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-setfscreatecon"/>
     <keyword type="function" name="ostree_sepolicy_fscreatecon_cleanup ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-fscreatecon-cleanup"/>
@@ -346,7 +347,7 @@
     <keyword type="function" name="ostree_gpg_verify_result_get_all ()" link="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-get-all"/>
     <keyword type="function" name="ostree_gpg_verify_result_describe ()" link="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-describe"/>
     <keyword type="function" name="ostree_gpg_verify_result_describe_variant ()" link="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-describe-variant"/>
-    <keyword type="function" name="ostree_gpg_verify_result_require_valid_signature ()" link="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-require-valid-signature"/>
+    <keyword type="function" name="ostree_gpg_verify_result_require_valid_signature ()" link="ostree-GPG-signature-verification-results.html#ostree-gpg-verify-result-require-valid-signature" since="2016.6"/>
     <keyword type="enum" name="enum OstreeGpgError" link="ostree-GPG-signature-verification-results.html#OstreeGpgError" since="2017.10"/>
     <keyword type="typedef" name="OstreeGpgVerifyResult" link="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult"/>
     <keyword type="enum" name="enum OstreeGpgSignatureAttr" link="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureAttr"/>
@@ -376,7 +377,7 @@
     <keyword type="function" name="ostree_deployment_get_bootconfig ()" link="ostree-ostree-deployment.html#ostree-deployment-get-bootconfig"/>
     <keyword type="function" name="ostree_deployment_get_origin ()" link="ostree-ostree-deployment.html#ostree-deployment-get-origin"/>
     <keyword type="function" name="ostree_deployment_get_origin_relpath ()" link="ostree-ostree-deployment.html#ostree-deployment-get-origin-relpath"/>
-    <keyword type="function" name="ostree_deployment_get_unlocked ()" link="ostree-ostree-deployment.html#ostree-deployment-get-unlocked"/>
+    <keyword type="function" name="ostree_deployment_get_unlocked ()" link="ostree-ostree-deployment.html#ostree-deployment-get-unlocked" since="2016.4"/>
     <keyword type="function" name="ostree_deployment_is_pinned ()" link="ostree-ostree-deployment.html#ostree-deployment-is-pinned" since="2018.3"/>
     <keyword type="function" name="ostree_deployment_is_staged ()" link="ostree-ostree-deployment.html#ostree-deployment-is-staged" since="2018.3"/>
     <keyword type="function" name="ostree_deployment_set_index ()" link="ostree-ostree-deployment.html#ostree-deployment-set-index"/>
@@ -385,12 +386,12 @@
     <keyword type="function" name="ostree_deployment_set_origin ()" link="ostree-ostree-deployment.html#ostree-deployment-set-origin"/>
     <keyword type="function" name="ostree_deployment_origin_remove_transient_state ()" link="ostree-ostree-deployment.html#ostree-deployment-origin-remove-transient-state" since="2018.3"/>
     <keyword type="function" name="ostree_deployment_clone ()" link="ostree-ostree-deployment.html#ostree-deployment-clone"/>
-    <keyword type="function" name="ostree_deployment_unlocked_state_to_string ()" link="ostree-ostree-deployment.html#ostree-deployment-unlocked-state-to-string"/>
+    <keyword type="function" name="ostree_deployment_unlocked_state_to_string ()" link="ostree-ostree-deployment.html#ostree-deployment-unlocked-state-to-string" since="2016.4"/>
     <keyword type="struct" name="OstreeDeployment" link="ostree-ostree-deployment.html#OstreeDeployment"/>
     <keyword type="function" name="ostree_diff_item_ref ()" link="ostree-ostree-diff.html#ostree-diff-item-ref"/>
     <keyword type="function" name="ostree_diff_item_unref ()" link="ostree-ostree-diff.html#ostree-diff-item-unref"/>
     <keyword type="function" name="ostree_diff_dirs ()" link="ostree-ostree-diff.html#ostree-diff-dirs"/>
-    <keyword type="function" name="ostree_diff_dirs_with_options ()" link="ostree-ostree-diff.html#ostree-diff-dirs-with-options"/>
+    <keyword type="function" name="ostree_diff_dirs_with_options ()" link="ostree-ostree-diff.html#ostree-diff-dirs-with-options" since="2017.4"/>
     <keyword type="function" name="ostree_diff_print ()" link="ostree-ostree-diff.html#ostree-diff-print"/>
     <keyword type="enum" name="enum OstreeDiffFlags" link="ostree-ostree-diff.html#OstreeDiffFlags"/>
     <keyword type="struct" name="struct OstreeDiffItem" link="ostree-ostree-diff.html#OstreeDiffItem"/>
@@ -497,6 +498,8 @@
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_USER_NAME" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-USER-NAME:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_USER_EMAIL" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-USER-EMAIL:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_FINGERPRINT_PRIMARY" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-FINGERPRINT-PRIMARY:CAPS"/>
+    <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_KEY_EXP_TIMESTAMP" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-KEY-EXP-TIMESTAMP:CAPS"/>
+    <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_KEY_EXP_TIMESTAMP_PRIMARY" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-KEY-EXP-TIMESTAMP-PRIMARY:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_FORMAT_DEFAULT" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-FORMAT-DEFAULT:CAPS"/>
     <keyword type="constant" name="OSTREE_DIFF_FLAGS_NONE" link="ostree-ostree-diff.html#OSTREE-DIFF-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_DIFF_FLAGS_IGNORE_XATTRS" link="ostree-ostree-diff.html#OSTREE-DIFF-FLAGS-IGNORE-XATTRS:CAPS"/>

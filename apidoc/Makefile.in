@@ -411,6 +411,7 @@ libostree_public_headers = \
 	src/libostree/ostree-repo-finder-config.h \
 	src/libostree/ostree-repo-finder-mount.h \
 	src/libostree/ostree-repo-finder-override.h \
+	src/libostree/ostree-kernel-args.h \
 	$(NULL)
 
 
@@ -474,7 +475,6 @@ IGNORE_HFILES = \
 	ostree-fetcher.h \
 	ostree-gpg-verifier.h \
 	ostree-gpg-verify-result-private.h \
-	ostree-kernel-args.h \
 	ostree-libarchive-input-stream.h \
 	ostree-lzma-compressor.h \
 	ostree-lzma-decompressor.h \
