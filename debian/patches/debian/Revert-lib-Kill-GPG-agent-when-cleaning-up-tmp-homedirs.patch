@@ -1,0 +1,49 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Fri, 23 Aug 2019 11:22:47 +0100
+Subject: Revert "lib: Kill GPG agent when cleaning up tmp homedirs"
+
+This reverts commit b6979e7572395f3f99ba328ed9399ed4b862f9a7,
+which causes a lot of logging noise when running `flatpak update`.
+According to the commit message of b6979e7572395f3f99ba328ed9399ed4b862f9a7
+this should be unnecessary with gnupg >= 2.2, which is in Debian >= 10.
+
+Forwarded: not-needed
+---
+ src/libostree/ostree-gpg-verifier.c | 1 -
+ src/libostree/ostree-repo.c         | 8 ++------
+ 2 files changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/src/libostree/ostree-gpg-verifier.c b/src/libostree/ostree-gpg-verifier.c
+index 95ed36e..a279348 100644
+--- a/src/libostree/ostree-gpg-verifier.c
++++ b/src/libostree/ostree-gpg-verifier.c
+@@ -87,7 +87,6 @@ verify_result_finalized_cb (gpointer data,
+    *     finalize() method, but I didn't want this keyring hack
+    *     bleeding into multiple classes. */
+ 
+-  ot_gpgme_kill_agent (tmp_dir);
+   (void) glnx_shutil_rm_rf_at (AT_FDCWD, tmp_dir, NULL, NULL);
+ }
+ 
+diff --git a/src/libostree/ostree-repo.c b/src/libostree/ostree-repo.c
+index eb652be..2382f73 100644
+--- a/src/libostree/ostree-repo.c
++++ b/src/libostree/ostree-repo.c
+@@ -2328,15 +2328,11 @@ out:
+   if (remote != NULL)
+     ostree_remote_unref (remote);
+ 
+-  if (source_tmp_dir != NULL) {
+-    ot_gpgme_kill_agent (source_tmp_dir);
++  if (source_tmp_dir != NULL)
+     (void) glnx_shutil_rm_rf_at (AT_FDCWD, source_tmp_dir, NULL, NULL);
+-  }
+ 
+-  if (target_tmp_dir != NULL) {
+-    ot_gpgme_kill_agent (target_tmp_dir);
++  if (target_tmp_dir != NULL)
+     (void) glnx_shutil_rm_rf_at (AT_FDCWD, target_tmp_dir, NULL, NULL);
+-  }
+ 
+   g_prefix_error (error, "GPG: ");
+ 

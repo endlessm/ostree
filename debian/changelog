@@ -2,6 +2,14 @@ ostree (2019.3-1) UNRELEASED; urgency=medium
 
   * New upstream release
     - Refresh patch series
+  * d/p/debian/Revert-lib-Kill-GPG-agent-when-cleaning-up-tmp-homedirs.patch:
+    Skip `gpg-connect-agent` when cleaning up temporary GPG home
+    directories. It appears this is sometimes done when it wasn't
+    needed, causing gpg-connect-agent to wait for an agent to start so
+    that it can tell it to stop, which results in a lot of noise on stderr
+    when running `flatpak update`. Debian 10 has GPG 2.2, and according to
+    the commit message of the commit I'm reverting here, this cleanup
+    should be unnecessary with GPG >= 2.2.
 
  -- Simon McVittie <smcv@debian.org>  Fri, 23 Aug 2019 08:38:47 +0100
 
