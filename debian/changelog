@@ -1,3 +1,10 @@
+ostree (2019.3-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+    - Refresh patch series
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 23 Aug 2019 08:38:47 +0100
+
 ostree (2019.2-2) unstable; urgency=medium
 
   * Upload to unstable
