@@ -2328,15 +2328,11 @@ out:
   if (remote != NULL)
     ostree_remote_unref (remote);
 
-  if (source_tmp_dir != NULL) {
-    ot_gpgme_kill_agent (source_tmp_dir);
+  if (source_tmp_dir != NULL)
     (void) glnx_shutil_rm_rf_at (AT_FDCWD, source_tmp_dir, NULL, NULL);
-  }
 
-  if (target_tmp_dir != NULL) {
-    ot_gpgme_kill_agent (target_tmp_dir);
+  if (target_tmp_dir != NULL)
     (void) glnx_shutil_rm_rf_at (AT_FDCWD, target_tmp_dir, NULL, NULL);
-  }
 
   g_prefix_error (error, "GPG: ");
 
