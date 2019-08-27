@@ -167,6 +167,7 @@ multistrap -f "$CONFIG" -d "$BUILDDIR"
 if [ -d /root/extra-packages ]; then
     mkdir "$BUILDDIR/root/extra-packages"
     cp /root/extra-packages/*.deb "$BUILDDIR/root/extra-packages"
+    install -m644 /etc/resolv.conf "$BUILDDIR/etc/resolv.conf"
     chroot "$BUILDDIR" apt -y update
     chroot "$BUILDDIR" apt -y install /root/extra-packages/*.deb
     rm -fr "$BUILDDIR/root/extra-packages"
