@@ -9,13 +9,13 @@ work equally.
 The installation needs to satisfy the following requirements:
 
 * It must have a separate /boot partition (this is a general libostree
-  limitation [1]).
+  limitation, see [ostree issue 1452][]).
 * The root partition must not be encrypted.
 * It must use GRUB and BIOS booting. Other bootloaders or EFI may require
-  different bootloader setup steps. [2]
+  different bootloader setup steps; see [old Fedora instructions][]
 
-[1]: https://github.com/ostreedev/ostree/issues/1452
-[2]: https://pagure.io/workstation-ostree-config/blob/5b574d39c63b82b397df789eb4a75a5bdcc13dd0/f/README-install-inside.md
+[ostree issue 1452]: https://github.com/ostreedev/ostree/issues/1452
+[old Fedora instructions]: https://pagure.io/workstation-ostree-config/blob/5b574d39c63b82b397df789eb4a75a5bdcc13dd0/f/README-install-inside.md
 
 We need the bootloader integration files on the non-OSTree system from
 which we are switching, as well as in the OSTree-based installation,
