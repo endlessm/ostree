@@ -13,6 +13,10 @@ ostree (2019.3-2) UNRELEASED; urgency=medium
   * Add instructions for testing ostree-boot.
     Thanks to Felix Krull for providing the original version of these.
   * d/copyright: Update
+  * d/ostree-boot.lintian-overrides:
+    Do not warn about ostree-remount.service being in local-fs.target.
+    This part of the boot integration is genuinely part of an earlier
+    phase of boot than sysinit.target.
 
  -- Simon McVittie <smcv@debian.org>  Tue, 27 Aug 2019 23:55:06 +0100
 
