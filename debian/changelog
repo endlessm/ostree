@@ -12,6 +12,7 @@ ostree (2019.3-2) UNRELEASED; urgency=medium
     Otherwise the dracut initramfs won't be rebuilt to include ostree-boot.
   * Add instructions for testing ostree-boot.
     Thanks to Felix Krull for providing the original version of these.
+  * d/copyright: Update
 
  -- Simon McVittie <smcv@debian.org>  Tue, 27 Aug 2019 23:55:06 +0100
 
