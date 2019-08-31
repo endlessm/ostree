@@ -1,4 +1,4 @@
-ostree (2019.3-2) UNRELEASED; urgency=medium
+ostree (2019.3-2) experimental; urgency=medium
 
   [ Felix Krull ]
   * Enable ostree-boot package (Closes: #824650)
@@ -18,7 +18,7 @@ ostree (2019.3-2) UNRELEASED; urgency=medium
     This part of the boot integration is genuinely part of an earlier
     phase of boot than sysinit.target.
 
- -- Simon McVittie <smcv@debian.org>  Tue, 27 Aug 2019 23:55:06 +0100
+ -- Simon McVittie <smcv@debian.org>  Sat, 31 Aug 2019 19:06:38 +0100
 
 ostree (2019.3-1) unstable; urgency=medium
 
