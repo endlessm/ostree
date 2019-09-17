@@ -1,3 +1,16 @@
+ostree (2019.3-2endless1) eos; urgency=medium
+
+  * Resync Endless packaging changes:
+    - Add README.endless
+    - Add ostree_repo_get_commit_sizes to symbols file
+    - Re-add the build dependency on gjs (except on s390x and sparc64). Debian
+      removed the build dependency but given we don't have any issues
+      installing gjs and can run the tests fine we can re-add it.
+    - Bring back trivial-httpd subcommand
+    - https://phabricator.endlessm.com/T27607
+
+ -- Andre Moreira Magalhaes <andre@endlessm.com>  Tue, 17 Sep 2019 18:59:07 -0300
+
 ostree (2019.3-2) experimental; urgency=medium
 
   [ Felix Krull ]
