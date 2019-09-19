@@ -1,3 +1,10 @@
+ostree (2019.3-3) unstable; urgency=medium
+
+  * Upload to unstable
+    - d/gbp.conf: Reset packaging branch to debian/master
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 19 Sep 2019 17:49:53 +0100
+
 ostree (2019.3-2) experimental; urgency=medium
 
   [ Felix Krull ]
