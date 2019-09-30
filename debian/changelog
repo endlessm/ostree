@@ -1,6 +1,7 @@
 ostree (2019.3-4) UNRELEASED; urgency=medium
 
   * d/control: Set Vcs-Git to point to default branch again
+  * Standards-Version: 4.4.1 (no changes required)
 
  -- Simon McVittie <smcv@debian.org>  Mon, 30 Sep 2019 11:36:57 +0100
 
