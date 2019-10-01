@@ -1,5 +1,6 @@
-ostree (2019.3-4) UNRELEASED; urgency=medium
+ostree (2019.4-1) UNRELEASED; urgency=medium
 
+  * New upstream release
   * d/control: Set Vcs-Git to point to default branch again
   * Standards-Version: 4.4.1 (no changes required)
 
