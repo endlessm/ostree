@@ -5,6 +5,8 @@ ostree (2019.4-1) UNRELEASED; urgency=medium
     - d/copyright: Update
   * d/control: Set Vcs-Git to point to default branch again
   * Standards-Version: 4.4.1 (no changes required)
+  * d/p/debian/Revert-lib-Kill-GPG-agent-when-cleaning-up-tmp-homedirs.patch:
+    Drop patch, fixed differently upstream in 2019.4
 
  -- Simon McVittie <smcv@debian.org>  Mon, 30 Sep 2019 11:36:57 +0100
 
