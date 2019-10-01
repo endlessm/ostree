@@ -2,6 +2,7 @@ ostree (2019.4-1) UNRELEASED; urgency=medium
 
   * New upstream release
     - d/libostree-1-1.symbols: Update
+    - d/copyright: Update
   * d/control: Set Vcs-Git to point to default branch again
   * Standards-Version: 4.4.1 (no changes required)
 
