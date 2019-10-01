@@ -134,6 +134,7 @@
     <keyword type="function" name="ostree_repo_sign_delta ()" link="ostree-OstreeRepo.html#ostree-repo-sign-delta"/>
     <keyword type="function" name="ostree_repo_has_object ()" link="ostree-OstreeRepo.html#ostree-repo-has-object"/>
     <keyword type="function" name="ostree_repo_mark_commit_partial ()" link="ostree-OstreeRepo.html#ostree-repo-mark-commit-partial" since="2017.15"/>
+    <keyword type="function" name="ostree_repo_mark_commit_partial_reason ()" link="ostree-OstreeRepo.html#ostree-repo-mark-commit-partial-reason" since="2019.4"/>
     <keyword type="function" name="ostree_repo_write_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata"/>
     <keyword type="function" name="ostree_repo_write_metadata_async ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata-async"/>
     <keyword type="function" name="ostree_repo_write_metadata_finish ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata-finish"/>
@@ -433,6 +434,7 @@
     <keyword type="constant" name="OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_MIRRORS" link="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-EXCLUDE-MIRRORS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_NORMAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-STATE-NORMAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_PARTIAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-STATE-PARTIAL:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_STATE_FSCK_PARTIAL" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-STATE-FSCK-PARTIAL:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_ALLOW" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-FILTER-ALLOW:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_FILTER_SKIP" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-FILTER-SKIP:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-MODIFIER-FLAGS-NONE:CAPS"/>
