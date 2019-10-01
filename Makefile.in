@@ -1999,8 +1999,8 @@ am__EXEEXT_25 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-summary-update.sh tests/test-summary-view.sh \
 	tests/test-no-initramfs.sh tests/test-create-usb.sh \
 	tests/test-find-remotes.sh tests/test-fsck-collections.sh \
-	tests/test-init-collections.sh tests/test-prune-collections.sh \
-	tests/test-refs-collections.sh \
+	tests/test-fsck-delete.sh tests/test-init-collections.sh \
+	tests/test-prune-collections.sh tests/test-refs-collections.sh \
 	tests/test-remote-add-collections.sh \
 	tests/test-repo-finder-mount-integration.sh \
 	tests/test-summary-collections.sh \
@@ -2842,8 +2842,8 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-summary-update.sh tests/test-summary-view.sh \
 	tests/test-no-initramfs.sh tests/test-create-usb.sh \
 	tests/test-find-remotes.sh tests/test-fsck-collections.sh \
-	tests/test-init-collections.sh tests/test-prune-collections.sh \
-	tests/test-refs-collections.sh \
+	tests/test-fsck-delete.sh tests/test-init-collections.sh \
+	tests/test-prune-collections.sh tests/test-refs-collections.sh \
 	tests/test-remote-add-collections.sh \
 	tests/test-repo-finder-mount-integration.sh \
 	tests/test-summary-collections.sh \
@@ -8201,6 +8201,13 @@ tests/test-find-remotes.sh.log: tests/test-find-remotes.sh
 tests/test-fsck-collections.sh.log: tests/test-fsck-collections.sh
 	@p='tests/test-fsck-collections.sh'; \
 	b='tests/test-fsck-collections.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-fsck-delete.sh.log: tests/test-fsck-delete.sh
+	@p='tests/test-fsck-delete.sh'; \
+	b='tests/test-fsck-delete.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

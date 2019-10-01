@@ -442,6 +442,14 @@
 <span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-mark-commit-partial-reason" title="ostree_repo_mark_commit_partial_reason ()">ostree_repo_mark_commit_partial_reason</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-metadata" title="ostree_repo_write_metadata ()">ostree_repo_write_metadata</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
@@ -3435,9 +3443,10 @@ ostree_repo_mark_commit_partial (<em class="parameter"><code><a class="link" hre
                                  <em class="parameter"><code>const <span class="type">char</span> *checksum</code></em>,
                                  <em class="parameter"><code><span class="type">gboolean</span> is_partial</code></em>,
                                  <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
-<p>Commits in "partial" state do not have all their child objects written. This
-occurs in various situations, such as during a pull, but also if a "subpath"
-pull is used, as well as "commit only" pulls.</p>
+<p>Commits in the "partial" state do not have all their child objects
+written.  This occurs in various situations, such as during a pull,
+but also if a "subpath" pull is used, as well as "commit only"
+pulls.</p>
 <p>This function is used by <a class="link" href="ostree-OstreeRepo.html#ostree-repo-pull-with-options" title="ostree_repo_pull_with_options ()"><code class="function">ostree_repo_pull_with_options()</code></a>; you
 should use this if you are implementing a different type of transport.</p>
 <div class="refsect3">
@@ -3473,6 +3482,62 @@ should use this if you are implementing a different type of transport.</p>
 </table></div>
 </div>
 <p class="since">Since: 2017.15</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-mark-commit-partial-reason"></a><h3>ostree_repo_mark_commit_partial_reason ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_mark_commit_partial_reason
+                               (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                <em class="parameter"><code>const <span class="type">char</span> *checksum</code></em>,
+                                <em class="parameter"><code><span class="type">gboolean</span> is_partial</code></em>,
+                                <em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepoCommitState" title="enum OstreeRepoCommitState"><span class="type">OstreeRepoCommitState</span></a> in_state</code></em>,
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Allows the setting of a reason code for a partial commit. Presently
+it only supports setting reason bitmask to
+OSTREE_REPO_COMMIT_STATE_FSCK_PARTIAL, or
+OSTREE_REPO_COMMIT_STATE_NORMAL.  This will allow successive ostree
+fsck operations to exit properly with an error code if the
+repository has been truncated as a result of fsck trying to repair
+it.</p>
+<div class="refsect3">
+<a name="ostree-repo-mark-commit-partial-reason.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>checksum</p></td>
+<td class="parameter_description"><p>Commit SHA-256</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>is_partial</p></td>
+<td class="parameter_description"><p>Whether or not this commit is partial</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>in_state</p></td>
+<td class="parameter_description"><p>Reason bitmask for partial commit</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2019.4</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -8288,6 +8353,14 @@ by <a class="link" href="ostree-OstreeRepo.html#ostree-repo-load-commit" title="
 <td class="enum_member_description">
 <p>One or more objects are missing from the
    local copy of the commit, but metadata is present. (Since: 2015.7.)</p>
+</td>
+<td class="enum_member_annotations"> </td>
+</tr>
+<tr>
+<td class="enum_member_name"><p><a name="OSTREE-REPO-COMMIT-STATE-FSCK-PARTIAL:CAPS"></a>OSTREE_REPO_COMMIT_STATE_FSCK_PARTIAL</p></td>
+<td class="enum_member_description">
+<p>One or more objects are missing from the
+   local copy of the commit, due to an fsck --delete. (Since: 2019.4.)</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
