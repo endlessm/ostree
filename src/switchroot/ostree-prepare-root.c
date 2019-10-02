@@ -47,15 +47,6 @@
 #include <errno.h>
 #include <ctype.h>
 
-#if defined(HAVE_LIBSYSTEMD) && !defined(OSTREE_PREPARE_ROOT_STATIC)
-#define USE_LIBSYSTEMD
-#endif
-
-#ifdef USE_LIBSYSTEMD
-#include <systemd/sd-journal.h>
-#define OSTREE_PREPARE_ROOT_DEPLOYMENT_MSG SD_ID128_MAKE(71,70,33,6a,73,ba,46,01,ba,d3,1a,f8,88,aa,0d,f7)
-#endif
-
 #include "ostree-mount-util.h"
 
 /* Initialized early in main */
@@ -80,19 +71,9 @@ resolve_deploy_path (const char * root_mountpoint)
   deploy_path = realpath (destpath, NULL);
   if (deploy_path == NULL)
     err (EXIT_FAILURE, "realpath(%s) failed", destpath);
-  if (stat (deploy_path, &stbuf) < 0)
-    err (EXIT_FAILURE, "stat(%s) failed", deploy_path);
   /* Quiet logs if there's no journal */
-#ifdef USE_LIBSYSTEMD
-  const char *resolved_path = deploy_path + strlen (root_mountpoint);
-  sd_journal_send ("MESSAGE=Resolved OSTree target to: %s", deploy_path,
-                   "MESSAGE_ID=" SD_ID128_FORMAT_STR,
-                   SD_ID128_FORMAT_VAL(OSTREE_PREPARE_ROOT_DEPLOYMENT_MSG),
-                   "DEPLOYMENT_PATH=%s", resolved_path,
-                   "DEPLOYMENT_DEVICE=%u", stbuf.st_dev,
-                   "DEPLOYMENT_INODE=%u", stbuf.st_ino,
-                   NULL);
-#endif
+  if (!running_as_pid1)
+    printf ("Resolved OSTree target to: %s\n", deploy_path);
   return deploy_path;
 }
 
