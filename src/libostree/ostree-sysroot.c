@@ -945,6 +945,7 @@ ostree_sysroot_load_if_changed (OstreeSysroot  *self,
 
   g_autoptr(GPtrArray) deployments = g_ptr_array_new_with_free_func ((GDestroyNotify)g_object_unref);
 
+  g_assert (boot_loader_configs); /* Pacify static analysis */
   for (guint i = 0; i < boot_loader_configs->len; i++)
     {
       OstreeBootconfigParser *config = boot_loader_configs->pdata[i];
@@ -1671,10 +1672,7 @@ ostree_sysroot_simple_write_deployment (OstreeSysroot      *sysroot,
 
   /* add it last if no crossover defined (or it's the first deployment in the sysroot) */
   if (!added_new)
-    {
-      g_ptr_array_add (new_deployments, g_object_ref (new_deployment));
-      added_new = TRUE;
-    }
+    g_ptr_array_add (new_deployments, g_object_ref (new_deployment));
 
   OstreeSysrootWriteDeploymentsOpts write_opts = { .do_postclean = postclean };
   if (!ostree_sysroot_write_deployments_with_options (sysroot, new_deployments, &write_opts,

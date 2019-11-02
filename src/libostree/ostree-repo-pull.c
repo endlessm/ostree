@@ -2181,7 +2181,6 @@ static void
 start_fetch (OtPullData *pull_data,
              FetchObjectData *fetch)
 {
-  gboolean is_meta;
   g_autofree char *obj_subpath = NULL;
   guint64 *expected_max_size_p;
   guint64 expected_max_size;
@@ -2190,13 +2189,12 @@ start_fetch (OtPullData *pull_data,
   GPtrArray *mirrorlist = NULL;
 
   ostree_object_name_deserialize (fetch->object, &expected_checksum, &objtype);
-  is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
 
   g_debug ("starting fetch of %s.%s%s", expected_checksum,
            ostree_object_type_to_string (objtype),
            fetch->is_detached_meta ? " (detached)" : "");
 
-  is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
+  gboolean is_meta = OSTREE_OBJECT_TYPE_IS_META (objtype);
   if (is_meta)
     pull_data->n_outstanding_metadata_fetches++;
   else
@@ -3575,7 +3573,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   g_autofree char **refs_to_fetch = NULL;
   g_autoptr(GVariantIter) collection_refs_iter = NULL;
   g_autofree char **override_commit_ids = NULL;
-  GSource *update_timeout = NULL;
+  g_autoptr(GSource) update_timeout = NULL;
   gboolean opt_gpg_verify_set = FALSE;
   gboolean opt_gpg_verify_summary_set = FALSE;
   gboolean opt_collection_refs_set = FALSE;
@@ -3677,6 +3675,10 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     pull_data->async_error = &pull_data->cached_async_error;
   else
     pull_data->async_error = NULL;
+
+  /* Note we're using the thread default (or global) context here, so it may outlive the
+   * OtPullData object if there's another ref on it. Thus, always detach/destroy sources
+   * local to the `ostree_repo_pull*` operation rather than trying to transfer ownership. */
   pull_data->main_context = g_main_context_ref_thread_default ();
   pull_data->flags = flags;
 
@@ -4516,7 +4518,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       g_source_set_priority (update_timeout, G_PRIORITY_HIGH);
       g_source_set_callback (update_timeout, update_progress, pull_data, NULL);
       g_source_attach (update_timeout, pull_data->main_context);
-      g_source_unref (update_timeout);
     }
 
   /* Now await work completion */

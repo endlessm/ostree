@@ -578,9 +578,9 @@ check_PROGRAMS = $(am__EXEEXT_12) $(am__EXEEXT_13) $(am__EXEEXT_14)
 # We're using the system grub2-mkconfig generator
 @BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_90 = src/boot/grub2/grub2-15_ostree
 @BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_91 = install-grub2-config-hook
-@BUILDOPT_TRIVIAL_HTTPD_TRUE@@ENABLE_MAN_TRUE@am__append_92 = ostree-trivial-httpd.1
+@ENABLE_MAN_TRUE@@USE_LIBSOUP_TRUE@am__append_92 = ostree-trivial-httpd.1
 # We still want to distribute the source, even if we are not building it
-@BUILDOPT_TRIVIAL_HTTPD_FALSE@@ENABLE_MAN_TRUE@am__append_93 = man/ostree-trivial-httpd.xml
+@ENABLE_MAN_TRUE@@USE_LIBSOUP_FALSE@am__append_93 = man/ostree-trivial-httpd.xml
 @BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_94 = rofiles-fuse.1
 @ENABLE_MAN_TRUE@@USE_GPGME_TRUE@am__append_95 = ostree-gpg-sign.1
 @ENABLE_MAN_TRUE@am__append_96 = $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
@@ -813,6 +813,8 @@ am__libostree_1_la_SOURCES_DIST =  \
 	src/libostree/ostree-bootloader.c \
 	src/libostree/ostree-bootloader-grub2.h \
 	src/libostree/ostree-bootloader-grub2.c \
+	src/libostree/ostree-bootloader-zipl.h \
+	src/libostree/ostree-bootloader-zipl.c \
 	src/libostree/ostree-bootloader-syslinux.h \
 	src/libostree/ostree-bootloader-syslinux.c \
 	src/libostree/ostree-bootloader-uboot.h \
@@ -918,6 +920,7 @@ am_libostree_1_la_OBJECTS =  \
 	src/libostree/libostree_1_la-ostree-deployment.lo \
 	src/libostree/libostree_1_la-ostree-bootloader.lo \
 	src/libostree/libostree_1_la-ostree-bootloader-grub2.lo \
+	src/libostree/libostree_1_la-ostree-bootloader-zipl.lo \
 	src/libostree/libostree_1_la-ostree-bootloader-syslinux.lo \
 	src/libostree/libostree_1_la-ostree-bootloader-uboot.lo \
 	src/libostree/libostree_1_la-ostree-repo-static-delta-core.lo \
@@ -1484,6 +1487,7 @@ am__depfiles_remade = bsdiff/$(DEPDIR)/libbsdiff_la-bsdiff.Plo \
 	src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-grub2.Plo \
 	src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-syslinux.Plo \
 	src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-uboot.Plo \
+	src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-zipl.Plo \
 	src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader.Plo \
 	src/libostree/$(DEPDIR)/libostree_1_la-ostree-chain-input-stream.Plo \
 	src/libostree/$(DEPDIR)/libostree_1_la-ostree-checksum-input-stream.Plo \
@@ -2611,6 +2615,8 @@ libostree_1_la_SOURCES = src/libostree/ostree-async-progress.c \
 	src/libostree/ostree-bootloader.c \
 	src/libostree/ostree-bootloader-grub2.h \
 	src/libostree/ostree-bootloader-grub2.c \
+	src/libostree/ostree-bootloader-zipl.h \
+	src/libostree/ostree-bootloader-zipl.c \
 	src/libostree/ostree-bootloader-syslinux.h \
 	src/libostree/ostree-bootloader-syslinux.c \
 	src/libostree/ostree-bootloader-uboot.h \
@@ -3768,6 +3774,9 @@ src/libostree/libostree_1_la-ostree-bootloader.lo:  \
 src/libostree/libostree_1_la-ostree-bootloader-grub2.lo:  \
 	src/libostree/$(am__dirstamp) \
 	src/libostree/$(DEPDIR)/$(am__dirstamp)
+src/libostree/libostree_1_la-ostree-bootloader-zipl.lo:  \
+	src/libostree/$(am__dirstamp) \
+	src/libostree/$(DEPDIR)/$(am__dirstamp)
 src/libostree/libostree_1_la-ostree-bootloader-syslinux.lo:  \
 	src/libostree/$(am__dirstamp) \
 	src/libostree/$(DEPDIR)/$(am__dirstamp)
@@ -4619,6 +4628,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-grub2.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-syslinux.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-uboot.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-zipl.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-chain-input-stream.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-checksum-input-stream.Plo@am__quote@ # am--include-marker
@@ -5149,6 +5159,13 @@ src/libostree/libostree_1_la-ostree-bootloader-grub2.lo: src/libostree/ostree-bo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-bootloader-grub2.c' object='src/libostree/libostree_1_la-ostree-bootloader-grub2.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-bootloader-grub2.lo `test -f 'src/libostree/ostree-bootloader-grub2.c' || echo '$(srcdir)/'`src/libostree/ostree-bootloader-grub2.c
+
+src/libostree/libostree_1_la-ostree-bootloader-zipl.lo: src/libostree/ostree-bootloader-zipl.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-bootloader-zipl.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-zipl.Tpo -c -o src/libostree/libostree_1_la-ostree-bootloader-zipl.lo `test -f 'src/libostree/ostree-bootloader-zipl.c' || echo '$(srcdir)/'`src/libostree/ostree-bootloader-zipl.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-zipl.Tpo src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-zipl.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/libostree/ostree-bootloader-zipl.c' object='src/libostree/libostree_1_la-ostree-bootloader-zipl.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -c -o src/libostree/libostree_1_la-ostree-bootloader-zipl.lo `test -f 'src/libostree/ostree-bootloader-zipl.c' || echo '$(srcdir)/'`src/libostree/ostree-bootloader-zipl.c
 
 src/libostree/libostree_1_la-ostree-bootloader-syslinux.lo: src/libostree/ostree-bootloader-syslinux.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libostree_1_la_CFLAGS) $(CFLAGS) -MT src/libostree/libostree_1_la-ostree-bootloader-syslinux.lo -MD -MP -MF src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-syslinux.Tpo -c -o src/libostree/libostree_1_la-ostree-bootloader-syslinux.lo `test -f 'src/libostree/ostree-bootloader-syslinux.c' || echo '$(srcdir)/'`src/libostree/ostree-bootloader-syslinux.c
@@ -8710,6 +8727,7 @@ distclean: distclean-recursive
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-grub2.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-syslinux.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-uboot.Plo
+	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-zipl.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-chain-input-stream.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-checksum-input-stream.Plo
@@ -8970,6 +8988,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-grub2.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-syslinux.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-uboot.Plo
+	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader-zipl.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-bootloader.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-chain-input-stream.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-checksum-input-stream.Plo

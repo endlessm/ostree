@@ -43,6 +43,7 @@
 #include "ostree.h"
 #include "ostree-sysroot-private.h"
 #include "ostree-sepolicy-private.h"
+#include "ostree-bootloader-zipl.h"
 #include "ostree-deployment-private.h"
 #include "ostree-core-private.h"
 #include "ostree-linuxfsutil.h"
@@ -753,15 +754,14 @@ prepare_deployment_etc (OstreeSysroot         *sysroot,
     return FALSE;
   gboolean usretc_exists = (errno == 0);
 
-  if (etc_exists && usretc_exists)
-    return glnx_throw (error, "Tree contains both /etc and /usr/etc");
-  else if (etc_exists)
+  if (etc_exists)
     {
+       if (usretc_exists)
+         return glnx_throw (error, "Tree contains both /etc and /usr/etc");
       /* Compatibility hack */
       if (!glnx_renameat (deployment_dfd, "etc", deployment_dfd, "usr/etc", error))
         return FALSE;
       usretc_exists = TRUE;
-      etc_exists = FALSE;
     }
 
   if (usretc_exists)
@@ -878,6 +878,8 @@ typedef struct {
   int   boot_dfd;
   char *kernel_srcpath;
   char *kernel_namever;
+  char *kernel_hmac_srcpath;
+  char *kernel_hmac_namever;
   char *initramfs_srcpath;
   char *initramfs_namever;
   char *devicetree_srcpath;
@@ -890,6 +892,8 @@ _ostree_kernel_layout_free (OstreeKernelLayout *layout)
   glnx_close_fd (&layout->boot_dfd);
   g_free (layout->kernel_srcpath);
   g_free (layout->kernel_namever);
+  g_free (layout->kernel_hmac_srcpath);
+  g_free (layout->kernel_hmac_namever);
   g_free (layout->initramfs_srcpath);
   g_free (layout->initramfs_namever);
   g_free (layout->devicetree_srcpath);
@@ -1031,6 +1035,16 @@ get_kernel_from_tree_usrlib_modules (int                  deployment_dfd,
 
   g_clear_object (&in);
   glnx_close_fd (&fd);
+
+  /* And finally, look for any HMAC file. This is needed for FIPS mode on some distros. */
+  if (!glnx_fstatat_allow_noent (ret_layout->boot_dfd, ".vmlinuz.hmac", NULL, 0, error))
+    return FALSE;
+  if (errno == 0)
+    {
+      ret_layout->kernel_hmac_srcpath = g_strdup (".vmlinuz.hmac");
+      /* Name it as dracut expects it: https://github.com/dracutdevs/dracut/blob/225e4b94cbdb702cf512490dcd2ad9ca5f5b22c1/modules.d/01fips/fips.sh#L129 */
+      ret_layout->kernel_hmac_namever = g_strdup_printf (".%s.hmac", ret_layout->kernel_namever);
+    }
 
   char hexdigest[OSTREE_SHA256_STRING_LEN+1];
   ot_checksum_get_hexdigest (&checksum, hexdigest, sizeof (hexdigest));
@@ -1686,6 +1700,20 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
         }
     }
 
+  if (kernel_layout->kernel_hmac_srcpath)
+    {
+      if (!glnx_fstatat_allow_noent (bootcsum_dfd, kernel_layout->kernel_hmac_namever, &stbuf, 0, error))
+        return FALSE;
+      if (errno == ENOENT)
+        {
+          if (!install_into_boot (sepolicy, kernel_layout->boot_dfd, kernel_layout->kernel_hmac_srcpath,
+                                  bootcsum_dfd, kernel_layout->kernel_hmac_namever,
+                                  sysroot->debug_flags,
+                                  cancellable, error))
+            return FALSE;
+        }
+    }
+
   g_autofree char *contents = NULL;
   if (!glnx_fstatat_allow_noent (deployment_dfd, "usr/lib/os-release", &stbuf, 0, error))
     return FALSE;
@@ -1830,6 +1858,7 @@ prepare_new_bootloader_link (OstreeSysroot  *sysroot,
 /* Update the /boot/loader symlink to point to /boot/loader.$new_bootversion */
 static gboolean
 swap_bootloader (OstreeSysroot  *sysroot,
+                 OstreeBootloader *bootloader,
                  int             current_bootversion,
                  int             new_bootversion,
                  GCancellable   *cancellable,
@@ -1862,6 +1891,15 @@ swap_bootloader (OstreeSysroot  *sysroot,
    */
   if (fsync (boot_dfd) != 0)
     return glnx_throw_errno_prefix (error, "fsync(boot)");
+
+  /* TODO: In the future also execute this automatically via a systemd unit
+   * if we detect it's necessary.
+   **/
+  if (bootloader)
+    {
+      if (!_ostree_bootloader_post_bls_sync (bootloader, cancellable, error))
+        return FALSE;
+    }
 
   return TRUE;
 }
@@ -2129,7 +2167,7 @@ write_deployments_bootswap (OstreeSysroot     *self,
   if (!full_system_sync (self, out_syncstats, cancellable, error))
     return FALSE;
 
-  if (!swap_bootloader (self, self->bootversion, new_bootversion,
+  if (!swap_bootloader (self, bootloader, self->bootversion, new_bootversion,
                         cancellable, error))
     return FALSE;
 
@@ -2355,6 +2393,14 @@ ostree_sysroot_write_deployments_with_options (OstreeSysroot     *self,
       else if (g_str_equal (bootloader_config, "none"))
         {
           /* No bootloader specified; do not query bootloaders to run. */
+        }
+      else if (g_str_equal (bootloader_config, "zipl"))
+        {
+          /* Because we do not mark zipl as active by default, lets creating one here,
+           * which is basically the same what _ostree_sysroot_query_bootloader() does
+           * for other bootloaders if being activated.
+           * */
+          bootloader = (OstreeBootloader*) _ostree_bootloader_zipl_new (self);
         }
 
       bootloader_is_atomic = bootloader != NULL && _ostree_bootloader_is_atomic (bootloader);
