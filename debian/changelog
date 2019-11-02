@@ -1,6 +1,7 @@
 ostree (2019.5-1) UNRELEASED; urgency=medium
 
   * New upstream release
+    - d/copyright: Update
 
  -- Simon McVittie <smcv@debian.org>  Sat, 02 Nov 2019 10:28:47 +0000
 
