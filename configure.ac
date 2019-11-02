@@ -1,10 +1,13 @@
 AC_PREREQ([2.63])
-dnl If doing a final release, remember to follow the instructions to
-dnl update libostree-released.sym from libostree-devel.sym, and update the checksum
-dnl in test-symbols.sh, and also set is_release_build=yes below.  Then make
-dnl another post-release commit to bump the version, and set is_release_build=no.
+dnl To do a release: follow the instructions to update libostree-released.sym from
+dnl libostree-devel.sym, update the checksum in test-symbols.sh, set is_release_build=yes
+dnl below. Then make another post-release commit to bump the version and set
+dnl is_release_build=no.
+dnl Seed the release notes with `git-shortlog-with-prs <previous-release>..`. Then use
+dnl `git-evtag` to create the tag and push it. Finally, create a GitHub release and attach
+dnl the tarball from `make dist`.
 m4_define([year_version], [2019])
-m4_define([release_version], [4])
+m4_define([release_version], [5])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -191,8 +194,7 @@ AC_ARG_ENABLE(trivial-httpd-cmdline,
   [AS_HELP_STRING([--enable-trivial-httpd-cmdline],
   [Continue to support "ostree trivial-httpd" [default=no]])],,
   enable_trivial_httpd_cmdline=no)
-AM_CONDITIONAL(BUILDOPT_TRIVIAL_HTTPD, test x$enable_trivial_httpd_cmdline = xyes)
-AM_COND_IF(BUILDOPT_TRIVIAL_HTTPD,
+AS_IF([test x$enable_trivial_httpd_cmdline = xyes],
   [AC_DEFINE([BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE], 1, [Define if we are enabling ostree trivial-httpd entrypoint])]
 )
 

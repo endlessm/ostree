@@ -1548,8 +1548,8 @@ keyfile_set_from_vardict (GKeyFile     *keyfile,
           g_key_file_set_string_list (keyfile, section, key, strv_child, len);
         }
       else
-        g_critical ("Unhandled type '%s' in " G_GNUC_FUNCTION,
-                    (char*)g_variant_get_type (child));
+        g_critical ("Unhandled type '%s' in %s",
+                    (char*)g_variant_get_type (child), G_STRFUNC);
     }
 }
 
@@ -3184,8 +3184,10 @@ reload_sysroot_config (OstreeRepo          *self,
      * binary "x" in /usr/lib/ostree/bootloaders/x). See:
      * https://github.com/ostreedev/ostree/issues/1719
      * https://github.com/ostreedev/ostree/issues/1801
+     * Also, dedup these strings with the bootloader implementations
      */
-    if (!(g_str_equal (bootloader, "auto") || g_str_equal (bootloader, "none")))
+    if (!(g_str_equal (bootloader, "auto") || g_str_equal (bootloader, "none")
+          || g_str_equal (bootloader, "zipl")))
       return glnx_throw (error, "Invalid bootloader configuration: '%s'", bootloader);
 
     g_free (self->bootloader);
@@ -4197,7 +4199,7 @@ ostree_repo_has_object (OstreeRepo           *self,
                         GCancellable         *cancellable,
                         GError              **error)
 {
-  gboolean ret_have_object;
+  gboolean ret_have_object = FALSE;
 
   if (!_ostree_repo_has_loose_object (self, checksum, objtype, &ret_have_object,
                                       cancellable, error))
