@@ -551,6 +551,7 @@ LIBOSTREE_2019.2 {
 
 LIBOSTREE_2019.3 {
 global:
+  ostree_async_progress_copy_state;
   ostree_repo_write_archive_to_mtree_from_fd;
   ostree_kernel_args_free;
   ostree_kernel_args_new;
