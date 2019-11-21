@@ -450,10 +450,8 @@ ostree_async_progress_copy_state (OstreeAsyncProgress *self,
   GLNX_HASH_TABLE_FOREACH_KV (self->values, void *, key, GVariant *, value)
     {
       if (value)
-        {
-          g_variant_ref (value);
-          g_hash_table_replace (dest->values, key, value);
-        }
+        g_variant_ref (value);
+      g_hash_table_replace (dest->values, key, value);
     }
 
  out:
