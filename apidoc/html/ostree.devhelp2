@@ -304,6 +304,7 @@
     <keyword type="enum" name="enum OstreeSysrootSimpleWriteDeploymentFlags" link="ostree-Root-partition-mount-point.html#OstreeSysrootSimpleWriteDeploymentFlags"/>
     <keyword type="function" name="ostree_async_progress_new ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-new"/>
     <keyword type="function" name="ostree_async_progress_new_and_connect ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-new-and-connect"/>
+    <keyword type="function" name="ostree_async_progress_copy_state ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-copy-state" since="2019.6"/>
     <keyword type="function" name="ostree_async_progress_get_status ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-status" since="2017.6"/>
     <keyword type="function" name="ostree_async_progress_get ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get" since="2017.6"/>
     <keyword type="function" name="ostree_async_progress_get_variant ()" link="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get-variant" since="2017.6"/>
