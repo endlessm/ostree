@@ -1,3 +1,10 @@
+ostree (2019.6-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+    - d/libostree-1-1.symbols: Update
+
+ -- Simon McVittie <smcv@debian.org>  Sat, 14 Dec 2019 10:52:40 +0000
+
 ostree (2019.5-1) unstable; urgency=medium
 
   * New upstream release
