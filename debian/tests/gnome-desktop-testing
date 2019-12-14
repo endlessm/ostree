@@ -11,9 +11,7 @@ unset http_proxy
 unset https_proxy
 unset no_proxy
 
-e=0
-
-tests="$(gnome-desktop-testing-runner -l libostree | while read t; do
+tests="$(gnome-desktop-testing-runner -l libostree | while read -r t; do
 	t="${t%% *}"
 
 	case "$t" in
@@ -27,4 +25,6 @@ tests="$(gnome-desktop-testing-runner -l libostree | while read t; do
 	echo "$t"
 done)"
 
+# Deliberately word-splitting
+# shellcheck disable=SC2046
 exec gnome-desktop-testing-runner $tests

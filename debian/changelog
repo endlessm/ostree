@@ -4,6 +4,7 @@ ostree (2019.6-1) UNRELEASED; urgency=medium
     - d/libostree-1-1.symbols: Update
   * d/tests/build: Use correct compiler for proposed autopkgtest
     cross-architecture testing support
+  * d/tests: Make tests shellcheck-clean
 
  -- Simon McVittie <smcv@debian.org>  Sat, 14 Dec 2019 10:52:40 +0000
 
