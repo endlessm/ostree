@@ -528,63 +528,77 @@ check_PROGRAMS = $(am__EXEEXT_12) $(am__EXEEXT_13) $(am__EXEEXT_14)
 # It is built anyway as a side-effect of having the symlink in tests/,
 # and if we declare it here, it gets cleaned up properly
 @BUILDOPT_SYSTEMD_FALSE@am__append_62 = ostree-remount
-@BUILDOPT_USE_STATIC_COMPILER_FALSE@am__append_63 = ostree-prepare-root
-@BUILDOPT_SYSTEMD_TRUE@am__append_64 = -DHAVE_SYSTEMD=1
+
+# ostree-prepare-root can be used as init in a system without a populated /lib.
+# To support this use case we need to link statically as we will be unable to
+# locate libc.so at run time if it's not installed in /lib.
+#
+# We support building ostree-prepare-root with a different compiler to the rest
+# of ostree so we can use musl rather than glibc.  This reduces the size of the
+# executable significantly: from ~700K -> ~30K.  We have to use _SCRIPTS here
+# to get autotools to install this as an executable but without generating rules
+# to make it itself which we have specified manually.  See
+# https://lists.gnu.org/archive/html/help-gnu-utils/2007-01/msg00007.html
+@BUILDOPT_USE_STATIC_COMPILER_TRUE@am__append_63 = ostree-prepare-root
+@BUILDOPT_USE_STATIC_COMPILER_FALSE@am__append_64 = ostree-prepare-root
+@BUILDOPT_SYSTEMD_TRUE@am__append_65 = -DHAVE_SYSTEMD=1
 
 # This is the "new mode" of using a generator for /var; see
 # https://github.com/ostreedev/ostree/issues/855
-@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_65 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_66 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
+@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_67 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@systemdsystemgenerator_PROGRAMS = ostree-system-generator$(EXEEXT)
-@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_67 = $(systemdsystemgenerator_PROGRAMS)
+@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_68 = $(systemdsystemgenerator_PROGRAMS)
 
 # Allow the distcheck install under $prefix test to pass
-@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_68 = --with-systemdsystemgeneratordir='$${libdir}/systemd/system-generators'
-@BUILDOPT_FUSE_TRUE@am__append_69 = rofiles-fuse
-@BUILDOPT_ASAN_TRUE@am__append_70 = OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
-@USE_GPGME_TRUE@am__append_71 = \
+@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_69 = --with-systemdsystemgeneratordir='$${libdir}/systemd/system-generators'
+@BUILDOPT_FUSE_TRUE@am__append_70 = rofiles-fuse
+@BUILDOPT_ASAN_TRUE@am__append_71 = OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
+@USE_GPGME_TRUE@am__append_72 = \
 @USE_GPGME_TRUE@	tests/test-remote-gpg-import.sh \
 @USE_GPGME_TRUE@	tests/test-gpg-signed-commit.sh \
 @USE_GPGME_TRUE@	tests/test-admin-gpg.sh \
 @USE_GPGME_TRUE@	$(NULL)
 
-@ENABLE_EXPERIMENTAL_API_TRUE@am__append_72 = $(experimental_test_scripts)
-@ENABLE_EXPERIMENTAL_API_FALSE@am__append_73 = $(experimental_test_scripts)
-@BUILDOPT_FUSE_TRUE@am__append_74 = tests/test-rofiles-fuse.sh
-@BUILDOPT_FUSE_TRUE@am__append_75 = tests/rofiles-fuse-symlink-stamp
-@BUILDOPT_FUSE_FALSE@am__append_76 = tests/test-rofiles-fuse.sh
-@USE_LIBSOUP_TRUE@am__append_77 = tests/test-remote-cookies.sh
-@BUILDOPT_GJS_TRUE@am__append_78 = $(js_tests) $(js_installed_tests)
-@BUILDOPT_GJS_FALSE@am__append_79 = $(js_tests)
-@BUILDOPT_GJS_FALSE@am__append_80 = $(js_installed_tests)
-@ENABLE_INSTALLED_TESTS_FALSE@am__append_81 = -rpath $(abs_builddir)
-@USE_GPGME_TRUE@am__append_82 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_73 = $(experimental_test_scripts)
+@ENABLE_EXPERIMENTAL_API_FALSE@am__append_74 = $(experimental_test_scripts)
+@BUILDOPT_FUSE_TRUE@am__append_75 = tests/test-rofiles-fuse.sh
+@BUILDOPT_FUSE_TRUE@am__append_76 = tests/rofiles-fuse-symlink-stamp
+@BUILDOPT_FUSE_FALSE@am__append_77 = tests/test-rofiles-fuse.sh
+@USE_LIBSOUP_TRUE@am__append_78 = tests/test-remote-cookies.sh
+@BUILDOPT_GJS_TRUE@am__append_79 = $(js_tests) $(js_installed_tests)
+@BUILDOPT_GJS_FALSE@am__append_80 = $(js_tests)
+@BUILDOPT_GJS_FALSE@am__append_81 = $(js_installed_tests)
+@ENABLE_INSTALLED_TESTS_FALSE@am__append_82 = -rpath $(abs_builddir)
+@USE_GPGME_TRUE@am__append_83 = \
 @USE_GPGME_TRUE@	tests/test-gpg-verify-result \
 @USE_GPGME_TRUE@	$(NULL)
 
-@USE_AVAHI_TRUE@am__append_83 = tests/test-repo-finder-avahi
-@USE_LIBARCHIVE_TRUE@am__append_84 = tests/test-libarchive-import
-@USE_GPGME_TRUE@am__append_85 = \
+@USE_AVAHI_TRUE@am__append_84 = tests/test-repo-finder-avahi
+@USE_LIBARCHIVE_TRUE@am__append_85 = tests/test-libarchive-import
+@USE_GPGME_TRUE@am__append_86 = \
 @USE_GPGME_TRUE@	tests/gpg-verify-data/README.md \
 @USE_GPGME_TRUE@	$(NULL)
 
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_86 = $(_installed_or_uninstalled_test_scripts)
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_87 = $(_installed_or_uninstalled_test_programs)
-@ENABLE_INSTALLED_TESTS_TRUE@am__append_88 = install-installed-tests-extra
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_87 = $(_installed_or_uninstalled_test_scripts)
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_88 = $(_installed_or_uninstalled_test_programs)
+@ENABLE_INSTALLED_TESTS_TRUE@am__append_89 = install-installed-tests-extra
 
 # Allow the distcheck install under $prefix test to pass
-@BUILDOPT_SYSTEMD_TRUE@am__append_89 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
+@BUILDOPT_SYSTEMD_TRUE@am__append_90 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
 
 # We're using the system grub2-mkconfig generator
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_90 = src/boot/grub2/grub2-15_ostree
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_91 = install-grub2-config-hook
-@ENABLE_MAN_TRUE@@USE_LIBSOUP_TRUE@am__append_92 = ostree-trivial-httpd.1
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_91 = src/boot/grub2/grub2-15_ostree
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_92 = install-grub2-config-hook
+# We're using our internal generator
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_TRUE@am__append_93 = src/boot/grub2/ostree-grub-generator
+@ENABLE_MAN_TRUE@@USE_LIBSOUP_TRUE@am__append_94 = ostree-trivial-httpd.1
 # We still want to distribute the source, even if we are not building it
-@ENABLE_MAN_TRUE@@USE_LIBSOUP_FALSE@am__append_93 = man/ostree-trivial-httpd.xml
-@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_94 = rofiles-fuse.1
-@ENABLE_MAN_TRUE@@USE_GPGME_TRUE@am__append_95 = ostree-gpg-sign.1
-@ENABLE_MAN_TRUE@am__append_96 = $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
-@ENABLE_MAN_TRUE@am__append_97 = \
+@ENABLE_MAN_TRUE@@USE_LIBSOUP_FALSE@am__append_95 = man/ostree-trivial-httpd.xml
+@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_96 = rofiles-fuse.1
+@ENABLE_MAN_TRUE@@USE_GPGME_TRUE@am__append_97 = ostree-gpg-sign.1
+@ENABLE_MAN_TRUE@am__append_98 = $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
+@ENABLE_MAN_TRUE@am__append_99 = \
 @ENABLE_MAN_TRUE@	$(man1_MANS) \
 @ENABLE_MAN_TRUE@	$(man5_MANS) \
 @ENABLE_MAN_TRUE@	$(NULL)
@@ -1185,14 +1199,19 @@ rofiles_fuse_OBJECTS = $(am_rofiles_fuse_OBJECTS)
 rofiles_fuse_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(rofiles_fuse_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_libglnx_errors_OBJECTS = libglnx/tests/test_libglnx_errors-test-libglnx-errors.$(OBJEXT)
+am__objects_19 =  \
+	libglnx/tests/test_libglnx_errors-libglnx-testlib.$(OBJEXT)
+am_test_libglnx_errors_OBJECTS = $(am__objects_19) \
+	libglnx/tests/test_libglnx_errors-test-libglnx-errors.$(OBJEXT)
 test_libglnx_errors_OBJECTS = $(am_test_libglnx_errors_OBJECTS)
 test_libglnx_errors_DEPENDENCIES = $(am__DEPENDENCIES_2) libglnx.la
 test_libglnx_errors_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(test_libglnx_errors_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_test_libglnx_fdio_OBJECTS =  \
+am__objects_20 =  \
+	libglnx/tests/test_libglnx_fdio-libglnx-testlib.$(OBJEXT)
+am_test_libglnx_fdio_OBJECTS = $(am__objects_20) \
 	libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.$(OBJEXT)
 test_libglnx_fdio_OBJECTS = $(am_test_libglnx_fdio_OBJECTS)
 test_libglnx_fdio_DEPENDENCIES = $(am__DEPENDENCIES_2) libglnx.la
@@ -1200,21 +1219,30 @@ test_libglnx_fdio_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(test_libglnx_fdio_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-am_test_libglnx_macros_OBJECTS = libglnx/tests/test_libglnx_macros-test-libglnx-macros.$(OBJEXT)
+am__objects_21 =  \
+	libglnx/tests/test_libglnx_macros-libglnx-testlib.$(OBJEXT)
+am_test_libglnx_macros_OBJECTS = $(am__objects_21) \
+	libglnx/tests/test_libglnx_macros-test-libglnx-macros.$(OBJEXT)
 test_libglnx_macros_OBJECTS = $(am_test_libglnx_macros_OBJECTS)
 test_libglnx_macros_DEPENDENCIES = $(am__DEPENDENCIES_2) libglnx.la
 test_libglnx_macros_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(test_libglnx_macros_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_test_libglnx_shutil_OBJECTS = libglnx/tests/test_libglnx_shutil-test-libglnx-shutil.$(OBJEXT)
+am__objects_22 =  \
+	libglnx/tests/test_libglnx_shutil-libglnx-testlib.$(OBJEXT)
+am_test_libglnx_shutil_OBJECTS = $(am__objects_22) \
+	libglnx/tests/test_libglnx_shutil-test-libglnx-shutil.$(OBJEXT)
 test_libglnx_shutil_OBJECTS = $(am_test_libglnx_shutil_OBJECTS)
 test_libglnx_shutil_DEPENDENCIES = $(am__DEPENDENCIES_2) libglnx.la
 test_libglnx_shutil_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(test_libglnx_shutil_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_test_libglnx_xattrs_OBJECTS = libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.$(OBJEXT)
+am__objects_23 =  \
+	libglnx/tests/test_libglnx_xattrs-libglnx-testlib.$(OBJEXT)
+am_test_libglnx_xattrs_OBJECTS = $(am__objects_23) \
+	libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.$(OBJEXT)
 test_libglnx_xattrs_OBJECTS = $(am_test_libglnx_xattrs_OBJECTS)
 test_libglnx_xattrs_DEPENDENCIES = $(am__DEPENDENCIES_2) libglnx.la
 test_libglnx_xattrs_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -1475,10 +1503,15 @@ am__depfiles_remade = bsdiff/$(DEPDIR)/libbsdiff_la-bsdiff.Plo \
 	libglnx/$(DEPDIR)/la-glnx-lockfile.Plo \
 	libglnx/$(DEPDIR)/la-glnx-shutil.Plo \
 	libglnx/$(DEPDIR)/la-glnx-xattrs.Plo \
+	libglnx/tests/$(DEPDIR)/test_libglnx_errors-libglnx-testlib.Po \
 	libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Po \
+	libglnx/tests/$(DEPDIR)/test_libglnx_fdio-libglnx-testlib.Po \
 	libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Po \
+	libglnx/tests/$(DEPDIR)/test_libglnx_macros-libglnx-testlib.Po \
 	libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Po \
+	libglnx/tests/$(DEPDIR)/test_libglnx_shutil-libglnx-testlib.Po \
 	libglnx/tests/$(DEPDIR)/test_libglnx_shutil-test-libglnx-shutil.Po \
+	libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-libglnx-testlib.Po \
 	libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Po \
 	src/libostree/$(DEPDIR)/bupsplit.Plo \
 	src/libostree/$(DEPDIR)/libostree_1_la-ostree-async-progress.Plo \
@@ -1975,9 +2008,10 @@ am__EXEEXT_25 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
-	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
-	tests/test-pull-override-url.sh tests/test-pull-localcache.sh \
-	tests/test-local-pull.sh tests/test-local-pull-depth.sh \
+	tests/test-pull-basicauth.sh tests/test-pull-repeated.sh \
+	tests/test-pull-untrusted.sh tests/test-pull-override-url.sh \
+	tests/test-pull-localcache.sh tests/test-local-pull.sh \
+	tests/test-local-pull-depth.sh \
 	tests/test-admin-upgrade-unconfigured.sh \
 	tests/test-admin-upgrade-endoflife.sh \
 	tests/test-admin-upgrade-systemd-update.sh \
@@ -2010,7 +2044,7 @@ am__EXEEXT_25 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-summary-collections.sh \
 	tests/test-pull-collections.sh tests/test-config.sh \
 	$(am__EXEEXT_2) $(am__EXEEXT_20) $(am__EXEEXT_22) \
-	$(am__append_74) $(am__append_77) $(am__EXEEXT_24)
+	$(am__append_75) $(am__append_78) $(am__EXEEXT_24)
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_26 =  \
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_25)
 am__EXEEXT_27 = $(am__EXEEXT_2) $(am__EXEEXT_26)
@@ -2309,8 +2343,8 @@ AM_CFLAGS = -std=gnu99 -fno-strict-aliasing $(WARN_CFLAGS)
 
 # Allow the distcheck install under $prefix test to pass
 AM_DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-man \
-	--disable-maintainer-mode $(NULL) $(am__append_68) \
-	$(am__append_89) \
+	--disable-maintainer-mode $(NULL) $(am__append_69) \
+	$(am__append_90) \
 	BASH_COMPLETIONSDIR='$${datadir}/bash-completion/completions'
 SUBDIRS = . $(am__append_14)
 NULL = 
@@ -2323,7 +2357,7 @@ CLEANFILES = $(am__append_13) $(BUILT_SOURCES) $(am__append_50) \
 	tests/ostree-remount-symlink-stamp \
 	tests/rofiles-fuse-symlink-stamp tests/ostree \
 	tests/ostree-prepare-root tests/ostree-remount \
-	tests/rofiles-fuse $(am__append_97)
+	tests/rofiles-fuse $(am__append_99)
 EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	COPYING README.md $(am__append_15) libglnx/README.md \
 	libglnx/COPYING libglnx/libglnx.m4 $(NULL) \
@@ -2339,9 +2373,9 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/libostree/ostree-repo-deprecated.h \
 	src/libostree/ostree-version.h src/ostree/parse-datetime.y \
 	buildutil/tap-driver.sh buildutil/tap-test tests/glib.supp \
-	tests/ostree.supp $(NULL) $(am__append_73) $(am__append_76) \
-	$(am__append_79) tests/libtest.sh $(am__append_80) \
-	$(am__append_85) tests/libostreetest.h tests/libtest.sh \
+	tests/ostree.supp $(NULL) $(am__append_74) $(am__append_77) \
+	$(am__append_80) tests/libtest.sh $(am__append_81) \
+	$(am__append_86) tests/libostreetest.h tests/libtest.sh \
 	$(NULL) src/boot/dracut/module-setup.sh \
 	src/boot/dracut/ostree.conf src/boot/mkinitcpio/ostree \
 	src/boot/ostree-prepare-root.service \
@@ -2349,11 +2383,11 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/boot/ostree-remount.service \
 	src/boot/ostree-finalize-staged.service \
 	src/boot/grub2/grub2-15_ostree \
-	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_93) \
-	$(am__append_96)
+	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_95) \
+	$(am__append_98)
 bin_SCRIPTS = 
 lib_LTLIBRARIES = libostree-1.la
-pkglibexec_SCRIPTS = $(am__append_90)
+pkglibexec_SCRIPTS = $(am__append_91)
 noinst_LTLIBRARIES = $(am__append_1) libglnx.la libbsdiff.la \
 	libotutil.la $(am__append_18) libostreetest.la
 privlibdir = $(pkglibdir)
@@ -2367,6 +2401,7 @@ typelibdir = $(libdir)/girepository-1.0
 typelib_DATA = $(am__append_49)
 gsettings_SCHEMAS = 
 ostree_bootdir = $(prefix)/lib/ostree
+ostree_boot_SCRIPTS = $(am__append_63) $(am__append_93)
 
 # We should probably consider flipping the default for DEBUG.  Also,
 # include the builddir in $PATH so we find our just-built ostree
@@ -2383,7 +2418,7 @@ AM_TESTS_ENVIRONMENT = G_TEST_SRCDIR="$(abs_srcdir)" \
 	pwd)$${LD_LIBRARY_PATH:+:$${LD_LIBRARY_PATH}} PATH=$$(cd \
 	$(top_builddir)/tests && pwd):$${PATH} \
 	OSTREE_FEATURES="$(OSTREE_FEATURES)" PYTHONUNBUFFERED=1 \
-	$(NULL) $(am__append_70)
+	$(NULL) $(am__append_71)
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/buildutil/tap-driver.sh
 LOG_COMPILER = $(top_srcdir)/buildutil/tap-test
 installed_test_LTLIBRARIES = $(am__append_12)
@@ -2423,14 +2458,14 @@ all_test_ltlibs = $(test_ltlibraries) $(uninstalled_test_ltlibraries) $(installe
 # This initializes some more variables
 
 # This is a special facility to chain together hooks easily
-INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_88) \
-	$(am__append_91)
+INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_89) \
+	$(am__append_92)
 ALL_LOCAL_RULES = tests/libreaddir-rand.so
 shortened_sysconfdir = $$(echo "$(sysconfdir)" | sed -e 's|^$(prefix)||' -e 's|^/||')
 OSTREE_GITREV = $(shell cd $(srcdir) && if command -v git >/dev/null 2>&1 && test -d .git; then git describe --abbrev=42 --tags --always HEAD; fi)
 ACLOCAL_AMFLAGS = -I buildutil -I libglnx ${ACLOCAL_FLAGS}
 GITIGNOREFILES = aclocal.m4 build-aux/ buildutil/*.m4 config.h.in \
-	gtk-doc.make $(am__append_67)
+	gtk-doc.make $(am__append_68)
 OT_INTERNAL_GIO_UNIX_CFLAGS = $(OT_DEP_GIO_UNIX_CFLAGS)
 OT_INTERNAL_GIO_UNIX_LIBS = $(OT_DEP_GIO_UNIX_LIBS)
 OT_INTERNAL_SOUP_CFLAGS = $(OT_DEP_SOUP_CFLAGS)
@@ -2480,19 +2515,20 @@ libglnx_la_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 libglnx_la_LDFLAGS = -avoid-version -Bsymbolic-functions -export-symbols-regex "^glnx_" -no-undefined -export-dynamic 
 libglnx_la_LIBADD = $(libglnx_libs)
 libglnx_tests = test-libglnx-xattrs test-libglnx-fdio test-libglnx-errors test-libglnx-macros test-libglnx-shutil
-test_libglnx_xattrs_SOURCES = libglnx/tests/test-libglnx-xattrs.c
+libglnx_testlib_sources = libglnx/tests/libglnx-testlib.c
+test_libglnx_xattrs_SOURCES = $(libglnx_testlib_sources) libglnx/tests/test-libglnx-xattrs.c
 test_libglnx_xattrs_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 test_libglnx_xattrs_LDADD = $(libglnx_libs) libglnx.la
-test_libglnx_fdio_SOURCES = libglnx/tests/test-libglnx-fdio.c
+test_libglnx_fdio_SOURCES = $(libglnx_testlib_sources) libglnx/tests/test-libglnx-fdio.c
 test_libglnx_fdio_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 test_libglnx_fdio_LDADD = $(libglnx_libs) libglnx.la
-test_libglnx_errors_SOURCES = libglnx/tests/test-libglnx-errors.c
+test_libglnx_errors_SOURCES = $(libglnx_testlib_sources) libglnx/tests/test-libglnx-errors.c
 test_libglnx_errors_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 test_libglnx_errors_LDADD = $(libglnx_libs) libglnx.la
-test_libglnx_macros_SOURCES = libglnx/tests/test-libglnx-macros.c
+test_libglnx_macros_SOURCES = $(libglnx_testlib_sources) libglnx/tests/test-libglnx-macros.c
 test_libglnx_macros_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 test_libglnx_macros_LDADD = $(libglnx_libs) libglnx.la
-test_libglnx_shutil_SOURCES = libglnx/tests/test-libglnx-shutil.c
+test_libglnx_shutil_SOURCES = $(libglnx_testlib_sources) libglnx/tests/test-libglnx-shutil.c
 test_libglnx_shutil_CFLAGS = $(AM_CFLAGS) $(libglnx_cflags)
 test_libglnx_shutil_LDADD = $(libglnx_libs) libglnx.la
 libbsdiff_srcpath := $(srcdir)/bsdiff
@@ -2755,22 +2791,8 @@ ostree_prepare_root_SOURCES = \
     src/switchroot/ostree-prepare-root.c \
     $(NULL)
 
-ostree_prepare_root_CPPFLAGS = $(AM_CPPFLAGS) $(am__append_64) \
-	$(am__append_65)
-# We're using our internal generator
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_TRUE@ostree_boot_SCRIPTS = src/boot/grub2/ostree-grub-generator
-
-# ostree-prepare-root can be used as init in a system without a populated /lib.
-# To support this use case we need to link statically as we will be unable to
-# locate libc.so at run time if it's not installed in /lib.
-#
-# We support building ostree-prepare-root with a different compiler to the rest
-# of ostree so we can use musl rather than glibc.  This reduces the size of the
-# executable significantly: from ~700K -> ~30K.  We have to use _SCRIPTS here
-# to get autotools to install this as an executable but without generating rules
-# to make it itself which we have specified manually.  See
-# https://lists.gnu.org/archive/html/help-gnu-utils/2007-01/msg00007.html
-@BUILDOPT_USE_STATIC_COMPILER_TRUE@ostree_boot_SCRIPTS = ostree-prepare-root
+ostree_prepare_root_CPPFLAGS = $(AM_CPPFLAGS) $(am__append_65) \
+	$(am__append_66)
 @BUILDOPT_USE_STATIC_COMPILER_FALSE@ostree_prepare_root_CFLAGS = $(AM_CFLAGS) -Isrc/switchroot
 ostree_remount_SOURCES = \
     src/switchroot/ostree-mount-util.h \
@@ -2778,7 +2800,7 @@ ostree_remount_SOURCES = \
     $(NULL)
 
 ostree_remount_CPPFLAGS = $(AM_CPPFLAGS) -Isrc/switchroot \
-	$(am__append_66)
+	$(am__append_67)
 @BUILDOPT_SYSTEMD_TRUE@ostree_prepare_root_LDADD = $(AM_LDFLAGS) $(LIBSYSTEMD_LIBS)
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@ostree_system_generator_SOURCES = src/switchroot/ostree-mount-util.h \
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@                                  src/switchroot/ostree-system-generator.c
@@ -2794,7 +2816,7 @@ ostree_remount_CPPFLAGS = $(AM_CPPFLAGS) -Isrc/switchroot \
 @BUILDOPT_FUSE_TRUE@rofiles_fuse_LDADD = libglnx.la $(BUILDOPT_FUSE_LIBS) $(OT_INTERNAL_GIO_UNIX_LIBS) libostree-1.la
 uninstalled_test_data = tests/ostree-symlink-stamp \
 	tests/ostree-prepare-root-symlink-stamp \
-	tests/ostree-remount-symlink-stamp $(am__append_75)
+	tests/ostree-remount-symlink-stamp $(am__append_76)
 dist_uninstalled_test_scripts = tests/test-symbols.sh tests/coccinelle.sh
 
 # This logic implements ENABLE_INSTALLED_TESTS_EXCLUSIVE; see below.
@@ -2802,10 +2824,10 @@ dist_uninstalled_test_scripts = tests/test-symbols.sh tests/coccinelle.sh
 # tests *only* run installed, to avoid having to run them twice in CI.
 # This overrides the glib-tap.mk emphasis on doing both, if we'd
 # used e.g. `dist_test_scripts`.
-dist_test_scripts = $(NULL) $(am__append_86)
+dist_test_scripts = $(NULL) $(am__append_87)
 test_programs = tests/test-bloom tests/test-repo-finder-config \
-	tests/test-repo-finder-mount $(NULL) $(am__append_83) \
-	$(am__append_87)
+	tests/test-repo-finder-mount $(NULL) $(am__append_84) \
+	$(am__append_88)
 _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-basic-user.sh tests/test-basic-user-only.sh \
 	tests/test-basic-root.sh tests/test-pull-subpath.sh \
@@ -2820,9 +2842,10 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-pull-mirror-summary.sh \
 	tests/test-pull-large-metadata.sh tests/test-pull-metalink.sh \
 	tests/test-pull-summary-sigs.sh tests/test-pull-resume.sh \
-	tests/test-pull-repeated.sh tests/test-pull-untrusted.sh \
-	tests/test-pull-override-url.sh tests/test-pull-localcache.sh \
-	tests/test-local-pull.sh tests/test-local-pull-depth.sh \
+	tests/test-pull-basicauth.sh tests/test-pull-repeated.sh \
+	tests/test-pull-untrusted.sh tests/test-pull-override-url.sh \
+	tests/test-pull-localcache.sh tests/test-local-pull.sh \
+	tests/test-local-pull-depth.sh \
 	tests/test-admin-upgrade-unconfigured.sh \
 	tests/test-admin-upgrade-endoflife.sh \
 	tests/test-admin-upgrade-systemd-update.sh \
@@ -2854,8 +2877,8 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-repo-finder-mount-integration.sh \
 	tests/test-summary-collections.sh \
 	tests/test-pull-collections.sh tests/test-config.sh $(NULL) \
-	$(am__append_71) $(am__append_72) $(am__append_74) \
-	$(am__append_77) $(am__append_78)
+	$(am__append_72) $(am__append_73) $(am__append_75) \
+	$(am__append_78) $(am__append_79)
 experimental_test_scripts = \
 	$(NULL)
 
@@ -2925,7 +2948,7 @@ libreaddir_rand_la_LIBADD = \
 	$(NULL)
 
 libreaddir_rand_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version \
-	$(am__append_81)
+	$(am__append_82)
 _installed_or_uninstalled_test_programs = tests/test-varint \
 	tests/test-ot-unix-utils tests/test-bsdiff \
 	tests/test-mutable-tree tests/test-keyfile-utils \
@@ -2933,7 +2956,7 @@ _installed_or_uninstalled_test_programs = tests/test-varint \
 	tests/test-checksum tests/test-lzma tests/test-rollsum \
 	tests/test-basic-c tests/test-sysroot-c tests/test-pull-c \
 	tests/test-repo tests/test-include-ostree-h tests/test-kargs \
-	$(am__append_82) $(am__append_84)
+	$(am__append_83) $(am__append_85)
 common_tests_cflags = $(ostree_bin_shared_cflags) $(OT_INTERNAL_GIO_UNIX_CFLAGS) -I$(srcdir)/libglnx
 common_tests_ldadd = $(ostree_bin_shared_ldadd) $(OT_INTERNAL_GIO_UNIX_LIBS)
 libostreetest_la_SOURCES = tests/libostreetest.c tests/test-mock-gio.c tests/test-mock-gio.h
@@ -3050,8 +3073,8 @@ tests_test_lzma_LDADD = $(TESTS_LDADD) $(OT_DEP_LZMA_LIBS)
 @ENABLE_MAN_TRUE@	ostree-pull.1 ostree-refs.1 ostree-remote.1 \
 @ENABLE_MAN_TRUE@	ostree-reset.1 ostree-rev-parse.1 \
 @ENABLE_MAN_TRUE@	ostree-show.1 ostree-summary.1 \
-@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_92) \
-@ENABLE_MAN_TRUE@	$(am__append_94) $(am__append_95)
+@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_94) \
+@ENABLE_MAN_TRUE@	$(am__append_96) $(am__append_97)
 @ENABLE_MAN_TRUE@man5_files = ostree.repo.5 ostree.repo-config.5
 @ENABLE_MAN_TRUE@man1_MANS = $(addprefix man/,$(man1_files))
 @ENABLE_MAN_TRUE@man5_MANS = $(addprefix man/,$(man5_files))
@@ -4159,6 +4182,9 @@ libglnx/tests/$(am__dirstamp):
 libglnx/tests/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) libglnx/tests/$(DEPDIR)
 	@: > libglnx/tests/$(DEPDIR)/$(am__dirstamp)
+libglnx/tests/test_libglnx_errors-libglnx-testlib.$(OBJEXT):  \
+	libglnx/tests/$(am__dirstamp) \
+	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
 libglnx/tests/test_libglnx_errors-test-libglnx-errors.$(OBJEXT):  \
 	libglnx/tests/$(am__dirstamp) \
 	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
@@ -4166,6 +4192,9 @@ libglnx/tests/test_libglnx_errors-test-libglnx-errors.$(OBJEXT):  \
 test-libglnx-errors$(EXEEXT): $(test_libglnx_errors_OBJECTS) $(test_libglnx_errors_DEPENDENCIES) $(EXTRA_test_libglnx_errors_DEPENDENCIES) 
 	@rm -f test-libglnx-errors$(EXEEXT)
 	$(AM_V_CCLD)$(test_libglnx_errors_LINK) $(test_libglnx_errors_OBJECTS) $(test_libglnx_errors_LDADD) $(LIBS)
+libglnx/tests/test_libglnx_fdio-libglnx-testlib.$(OBJEXT):  \
+	libglnx/tests/$(am__dirstamp) \
+	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
 libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.$(OBJEXT):  \
 	libglnx/tests/$(am__dirstamp) \
 	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
@@ -4173,6 +4202,9 @@ libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.$(OBJEXT):  \
 test-libglnx-fdio$(EXEEXT): $(test_libglnx_fdio_OBJECTS) $(test_libglnx_fdio_DEPENDENCIES) $(EXTRA_test_libglnx_fdio_DEPENDENCIES) 
 	@rm -f test-libglnx-fdio$(EXEEXT)
 	$(AM_V_CCLD)$(test_libglnx_fdio_LINK) $(test_libglnx_fdio_OBJECTS) $(test_libglnx_fdio_LDADD) $(LIBS)
+libglnx/tests/test_libglnx_macros-libglnx-testlib.$(OBJEXT):  \
+	libglnx/tests/$(am__dirstamp) \
+	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
 libglnx/tests/test_libglnx_macros-test-libglnx-macros.$(OBJEXT):  \
 	libglnx/tests/$(am__dirstamp) \
 	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
@@ -4180,6 +4212,9 @@ libglnx/tests/test_libglnx_macros-test-libglnx-macros.$(OBJEXT):  \
 test-libglnx-macros$(EXEEXT): $(test_libglnx_macros_OBJECTS) $(test_libglnx_macros_DEPENDENCIES) $(EXTRA_test_libglnx_macros_DEPENDENCIES) 
 	@rm -f test-libglnx-macros$(EXEEXT)
 	$(AM_V_CCLD)$(test_libglnx_macros_LINK) $(test_libglnx_macros_OBJECTS) $(test_libglnx_macros_LDADD) $(LIBS)
+libglnx/tests/test_libglnx_shutil-libglnx-testlib.$(OBJEXT):  \
+	libglnx/tests/$(am__dirstamp) \
+	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
 libglnx/tests/test_libglnx_shutil-test-libglnx-shutil.$(OBJEXT):  \
 	libglnx/tests/$(am__dirstamp) \
 	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
@@ -4187,6 +4222,9 @@ libglnx/tests/test_libglnx_shutil-test-libglnx-shutil.$(OBJEXT):  \
 test-libglnx-shutil$(EXEEXT): $(test_libglnx_shutil_OBJECTS) $(test_libglnx_shutil_DEPENDENCIES) $(EXTRA_test_libglnx_shutil_DEPENDENCIES) 
 	@rm -f test-libglnx-shutil$(EXEEXT)
 	$(AM_V_CCLD)$(test_libglnx_shutil_LINK) $(test_libglnx_shutil_OBJECTS) $(test_libglnx_shutil_LDADD) $(LIBS)
+libglnx/tests/test_libglnx_xattrs-libglnx-testlib.$(OBJEXT):  \
+	libglnx/tests/$(am__dirstamp) \
+	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
 libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.$(OBJEXT):  \
 	libglnx/tests/$(am__dirstamp) \
 	libglnx/tests/$(DEPDIR)/$(am__dirstamp)
@@ -4616,10 +4654,15 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/$(DEPDIR)/la-glnx-lockfile.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/$(DEPDIR)/la-glnx-shutil.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/$(DEPDIR)/la-glnx-xattrs.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_errors-libglnx-testlib.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_fdio-libglnx-testlib.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_macros-libglnx-testlib.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_shutil-libglnx-testlib.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_shutil-test-libglnx-shutil.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-libglnx-testlib.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/bupsplit.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/libostree/$(DEPDIR)/libostree_1_la-ostree-async-progress.Plo@am__quote@ # am--include-marker
@@ -6364,6 +6407,20 @@ src/rofiles-fuse/rofiles_fuse-main.obj: src/rofiles-fuse/main.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(rofiles_fuse_CFLAGS) $(CFLAGS) -c -o src/rofiles-fuse/rofiles_fuse-main.obj `if test -f 'src/rofiles-fuse/main.c'; then $(CYGPATH_W) 'src/rofiles-fuse/main.c'; else $(CYGPATH_W) '$(srcdir)/src/rofiles-fuse/main.c'; fi`
 
+libglnx/tests/test_libglnx_errors-libglnx-testlib.o: libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_errors_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_errors-libglnx-testlib.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_errors-libglnx-testlib.Tpo -c -o libglnx/tests/test_libglnx_errors-libglnx-testlib.o `test -f 'libglnx/tests/libglnx-testlib.c' || echo '$(srcdir)/'`libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_errors-libglnx-testlib.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_errors-libglnx-testlib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/libglnx-testlib.c' object='libglnx/tests/test_libglnx_errors-libglnx-testlib.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_errors_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_errors-libglnx-testlib.o `test -f 'libglnx/tests/libglnx-testlib.c' || echo '$(srcdir)/'`libglnx/tests/libglnx-testlib.c
+
+libglnx/tests/test_libglnx_errors-libglnx-testlib.obj: libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_errors_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_errors-libglnx-testlib.obj -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_errors-libglnx-testlib.Tpo -c -o libglnx/tests/test_libglnx_errors-libglnx-testlib.obj `if test -f 'libglnx/tests/libglnx-testlib.c'; then $(CYGPATH_W) 'libglnx/tests/libglnx-testlib.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/libglnx-testlib.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_errors-libglnx-testlib.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_errors-libglnx-testlib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/libglnx-testlib.c' object='libglnx/tests/test_libglnx_errors-libglnx-testlib.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_errors_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_errors-libglnx-testlib.obj `if test -f 'libglnx/tests/libglnx-testlib.c'; then $(CYGPATH_W) 'libglnx/tests/libglnx-testlib.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/libglnx-testlib.c'; fi`
+
 libglnx/tests/test_libglnx_errors-test-libglnx-errors.o: libglnx/tests/test-libglnx-errors.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_errors_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_errors-test-libglnx-errors.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Tpo -c -o libglnx/tests/test_libglnx_errors-test-libglnx-errors.o `test -f 'libglnx/tests/test-libglnx-errors.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-errors.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Po
@@ -6377,6 +6434,20 @@ libglnx/tests/test_libglnx_errors-test-libglnx-errors.obj: libglnx/tests/test-li
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/test-libglnx-errors.c' object='libglnx/tests/test_libglnx_errors-test-libglnx-errors.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_errors_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_errors-test-libglnx-errors.obj `if test -f 'libglnx/tests/test-libglnx-errors.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-errors.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-errors.c'; fi`
+
+libglnx/tests/test_libglnx_fdio-libglnx-testlib.o: libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_fdio-libglnx-testlib.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_fdio-libglnx-testlib.Tpo -c -o libglnx/tests/test_libglnx_fdio-libglnx-testlib.o `test -f 'libglnx/tests/libglnx-testlib.c' || echo '$(srcdir)/'`libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_fdio-libglnx-testlib.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_fdio-libglnx-testlib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/libglnx-testlib.c' object='libglnx/tests/test_libglnx_fdio-libglnx-testlib.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_fdio-libglnx-testlib.o `test -f 'libglnx/tests/libglnx-testlib.c' || echo '$(srcdir)/'`libglnx/tests/libglnx-testlib.c
+
+libglnx/tests/test_libglnx_fdio-libglnx-testlib.obj: libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_fdio-libglnx-testlib.obj -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_fdio-libglnx-testlib.Tpo -c -o libglnx/tests/test_libglnx_fdio-libglnx-testlib.obj `if test -f 'libglnx/tests/libglnx-testlib.c'; then $(CYGPATH_W) 'libglnx/tests/libglnx-testlib.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/libglnx-testlib.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_fdio-libglnx-testlib.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_fdio-libglnx-testlib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/libglnx-testlib.c' object='libglnx/tests/test_libglnx_fdio-libglnx-testlib.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_fdio-libglnx-testlib.obj `if test -f 'libglnx/tests/libglnx-testlib.c'; then $(CYGPATH_W) 'libglnx/tests/libglnx-testlib.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/libglnx-testlib.c'; fi`
 
 libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.o: libglnx/tests/test-libglnx-fdio.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Tpo -c -o libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.o `test -f 'libglnx/tests/test-libglnx-fdio.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-fdio.c
@@ -6392,6 +6463,20 @@ libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.obj: libglnx/tests/test-libgln
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_fdio_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_fdio-test-libglnx-fdio.obj `if test -f 'libglnx/tests/test-libglnx-fdio.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-fdio.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-fdio.c'; fi`
 
+libglnx/tests/test_libglnx_macros-libglnx-testlib.o: libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_macros_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_macros-libglnx-testlib.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_macros-libglnx-testlib.Tpo -c -o libglnx/tests/test_libglnx_macros-libglnx-testlib.o `test -f 'libglnx/tests/libglnx-testlib.c' || echo '$(srcdir)/'`libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_macros-libglnx-testlib.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_macros-libglnx-testlib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/libglnx-testlib.c' object='libglnx/tests/test_libglnx_macros-libglnx-testlib.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_macros_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_macros-libglnx-testlib.o `test -f 'libglnx/tests/libglnx-testlib.c' || echo '$(srcdir)/'`libglnx/tests/libglnx-testlib.c
+
+libglnx/tests/test_libglnx_macros-libglnx-testlib.obj: libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_macros_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_macros-libglnx-testlib.obj -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_macros-libglnx-testlib.Tpo -c -o libglnx/tests/test_libglnx_macros-libglnx-testlib.obj `if test -f 'libglnx/tests/libglnx-testlib.c'; then $(CYGPATH_W) 'libglnx/tests/libglnx-testlib.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/libglnx-testlib.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_macros-libglnx-testlib.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_macros-libglnx-testlib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/libglnx-testlib.c' object='libglnx/tests/test_libglnx_macros-libglnx-testlib.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_macros_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_macros-libglnx-testlib.obj `if test -f 'libglnx/tests/libglnx-testlib.c'; then $(CYGPATH_W) 'libglnx/tests/libglnx-testlib.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/libglnx-testlib.c'; fi`
+
 libglnx/tests/test_libglnx_macros-test-libglnx-macros.o: libglnx/tests/test-libglnx-macros.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_macros_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_macros-test-libglnx-macros.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Tpo -c -o libglnx/tests/test_libglnx_macros-test-libglnx-macros.o `test -f 'libglnx/tests/test-libglnx-macros.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-macros.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Po
@@ -6406,6 +6491,20 @@ libglnx/tests/test_libglnx_macros-test-libglnx-macros.obj: libglnx/tests/test-li
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_macros_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_macros-test-libglnx-macros.obj `if test -f 'libglnx/tests/test-libglnx-macros.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-macros.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-macros.c'; fi`
 
+libglnx/tests/test_libglnx_shutil-libglnx-testlib.o: libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_shutil_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_shutil-libglnx-testlib.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_shutil-libglnx-testlib.Tpo -c -o libglnx/tests/test_libglnx_shutil-libglnx-testlib.o `test -f 'libglnx/tests/libglnx-testlib.c' || echo '$(srcdir)/'`libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_shutil-libglnx-testlib.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_shutil-libglnx-testlib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/libglnx-testlib.c' object='libglnx/tests/test_libglnx_shutil-libglnx-testlib.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_shutil_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_shutil-libglnx-testlib.o `test -f 'libglnx/tests/libglnx-testlib.c' || echo '$(srcdir)/'`libglnx/tests/libglnx-testlib.c
+
+libglnx/tests/test_libglnx_shutil-libglnx-testlib.obj: libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_shutil_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_shutil-libglnx-testlib.obj -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_shutil-libglnx-testlib.Tpo -c -o libglnx/tests/test_libglnx_shutil-libglnx-testlib.obj `if test -f 'libglnx/tests/libglnx-testlib.c'; then $(CYGPATH_W) 'libglnx/tests/libglnx-testlib.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/libglnx-testlib.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_shutil-libglnx-testlib.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_shutil-libglnx-testlib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/libglnx-testlib.c' object='libglnx/tests/test_libglnx_shutil-libglnx-testlib.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_shutil_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_shutil-libglnx-testlib.obj `if test -f 'libglnx/tests/libglnx-testlib.c'; then $(CYGPATH_W) 'libglnx/tests/libglnx-testlib.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/libglnx-testlib.c'; fi`
+
 libglnx/tests/test_libglnx_shutil-test-libglnx-shutil.o: libglnx/tests/test-libglnx-shutil.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_shutil_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_shutil-test-libglnx-shutil.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_shutil-test-libglnx-shutil.Tpo -c -o libglnx/tests/test_libglnx_shutil-test-libglnx-shutil.o `test -f 'libglnx/tests/test-libglnx-shutil.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-shutil.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_shutil-test-libglnx-shutil.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_shutil-test-libglnx-shutil.Po
@@ -6419,6 +6518,20 @@ libglnx/tests/test_libglnx_shutil-test-libglnx-shutil.obj: libglnx/tests/test-li
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/test-libglnx-shutil.c' object='libglnx/tests/test_libglnx_shutil-test-libglnx-shutil.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_shutil_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_shutil-test-libglnx-shutil.obj `if test -f 'libglnx/tests/test-libglnx-shutil.c'; then $(CYGPATH_W) 'libglnx/tests/test-libglnx-shutil.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/test-libglnx-shutil.c'; fi`
+
+libglnx/tests/test_libglnx_xattrs-libglnx-testlib.o: libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_xattrs_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_xattrs-libglnx-testlib.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-libglnx-testlib.Tpo -c -o libglnx/tests/test_libglnx_xattrs-libglnx-testlib.o `test -f 'libglnx/tests/libglnx-testlib.c' || echo '$(srcdir)/'`libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-libglnx-testlib.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-libglnx-testlib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/libglnx-testlib.c' object='libglnx/tests/test_libglnx_xattrs-libglnx-testlib.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_xattrs_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_xattrs-libglnx-testlib.o `test -f 'libglnx/tests/libglnx-testlib.c' || echo '$(srcdir)/'`libglnx/tests/libglnx-testlib.c
+
+libglnx/tests/test_libglnx_xattrs-libglnx-testlib.obj: libglnx/tests/libglnx-testlib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_xattrs_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_xattrs-libglnx-testlib.obj -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-libglnx-testlib.Tpo -c -o libglnx/tests/test_libglnx_xattrs-libglnx-testlib.obj `if test -f 'libglnx/tests/libglnx-testlib.c'; then $(CYGPATH_W) 'libglnx/tests/libglnx-testlib.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/libglnx-testlib.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-libglnx-testlib.Tpo libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-libglnx-testlib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libglnx/tests/libglnx-testlib.c' object='libglnx/tests/test_libglnx_xattrs-libglnx-testlib.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_xattrs_CFLAGS) $(CFLAGS) -c -o libglnx/tests/test_libglnx_xattrs-libglnx-testlib.obj `if test -f 'libglnx/tests/libglnx-testlib.c'; then $(CYGPATH_W) 'libglnx/tests/libglnx-testlib.c'; else $(CYGPATH_W) '$(srcdir)/libglnx/tests/libglnx-testlib.c'; fi`
 
 libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.o: libglnx/tests/test-libglnx-xattrs.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_libglnx_xattrs_CFLAGS) $(CFLAGS) -MT libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.o -MD -MP -MF libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Tpo -c -o libglnx/tests/test_libglnx_xattrs-test-libglnx-xattrs.o `test -f 'libglnx/tests/test-libglnx-xattrs.c' || echo '$(srcdir)/'`libglnx/tests/test-libglnx-xattrs.c
@@ -7928,6 +8041,13 @@ tests/test-pull-resume.sh.log: tests/test-pull-resume.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-pull-basicauth.sh.log: tests/test-pull-basicauth.sh
+	@p='tests/test-pull-basicauth.sh'; \
+	b='tests/test-pull-basicauth.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/test-pull-repeated.sh.log: tests/test-pull-repeated.sh
 	@p='tests/test-pull-repeated.sh'; \
 	b='tests/test-pull-repeated.sh'; \
@@ -8715,10 +8835,15 @@ distclean: distclean-recursive
 	-rm -f libglnx/$(DEPDIR)/la-glnx-lockfile.Plo
 	-rm -f libglnx/$(DEPDIR)/la-glnx-shutil.Plo
 	-rm -f libglnx/$(DEPDIR)/la-glnx-xattrs.Plo
+	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_errors-libglnx-testlib.Po
 	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Po
+	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_fdio-libglnx-testlib.Po
 	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Po
+	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_macros-libglnx-testlib.Po
 	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Po
+	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_shutil-libglnx-testlib.Po
 	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_shutil-test-libglnx-shutil.Po
+	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-libglnx-testlib.Po
 	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Po
 	-rm -f src/libostree/$(DEPDIR)/bupsplit.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-async-progress.Plo
@@ -8976,10 +9101,15 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f libglnx/$(DEPDIR)/la-glnx-lockfile.Plo
 	-rm -f libglnx/$(DEPDIR)/la-glnx-shutil.Plo
 	-rm -f libglnx/$(DEPDIR)/la-glnx-xattrs.Plo
+	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_errors-libglnx-testlib.Po
 	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_errors-test-libglnx-errors.Po
+	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_fdio-libglnx-testlib.Po
 	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_fdio-test-libglnx-fdio.Po
+	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_macros-libglnx-testlib.Po
 	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_macros-test-libglnx-macros.Po
+	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_shutil-libglnx-testlib.Po
 	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_shutil-test-libglnx-shutil.Po
+	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-libglnx-testlib.Po
 	-rm -f libglnx/tests/$(DEPDIR)/test_libglnx_xattrs-test-libglnx-xattrs.Po
 	-rm -f src/libostree/$(DEPDIR)/bupsplit.Plo
 	-rm -f src/libostree/$(DEPDIR)/libostree_1_la-ostree-async-progress.Plo
@@ -9271,6 +9401,7 @@ uninstall-man: uninstall-man1 uninstall-man5
 
 
 @ENABLE_INSTALLED_TESTS_TRUE@%.test: %$(EXEEXT) Makefile
+@ENABLE_INSTALLED_TESTS_TRUE@	@$(MKDIR_P) $(dir $@)
 @ENABLE_INSTALLED_TESTS_TRUE@	$(AM_V_GEN) (echo '[Test]' > $@.tmp; \
 @ENABLE_INSTALLED_TESTS_TRUE@	echo 'Type=session' >> $@.tmp; \
 @ENABLE_INSTALLED_TESTS_TRUE@	echo 'Exec=env G_TEST_SRCDIR=$(installed_testdir) G_TEST_BUILDDIR=$(installed_testdir) $(installed_testdir)/$(notdir $<)' >> $@.tmp; \
@@ -9322,6 +9453,7 @@ install-mkdir-remotes-d-hook:
 	mkdir -p $(DESTDIR)$(sysconfdir)/ostree/remotes.d
 
 src/ostree/parse-datetime.c: src/ostree/parse-datetime.y Makefile
+	mkdir -p src/ostree/
 	$(AM_V_GEN) $(YACC) $< -o $@
 
 @BUILDOPT_USE_STATIC_COMPILER_TRUE@ostree-prepare-root : $(ostree_prepare_root_SOURCES)

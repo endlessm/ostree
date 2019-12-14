@@ -84,6 +84,13 @@ glnx_open_anonymous_tmpfile (int flags,
                              GError **error);
 
 gboolean
+glnx_open_anonymous_tmpfile_full (int flags,
+                                  const char *dir,
+                                  GLnxTmpfile *out_tmpf,
+                                  GError **error);
+
+
+gboolean
 glnx_open_tmpfile_linkable_at (int dfd,
                                const char *subpath,
                                int flags,
@@ -102,6 +109,10 @@ glnx_link_tmpfile_at (GLnxTmpfile *tmpf,
                       int target_dfd,
                       const char *target,
                       GError **error);
+
+gboolean
+glnx_tmpfile_reopen_rdonly (GLnxTmpfile *tmpf,
+                            GError **error);
 
 gboolean
 glnx_openat_rdonly (int             dfd,
