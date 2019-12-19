@@ -573,6 +573,14 @@ global:
   ostree_kernel_args_to_string;
 } LIBOSTREE_2018.9;
 
+LIBOSTREE_2019.7 {
+global:
+  ostree_commit_sizes_entry_copy;
+  ostree_commit_sizes_entry_free;
+  ostree_commit_sizes_entry_get_type;
+  ostree_commit_sizes_entry_new;
+} LIBOSTREE_2019.3;
+
 /* NOTE: Only add more content here in release commits!  See the
  * comments at the top of this file.
  */
