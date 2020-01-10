@@ -1,5 +1,4 @@
 ---
-Name: libostree
 Repository: https://github.com/ostreedev/ostree.git
 Repository-Browse: https://github.com/ostreedev/ostree
 Bug-Database: https://github.com/ostreedev/ostree/issues
