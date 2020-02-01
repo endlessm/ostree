@@ -118,9 +118,6 @@ static OstreeCommand commands[] = {
   { "summary", OSTREE_BUILTIN_FLAG_NONE,
     ostree_builtin_summary,
     "Manage summary metadata" },
-  { "size-summary", OSTREE_BUILTIN_FLAG_NONE,
-    ostree_builtin_size_summary,
-    "Display the summary for branch" },
 #if defined(HAVE_LIBSOUP) && defined(BUILDOPT_ENABLE_TRIVIAL_HTTPD_CMDLINE)
   { "trivial-httpd", OSTREE_BUILTIN_FLAG_NONE,
     ostree_builtin_trivial_httpd,
