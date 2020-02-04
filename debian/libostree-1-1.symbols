@@ -30,6 +30,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2018.9@LIBOSTREE_2018.9 2018.9
  LIBOSTREE_2019.2@LIBOSTREE_2019.2 2019.2
  LIBOSTREE_2019.3@LIBOSTREE_2019.3 2019.3
+ ostree_async_progress_copy_state@LIBOSTREE_2019.3 2019.3
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
  ostree_async_progress_get_status@LIBOSTREE_2016.3 2016.4
