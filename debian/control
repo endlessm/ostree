@@ -46,7 +46,7 @@ Build-Depends:
 Build-Depends-Indep:
  libglib2.0-doc,
 Rules-Requires-Root: no
-Standards-Version: 4.4.1
+Standards-Version: 4.5.0
 Homepage: https://github.com/ostreedev/ostree/
 Vcs-Git: https://salsa.debian.org/debian/ostree.git
 Vcs-Browser: https://salsa.debian.org/debian/ostree
