@@ -34,7 +34,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_YEAR_VERSION (2019)
+#define OSTREE_YEAR_VERSION (2020)
 
 /**
  * OSTREE_RELEASE_VERSION:
@@ -43,7 +43,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_RELEASE_VERSION (6)
+#define OSTREE_RELEASE_VERSION (2)
 
 /**
  * OSTREE_VERSION
@@ -52,7 +52,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION (2019.6)
+#define OSTREE_VERSION (2020.2)
 
 /**
  * OSTREE_VERSION_S:
@@ -62,7 +62,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION_S "2019.6"
+#define OSTREE_VERSION_S "2020.2"
 
 #define OSTREE_ENCODE_VERSION(year,release) \
         ((year) << 16 | (release))
@@ -100,4 +100,4 @@
  *
  * Since: 2019.3
  */
-#define OSTREE_BUILT_FEATURES "libcurl libsoup gpgme libarchive selinux openssl libmount release p2p"
+#define OSTREE_BUILT_FEATURES "libcurl libsoup gpgme ex-fsverity libarchive selinux openssl libmount systemd release p2p"

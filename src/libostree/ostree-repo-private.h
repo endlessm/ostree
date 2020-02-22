@@ -22,6 +22,7 @@
 #pragma once
 
 #include <sys/statvfs.h>
+#include "config.h"
 #include "otutil.h"
 #include "ostree-ref.h"
 #include "ostree-repo.h"
@@ -30,8 +31,6 @@
 G_BEGIN_DECLS
 
 #define OSTREE_DELTAPART_VERSION (0)
-
-#define _OSTREE_OBJECT_SIZES_ENTRY_SIGNATURE "ay"
 
 #define _OSTREE_SUMMARY_CACHE_DIR "summaries"
 #define _OSTREE_CACHE_DIR "cache"
@@ -97,6 +96,12 @@ typedef struct {
   fsblkcnt_t max_blocks;
 } OstreeRepoTxn;
 
+typedef enum {
+  _OSTREE_FEATURE_NO,
+  _OSTREE_FEATURE_MAYBE,
+  _OSTREE_FEATURE_YES,
+} _OstreeFeatureSupport;
+
 /**
  * OstreeRepo:
  *
@@ -127,6 +132,8 @@ struct OstreeRepo {
   GMutex txn_lock;
   OstreeRepoTxn txn;
   gboolean txn_locked;
+  _OstreeFeatureSupport fs_verity_wanted;
+  _OstreeFeatureSupport fs_verity_supported;
 
   GMutex cache_lock;
   guint dirmeta_cache_refcount;
@@ -143,6 +150,14 @@ struct OstreeRepo {
   guint zlib_compression_level;
   GHashTable *loose_object_devino_hash;
   GHashTable *updated_uncompressed_dirs;
+
+  /* FIXME: The object sizes hash table is really per-commit state, not repo
+   * state. Using a single table for the repo means that commits cannot be
+   * built simultaneously if they're adding size information. This data should
+   * probably be in OstreeMutableTree, but that's gone by the time the actual
+   * commit is constructed. At that point the only commit state is in the root
+   * OstreeRepoFile.
+   */
   GHashTable *object_sizes;
 
   /* Cache the repo's device/inode to use for comparisons elsewhere */
@@ -329,6 +344,10 @@ _ostree_repo_commit_modifier_apply (OstreeRepo               *self,
                                     GFileInfo                *file_info,
                                     GFileInfo               **out_modified_info);
 
+void
+_ostree_repo_setup_generate_sizes (OstreeRepo               *self,
+                                   OstreeRepoCommitModifier *modifier);
+
 gboolean
 _ostree_repo_remote_name_is_file (const char *remote_name);
 
@@ -470,5 +489,16 @@ OstreeRepoAutoLock * _ostree_repo_auto_lock_push (OstreeRepo          *self,
                                                   GError             **error);
 void          _ostree_repo_auto_lock_cleanup (OstreeRepoAutoLock *lock);
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (OstreeRepoAutoLock, _ostree_repo_auto_lock_cleanup)
+
+gboolean
+_ostree_tmpf_fsverity_core (GLnxTmpfile *tmpf,
+                            _OstreeFeatureSupport fsverity_requested,
+                            gboolean    *supported,
+                            GError     **error);
+
+gboolean
+_ostree_tmpf_fsverity (OstreeRepo *self,
+                       GLnxTmpfile *tmpf,
+                       GError    **error);
 
 G_END_DECLS

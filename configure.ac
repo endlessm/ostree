@@ -2,12 +2,12 @@ AC_PREREQ([2.63])
 dnl To do a release: follow the instructions to update libostree-released.sym from
 dnl libostree-devel.sym, update the checksum in test-symbols.sh, set is_release_build=yes
 dnl below. Then make another post-release commit to bump the version and set
-dnl is_release_build=no.
+dnl is_release_build=yes
 dnl Seed the release notes with `git-shortlog-with-prs <previous-release>..`. Then use
 dnl `git-evtag` to create the tag and push it. Finally, create a GitHub release and attach
 dnl the tarball from `make dist`.
-m4_define([year_version], [2019])
-m4_define([release_version], [6])
+m4_define([year_version], [2020])
+m4_define([release_version], [2])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -245,6 +245,10 @@ AM_CONDITIONAL(USE_GPGME, test "x$have_gpgme" = xyes)
 LIBARCHIVE_DEPENDENCY="libarchive >= 2.8.0"
 # What's in RHEL7.2.
 FUSE_DEPENDENCY="fuse >= 2.9.2"
+
+AC_CHECK_HEADERS([linux/fsverity.h])
+AS_IF([test x$ac_cv_header_linux_fsverity_h = xyes ],
+  [OSTREE_FEATURES="$OSTREE_FEATURES ex-fsverity"])
 
 # check for gtk-doc
 m4_ifdef([GTK_DOC_CHECK], [
@@ -509,10 +513,8 @@ AS_IF([ test x$with_libsystemd != xno ], [
         with_libsystemd=no
     ])
 ], [ with_libsystemd=no ])
-AM_CONDITIONAL(BUILDOPT_LIBSYSTEMD, test $with_libsystemd != no)
 
-AS_IF([test "x$have_libsystemd" = "xyes"], [
-  with_systemd=yes
+AS_IF([test "x$with_libsystemd" = "xyes"], [
   AC_ARG_WITH([systemdsystemunitdir],
               AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]),
               [],
@@ -528,11 +530,12 @@ AS_IF([test "x$have_libsystemd" = "xyes"], [
     AC_SUBST([systemdsystemgeneratordir], [$with_systemdsystemgeneratordir])
   ])
 ])
-AM_CONDITIONAL(BUILDOPT_SYSTEMD, test x$with_systemd = xyes)
+AM_CONDITIONAL(BUILDOPT_SYSTEMD, test x$with_libsystemd = xyes)
 dnl If we have both, we use the "new /var" model with ostree-system-generator
-AM_CONDITIONAL(BUILDOPT_SYSTEMD_AND_LIBMOUNT,[test x$with_systemd = xyes && test x$with_libmount = xyes])
+AM_CONDITIONAL(BUILDOPT_SYSTEMD_AND_LIBMOUNT,[test x$with_libsystemd = xyes && test x$with_libmount = xyes])
 AM_COND_IF(BUILDOPT_SYSTEMD_AND_LIBMOUNT,
   AC_DEFINE([BUILDOPT_LIBSYSTEMD_AND_LIBMOUNT], 1, [Define if systemd and libmount]))
+if test x$with_libsystemd = xyes; then OSTREE_FEATURES="$OSTREE_FEATURES systemd"; fi
 
 AC_ARG_WITH(builtin-grub2-mkconfig,
             AS_HELP_STRING([--with-builtin-grub2-mkconfig],
@@ -619,8 +622,9 @@ echo "
     HTTP backend:                                 $fetcher_backend
     \"ostree trivial-httpd\":                       $enable_trivial_httpd_cmdline
     SELinux:                                      $with_selinux
+    fs-verity:                                    $ac_cv_header_linux_fsverity_h
     cryptographic checksums:                      $with_crypto
-    systemd:                                      $have_libsystemd
+    systemd:                                      $with_libsystemd
     libmount:                                     $with_libmount
     libarchive (parse tar files directly):        $with_libarchive
     static deltas:                                yes (always enabled now)

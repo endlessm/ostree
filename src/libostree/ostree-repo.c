@@ -31,6 +31,7 @@
 #include "libglnx.h"
 #include "otutil.h"
 #include <glnx-console.h>
+#include <linux/magic.h>
 
 #include "ostree-core-private.h"
 #include "ostree-sysroot-private.h"
@@ -47,6 +48,7 @@
 #include <glib/gstdio.h>
 #include <sys/file.h>
 #include <sys/statvfs.h>
+#include <sys/statfs.h>
 
 #define REPO_LOCK_DISABLED (-2)
 #define REPO_LOCK_BLOCKING (-1)
@@ -357,7 +359,7 @@ push_repo_lock (OstreeRepo          *self,
       g_debug ("Opening repo lock file");
       lock->fd = TEMP_FAILURE_RETRY (openat (self->repo_dir_fd, ".lock",
                                              O_CREAT | O_RDWR | O_CLOEXEC,
-                                             0600));
+                                             DEFAULT_REGFILE_MODE));
       if (lock->fd < 0)
         {
           free_repo_lock (lock);
@@ -2489,7 +2491,7 @@ repo_create_at_internal (int             dfd,
       }
   }
 
-  if (mkdirat (dfd, path, 0755) != 0)
+  if (mkdirat (dfd, path, DEFAULT_DIRECTORY_MODE) != 0)
     {
       if (G_UNLIKELY (errno != EEXIST))
         return glnx_throw_errno_prefix (error, "mkdirat");
@@ -2527,7 +2529,7 @@ repo_create_at_internal (int             dfd,
   for (guint i = 0; i < G_N_ELEMENTS (state_dirs); i++)
     {
       const char *elt = state_dirs[i];
-      if (mkdirat (repo_dfd, elt, 0755) == -1)
+      if (mkdirat (repo_dfd, elt, DEFAULT_DIRECTORY_MODE) == -1)
         {
           if (G_UNLIKELY (errno != EEXIST))
             return glnx_throw_errno_prefix (error, "mkdirat");
@@ -3033,6 +3035,34 @@ reload_core_config (OstreeRepo          *self,
       }
   }
 
+  /* Currently experimental */
+  static const char fsverity_key[] = "ex-fsverity";
+  self->fs_verity_wanted = _OSTREE_FEATURE_NO;
+#ifdef HAVE_LINUX_FSVERITY_H
+  self->fs_verity_supported = _OSTREE_FEATURE_MAYBE;
+#else
+  self->fs_verity_supported = _OSTREE_FEATURE_NO;
+#endif
+  gboolean fsverity_required = FALSE;
+  if (!ot_keyfile_get_boolean_with_default (self->config, fsverity_key, "required",
+                                            FALSE, &fsverity_required, error))
+    return FALSE;
+  if (fsverity_required)
+    {
+      self->fs_verity_wanted = _OSTREE_FEATURE_YES;
+      if (self->fs_verity_supported == _OSTREE_FEATURE_NO)
+        return glnx_throw (error, "fsverity required, but libostree compiled without support");
+    }
+  else
+    {  
+      gboolean fsverity_opportunistic = FALSE;
+      if (!ot_keyfile_get_boolean_with_default (self->config, fsverity_key, "opportunistic",
+                                                FALSE, &fsverity_opportunistic, error))
+        return FALSE;
+      if (fsverity_opportunistic)
+        self->fs_verity_wanted = _OSTREE_FEATURE_MAYBE;
+    }
+  
   {
     g_clear_pointer (&self->collection_id, g_free);
     if (!ot_keyfile_get_value_with_default (self->config, "core", "collection-id",
@@ -3295,7 +3325,7 @@ ostree_repo_open (OstreeRepo    *self,
        *
        * https://github.com/ostreedev/ostree/issues/1018
        */
-      if (mkdirat (self->repo_dir_fd, "tmp", 0755) == -1)
+      if (mkdirat (self->repo_dir_fd, "tmp", DEFAULT_DIRECTORY_MODE) == -1)
         {
           if (G_UNLIKELY (errno != EEXIST))
             return glnx_throw_errno_prefix (error, "mkdir(tmp)");
@@ -3307,7 +3337,7 @@ ostree_repo_open (OstreeRepo    *self,
 
   if (self->writable)
     {
-      if (!glnx_shutil_mkdir_p_at (self->tmp_dir_fd, _OSTREE_CACHE_DIR, 0775, cancellable, error))
+      if (!glnx_shutil_mkdir_p_at (self->tmp_dir_fd, _OSTREE_CACHE_DIR, DEFAULT_DIRECTORY_MODE, cancellable, error))
         return FALSE;
 
       if (!glnx_opendirat (self->tmp_dir_fd, _OSTREE_CACHE_DIR, TRUE, &self->cache_dir_fd, error))
@@ -6099,7 +6129,7 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
     {
       g_auto(GLnxTmpDir) new_tmpdir = { 0, };
       /* No existing tmpdir found, create a new */
-      if (!glnx_mkdtempat (tmpdir_dfd, tmpdir_name_template, 0755,
+      if (!glnx_mkdtempat (tmpdir_dfd, tmpdir_name_template, DEFAULT_DIRECTORY_MODE,
                            &new_tmpdir, error))
         return FALSE;
 
