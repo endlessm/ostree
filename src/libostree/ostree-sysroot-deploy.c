@@ -41,6 +41,7 @@
 
 #include "otutil.h"
 #include "ostree.h"
+#include "ostree-repo-private.h"
 #include "ostree-sysroot-private.h"
 #include "ostree-sepolicy-private.h"
 #include "ostree-bootloader-zipl.h"
@@ -55,6 +56,9 @@
 #define OSTREE_DEPLOYMENT_COMPLETE_ID   SD_ID128_MAKE(dd,44,0e,3e,54,90,83,b6,3d,0e,fc,7d,c1,52,55,f1)
 #define OSTREE_DEPLOYMENT_FINALIZING_ID SD_ID128_MAKE(e8,64,6c,d6,3d,ff,46,25,b7,79,09,a8,e7,a4,09,94)
 #endif
+
+static gboolean
+is_ro_mount (const char *path);
 
 /*
  * Like symlinkat() but overwrites (atomically) an existing
@@ -101,7 +105,8 @@ sysroot_flags_to_copy_flags (GLnxFileCopyFlags defaults,
  * hardlink if we're on the same partition.
  */
 static gboolean
-install_into_boot (OstreeSePolicy *sepolicy,
+install_into_boot (OstreeRepo *repo,
+                   OstreeSePolicy *sepolicy,
                    int         src_dfd,
                    const char *src_subpath,
                    int         dest_dfd,
@@ -110,32 +115,67 @@ install_into_boot (OstreeSePolicy *sepolicy,
                    GCancellable  *cancellable,
                    GError       **error)
 {
-  if (linkat (src_dfd, src_subpath, dest_dfd, dest_subpath, 0) != 0)
-    {
-      if (G_IN_SET (errno, EMLINK, EXDEV))
-        {
-          /* Be sure we relabel when copying the kernel, as in current
-           * e.g. Fedora it might be labeled module_object_t or usr_t,
-           * but policy may not allow other processes to read from that
-           * like kdump.
-           * See also https://github.com/fedora-selinux/selinux-policy/commit/747f4e6775d773ab74efae5aa37f3e5e7f0d4aca
-           * This means we also drop xattrs but...I doubt anyone uses
-           * non-SELinux xattrs for the kernel anyways aside from perhaps
-           * IMA but that's its own story.
-           */
-          g_auto(OstreeSepolicyFsCreatecon) fscreatecon = { 0, };
-          const char *boot_path = glnx_strjoina ("/boot/", glnx_basename (dest_subpath));
-          if (!_ostree_sepolicy_preparefscreatecon (&fscreatecon, sepolicy,
-                                                    boot_path, S_IFREG | 0644,
-                                                    error))
-            return FALSE;
-          return glnx_file_copy_at (src_dfd, src_subpath, NULL, dest_dfd, dest_subpath,
-                                    GLNX_FILE_COPY_NOXATTRS | GLNX_FILE_COPY_DATASYNC,
-                                    cancellable, error);
-        }
-      else
-        return glnx_throw_errno_prefix (error, "linkat(%s)", dest_subpath);
-    }
+  if (linkat (src_dfd, src_subpath, dest_dfd, dest_subpath, 0) == 0)
+    return TRUE; /* Note early return */
+  if (!G_IN_SET (errno, EMLINK, EXDEV))
+    return glnx_throw_errno_prefix (error, "linkat(%s)", dest_subpath);
+
+  /* Otherwise, copy */
+  struct stat src_stbuf;
+  if (!glnx_fstatat (src_dfd, src_subpath, &src_stbuf, AT_SYMLINK_NOFOLLOW, error))
+    return FALSE;
+
+  glnx_autofd int src_fd = -1;
+  if (!glnx_openat_rdonly (src_dfd, src_subpath, FALSE, &src_fd, error))
+    return FALSE;
+
+  /* Be sure we relabel when copying the kernel, as in current
+    * e.g. Fedora it might be labeled module_object_t or usr_t,
+    * but policy may not allow other processes to read from that
+    * like kdump.
+    * See also https://github.com/fedora-selinux/selinux-policy/commit/747f4e6775d773ab74efae5aa37f3e5e7f0d4aca
+    * This means we also drop xattrs but...I doubt anyone uses
+    * non-SELinux xattrs for the kernel anyways aside from perhaps
+    * IMA but that's its own story.
+    */
+  g_auto(OstreeSepolicyFsCreatecon) fscreatecon = { 0, };
+  const char *boot_path = glnx_strjoina ("/boot/", glnx_basename (dest_subpath));
+  if (!_ostree_sepolicy_preparefscreatecon (&fscreatecon, sepolicy,
+                                            boot_path, S_IFREG | 0644,
+                                            error))
+    return FALSE;
+
+  g_auto(GLnxTmpfile) tmp_dest = { 0, };
+  if (!glnx_open_tmpfile_linkable_at (dest_dfd, ".", O_WRONLY | O_CLOEXEC,
+                                      &tmp_dest, error))
+    return FALSE;
+
+  if (glnx_regfile_copy_bytes (src_fd, tmp_dest.fd, (off_t) -1) < 0)
+    return glnx_throw_errno_prefix (error, "regfile copy");
+
+  /* Kernel data should always be root-owned */
+  if (fchown (tmp_dest.fd, src_stbuf.st_uid, src_stbuf.st_gid) != 0)
+    return glnx_throw_errno_prefix (error, "fchown");
+
+  if (fchmod (tmp_dest.fd, src_stbuf.st_mode & 07777) != 0)
+    return glnx_throw_errno_prefix (error, "fchmod");
+
+  if (fdatasync (tmp_dest.fd) < 0)
+    return glnx_throw_errno_prefix (error, "fdatasync");
+
+  /* Today we don't have a config flag to *require* verity on /boot,
+   * and at least for Fedora CoreOS we're not likely to do fsverity on
+   * /boot soon due to wanting to support mounting it from old Linux
+   * kernels.  So change "required" to "maybe".
+   */
+  _OstreeFeatureSupport boot_verity = _OSTREE_FEATURE_NO;
+  if (repo->fs_verity_wanted != _OSTREE_FEATURE_NO)
+    boot_verity = _OSTREE_FEATURE_MAYBE;
+  if (!_ostree_tmpf_fsverity_core (&tmp_dest, boot_verity, NULL, error))
+    return FALSE;
+
+  if (!glnx_link_tmpfile_at (&tmp_dest, GLNX_LINK_TMPFILE_NOREPLACE, dest_dfd, dest_subpath, error))
+    return FALSE;
 
   return TRUE;
 }
@@ -806,6 +846,9 @@ write_origin_file_internal (OstreeSysroot         *sysroot,
                             GCancellable          *cancellable,
                             GError               **error)
 {
+  if (!_ostree_sysroot_ensure_writable (sysroot, error))
+    return FALSE;
+
   GLNX_AUTO_PREFIX_ERROR ("Writing out origin file", error);
   GKeyFile *origin =
     new_origin ? new_origin : ostree_deployment_get_origin (deployment);
@@ -1660,7 +1703,7 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
     return FALSE;
   if (errno == ENOENT)
     {
-      if (!install_into_boot (sepolicy, kernel_layout->boot_dfd, kernel_layout->kernel_srcpath,
+      if (!install_into_boot (repo, sepolicy, kernel_layout->boot_dfd, kernel_layout->kernel_srcpath,
                               bootcsum_dfd, kernel_layout->kernel_namever,
                               sysroot->debug_flags,
                               cancellable, error))
@@ -1677,7 +1720,7 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
         return FALSE;
       if (errno == ENOENT)
         {
-          if (!install_into_boot (sepolicy, kernel_layout->boot_dfd, kernel_layout->initramfs_srcpath,
+          if (!install_into_boot (repo, sepolicy, kernel_layout->boot_dfd, kernel_layout->initramfs_srcpath,
                                   bootcsum_dfd, kernel_layout->initramfs_namever,
                                   sysroot->debug_flags,
                                   cancellable, error))
@@ -1692,7 +1735,7 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
         return FALSE;
       if (errno == ENOENT)
         {
-          if (!install_into_boot (sepolicy, kernel_layout->boot_dfd, kernel_layout->devicetree_srcpath,
+          if (!install_into_boot (repo, sepolicy, kernel_layout->boot_dfd, kernel_layout->devicetree_srcpath,
                                   bootcsum_dfd, kernel_layout->devicetree_namever,
                                   sysroot->debug_flags,
                                   cancellable, error))
@@ -1706,7 +1749,7 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
         return FALSE;
       if (errno == ENOENT)
         {
-          if (!install_into_boot (sepolicy, kernel_layout->boot_dfd, kernel_layout->kernel_hmac_srcpath,
+          if (!install_into_boot (repo, sepolicy, kernel_layout->boot_dfd, kernel_layout->kernel_hmac_srcpath,
                                   bootcsum_dfd, kernel_layout->kernel_hmac_namever,
                                   sysroot->debug_flags,
                                   cancellable, error))
@@ -2217,7 +2260,10 @@ ostree_sysroot_write_deployments_with_options (OstreeSysroot     *self,
                                                GCancellable      *cancellable,
                                                GError           **error)
 {
-  g_assert (self->loaded);
+  g_assert (self->loadstate == OSTREE_SYSROOT_LOAD_STATE_LOADED);
+
+  if (!_ostree_sysroot_ensure_writable (self, error))
+    return FALSE;
 
   /* Dealing with the staged deployment is quite tricky here. This function is
    * primarily concerned with writing out "finalized" deployments which have
@@ -2374,7 +2420,6 @@ ostree_sysroot_write_deployments_with_options (OstreeSysroot     *self,
 
       if (boot_was_ro_mount)
         {
-          /* TODO: Use new mount namespace.  https://github.com/ostreedev/ostree/issues/1265 */
           if (mount ("/boot", "/boot", NULL, MS_REMOUNT | MS_SILENT, NULL) < 0)
             return glnx_throw_errno_prefix (error, "Remounting /boot read-write");
         }
@@ -2408,8 +2453,10 @@ ostree_sysroot_write_deployments_with_options (OstreeSysroot     *self,
       /* Note equivalent of try/finally here */
       gboolean success = write_deployments_bootswap (self, new_deployments, opts, bootloader,
                                                      &syncstats, cancellable, error);
-      /* Below here don't set GError until the if (!success) check */
-      if (boot_was_ro_mount)
+      /* Below here don't set GError until the if (!success) check.
+       * Note we only bother remounting if a mount namespace isn't in use.
+       * */
+      if (boot_was_ro_mount && !self->mount_namespace_in_use)
         {
           if (mount ("/boot", "/boot", NULL, MS_REMOUNT | MS_RDONLY | MS_SILENT, NULL) < 0)
             {
@@ -2716,6 +2763,9 @@ ostree_sysroot_deploy_tree (OstreeSysroot     *self,
                             GCancellable      *cancellable,
                             GError           **error)
 {
+  if (!_ostree_sysroot_ensure_writable (self, error))
+    return FALSE;
+
   g_autoptr(OstreeDeployment) deployment = NULL;
   if (!sysroot_initialize_deployment (self, osname, revision, origin, override_kernel_argv,
                                       &deployment, cancellable, error))
@@ -2817,6 +2867,9 @@ ostree_sysroot_stage_tree (OstreeSysroot     *self,
                            GCancellable      *cancellable,
                            GError           **error)
 {
+  if (!_ostree_sysroot_ensure_writable (self, error))
+    return FALSE;
+
   OstreeDeployment *booted_deployment = ostree_sysroot_get_booted_deployment (self);
   if (booted_deployment == NULL)
     return glnx_throw (error, "Cannot stage a deployment when not currently booted into an OSTree system");
@@ -3043,6 +3096,9 @@ ostree_sysroot_deployment_set_kargs (OstreeSysroot     *self,
                                      GCancellable      *cancellable,
                                      GError           **error)
 {
+  if (!_ostree_sysroot_ensure_writable (self, error))
+    return FALSE;
+
   /* For now; instead of this do a redeployment */
   g_assert (!ostree_deployment_is_staged (deployment));
 
@@ -3090,6 +3146,8 @@ ostree_sysroot_deployment_set_mutable (OstreeSysroot     *self,
                                        GCancellable      *cancellable,
                                        GError           **error)
 {
+  if (!_ostree_sysroot_ensure_writable (self, error))
+    return FALSE;
 
   if (g_cancellable_set_error_if_cancelled (cancellable, error))
     return FALSE;

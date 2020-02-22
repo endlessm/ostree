@@ -2,6 +2,16 @@
 
 this_script="${BASH_SOURCE:-$(readlink -f "$0")}"
 
+OSTREE_PREPARE_ROOT=$(dirname "${this_script}")/../ostree-prepare-root
+if [ ! -x "${OSTREE_PREPARE_ROOT}" ]; then
+	# ostree-prepare-root is in $libdir by default, assume we can find it
+	# based on our test directory, if not we'll have to skip this test.
+	OSTREE_PREPARE_ROOT=$(dirname "${this_script}")/../../../lib/ostree/ostree-prepare-root
+	if [ ! -x "${OSTREE_PREPARE_ROOT}" ]; then
+		OSTREE_PREPARE_ROOT=""
+	fi
+fi
+
 setup_bootfs() {
 	mkdir -p "$1/proc" "$1/bin"
 
@@ -13,7 +23,7 @@ setup_bootfs() {
 	mount --bind "$1/override_cmdline" "$1/proc/cmdline"
 
 	touch "$1/this_is_bootfs"
-	cp "$(dirname "$this_script")/../ostree-prepare-root" "$1/bin"
+	cp "${OSTREE_PREPARE_ROOT}" "$1/bin"
 }
 
 setup_rootfs() {
@@ -56,7 +66,7 @@ find_in_env() {
 		"$1" "$tmpdir"
 		enter_fs "$tmpdir"
 		ostree-prepare-root /sysroot
-		find /
+		find / \( -path /proc -o -path /sysroot/proc \) -prune -o -print
 		touch /usr/usr_writable 2>/null \
 			&& echo "/usr is writable" \
 			|| echo "/usr is not writable"
@@ -82,7 +92,9 @@ test_that_prepare_root_sets_sysroot_up_correctly_with_initrd() {
 	grep -qx "/this_is_bootfs" files
 	grep -qx "/sysroot/this_is_ostree_root" files
 	grep -qx "/sysroot/sysroot/this_is_real_root" files
-	grep -qx "/sysroot/var/this_is_ostree_var" files
+	if ! have_systemd_and_libmount; then
+		grep -qx "/sysroot/var/this_is_ostree_var" files
+	fi
 	grep -qx "/sysroot/usr/this_is_ostree_usr" files
 
 	grep -qx "/sysroot/usr is not writable" files
@@ -101,7 +113,9 @@ test_that_prepare_root_sets_root_up_correctly_with_no_initrd() {
 	grep -qx "/this_is_ostree_root" files
 	grep -qx "/sysroot/this_is_bootfs" files
 	grep -qx "/sysroot/this_is_real_root" files
-	grep -qx "/var/this_is_ostree_var" files
+	if ! have_systemd_and_libmount; then
+		grep -qx "/var/this_is_ostree_var" files
+	fi
 	grep -qx "/usr/this_is_ostree_usr" files
 
 	grep -qx "/usr is not writable" files
@@ -129,6 +143,9 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
 	    skip "this test needs to set up mount namespaces, rerun as root"
 	[ -f /bin/busybox ] || \
 	    skip "this test needs busybox"
+
+	[ -n "${OSTREE_PREPARE_ROOT}" ] || \
+	    skip "this test needs ostree-prepare-root"
 
 	echo "1..3"
 	test_that_prepare_root_sets_sysroot_up_correctly_with_initrd

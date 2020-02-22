@@ -69,6 +69,10 @@
     <keyword type="function" name="ostree_commit_get_parent ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-parent"/>
     <keyword type="function" name="ostree_commit_get_timestamp ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-timestamp"/>
     <keyword type="function" name="ostree_commit_get_content_checksum ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-content-checksum" since="2018.2"/>
+    <keyword type="function" name="ostree_commit_get_object_sizes ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-object-sizes" since="2020.1"/>
+    <keyword type="function" name="ostree_commit_sizes_entry_new ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-sizes-entry-new" since="2020.1"/>
+    <keyword type="function" name="ostree_commit_sizes_entry_copy ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-sizes-entry-copy" since="2020.1"/>
+    <keyword type="function" name="ostree_commit_sizes_entry_free ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-sizes-entry-free" since="2020.1"/>
     <keyword type="function" name="ostree_check_version ()" link="ostree-Core-repository-independent-functions.html#ostree-check-version" since="2017.4"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-SIZE:CAPS"/>
     <keyword type="macro" name="OSTREE_MAX_METADATA_WARN_SIZE" link="ostree-Core-repository-independent-functions.html#OSTREE-MAX-METADATA-WARN-SIZE:CAPS"/>
@@ -84,6 +88,7 @@
     <keyword type="macro" name="OSTREE_COMMIT_GVARIANT_FORMAT" link="ostree-Core-repository-independent-functions.html#OSTREE-COMMIT-GVARIANT-FORMAT:CAPS"/>
     <keyword type="macro" name="OSTREE_SUMMARY_GVARIANT_STRING" link="ostree-Core-repository-independent-functions.html#OSTREE-SUMMARY-GVARIANT-STRING:CAPS"/>
     <keyword type="macro" name="OSTREE_SUMMARY_GVARIANT_FORMAT" link="ostree-Core-repository-independent-functions.html#OSTREE-SUMMARY-GVARIANT-FORMAT:CAPS"/>
+    <keyword type="struct" name="OstreeCommitSizesEntry" link="ostree-Core-repository-independent-functions.html#OstreeCommitSizesEntry" since="2020.1"/>
     <keyword type="function" name="ostree_repo_mode_from_string ()" link="ostree-OstreeRepo.html#ostree-repo-mode-from-string"/>
     <keyword type="function" name="ostree_repo_open_at ()" link="ostree-OstreeRepo.html#ostree-repo-open-at" since="2017.10"/>
     <keyword type="function" name="ostree_repo_new ()" link="ostree-OstreeRepo.html#ostree-repo-new"/>
@@ -262,6 +267,7 @@
     <keyword type="typedef" name="OstreeMutableTree" link="ostree-In-memory-modifiable-filesystem-tree.html#OstreeMutableTree"/>
     <keyword type="function" name="ostree_sysroot_new ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-new"/>
     <keyword type="function" name="ostree_sysroot_new_default ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-new-default"/>
+    <keyword type="function" name="ostree_sysroot_initialize ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-initialize" since="2020.1"/>
     <keyword type="function" name="ostree_sysroot_get_path ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-path"/>
     <keyword type="function" name="ostree_sysroot_load ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-load"/>
     <keyword type="function" name="ostree_sysroot_load_if_changed ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-load-if-changed" since="2016.4"/>
@@ -271,6 +277,8 @@
     <keyword type="function" name="ostree_sysroot_lock_finish ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-lock-finish"/>
     <keyword type="function" name="ostree_sysroot_unlock ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-unlock"/>
     <keyword type="function" name="ostree_sysroot_unload ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-unload"/>
+    <keyword type="function" name="ostree_sysroot_set_mount_namespace_in_use ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-set-mount-namespace-in-use" since="2020.1"/>
+    <keyword type="function" name="ostree_sysroot_is_booted ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-is-booted" since="2020.1"/>
     <keyword type="function" name="ostree_sysroot_get_fd ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-fd"/>
     <keyword type="function" name="ostree_sysroot_ensure_initialized ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-ensure-initialized"/>
     <keyword type="function" name="ostree_sysroot_get_bootversion ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-bootversion"/>
@@ -488,6 +496,9 @@
     <keyword type="constant" name="OSTREE_GPG_ERROR_NO_SIGNATURE" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-ERROR-NO-SIGNATURE:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_ERROR_INVALID_SIGNATURE" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-ERROR-INVALID-SIGNATURE:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_ERROR_MISSING_KEY" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-ERROR-MISSING-KEY:CAPS"/>
+    <keyword type="constant" name="OSTREE_GPG_ERROR_EXPIRED_SIGNATURE" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-ERROR-EXPIRED-SIGNATURE:CAPS"/>
+    <keyword type="constant" name="OSTREE_GPG_ERROR_EXPIRED_KEY" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-ERROR-EXPIRED-KEY:CAPS"/>
+    <keyword type="constant" name="OSTREE_GPG_ERROR_REVOKED_KEY" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-ERROR-REVOKED-KEY:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_VALID" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-VALID:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_SIG_EXPIRED" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-SIG-EXPIRED:CAPS"/>
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_ATTR_KEY_EXPIRED" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-ATTR-KEY-EXPIRED:CAPS"/>
@@ -506,6 +517,10 @@
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_FORMAT_DEFAULT" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-FORMAT-DEFAULT:CAPS"/>
     <keyword type="constant" name="OSTREE_DIFF_FLAGS_NONE" link="ostree-ostree-diff.html#OSTREE-DIFF-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_DIFF_FLAGS_IGNORE_XATTRS" link="ostree-ostree-diff.html#OSTREE-DIFF-FLAGS-IGNORE-XATTRS:CAPS"/>
+    <keyword type="member" name="OstreeCommitSizesEntry.checksum" link="ostree-Core-repository-independent-functions.html#OstreeCommitSizesEntry.checksum"/>
+    <keyword type="member" name="OstreeCommitSizesEntry.objtype" link="ostree-Core-repository-independent-functions.html#OstreeCommitSizesEntry.objtype"/>
+    <keyword type="member" name="OstreeCommitSizesEntry.unpacked" link="ostree-Core-repository-independent-functions.html#OstreeCommitSizesEntry.unpacked"/>
+    <keyword type="member" name="OstreeCommitSizesEntry.archived" link="ostree-Core-repository-independent-functions.html#OstreeCommitSizesEntry.archived"/>
     <keyword type="member" name="OstreeRepoTransactionStats.metadata-objects-total" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.metadata-objects-total"/>
     <keyword type="member" name="OstreeRepoTransactionStats.metadata-objects-written" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.metadata-objects-written"/>
     <keyword type="member" name="OstreeRepoTransactionStats.content-objects-total" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.content-objects-total"/>
