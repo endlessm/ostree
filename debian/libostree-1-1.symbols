@@ -32,6 +32,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2019.3@LIBOSTREE_2019.3 2019.3
  LIBOSTREE_2019.4@LIBOSTREE_2019.4 2019.4
  LIBOSTREE_2019.6@LIBOSTREE_2019.6 2019.6
+ LIBOSTREE_2020.1@LIBOSTREE_2020.1 2020.1
  ostree_async_progress_copy_state@LIBOSTREE_2019.6 2019.6
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
@@ -90,8 +91,13 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_collection_ref_hash@LIBOSTREE_2018.6 2018.6
  ostree_collection_ref_new@LIBOSTREE_2018.6 2018.6
  ostree_commit_get_content_checksum@LIBOSTREE_2018.2 2018.2
+ ostree_commit_get_object_sizes@LIBOSTREE_2020.1 2020.1
  ostree_commit_get_parent@LIBOSTREE_2016.3 2016.4
  ostree_commit_get_timestamp@LIBOSTREE_2016.3 2016.4
+ ostree_commit_sizes_entry_copy@LIBOSTREE_2020.1 2020.1
+ ostree_commit_sizes_entry_free@LIBOSTREE_2020.1 2020.1
+ ostree_commit_sizes_entry_get_type@LIBOSTREE_2020.1 2020.1
+ ostree_commit_sizes_entry_new@LIBOSTREE_2020.1 2020.1
  ostree_content_file_parse@LIBOSTREE_2016.3 2016.4
  ostree_content_file_parse_at@LIBOSTREE_2016.3 2016.4
  ostree_content_stream_parse@LIBOSTREE_2016.3 2016.4
@@ -407,6 +413,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sysroot_get_subbootversion@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_get_type@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_init_osname@LIBOSTREE_2016.4 2016.4
+ ostree_sysroot_initialize@LIBOSTREE_2020.1 2020.1
+ ostree_sysroot_is_booted@LIBOSTREE_2020.1 2020.1
  ostree_sysroot_load@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_load_if_changed@LIBOSTREE_2016.4 2016.4
  ostree_sysroot_lock@LIBOSTREE_2016.3 2016.4
@@ -418,6 +426,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sysroot_prepare_cleanup@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_query_deployments_for@LIBOSTREE_2017.7 2017.7
  ostree_sysroot_repo@LIBOSTREE_2017.7 2017.7
+ ostree_sysroot_set_mount_namespace_in_use@LIBOSTREE_2020.1 2020.1
  ostree_sysroot_simple_write_deployment@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_stage_tree@LIBOSTREE_2018.5 2018.5
  ostree_sysroot_try_lock@LIBOSTREE_2016.3 2016.4

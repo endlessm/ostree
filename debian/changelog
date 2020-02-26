@@ -1,6 +1,7 @@
 ostree (2020.2-1) UNRELEASED; urgency=medium
 
   * New upstream release
+    - d/libostree-1-1.symbols: Update
   * Set upstream metadata fields: Repository.
   * Remove obsolete field Name from debian/upstream/metadata (already
     present in machine-readable debian/copyright).
