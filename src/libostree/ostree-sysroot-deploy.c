@@ -1079,9 +1079,6 @@ get_kernel_from_tree_usrlib_modules (int                  deployment_dfd,
   g_clear_object (&in);
   glnx_close_fd (&fd);
 
-  /* Check for /usr/lib/modules/$kver/devicetree first, if it does not
-   * exist check for /usr/lib/modules/$kver/dtb/ directory.
-   */
   if (!ot_openat_ignore_enoent (ret_layout->boot_dfd, "devicetree", &fd, error))
     return FALSE;
   if (fd != -1)
@@ -1091,39 +1088,6 @@ get_kernel_from_tree_usrlib_modules (int                  deployment_dfd,
       in = g_unix_input_stream_new (fd, FALSE);
       if (!ot_gio_splice_update_checksum (NULL, in, &checksum, cancellable, error))
         return FALSE;
-    }
-  else
-    {
-      g_auto(GLnxDirFdIterator) mod_dt_fditer = { 0, };
-      if (!ot_dfd_iter_init_allow_noent (ret_layout->boot_dfd, "dtb", &mod_dt_fditer,
-                                         &exists, error))
-        return FALSE;
-      if (exists)
-        {
-          /* devicetree_namever set to NULL indicates a complete directory */
-          ret_layout->devicetree_srcpath = g_strdup ("dtb");
-          ret_layout->devicetree_namever = NULL;
-
-          while (TRUE)
-           {
-              struct dirent *dent;
-              if (!glnx_dirfd_iterator_next_dent_ensure_dtype (&mod_dt_fditer, &dent, cancellable, error))
-                return FALSE;
-              if (dent == NULL)
-                break;
-              if (dent->d_type == DT_DIR)
-                continue;
-
-              if (!ot_openat_ignore_enoent (ret_layout->boot_dfd, dent->d_name, &fd, error))
-                return FALSE;
-              if (fd != -1)
-                {
-                  in = g_unix_input_stream_new (fd, FALSE);
-                  if (!ot_gio_splice_update_checksum (NULL, in, &checksum, cancellable, error))
-                    return FALSE;
-                }
-            }
-        }
     }
 
   g_clear_object (&in);
@@ -1824,46 +1788,16 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
 
   if (kernel_layout->devicetree_srcpath && !payg)
     {
-      /* If devicetree_namever is set a single device tree is deployed */
-      if (kernel_layout->devicetree_namever)
+      g_assert (kernel_layout->devicetree_namever);
+      if (!glnx_fstatat_allow_noent (bootcsum_dfd, kernel_layout->devicetree_namever, &stbuf, 0, error))
+        return FALSE;
+      if (errno == ENOENT)
         {
-          if (!glnx_fstatat_allow_noent (bootcsum_dfd, kernel_layout->devicetree_namever, &stbuf, 0, error))
+          if (!install_into_boot (sepolicy, kernel_layout->boot_dfd, kernel_layout->devicetree_srcpath,
+                                  bootcsum_dfd, kernel_layout->devicetree_namever,
+                                  sysroot->debug_flags,
+                                  cancellable, error))
             return FALSE;
-          if (errno == ENOENT)
-            {
-              if (!install_into_boot (sepolicy, kernel_layout->boot_dfd, kernel_layout->devicetree_srcpath,
-                                      bootcsum_dfd, kernel_layout->devicetree_namever,
-                                      sysroot->debug_flags,
-                                      cancellable, error))
-                return FALSE;
-            }
-        }
-      else
-        {
-          g_auto(GLnxDirFdIterator) dfditer = { 0, };
-          if (!glnx_dirfd_iterator_init_at (kernel_layout->boot_dfd, "dtb/", FALSE, &dfditer, error))
-            return FALSE;
-
-          while (TRUE)
-            {
-              struct dirent *dent;
-
-              if (!glnx_dirfd_iterator_next_dent (&dfditer, &dent, cancellable, error))
-                  return FALSE;
-              if (dent == NULL)
-                break;
-
-              if (!glnx_fstatat_allow_noent (bootcsum_dfd, dent->d_name, &stbuf, 0, error))
-                return FALSE;
-              if (errno == ENOENT)
-                {
-                  if (!install_into_boot (sepolicy, dfditer.fd, dent->d_name,
-                                    bootcsum_dfd, dent->d_name,
-                                    sysroot->debug_flags,
-                                    cancellable, error))
-                    return FALSE;
-                }
-           }
         }
     }
 
@@ -1966,11 +1900,6 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
     {
       g_autofree char * boot_relpath = g_strconcat ("/", bootcsumdir, "/", kernel_layout->devicetree_namever, NULL);
       ostree_bootconfig_parser_set (bootconfig, "devicetree", boot_relpath);
-    }
-  else if (kernel_layout->devicetree_srcpath)
-    {
-      g_autofree char * boot_relpath = g_strconcat ("/", bootcsumdir, NULL);
-      ostree_bootconfig_parser_set (bootconfig, "devicetreepath", boot_relpath);
     }
 
   if (payg)

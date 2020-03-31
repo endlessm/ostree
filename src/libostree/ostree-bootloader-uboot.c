@@ -144,10 +144,6 @@ create_config_from_boot_loader_entries (OstreeBootloaderUboot     *self,
       if (val)
         g_ptr_array_add (new_lines, g_strdup_printf ("fdt_file%s=%s", index_suffix, val));
 
-      val = ostree_bootconfig_parser_get (config, "devicetreepath");
-      if (val)
-        g_ptr_array_add (new_lines, g_strdup_printf ("fdt_path%s=%s", index_suffix, val));
-
       val = ostree_bootconfig_parser_get (config, "options");
       if (val)
         {
