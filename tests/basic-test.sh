@@ -21,7 +21,7 @@
 
 set -euo pipefail
 
-echo "1..$((88 + ${extra_basic_tests:-0}))"
+echo "1..$((86 + ${extra_basic_tests:-0}))"
 
 CHECKOUT_U_ARG=""
 CHECKOUT_H_ARGS="-H"
@@ -542,6 +542,24 @@ assert_file_has_mode checkout-test2-override/a/readable-only 600
 echo "ok commit statoverride"
 
 cd ${test_tmpdir}
+rm test2-checkout -rf
+$OSTREE checkout test2 test2-checkout
+cd test2-checkout
+install -m 0755 /dev/null user-wx
+install -m 0575 /dev/null group-wx
+install -m 0775 /dev/null both-wx
+install -m 0555 /dev/null ugox
+install -m 0644 /dev/null user-writable
+cd ..
+$OSTREE commit ${COMMIT_ARGS} -b test2-w-xor-x --mode-ro-executables --tree=dir=test2-checkout
+$OSTREE ls test2-w-xor-x > ls.txt
+for x in /{user,group,both}-wx; do
+    assert_file_has_content ls.txt '^-00555 .*'$x
+done
+assert_file_has_content ls.txt '^-00644 .*/user-writable'
+echo "ok commit --mode-ro-executables"
+
+cd ${test_tmpdir}
 cat > test-skiplist.txt <<EOF
 /a/nested/3
 EOF
@@ -1014,17 +1032,6 @@ assert_file_has_content deeper-mtime 0
 echo "ok content mtime"
 
 cd ${test_tmpdir}
-rm -rf test2-checkout
-mkdir -p test2-checkout
-cd test2-checkout
-mkfifo afifo
-if $OSTREE commit ${COMMIT_ARGS} -b test2 -s "Attempt to commit a FIFO" 2>../errmsg; then
-    assert_not_reached "Committing a FIFO unexpetedly succeeded!"
-    assert_file_has_content ../errmsg "Unsupported file type"
-fi
-echo "ok commit of fifo was rejected"
-
-cd ${test_tmpdir}
 rm repo2 -rf
 mkdir repo2
 ostree_repo_init repo2 --mode=archive
@@ -1162,22 +1169,3 @@ if test "$(id -u)" != "0"; then
 else
     echo "ok # SKIP not run when root"
 fi
-
-cd ${test_tmpdir}
-rm -rf test2-checkout
-mkdir -p test2-checkout
-cd test2-checkout
-touch blah
-stat --printf="%.Y\n" ${test_tmpdir}/repo > ${test_tmpdir}/timestamp-orig.txt
-$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Should bump the mtime"
-stat --printf="%.Y\n" ${test_tmpdir}/repo > ${test_tmpdir}/timestamp-new.txt
-cd ..
-if cmp timestamp-{orig,new}.txt; then
-    assert_not_reached "failed to update mtime on repo"
-fi
-echo "ok mtime updated"
-
-cd ${test_tmpdir}
-$OSTREE init --mode=bare --repo=repo-extensions
-assert_has_dir repo-extensions/extensions
-echo "ok extensions dir"

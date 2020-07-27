@@ -21,7 +21,7 @@
 /* Define if we should avoid using O_TMPFILE */
 #undef DISABLE_OTMPFILE
 
-/* Define if we should be compatible with wrpseudo */
+/* Define if we should be compatible with pseudo */
 #undef ENABLE_WRPSEUDO_COMPAT
 
 /* The system grub2-mkconfig executable name */
@@ -72,6 +72,9 @@
 
 /* Define if we have libmount.pc */
 #undef HAVE_LIBMOUNT
+
+/* Define if using libsodium */
+#undef HAVE_LIBSODIUM
 
 /* Define if we have libsoup.pc */
 #undef HAVE_LIBSOUP

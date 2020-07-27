@@ -30,16 +30,12 @@
 #include "ostree.h"
 #include "otutil.h"
 #include "ostree-repo-pull-private.h"
-#include "ostree-repo-private.h"
 
 #ifdef HAVE_LIBCURL_OR_LIBSOUP
 
 #include "ostree-core-private.h"
 #include "ostree-repo-static-delta-private.h"
 #include "ostree-metalink.h"
-#include "ostree-fetcher-util.h"
-#include "ostree-remote-private.h"
-#include "ot-fs-utils.h"
 
 #include "ostree-repo-finder.h"
 #include "ostree-repo-finder-config.h"
@@ -64,114 +60,6 @@
  * _ostree_fetcher_should_retry_request(). This is the default value for the
  * `n-network-retries` pull option. */
 #define DEFAULT_N_NETWORK_RETRIES 5
-
-typedef enum {
-  OSTREE_FETCHER_SECURITY_STATE_CA_PINNED,
-  OSTREE_FETCHER_SECURITY_STATE_TLS,
-  OSTREE_FETCHER_SECURITY_STATE_INSECURE,
-} OstreeFetcherSecurityState;
-
-typedef struct {
-  OstreeRepo   *repo;
-  int           tmpdir_dfd;
-  OstreeRepoPullFlags flags;
-  char          *remote_name;
-  char          *remote_refspec_name;
-  OstreeRepoMode remote_mode;
-  OstreeFetcher *fetcher;
-  OstreeFetcherSecurityState fetcher_security_state;
-
-  GPtrArray     *meta_mirrorlist;    /* List of base URIs for fetching metadata */
-  GPtrArray     *content_mirrorlist; /* List of base URIs for fetching content */
-  OstreeRepo   *remote_repo_local;
-  GPtrArray    *localcache_repos; /* Array<OstreeRepo> */
-
-  GMainContext    *main_context;
-  GCancellable *cancellable;
-  OstreeAsyncProgress *progress;
-
-  GVariant         *extra_headers;
-  char             *append_user_agent;
-
-  gboolean      dry_run;
-  gboolean      dry_run_emitted_progress;
-  gboolean      legacy_transaction_resuming;
-  guint         n_network_retries;
-  enum {
-    OSTREE_PULL_PHASE_FETCHING_REFS,
-    OSTREE_PULL_PHASE_FETCHING_OBJECTS
-  }             phase;
-  gint          n_scanned_metadata;
-
-  gboolean          gpg_verify;
-  gboolean          gpg_verify_summary;
-  gboolean          require_static_deltas;
-  gboolean          disable_static_deltas;
-  gboolean          has_tombstone_commits;
-
-  GBytes           *summary_data;
-  GBytes           *summary_data_sig;
-  GVariant         *summary;
-  GHashTable       *summary_deltas_checksums;
-  GHashTable       *ref_original_commits; /* Maps checksum to commit, used by timestamp checks */
-  GHashTable       *verified_commits; /* Set<checksum> of commits that have been verified */
-  GHashTable       *ref_keyring_map; /* Maps OstreeCollectionRef to keyring remote name */
-  GPtrArray        *static_delta_superblocks;
-  GHashTable       *expected_commit_sizes; /* Maps commit checksum to known size */
-  GHashTable       *commit_to_depth; /* Maps commit checksum maximum depth */
-  GHashTable       *scanned_metadata; /* Maps object name to itself */
-  GHashTable       *fetched_detached_metadata; /* Map<checksum,GVariant> */
-  GHashTable       *requested_metadata; /* Maps object name to itself */
-  GHashTable       *requested_content; /* Maps checksum to itself */
-  GHashTable       *requested_fallback_content; /* Maps checksum to itself */
-  GHashTable       *pending_fetch_metadata; /* Map<ObjectName,FetchObjectData> */
-  GHashTable       *pending_fetch_content; /* Map<checksum,FetchObjectData> */
-  GHashTable       *pending_fetch_delta_superblocks; /* Set<FetchDeltaSuperData> */
-  GHashTable       *pending_fetch_deltaparts; /* Set<FetchStaticDeltaData> */
-  guint             n_outstanding_metadata_fetches;
-  guint             n_outstanding_metadata_write_requests;
-  guint             n_outstanding_content_fetches;
-  guint             n_outstanding_content_write_requests;
-  guint             n_outstanding_deltapart_fetches;
-  guint             n_outstanding_deltapart_write_requests;
-  guint             n_total_deltaparts;
-  guint             n_total_delta_fallbacks;
-  guint64           fetched_deltapart_size; /* How much of the delta we have now */
-  guint64           total_deltapart_size;
-  guint64           total_deltapart_usize;
-  gint              n_requested_metadata;
-  gint              n_requested_content;
-  guint             n_fetched_deltaparts;
-  guint             n_fetched_deltapart_fallbacks;
-  guint             n_fetched_metadata;
-  guint             n_fetched_content;
-  /* Objects imported via hardlink/reflink/copying or  --localcache-repo*/
-  guint             n_imported_metadata;
-  guint             n_imported_content;
-
-  gboolean          timestamp_check; /* Verify commit timestamps */
-  int               maxdepth;
-  guint64           max_metadata_size;
-  guint64           start_time;
-
-  gboolean          is_mirror;
-  gboolean          trusted_http_direct;
-  gboolean          is_commit_only;
-  OstreeRepoImportFlags importflags;
-
-  GPtrArray        *dirs;
-
-  gboolean      have_previous_bytes;
-  guint64       previous_bytes_sec;
-  guint64       previous_total_downloaded;
-
-  GError       *cached_async_error;
-  GError      **async_error;
-  gboolean      caught_error;
-
-  GQueue scan_object_queue;
-  GSource *idle_src;
-} OtPullData;
 
 typedef struct {
   OtPullData  *pull_data;
@@ -260,14 +148,6 @@ static gboolean scan_one_metadata_object (OtPullData                 *pull_data,
                                           GCancellable               *cancellable,
                                           GError                    **error);
 static void scan_object_queue_data_free (ScanObjectQueueData *scan_data);
-static gboolean
-ostree_verify_unwritten_commit (OtPullData                 *pull_data,
-                                const char                 *checksum,
-                                GVariant                   *commit,
-                                GVariant                   *detached_metadata,
-                                const OstreeCollectionRef  *ref,
-                                GCancellable               *cancellable,
-                                GError                    **error);
 
 static gboolean
 update_progress (gpointer user_data)
@@ -1119,7 +999,10 @@ content_fetch_on_complete (GObject        *object,
       if (!ostree_content_stream_parse (TRUE, tmpf_input, stbuf.st_size, FALSE,
                                         &file_in, &file_info, &xattrs,
                                         cancellable, error))
-        goto out;
+        {
+          g_prefix_error (error, "Parsing %s: ", checksum_obj);
+          goto out;
+        }
 
       if (verifying_bareuseronly)
         {
@@ -1309,8 +1192,8 @@ meta_fetch_on_complete (GObject           *object,
            * metadata into this hash.
            */
           GVariant *detached_data = g_hash_table_lookup (pull_data->fetched_detached_metadata, checksum);
-          if (!ostree_verify_unwritten_commit (pull_data, checksum, metadata, detached_data,
-                                               fetch_data->requested_ref, pull_data->cancellable, error))
+          if (!_verify_unwritten_commit (pull_data, checksum, metadata, detached_data,
+                                         fetch_data->requested_ref, pull_data->cancellable, error))
             goto out;
 
           if (!ostree_repo_mark_commit_partial (pull_data->repo, checksum, TRUE, error))
@@ -1434,75 +1317,6 @@ static_deltapart_fetch_on_complete (GObject           *object,
     g_clear_pointer (&fetch_data, fetch_static_delta_data_free);
 }
 
-#ifndef OSTREE_DISABLE_GPGME
-static gboolean
-process_verify_result (OtPullData            *pull_data,
-                       const char            *checksum,
-                       OstreeGpgVerifyResult *result,
-                       GError               **error)
-{
-  const char *error_prefix = glnx_strjoina ("Commit ", checksum);
-  GLNX_AUTO_PREFIX_ERROR(error_prefix, error);
-  if (result == NULL)
-    return FALSE;
-
-  /* Allow callers to output the results immediately. */
-  g_signal_emit_by_name (pull_data->repo,
-                         "gpg-verify-result",
-                         checksum, result);
-
-  if (!ostree_gpg_verify_result_require_valid_signature (result, error))
-    return FALSE;
-
-
-  /* We now check both *before* writing the commit, and after. Because the
-   * behavior used to be only verifiying after writing, we need to handle
-   * the case of "written but not verified". But we also don't want to check
-   * twice, as that'd result in duplicate signals.
-   */
-  g_hash_table_add (pull_data->verified_commits, g_strdup (checksum));
-
-  return TRUE;
-}
-#endif /* OSTREE_DISABLE_GPGME */
-
-static gboolean
-ostree_verify_unwritten_commit (OtPullData                 *pull_data,
-                                const char                 *checksum,
-                                GVariant                   *commit,
-                                GVariant                   *detached_metadata,
-                                const OstreeCollectionRef  *ref,
-                                GCancellable               *cancellable,
-                                GError                    **error)
-{
-#ifndef OSTREE_DISABLE_GPGME
-  if (pull_data->gpg_verify)
-    {
-      const char *keyring_remote = NULL;
-
-      /* Shouldn't happen, but see comment in process_verify_result() */
-      if (g_hash_table_contains (pull_data->verified_commits, checksum))
-        return TRUE;
-
-      if (ref != NULL)
-        keyring_remote = g_hash_table_lookup (pull_data->ref_keyring_map, ref);
-      if (keyring_remote == NULL)
-        keyring_remote = pull_data->remote_name;
-
-      g_autoptr(GBytes) signed_data = g_variant_get_data_as_bytes (commit);
-      g_autoptr(OstreeGpgVerifyResult) result =
-        _ostree_repo_gpg_verify_with_metadata (pull_data->repo, signed_data,
-                                               detached_metadata,
-                                               keyring_remote,
-                                               NULL, NULL, cancellable, error);
-      if (!process_verify_result (pull_data, checksum, result, error))
-        return FALSE;
-    }
-#endif /* OSTREE_DISABLE_GPGME */
-
-  return TRUE;
-}
-
 static gboolean
 commitstate_is_partial (OtPullData   *pull_data,
                         OstreeRepoCommitState commitstate)
@@ -1512,109 +1326,6 @@ commitstate_is_partial (OtPullData   *pull_data,
 }
 
 #endif  /* HAVE_LIBCURL_OR_LIBSOUP */
-
-/**
- * _ostree_repo_verify_bindings:
- * @collection_id: (nullable): Locally specified collection ID for the remote
- *    the @commit was retrieved from, or %NULL if none is configured
- * @ref_name: (nullable): Ref name the commit was retrieved using, or %NULL if
- *    the commit was retrieved by checksum
- * @commit: Commit data to check
- * @error: Return location for a #GError, or %NULL
- *
- * Verify the ref and collection bindings.
- *
- * The ref binding is verified only if it exists. But if we have the
- * collection ID specified in the remote configuration (@collection_id is
- * non-%NULL) then the ref binding must exist, otherwise the verification will
- * fail. Parts of the verification can be skipped by passing %NULL to the
- * @ref_name parameter (in case we requested a checksum directly, without
- * looking it up from a ref).
- *
- * The collection binding is verified only when we have collection ID
- * specified in the remote configuration. If it is specified, then the
- * binding must exist and must be equal to the remote repository
- * collection ID.
- *
- * Returns: %TRUE if bindings are correct, %FALSE otherwise
- * Since: 2017.14
- */
-gboolean
-_ostree_repo_verify_bindings (const char  *collection_id,
-                              const char  *ref_name,
-                              GVariant    *commit,
-                              GError     **error)
-{
-  g_autoptr(GVariant) metadata = g_variant_get_child_value (commit, 0);
-  g_autofree const char **refs = NULL;
-  if (!g_variant_lookup (metadata,
-                         OSTREE_COMMIT_META_KEY_REF_BINDING,
-                         "^a&s",
-                         &refs))
-    {
-      /* Early return here - if the remote collection ID is NULL, then
-       * we certainly will not verify the collection binding in the
-       * commit.
-       */
-      if (collection_id == NULL)
-        return TRUE;
-
-      return glnx_throw (error,
-                         "Expected commit metadata to have ref "
-                         "binding information, found none");
-    }
-
-  if (ref_name != NULL)
-    {
-      if (!g_strv_contains ((const char *const *) refs, ref_name))
-        {
-          g_autoptr(GString) refs_dump = g_string_new (NULL);
-          const char *refs_str;
-
-          if (refs != NULL && (*refs) != NULL)
-            {
-              for (const char **iter = refs; *iter != NULL; ++iter)
-                {
-                  const char *ref = *iter;
-
-                  if (refs_dump->len > 0)
-                    g_string_append (refs_dump, ", ");
-                  g_string_append_printf (refs_dump, "‘%s’", ref);
-                }
-
-              refs_str = refs_dump->str;
-            }
-          else
-            {
-              refs_str = "no refs";
-            }
-
-          return glnx_throw (error, "Commit has no requested ref ‘%s’ "
-                             "in ref binding metadata (%s)",
-                             ref_name, refs_str);
-        }
-    }
-
-  if (collection_id != NULL)
-    {
-      const char *collection_id_binding;
-      if (!g_variant_lookup (metadata,
-                             OSTREE_COMMIT_META_KEY_COLLECTION_BINDING,
-                             "&s",
-                             &collection_id_binding))
-        return glnx_throw (error,
-                           "Expected commit metadata to have collection ID "
-                           "binding information, found none");
-      if (!g_str_equal (collection_id_binding, collection_id))
-        return glnx_throw (error,
-                           "Commit has collection ID ‘%s’ in collection binding "
-                           "metadata, while the remote it came from has "
-                           "collection ID ‘%s’",
-                           collection_id_binding, collection_id);
-    }
-
-  return TRUE;
-}
 
 /* Reads the collection-id of a given remote from the repo
  * configuration.
@@ -1824,10 +1535,50 @@ scan_commit_object (OtPullData                 *pull_data,
                                                      keyring_remote,
                                                      cancellable,
                                                      error);
-      if (!process_verify_result (pull_data, checksum, result, error))
+      if (!_process_gpg_verify_result (pull_data, checksum, result, error))
         return FALSE;
     }
 #endif /* OSTREE_DISABLE_GPGME */
+
+  if (pull_data->signapi_commit_verifiers &&
+      !g_hash_table_contains (pull_data->signapi_verified_commits, checksum))
+    {
+      g_autoptr(GError) last_verification_error = NULL;
+      gboolean found_any_signature = FALSE;
+      gboolean found_valid_signature = FALSE;
+      g_autofree char *success_message = NULL;
+
+      for (guint i = 0; i < pull_data->signapi_commit_verifiers->len; i++)
+        {
+          OstreeSign *sign = pull_data->signapi_commit_verifiers->pdata[i];
+
+          found_any_signature = TRUE;
+
+          /* Set return to true if any sign fit */
+          if (ostree_sign_commit_verify (sign,
+                                          pull_data->repo,
+                                          checksum,
+                                          &success_message,
+                                          cancellable,
+                                          last_verification_error ? NULL : &last_verification_error))
+            {
+              found_valid_signature = TRUE;
+              break;
+            }
+         }
+
+      if (!found_any_signature)
+        return glnx_throw (error, "No signatures found for commit %s", checksum);
+
+      if (!found_valid_signature)
+        {
+          g_assert (last_verification_error);
+          g_propagate_error (error, g_steal_pointer (&last_verification_error));
+          return glnx_prefix_error (error, "Can't verify commit %s", checksum);
+        }
+      g_assert (success_message);
+      g_hash_table_insert (pull_data->signapi_verified_commits, g_strdup (checksum), g_steal_pointer (&success_message));
+    }
 
   /* If we found a legacy transaction flag, assume we have to scan.
    * We always do a scan of dirtree objects; see
@@ -1848,6 +1599,7 @@ scan_commit_object (OtPullData                 *pull_data,
                                      commit, error))
     return glnx_prefix_error (error, "Commit %s", checksum);
 
+  guint64 new_ts = ostree_commit_get_timestamp (commit);
   if (pull_data->timestamp_check)
     {
       /* We don't support timestamp checking while recursing right now */
@@ -1866,10 +1618,21 @@ scan_commit_object (OtPullData                 *pull_data,
             return glnx_prefix_error (error, "Reading %s for timestamp-check", ref->ref_name);
 
           guint64 orig_ts = ostree_commit_get_timestamp (orig_commit);
-          guint64 new_ts = ostree_commit_get_timestamp (commit);
           if (!_ostree_compare_timestamps (orig_rev, orig_ts, checksum, new_ts, error))
             return FALSE;
         }
+    }
+  if (pull_data->timestamp_check_from_rev)
+    {
+      g_autoptr(GVariant) commit = NULL;
+      if (!ostree_repo_load_commit (pull_data->repo, pull_data->timestamp_check_from_rev,
+                                    &commit, NULL, error))
+        return glnx_prefix_error (error, "Reading %s for timestamp-check-from-rev",
+                                  pull_data->timestamp_check_from_rev);
+
+      guint64 ts = ostree_commit_get_timestamp (commit);
+      if (!_ostree_compare_timestamps (pull_data->timestamp_check_from_rev, ts, checksum, new_ts, error))
+        return FALSE;
     }
 
   /* If we found a legacy transaction flag, assume all commits are partial */
@@ -2413,8 +2176,8 @@ process_one_static_delta (OtPullData                 *pull_data,
           g_autofree char *detached_path = _ostree_get_relative_static_delta_path (from_revision, to_revision, "commitmeta");
           g_autoptr(GVariant) detached_data = g_variant_lookup_value (metadata, detached_path, G_VARIANT_TYPE("a{sv}"));
 
-          if (!ostree_verify_unwritten_commit (pull_data, to_revision, to_commit, detached_data,
-                                               ref, cancellable, error))
+          if (!_verify_unwritten_commit (pull_data, to_revision, to_commit, detached_data,
+                                         ref, cancellable, error))
             return FALSE;
 
           if (detached_data && !ostree_repo_write_commit_detached_metadata (pull_data->repo,
@@ -3520,11 +3283,15 @@ initiate_request (OtPullData                 *pull_data,
  *   * override-remote-name (s): If local, add this remote to refspec
  *   * gpg-verify (b): GPG verify commits
  *   * gpg-verify-summary (b): GPG verify summary
+ *   * disable-sign-verify (b): Disable signapi verification of commits
+ *   * disable-sign-verify-summary (b): Disable signapi verification of the summary
  *   * depth (i): How far in the history to traverse; default is 0, -1 means infinite
+ *   * per-object-fsync (b): Perform disk writes more slowly, avoiding a single large I/O sync
  *   * disable-static-deltas (b): Do not use static deltas
  *   * require-static-deltas (b): Require static deltas
  *   * override-commit-ids (as): Array of specific commit IDs to fetch for refs
  *   * timestamp-check (b): Verify commit timestamps are newer than current (when pulling via ref); Since: 2017.11
+ *   * timestamp-check-from-rev (s): Verify that all fetched commit timestamps are newer than timestamp of given rev; Since: 2020.4
  *   * metadata-size-restriction (t): Restrict metadata objects to a maximum number of bytes; 0 to disable.  Since: 2018.9
  *   * dry-run (b): Only print information on what will be downloaded (requires static deltas)
  *   * override-url (s): Fetch objects from this URL if remote specifies no metalink in options
@@ -3574,11 +3341,14 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   g_autoptr(GVariantIter) collection_refs_iter = NULL;
   g_autofree char **override_commit_ids = NULL;
   g_autoptr(GSource) update_timeout = NULL;
+  gboolean opt_per_object_fsync = FALSE;
   gboolean opt_gpg_verify_set = FALSE;
   gboolean opt_gpg_verify_summary_set = FALSE;
   gboolean opt_collection_refs_set = FALSE;
   gboolean opt_n_network_retries_set = FALSE;
   gboolean opt_ref_keyring_map_set = FALSE;
+  gboolean disable_sign_verify = FALSE;
+  gboolean disable_sign_verify_summary = FALSE;
   const char *main_collection_id = NULL;
   const char *url_override = NULL;
   gboolean inherit_transaction = FALSE;
@@ -3590,6 +3360,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
    * value, otherwise NULL. Used for logging.
    */
   const char *the_ref_to_fetch = NULL;
+  OstreeRepoTransactionStats tstats = { 0, };
 
   /* Default */
   pull_data->max_metadata_size = OSTREE_MAX_METADATA_SIZE;
@@ -3610,17 +3381,21 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         g_variant_lookup (options, "gpg-verify", "b", &pull_data->gpg_verify);
       opt_gpg_verify_summary_set =
         g_variant_lookup (options, "gpg-verify-summary", "b", &pull_data->gpg_verify_summary);
+      g_variant_lookup (options, "disable-sign-verify", "b", &disable_sign_verify);
+      g_variant_lookup (options, "disable-sign-verify-summary", "b", &disable_sign_verify_summary);
       (void) g_variant_lookup (options, "depth", "i", &pull_data->maxdepth);
       (void) g_variant_lookup (options, "disable-static-deltas", "b", &pull_data->disable_static_deltas);
       (void) g_variant_lookup (options, "require-static-deltas", "b", &pull_data->require_static_deltas);
       (void) g_variant_lookup (options, "override-commit-ids", "^a&s", &override_commit_ids);
       (void) g_variant_lookup (options, "dry-run", "b", &pull_data->dry_run);
+      (void) g_variant_lookup (options, "per-object-fsync", "b", &opt_per_object_fsync);
       (void) g_variant_lookup (options, "override-url", "&s", &url_override);
       (void) g_variant_lookup (options, "inherit-transaction", "b", &inherit_transaction);
       (void) g_variant_lookup (options, "http-headers", "@a(ss)", &pull_data->extra_headers);
       (void) g_variant_lookup (options, "update-frequency", "u", &update_frequency);
       (void) g_variant_lookup (options, "localcache-repos", "^a&s", &opt_localcache_repos);
       (void) g_variant_lookup (options, "timestamp-check", "b", &pull_data->timestamp_check);
+      (void) g_variant_lookup (options, "timestamp-check-from-rev", "s", &pull_data->timestamp_check_from_rev);
       (void) g_variant_lookup (options, "max-metadata-size", "t", &pull_data->max_metadata_size);
       (void) g_variant_lookup (options, "append-user-agent", "s", &pull_data->append_user_agent);
       opt_n_network_retries_set =
@@ -3634,10 +3409,10 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
 
 #ifdef OSTREE_DISABLE_GPGME
   /* Explicitly fail here if gpg verification is requested and we have no GPG support */
-  if (opt_gpg_verify_set || opt_gpg_verify_summary_set)
+  if (pull_data->gpg_verify || pull_data->gpg_verify_summary)
   {
       g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-              "'%s': GPG feature is disabled in a build time",
+              "'%s': GPG feature is disabled at build time",
               __FUNCTION__);
       goto out;
   }
@@ -3682,6 +3457,10 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   pull_data->main_context = g_main_context_ref_thread_default ();
   pull_data->flags = flags;
 
+  /* TODO: Avoid mutating the repo object */
+  if (opt_per_object_fsync)
+    self->per_object_fsync = TRUE;
+
   if (!opt_n_network_retries_set)
     pull_data->n_network_retries = DEFAULT_N_NETWORK_RETRIES;
 
@@ -3702,6 +3481,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
                                                            (GDestroyNotify)g_free);
   pull_data->verified_commits = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                        (GDestroyNotify)g_free, NULL);
+  pull_data->signapi_verified_commits = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                               (GDestroyNotify)g_free, NULL);
   pull_data->ref_keyring_map = g_hash_table_new_full (ostree_collection_ref_hash, ostree_collection_ref_equal,
                                                       (GDestroyNotify)ostree_collection_ref_free, (GDestroyNotify)g_free);
   pull_data->scanned_metadata = g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
@@ -3759,7 +3540,9 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       /* For compatibility with pull-local, don't gpg verify local
        * pulls by default.
        */
-      if ((pull_data->gpg_verify || pull_data->gpg_verify_summary) &&
+      if ((pull_data->gpg_verify ||
+           pull_data->gpg_verify_summary
+          ) &&
           pull_data->remote_name == NULL)
         {
           g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
@@ -3774,7 +3557,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       g_free (pull_data->remote_name);
       pull_data->remote_name = g_strdup (remote_name_or_baseurl);
 
-#ifndef OSTREE_DISABLE_GPGME
       /* Fetch GPG verification settings from remote if it wasn't already
        * explicitly set in the options. */
       if (!opt_gpg_verify_set)
@@ -3786,7 +3568,6 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         if (!ostree_repo_remote_get_gpg_verify_summary (self, pull_data->remote_name,
                                                         &pull_data->gpg_verify_summary, error))
           goto out;
-#endif /* OSTREE_DISABLE_GPGME */
 
       /* NOTE: If changing this, see the matching implementation in
        * ostree-sysroot-upgrader.c
@@ -3803,6 +3584,15 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
                        "remote unconfigured-state: %s", unconfigured_state);
           goto out;
         }
+    }
+
+  if (pull_data->remote_name && !(disable_sign_verify && disable_sign_verify_summary))
+    {
+      if (!_signapi_init_for_remote (pull_data->repo, pull_data->remote_name,
+                                     &pull_data->signapi_commit_verifiers,
+                                     &pull_data->signapi_summary_verifiers,
+                                     error))
+        return FALSE;
     }
 
   pull_data->phase = OSTREE_PULL_PHASE_FETCHING_REFS;
@@ -4168,6 +3958,65 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       }
 #endif /* OSTREE_DISABLE_GPGME */
 
+    if (pull_data->signapi_summary_verifiers)
+      {
+        if (!bytes_sig && pull_data->signapi_summary_verifiers)
+          {
+            g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                         "Signatures verification enabled, but no summary.sig found (use sign-verify-summary=false in remote config to disable)");
+            goto out;
+          }
+        if (bytes_summary && bytes_sig)
+          {
+            g_autoptr(GVariant) signatures = NULL;
+            g_autoptr(GError) temp_error = NULL;
+
+            signatures = g_variant_new_from_bytes (OSTREE_SUMMARY_SIG_GVARIANT_FORMAT,
+                                                   bytes_sig, FALSE);
+
+
+            g_assert (pull_data->signapi_summary_verifiers);
+            if (!_sign_verify_for_remote (pull_data->signapi_summary_verifiers, bytes_summary, signatures, NULL, &temp_error))
+              {
+                if (summary_from_cache)
+                  {
+                    /* The cached summary doesn't match, fetch a new one and verify again */
+                    if ((self->test_error_flags & OSTREE_REPO_TEST_ERROR_INVALID_CACHE) > 0)
+                      {
+                        g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                                     "Remote %s cached summary invalid and "
+                                     "OSTREE_REPO_TEST_ERROR_INVALID_CACHE specified",
+                                     pull_data->remote_name);
+                        goto out;
+                      }
+                    else
+                      g_debug ("Remote %s cached summary invalid, pulling new version",
+                               pull_data->remote_name);
+
+                    summary_from_cache = FALSE;
+                    g_clear_pointer (&bytes_summary, (GDestroyNotify)g_bytes_unref);
+                    if (!_ostree_fetcher_mirrored_request_to_membuf (pull_data->fetcher,
+                                                                     pull_data->meta_mirrorlist,
+                                                                     "summary",
+                                                                     OSTREE_FETCHER_REQUEST_OPTIONAL_CONTENT,
+                                                                     pull_data->n_network_retries,
+                                                                     &bytes_summary,
+                                                                     OSTREE_MAX_METADATA_SIZE,
+                                                                     cancellable, error))
+                      goto out;
+
+                    if (!_sign_verify_for_remote (pull_data->signapi_summary_verifiers, bytes_summary, signatures, NULL, error))
+                        goto out;
+                  }
+                else
+                  {
+                    g_propagate_error (error, g_steal_pointer (&temp_error));
+                    goto out;
+                  }
+              }
+          }
+      }
+
     if (bytes_summary)
       {
         pull_data->summary_data = g_bytes_ref (bytes_summary);
@@ -4427,6 +4276,18 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
                             g_steal_pointer (&checksum));
     }
 
+  /* Resolve refs to a checksum if necessary */
+  if (pull_data->timestamp_check_from_rev &&
+      !ostree_validate_checksum_string (pull_data->timestamp_check_from_rev, NULL))
+    {
+      g_autofree char *from_rev = NULL;
+      if (!ostree_repo_resolve_rev (pull_data->repo, pull_data->timestamp_check_from_rev, FALSE,
+                                    &from_rev, error))
+        goto out;
+      g_free (pull_data->timestamp_check_from_rev);
+      pull_data->timestamp_check_from_rev = g_steal_pointer (&from_rev);
+    }
+
   g_hash_table_unref (requested_refs_to_fetch);
   requested_refs_to_fetch = g_steal_pointer (&updated_requested_refs_to_fetch);
   if (g_hash_table_size (requested_refs_to_fetch) == 1)
@@ -4567,7 +4428,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         }
     }
 
-  if (pull_data->is_mirror && pull_data->summary_data && !refs_to_fetch && !configured_branches)
+  if (pull_data->is_mirror && pull_data->summary_data &&
+      !refs_to_fetch && !opt_collection_refs_set && !configured_branches)
     {
       GLnxFileReplaceFlags replaceflag =
         pull_data->repo->disable_fsync ? GLNX_FILE_REPLACE_NODATASYNC : 0;
@@ -4590,7 +4452,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
     }
 
   if (!inherit_transaction &&
-      !ostree_repo_commit_transaction (pull_data->repo, NULL, cancellable, error))
+      !ostree_repo_commit_transaction (pull_data->repo, &tstats, cancellable, error))
     goto out;
 
   end_time = g_get_monotonic_time ();
@@ -4632,6 +4494,11 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
                                   shift == 1 ? "B" : "KiB",
                                   (guint) ((end_time - pull_data->start_time) / G_USEC_PER_SEC));
         }
+      if (!inherit_transaction)
+        {
+          g_autofree char *bytes_written = g_format_size (tstats.content_bytes_written);
+          g_string_append_printf (buf, "; %s content written", bytes_written);
+        }
 
       ostree_async_progress_set_status (pull_data->progress, buf->str);
     }
@@ -4647,22 +4514,26 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         g_string_append_printf (msg, "libostree pull from '%s' for %u refs complete",
                                 pull_data->remote_name, g_hash_table_size (requested_refs_to_fetch));
 
-      const char *verify_state;
+      const char *gpg_verify_state;
 #ifndef OSTREE_DISABLE_GPGME
       if (pull_data->gpg_verify_summary)
         {
           if (pull_data->gpg_verify)
-            verify_state = "summary+commit";
+            gpg_verify_state = "summary+commit";
           else
-            verify_state = "summary-only";
+            gpg_verify_state = "summary-only";
         }
       else
-        verify_state = (pull_data->gpg_verify ? "commit" : "disabled");
-      g_string_append_printf (msg, "\nsecurity: GPG: %s ", verify_state);
+        gpg_verify_state = (pull_data->gpg_verify ? "commit" : "disabled");
+
 #else
-      verify_state = "disabled";
-      g_string_append_printf (msg, "\nsecurity: %s ", verify_state);
+      gpg_verify_state = "disabled";
 #endif /* OSTREE_DISABLE_GPGME */
+      g_string_append_printf (msg, "\nsecurity: GPG: %s ", gpg_verify_state);
+
+      const char *sign_verify_state;
+      sign_verify_state = (pull_data->signapi_commit_verifiers ? "commit" : "disabled");
+      g_string_append_printf (msg, "\nsecurity: SIGN: %s ", sign_verify_state);
 
       OstreeFetcherURI *first_uri = pull_data->meta_mirrorlist->pdata[0];
       g_autofree char *first_scheme = _ostree_fetcher_uri_get_scheme (first_uri);
@@ -4694,11 +4565,16 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
       const guint n_seconds = (guint) ((end_time - pull_data->start_time) / G_USEC_PER_SEC);
       g_autofree char *formatted_xferred = g_format_size (bytes_transferred);
       g_string_append_printf (msg, "\ntransfer: secs: %u size: %s", n_seconds, formatted_xferred);
+      if (pull_data->signapi_commit_verifiers)
+        {
+          g_assert_cmpuint (g_hash_table_size (pull_data->signapi_verified_commits), >, 0);
+        }
 
       ot_journal_send ("MESSAGE=%s", msg->str,
                        "MESSAGE_ID=" SD_ID128_FORMAT_STR, SD_ID128_FORMAT_VAL(OSTREE_MESSAGE_FETCH_COMPLETE_ID),
                        "OSTREE_REMOTE=%s", pull_data->remote_name,
-                       "OSTREE_GPG=%s", verify_state,
+                       "OSTREE_SIGN=%s", sign_verify_state,
+                       "OSTREE_GPG=%s", gpg_verify_state,
                        "OSTREE_SECONDS=%u", n_seconds,
                        "OSTREE_XFER_SIZE=%s", formatted_xferred,
                        NULL);
@@ -4715,6 +4591,13 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         }
 
       GLNX_HASH_TABLE_FOREACH_V (commits_to_fetch, const char*, commit)
+        {
+          if (!ostree_repo_mark_commit_partial (pull_data->repo, commit, FALSE, error))
+            goto out;
+        }
+
+      /* and finally any parent commits we might also have pulled because of depth>0 */
+      GLNX_HASH_TABLE_FOREACH (pull_data->commit_to_depth, const char*, commit)
         {
           if (!ostree_repo_mark_commit_partial (pull_data->repo, commit, FALSE, error))
             goto out;
@@ -4746,6 +4629,8 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   g_free (pull_data->remote_refspec_name);
   g_free (pull_data->remote_name);
   g_free (pull_data->append_user_agent);
+  g_clear_pointer (&pull_data->signapi_commit_verifiers, (GDestroyNotify) g_ptr_array_unref);
+  g_clear_pointer (&pull_data->signapi_summary_verifiers, (GDestroyNotify) g_ptr_array_unref);
   g_clear_pointer (&pull_data->meta_mirrorlist, (GDestroyNotify) g_ptr_array_unref);
   g_clear_pointer (&pull_data->content_mirrorlist, (GDestroyNotify) g_ptr_array_unref);
   g_clear_pointer (&pull_data->summary_data, (GDestroyNotify) g_bytes_unref);
@@ -4758,7 +4643,9 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   g_clear_pointer (&pull_data->fetched_detached_metadata, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->summary_deltas_checksums, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->ref_original_commits, (GDestroyNotify) g_hash_table_unref);
+  g_free (pull_data->timestamp_check_from_rev);
   g_clear_pointer (&pull_data->verified_commits, (GDestroyNotify) g_hash_table_unref);
+  g_clear_pointer (&pull_data->signapi_verified_commits, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->ref_keyring_map, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_content, (GDestroyNotify) g_hash_table_unref);
   g_clear_pointer (&pull_data->requested_fallback_content, (GDestroyNotify) g_hash_table_unref);
@@ -6016,6 +5903,8 @@ ostree_repo_pull_from_remotes_async (OstreeRepo                           *self,
       g_variant_dict_insert (&local_options_dict, "gpg-verify", "b", FALSE);
 #endif /* OSTREE_DISABLE_GPGME */
       g_variant_dict_insert (&local_options_dict, "gpg-verify-summary", "b", FALSE);
+      g_variant_dict_insert (&local_options_dict, "sign-verify", "b", FALSE);
+      g_variant_dict_insert (&local_options_dict, "sign-verify-summary", "b", FALSE);
       g_variant_dict_insert (&local_options_dict, "inherit-transaction", "b", TRUE);
       if (result->remote->refspec_name != NULL)
         g_variant_dict_insert (&local_options_dict, "override-remote-name", "s", result->remote->refspec_name);
@@ -6162,9 +6051,8 @@ ostree_repo_remote_fetch_summary_with_options (OstreeRepo    *self,
   g_autofree char *metalink_url_string = NULL;
   g_autoptr(GBytes) summary = NULL;
   g_autoptr(GBytes) signatures = NULL;
-#ifndef OSTREE_DISABLE_GPGME
   gboolean gpg_verify_summary;
-#endif
+  g_autoptr(GPtrArray) signapi_summary_verifiers = NULL;
   gboolean ret = FALSE;
   gboolean summary_is_from_cache;
 
@@ -6186,37 +6074,73 @@ ostree_repo_remote_fetch_summary_with_options (OstreeRepo    *self,
                                   error))
     goto out;
 
-#ifndef OSTREE_DISABLE_GPGME
   if (!ostree_repo_remote_get_gpg_verify_summary (self, name, &gpg_verify_summary, error))
     goto out;
 
-  if (gpg_verify_summary && summary == NULL)
+  if (gpg_verify_summary)
     {
-      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
-                   "GPG verification enabled, but no summary found (check that the configured URL in remote config is correct)");
-      goto out;
+      if (summary == NULL)
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                       "GPG verification enabled, but no summary found (check that the configured URL in remote config is correct)");
+          goto out;
+        }
+
+      if (signatures == NULL)
+        {
+          g_set_error (error, OSTREE_GPG_ERROR, OSTREE_GPG_ERROR_NO_SIGNATURE,
+                       "GPG verification enabled, but no summary signatures found (use gpg-verify-summary=false in remote config to disable)");
+          goto out;
+        }
+
+      /* Verify any summary signatures. */
+      if (summary != NULL && signatures != NULL)
+        {
+          g_autoptr(OstreeGpgVerifyResult) result = NULL;
+
+          result = ostree_repo_verify_summary (self,
+                                               name,
+                                               summary,
+                                               signatures,
+                                               cancellable,
+                                               error);
+          if (!ostree_gpg_verify_result_require_valid_signature (result, error))
+            goto out;
+        }
     }
 
-  if (gpg_verify_summary && signatures == NULL)
-    {
-      g_set_error (error, OSTREE_GPG_ERROR, OSTREE_GPG_ERROR_NO_SIGNATURE,
-                   "GPG verification enabled, but no summary signatures found (use gpg-verify-summary=false in remote config to disable)");
-      goto out;
-    }
+  if (!_signapi_init_for_remote (self, name, NULL,
+                                 &signapi_summary_verifiers,
+                                 error))
+    goto out;
 
-  /* Verify any summary signatures. */
-  if (gpg_verify_summary && summary != NULL && signatures != NULL)
+  if (signapi_summary_verifiers)
     {
-      g_autoptr(OstreeGpgVerifyResult) result = NULL;
+      if (summary == NULL)
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                       "Signature verification enabled, but no summary found (check that the configured URL in remote config is correct)");
+          goto out;
+        }
 
-      result = ostree_repo_verify_summary (self,
-                                           name,
-                                           summary,
-                                           signatures,
-                                           cancellable,
-                                           error);
-      if (!ostree_gpg_verify_result_require_valid_signature (result, error))
-        goto out;
+      if (signatures == NULL)
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                       "Signature verification enabled, but no summary signatures found (use sign-verify-summary=false in remote config to disable)");
+          goto out;
+        }
+
+      /* Verify any summary signatures. */
+      if (summary != NULL && signatures != NULL)
+        {
+          g_autoptr(GVariant) sig_variant = NULL;
+
+          sig_variant = g_variant_new_from_bytes (OSTREE_SUMMARY_SIG_GVARIANT_FORMAT,
+                                                  signatures, FALSE);
+
+          if (!_sign_verify_for_remote (signapi_summary_verifiers, summary, sig_variant, NULL, error))
+            goto out;
+        }
     }
 
   if (!summary_is_from_cache && summary && signatures)
@@ -6239,10 +6163,6 @@ ostree_repo_remote_fetch_summary_with_options (OstreeRepo    *self,
             }
         }
     }
-
-#else
-  g_message ("%s: GPG feature is disabled in a build time", __FUNCTION__);
-#endif /* OSTREE_DISABLE_GPGME */
 
   if (out_summary != NULL)
     *out_summary = g_steal_pointer (&summary);

@@ -692,6 +692,13 @@ void ostree_repo_commit_modifier_set_sepolicy (OstreeRepoCommitModifier         
                                                OstreeSePolicy                        *sepolicy);
 
 _OSTREE_PUBLIC
+gboolean ostree_repo_commit_modifier_set_sepolicy_from_commit (OstreeRepoCommitModifier              *modifier,
+                                                               OstreeRepo                            *repo,
+                                                               const char                            *rev,
+                                                               GCancellable                          *cancellable,
+                                                               GError                               **error);
+
+_OSTREE_PUBLIC
 void ostree_repo_commit_modifier_set_devino_cache (OstreeRepoCommitModifier              *modifier,
                                                    OstreeRepoDevInoCache                 *cache);
 
@@ -1167,9 +1174,9 @@ void ostree_repo_commit_traverse_iter_cleanup (void *p);
  * @OSTREE_REPO_PRUNE_FLAGS_REFS_ONLY: Do not traverse individual commit objects, only follow refs
  */
 typedef enum {
-  OSTREE_REPO_PRUNE_FLAGS_NONE,
-  OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE,
-  OSTREE_REPO_PRUNE_FLAGS_REFS_ONLY
+  OSTREE_REPO_PRUNE_FLAGS_NONE = 0,
+  OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE = (1 << 0),
+  OSTREE_REPO_PRUNE_FLAGS_REFS_ONLY = (1 << 1),
 } OstreeRepoPruneFlags;
 
 _OSTREE_PUBLIC

@@ -17,12 +17,6 @@
   Boston, MA 02111-1307, USA.
 ***/
 
-/* Add new symbols here.  Release commits should copy this section into -released.sym. */
-LIBOSTREE_2020.2 {
-global:
-  someostree_symbol_deleteme;
-} LIBOSTREE_2020.1;
-
 /* Stub section for the stable release *after* this development one; don't
  * edit this other than to update the year.  This is just a copy/paste
  * source.  Replace $LASTSTABLE with the last stable version, and $NEWVERSION

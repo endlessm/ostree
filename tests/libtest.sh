@@ -488,6 +488,11 @@ EOF
     cd ${oldpwd} 
 }
 
+timestamp_of_commit()
+{
+  date --date="$(ostree --repo=$1 show $2 | grep -Ee '^Date: ' | sed -e 's,^Date: *,,')" '+%s'
+}
+
 os_repository_new_commit ()
 {
     boot_checksum_iteration=${1:-0}
@@ -529,6 +534,13 @@ os_repository_new_commit ()
     echo "content iteration ${content_iteration}" > usr/bin/content-iteration
 
     ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit  --add-metadata-string "version=${version}" -b $branch -s "Build"
+    if ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo rev-parse ${branch} 2>/dev/null; then
+        prevdate=$(timestamp_of_commit ${test_tmpdir}/testos-repo "${branch}"^)
+        newdate=$(timestamp_of_commit ${test_tmpdir}/testos-repo "${branch}")
+        if [ $((${prevdate} > ${newdate})) = 1 ]; then
+            fatal "clock skew detected writing commits: prev=${prevdate} new=${newdate}"
+        fi
+    fi
     cd ${test_tmpdir}
 }
 
@@ -678,6 +690,43 @@ libtest_cleanup_gpg () {
     gpg-connect-agent --homedir "${gpg_homedir}" killagent /bye || true
 }
 libtest_exit_cmds+=(libtest_cleanup_gpg)
+
+has_sign_ed25519 () {
+    local ret
+    ${CMD_PREFIX} ostree --version > version.txt
+    grep -q -e '- sign-ed25519' version.txt
+    ret=$?
+    rm -f version.txt
+    return ${ret}
+}
+
+# Keys for ed25519 signing tests
+ED25519PUBLIC=
+ED25519SEED=
+ED25519SECRET=
+
+gen_ed25519_keys ()
+{
+  # Generate private key in PEM format
+  pemfile="$(mktemp -p ${test_tmpdir} ed25519_XXXXXX.pem)"
+  openssl genpkey -algorithm ed25519 -outform PEM -out "${pemfile}"
+
+  # Based on: http://openssl.6102.n7.nabble.com/ed25519-key-generation-td73907.html
+  # Extract the private and public parts from generated key.
+  ED25519PUBLIC="$(openssl pkey -outform DER -pubout -in ${pemfile} | tail -c 32 | base64)"
+  ED25519SEED="$(openssl pkey -outform DER -in ${pemfile} | tail -c 32 | base64)"
+  # Secret key is concantination of SEED and PUBLIC
+  ED25519SECRET="$(echo ${ED25519SEED}${ED25519PUBLIC} | base64 -d | base64 -w 0)"
+
+  echo "Generated ed25519 keys:"
+  echo "public: ${ED25519PUBLIC}"
+  echo "  seed: ${ED25519SEED}"
+}
+
+gen_ed25519_random_public()
+{
+  openssl genpkey -algorithm ED25519 | openssl pkey -outform DER | tail -c 32 | base64
+}
 
 is_bare_user_only_repo () {
   grep -q 'mode=bare-user-only' $1/config

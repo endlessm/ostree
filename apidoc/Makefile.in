@@ -295,6 +295,8 @@ OT_DEP_LIBARCHIVE_CFLAGS = @OT_DEP_LIBARCHIVE_CFLAGS@
 OT_DEP_LIBARCHIVE_LIBS = @OT_DEP_LIBARCHIVE_LIBS@
 OT_DEP_LIBMOUNT_CFLAGS = @OT_DEP_LIBMOUNT_CFLAGS@
 OT_DEP_LIBMOUNT_LIBS = @OT_DEP_LIBMOUNT_LIBS@
+OT_DEP_LIBSODIUM_CFLAGS = @OT_DEP_LIBSODIUM_CFLAGS@
+OT_DEP_LIBSODIUM_LIBS = @OT_DEP_LIBSODIUM_LIBS@
 OT_DEP_LZMA_CFLAGS = @OT_DEP_LZMA_CFLAGS@
 OT_DEP_LZMA_LIBS = @OT_DEP_LZMA_LIBS@
 OT_DEP_SELINUX_CFLAGS = @OT_DEP_SELINUX_CFLAGS@
@@ -328,6 +330,8 @@ XSLTPROC = @XSLTPROC@
 YACC = @YACC@
 YEAR_VERSION = @YEAR_VERSION@
 YFLAGS = @YFLAGS@
+_GI_EXP_DATADIR = @_GI_EXP_DATADIR@
+_GI_EXP_LIBDIR = @_GI_EXP_LIBDIR@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -412,6 +416,8 @@ libostree_public_headers = \
 	src/libostree/ostree-repo-finder-mount.h \
 	src/libostree/ostree-repo-finder-override.h \
 	src/libostree/ostree-kernel-args.h \
+	src/libostree/ostree-sign.h \
+	src/libostree/ostree-sign-ed25519.h \
 	$(NULL)
 
 

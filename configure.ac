@@ -2,12 +2,12 @@ AC_PREREQ([2.63])
 dnl To do a release: follow the instructions to update libostree-released.sym from
 dnl libostree-devel.sym, update the checksum in test-symbols.sh, set is_release_build=yes
 dnl below. Then make another post-release commit to bump the version and set
-dnl is_release_build=yes
+dnl is_release_build=no.
 dnl Seed the release notes with `git-shortlog-with-prs <previous-release>..`. Then use
 dnl `git-evtag` to create the tag and push it. Finally, create a GitHub release and attach
 dnl the tarball from `make dist`.
 m4_define([year_version], [2020])
-m4_define([release_version], [3])
+m4_define([release_version], [4])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -241,6 +241,21 @@ dnl to link to it directly.
     ]
 )
 AM_CONDITIONAL(USE_GPGME, test "x$have_gpgme" = xyes)
+
+
+LIBSODIUM_DEPENDENCY="1.0.14"
+AC_ARG_WITH(ed25519_libsodium,
+	    AS_HELP_STRING([--with-ed25519-libsodium], [Use libsodium for ed25519 @<:@default=no@:>@]),
+	    [], [with_ed25519_libsodium=no])
+AS_IF([test x$with_ed25519_libsodium != xno], [
+    AC_DEFINE([HAVE_LIBSODIUM], 1, [Define if using libsodium])
+    PKG_CHECK_MODULES(OT_DEP_LIBSODIUM, libsodium >= $LIBSODIUM_DEPENDENCY, have_libsodium=yes,  have_libsodium=no)
+    AS_IF([ test x$have_libsodium = xno ], [
+       AC_MSG_ERROR([Need LIBSODIUM version $LIBSODIUM_DEPENDENCY or later])
+    ])
+    OSTREE_FEATURES="$OSTREE_FEATURES sign-ed25519"
+], with_ed25519_libsodium=no )
+AM_CONDITIONAL(USE_LIBSODIUM, test "x$have_libsodium" = xyes)
 
 LIBARCHIVE_DEPENDENCY="libarchive >= 2.8.0"
 # What's in RHEL7.2.
@@ -626,6 +641,7 @@ echo "
     cryptographic checksums:                      $with_crypto
     systemd:                                      $with_libsystemd
     libmount:                                     $with_libmount
+    libsodium (ed25519 signatures):               $with_ed25519_libsodium
     libarchive (parse tar files directly):        $with_libarchive
     static deltas:                                yes (always enabled now)
     O_TMPFILE:                                    $enable_otmpfile

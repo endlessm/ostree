@@ -8,7 +8,7 @@
 <link rel="up" href="index.html" title="OSTree API references">
 <link rel="prev" href="index.html" title="OSTree API references">
 <link rel="next" href="ostree-Core-repository-independent-functions.html" title="Core repository-independent functions">
-<meta name="generator" content="GTK-Doc V1.29 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.32 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -46,6 +46,9 @@
 </dt>
 <dt>
 <span class="refentrytitle"><a href="ostree-GPG-signature-verification-results.html">GPG signature verification results</a></span><span class="refpurpose"> — Inspect detached GPG signatures</span>
+</dt>
+<dt>
+<span class="refentrytitle"><a href="ostree-Signature-management.html">Signature management</a></span><span class="refpurpose"> — Sign and verify commits</span>
 </dt>
 <dt>
 <span class="refentrytitle"><a href="ostree-ostree-bootconfig-parser.html">ostree-bootconfig-parser</a></span><span class="refpurpose"></span>
@@ -947,6 +950,10 @@ OstreeRepoFinderResultv, typedef in ostree-repo-finder
 </dt>
 <dd></dd>
 <dt>
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-sepolicy-from-commit" title="ostree_repo_commit_modifier_set_sepolicy_from_commit ()">ostree_repo_commit_modifier_set_sepolicy_from_commit</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
+</dt>
+<dd></dd>
+<dt>
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-xattr-callback" title="ostree_repo_commit_modifier_set_xattr_callback ()">ostree_repo_commit_modifier_set_xattr_callback</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
@@ -1632,6 +1639,70 @@ ostree_repo_transaction_set_collection_ref, function in ostree-misc-experimental
 </dt>
 <dd></dd>
 <dt>
+<a class="link" href="ostree-Signature-management.html#OstreeSign" title="OstreeSign">OstreeSign</a>, struct in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-add-pk" title="ostree_sign_add_pk ()">ostree_sign_add_pk</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-clear-keys" title="ostree_sign_clear_keys ()">ostree_sign_clear_keys</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-commit" title="ostree_sign_commit ()">ostree_sign_commit</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-commit-verify" title="ostree_sign_commit_verify ()">ostree_sign_commit_verify</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-data" title="ostree_sign_data ()">ostree_sign_data</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-data-verify" title="ostree_sign_data_verify ()">ostree_sign_data_verify</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-get-all" title="ostree_sign_get_all ()">ostree_sign_get_all</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-get-by-name" title="ostree_sign_get_by_name ()">ostree_sign_get_by_name</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-get-name" title="ostree_sign_get_name ()">ostree_sign_get_name</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-load-pk" title="ostree_sign_load_pk ()">ostree_sign_load_pk</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-metadata-format" title="ostree_sign_metadata_format ()">ostree_sign_metadata_format</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-metadata-key" title="ostree_sign_metadata_key ()">ostree_sign_metadata_key</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-set-pk" title="ostree_sign_set_pk ()">ostree_sign_set_pk</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-set-sk" title="ostree_sign_set_sk ()">ostree_sign_set_sk</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-Signature-management.html#ostree-sign-summary" title="ostree_sign_summary ()">ostree_sign_summary</a>, function in <a class="link" href="ostree-Signature-management.html" title="Signature management">Signature management</a>
+</dt>
+<dd></dd>
+<dt>
 <a class="link" href="ostree-OstreeRepo.html#OstreeStaticDeltaGenerateOpt" title="enum OstreeStaticDeltaGenerateOpt">OstreeStaticDeltaGenerateOpt</a>, enum in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
@@ -1953,6 +2024,6 @@ OSTREE_YEAR_VERSION, macro in ostree-version
 </div>
 </div>
 <div class="footer">
-<hr>Generated by GTK-Doc V1.29</div>
+<hr>Generated by GTK-Doc V1.32</div>
 </body>
 </html>
