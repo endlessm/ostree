@@ -1,7 +1,7 @@
 # This is deliberate: it's just some random signed file to be verified, and
 # upstream happens to have used the text of the LGPL as the signed file
 ostree-tests: extra-license-file usr/libexec/installed-tests/libostree/gpg-verify-data/lgpl2
-ostree-tests: extra-license-file usr/libexec/installed-tests/libostree/gpg-verify-data/lgpl2.sig
+ostree-tests: extra-license-file usr/libexec/installed-tests/libostree/gpg-verify-data/lgpl2.sig*
 
 # This is deliberate, working around the assumption of recursive make
 ostree-tests: symlink-is-self-recursive usr/libexec/installed-tests/libostree/tests .
