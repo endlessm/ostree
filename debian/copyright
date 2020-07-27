@@ -8,10 +8,10 @@ Copyright:
  © 1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald
  © 1995-2015 Free Software Foundation, Inc.
  © 1999-2003 Ximian, Inc.
- © 2008-2018 Red Hat, Inc
+ © 2008-2020 Red Hat, Inc
  © 2011-2019 Colin Walters <walters@verbum.org>
  © 2011 Avery Pennarun
- © 2013-2019 Collabora Ltd.
+ © 2013-2020 Collabora Ltd.
  © 2013 Stef Walter <stef@redhat.com>
  © 2013 Javier Martinez <javier.martinez@collabora.co.uk>
  © 2013 Jeremy Whiting <jeremy.whiting@collabora.com>
@@ -29,8 +29,8 @@ Copyright:
  © 2018 Sinny Kumari
  © 2019 Rafael Fonseca
  © 2019 Robert Fairley
- © 2019 Collabora Ltd.
  © 2019 Wind River Systems, Inc.
+ © 2019 Denis Pynkin
 License: LGPL-2+
 
 Files:
@@ -90,8 +90,8 @@ License: BSD-2-clause
 Files: debian/*
 Copyright:
  © 2015 David King <amigadave@amigadave.com>
- © 2016 Collabora Ltd.
- © 2017 Simon McVittie
+ © 2016-2020 Collabora Ltd.
+ © 2017-2020 Simon McVittie
 License: LGPL-2+
 
 License: GPL-2+ with Autoconf exception
