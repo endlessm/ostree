@@ -10,6 +10,7 @@
       <sub name="SELinux policy management" link="ostree-SELinux-policy-management.html"/>
       <sub name="Simple upgrade class" link="ostree-Simple-upgrade-class.html"/>
       <sub name="GPG signature verification results" link="ostree-GPG-signature-verification-results.html"/>
+      <sub name="Signature management" link="ostree-Signature-management.html"/>
       <sub name="ostree-bootconfig-parser" link="ostree-ostree-bootconfig-parser.html"/>
       <sub name="ostree-chain-input-stream" link="ostree-ostree-chain-input-stream.html"/>
       <sub name="ostree-checksum-input-stream" link="ostree-ostree-checksum-input-stream.html"/>
@@ -67,7 +68,7 @@
     <keyword type="function" name="ostree_validate_structureof_dirtree ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-structureof-dirtree"/>
     <keyword type="function" name="ostree_validate_structureof_dirmeta ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-structureof-dirmeta"/>
     <keyword type="function" name="ostree_commit_get_parent ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-parent"/>
-    <keyword type="function" name="ostree_commit_get_timestamp ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-timestamp"/>
+    <keyword type="function" name="ostree_commit_get_timestamp ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-timestamp" since="2016.3"/>
     <keyword type="function" name="ostree_commit_get_content_checksum ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-content-checksum" since="2018.2"/>
     <keyword type="function" name="ostree_commit_get_object_sizes ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-object-sizes" since="2020.1"/>
     <keyword type="function" name="ostree_commit_sizes_entry_new ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-sizes-entry-new" since="2020.1"/>
@@ -171,6 +172,7 @@
     <keyword type="function" name="OstreeRepoCommitModifierXattrCallback ()" link="ostree-OstreeRepo.html#OstreeRepoCommitModifierXattrCallback"/>
     <keyword type="function" name="ostree_repo_commit_modifier_set_xattr_callback ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-xattr-callback"/>
     <keyword type="function" name="ostree_repo_commit_modifier_set_sepolicy ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-sepolicy"/>
+    <keyword type="function" name="ostree_repo_commit_modifier_set_sepolicy_from_commit ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-sepolicy-from-commit"/>
     <keyword type="function" name="ostree_repo_commit_modifier_set_devino_cache ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-devino-cache" since="2017.13"/>
     <keyword type="function" name="ostree_repo_commit_modifier_ref ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-ref"/>
     <keyword type="function" name="ostree_repo_commit_modifier_unref ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-unref"/>
@@ -362,6 +364,22 @@
     <keyword type="typedef" name="OstreeGpgVerifyResult" link="ostree-GPG-signature-verification-results.html#OstreeGpgVerifyResult"/>
     <keyword type="enum" name="enum OstreeGpgSignatureAttr" link="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureAttr"/>
     <keyword type="enum" name="enum OstreeGpgSignatureFormatFlags" link="ostree-GPG-signature-verification-results.html#OstreeGpgSignatureFormatFlags"/>
+    <keyword type="function" name="ostree_sign_get_all ()" link="ostree-Signature-management.html#ostree-sign-get-all" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_commit ()" link="ostree-Signature-management.html#ostree-sign-commit" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_commit_verify ()" link="ostree-Signature-management.html#ostree-sign-commit-verify" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_data ()" link="ostree-Signature-management.html#ostree-sign-data" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_data_verify ()" link="ostree-Signature-management.html#ostree-sign-data-verify" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_get_by_name ()" link="ostree-Signature-management.html#ostree-sign-get-by-name" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_get_name ()" link="ostree-Signature-management.html#ostree-sign-get-name" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_add_pk ()" link="ostree-Signature-management.html#ostree-sign-add-pk" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_clear_keys ()" link="ostree-Signature-management.html#ostree-sign-clear-keys" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_load_pk ()" link="ostree-Signature-management.html#ostree-sign-load-pk" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_metadata_format ()" link="ostree-Signature-management.html#ostree-sign-metadata-format" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_metadata_key ()" link="ostree-Signature-management.html#ostree-sign-metadata-key" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_set_pk ()" link="ostree-Signature-management.html#ostree-sign-set-pk" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_set_sk ()" link="ostree-Signature-management.html#ostree-sign-set-sk" since="2020.2"/>
+    <keyword type="function" name="ostree_sign_summary ()" link="ostree-Signature-management.html#ostree-sign-summary"/>
+    <keyword type="struct" name="OstreeSign" link="ostree-Signature-management.html#OstreeSign"/>
     <keyword type="function" name="ostree_bootconfig_parser_new ()" link="ostree-ostree-bootconfig-parser.html#ostree-bootconfig-parser-new"/>
     <keyword type="function" name="ostree_bootconfig_parser_clone ()" link="ostree-ostree-bootconfig-parser.html#ostree-bootconfig-parser-clone"/>
     <keyword type="function" name="ostree_bootconfig_parser_parse ()" link="ostree-ostree-bootconfig-parser.html#ostree-bootconfig-parser-parse"/>

@@ -379,6 +379,7 @@ ostree_repo_commit_modifier_new
 OstreeRepoCommitModifierXattrCallback
 ostree_repo_commit_modifier_set_xattr_callback
 ostree_repo_commit_modifier_set_sepolicy
+ostree_repo_commit_modifier_set_sepolicy_from_commit
 ostree_repo_commit_modifier_set_devino_cache
 ostree_repo_commit_modifier_ref
 ostree_repo_commit_modifier_unref
@@ -703,4 +704,26 @@ ostree_kernel_args_get_last_value
 ostree_kernel_args_from_string
 ostree_kernel_args_to_strv
 ostree_kernel_args_to_string
+</SECTION>
+
+<SECTION>
+<FILE>ostree-sign</FILE>
+OstreeSign
+ostree_sign_get_all
+ostree_sign_commit
+ostree_sign_commit_verify
+ostree_sign_data
+ostree_sign_data_verify
+ostree_sign_get_by_name
+ostree_sign_get_name
+ostree_sign_add_pk
+ostree_sign_clear_keys
+ostree_sign_load_pk
+ostree_sign_metadata_format
+ostree_sign_metadata_key
+ostree_sign_set_pk
+ostree_sign_set_sk
+ostree_sign_summary
+<SUBSECTION Standard>
+ostree_sign_get_type
 </SECTION>

@@ -21,7 +21,7 @@
 
 set -euo pipefail
 
-echo "1..$((27 + ${extra_admin_tests:-0}))"
+echo "1..$((28 + ${extra_admin_tests:-0}))"
 
 mkdir sysrootmin
 ${CMD_PREFIX} ostree admin init-fs --modern sysrootmin
@@ -300,18 +300,47 @@ echo "ok no duplicate version strings in title"
 
 # Test upgrade with and without --override-commit
 # See https://github.com/GNOME/ostree/pull/147
-${CMD_PREFIX} ostree pull --repo=sysroot/ostree/repo --commit-metadata-only --depth=-1 testos:testos/buildmaster/x86_64-runtime
-head_rev=$(${CMD_PREFIX} ostree rev-parse --repo=sysroot/ostree/repo testos/buildmaster/x86_64-runtime)
-prev_rev=$(${CMD_PREFIX} ostree rev-parse --repo=sysroot/ostree/repo testos/buildmaster/x86_64-runtime^^^^)
-assert_not_streq ${head_rev} ${prev_rev}
-${CMD_PREFIX} ostree admin upgrade --os=testos --override-commit=${prev_rev} --allow-downgrade
-curr_rev=$(${CMD_PREFIX} ostree rev-parse --repo=sysroot/ostree/repo testos/buildmaster/x86_64-runtime)
-assert_streq ${curr_rev} ${prev_rev}
+sleep 1
+os_repository_new_commit
+# upgrade to the latest
 ${CMD_PREFIX} ostree admin upgrade --os=testos
-curr_rev=$(${CMD_PREFIX} ostree rev-parse --repo=sysroot/ostree/repo testos/buildmaster/x86_64-runtime)
-assert_streq ${curr_rev} ${head_rev}
+head_rev=$(${CMD_PREFIX} ostree rev-parse --repo=sysroot/ostree/repo testos/buildmaster/x86_64-runtime)
+prev_rev=$(${CMD_PREFIX} ostree rev-parse --repo=sysroot/ostree/repo testos/buildmaster/x86_64-runtime^)
+assert_not_streq ${head_rev} ${prev_rev}
+# Don't use `ostree admin status | head -n 1` directly here because `head`
+# exiting early might cause SIGPIPE to ostree, which with `set -euo pipefail`
+# will cause us to exit. See: https://github.com/ostreedev/ostree/pull/2110.
+${CMD_PREFIX} ostree admin status > status-out.txt
+head -n 1 < status-out.txt > status.txt
+assert_file_has_content status.txt ".* testos ${head_rev}.*"
+# now, check that we can't downgrade to an older commit without --allow-downgrade
+if ${CMD_PREFIX} ostree admin upgrade --os=testos --override-commit=${prev_rev} 2> err.txt; then
+    cat err.txt
+    fatal "downgraded without --allow-downgrade?"
+fi
+assert_file_has_content err.txt "Upgrade.*is chronologically older"
+${CMD_PREFIX} ostree admin upgrade --os=testos --override-commit=${prev_rev} --allow-downgrade
+${CMD_PREFIX} ostree admin status > status-out.txt
+head -n 1 < status-out.txt > status.txt
+assert_file_has_content status.txt ".* testos ${prev_rev}.*"
+${CMD_PREFIX} ostree admin upgrade --os=testos
+${CMD_PREFIX} ostree admin status > status-out.txt
+head -n 1 < status-out.txt > status.txt
+assert_file_has_content status.txt ".* testos ${head_rev}.*"
 
 echo "ok upgrade with and without override-commit"
+
+# check that we can still upgrade to a rev that's not the tip of the branch but
+# that's still newer than the deployment
+sleep 1
+os_repository_new_commit
+sleep 1
+os_repository_new_commit
+${CMD_PREFIX} ostree pull --repo=sysroot/ostree/repo --commit-metadata-only --depth=-1 testos:testos/buildmaster/x86_64-runtime
+curr_rev=$(${CMD_PREFIX} ostree rev-parse --repo=sysroot/ostree/repo testos/buildmaster/x86_64-runtime)
+prev_rev=$(${CMD_PREFIX} ostree rev-parse --repo=sysroot/ostree/repo testos/buildmaster/x86_64-runtime^)
+${CMD_PREFIX} ostree admin upgrade --os=testos --override-commit=${prev_rev}
+echo "ok upgrade to newer version older than branch tip"
 
 ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit  --add-metadata-string "version=${version}" \
               --add-metadata-string 'ostree.source-title=libtest os_repository_new_commit()' -b testos/buildmaster/x86_64-runtime \

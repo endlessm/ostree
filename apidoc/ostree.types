@@ -22,6 +22,7 @@ ostree_repo_finder_result_get_type
 ostree_repo_get_type
 ostree_repo_transaction_stats_get_type
 ostree_sepolicy_get_type
+ostree_sign_get_type
 ostree_sysroot_get_type
 ostree_sysroot_upgrader_flags_get_type
 ostree_sysroot_upgrader_get_type

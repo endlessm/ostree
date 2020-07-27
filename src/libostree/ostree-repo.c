@@ -2028,17 +2028,8 @@ ostree_repo_remote_get_gpg_verify (OstreeRepo  *self,
       return TRUE;
     }
 
-#ifndef OSTREE_DISABLE_GPGME
   return ostree_repo_get_remote_boolean_option (self, name, "gpg-verify",
                                                TRUE, out_gpg_verify, error);
-#else
-  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-               "'%s': GPG feature is disabled in a build time",
-               __FUNCTION__);
-  if (out_gpg_verify != NULL)
-    *out_gpg_verify = FALSE;
-  return FALSE;
-#endif /* OSTREE_DISABLE_GPGME */
 }
 
 /**
@@ -2060,17 +2051,8 @@ ostree_repo_remote_get_gpg_verify_summary (OstreeRepo  *self,
                                            gboolean    *out_gpg_verify_summary,
                                            GError     **error)
 {
-#ifndef OSTREE_DISABLE_GPGME
   return ostree_repo_get_remote_boolean_option (self, name, "gpg-verify-summary",
                                                 FALSE, out_gpg_verify_summary, error);
-#else
-  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-               "'%s': GPG feature is disabled in a build time",
-               __FUNCTION__);
-  if (out_gpg_verify_summary != NULL)
-    *out_gpg_verify_summary = FALSE;
-  return FALSE;
-#endif /* OSTREE_DISABLE_GPGME */
 }
 
 /**
@@ -2344,10 +2326,7 @@ out:
 
   return ret;
 #else /* OSTREE_DISABLE_GPGME */
-  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-               "'%s': GPG feature is disabled in a build time",
-               __FUNCTION__);
-  return FALSE;
+  return glnx_throw (error, "GPG feature is disabled in a build time");
 #endif /* OSTREE_DISABLE_GPGME */
 }
 
@@ -2943,6 +2922,10 @@ reload_core_config (OstreeRepo          *self,
       ostree_repo_set_disable_fsync (self, TRUE);
   }
 
+  if (!ot_keyfile_get_boolean_with_default (self->config, "core", "per-object-fsync",
+                                            FALSE, &self->per_object_fsync, error))
+    return FALSE;
+
   /* See https://github.com/ostreedev/ostree/issues/758 */
   if (!ot_keyfile_get_boolean_with_default (self->config, "core", "disable-xattrs",
                                             FALSE, &self->disable_xattrs, error))
@@ -3257,6 +3240,8 @@ ostree_repo_open (OstreeRepo    *self,
                   GCancellable  *cancellable,
                   GError       **error)
 {
+  GLNX_AUTO_PREFIX_ERROR ("opening repo", error);
+
   struct stat stbuf;
 
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
@@ -3291,10 +3276,7 @@ ostree_repo_open (OstreeRepo    *self,
       g_assert (self->repodir);
       if (!glnx_opendirat (AT_FDCWD, gs_file_get_path_cached (self->repodir), TRUE,
                            &self->repo_dir_fd, error))
-        {
-          g_prefix_error (error, "%s: ", gs_file_get_path_cached (self->repodir));
-          return FALSE;
-        }
+        return FALSE;
     }
 
   if (!glnx_fstat (self->repo_dir_fd, &stbuf, error))
@@ -4992,10 +4974,7 @@ ostree_repo_append_gpg_signature (OstreeRepo     *self,
 
   return TRUE;
 #else
-  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-               "'%s': GPG feature is disabled in a build time",
-               __FUNCTION__);
-  return FALSE;
+  return glnx_throw (error, "GPG feature is disabled in a build time");
 #endif /* OSTREE_DISABLE_GPGME */
 }
 
@@ -5147,7 +5126,7 @@ ostree_repo_sign_commit (OstreeRepo     *self,
   return TRUE;
 #else
   /* FIXME: Return false until refactoring */
-  return FALSE;
+  return glnx_throw (error, "GPG feature is disabled in a build time");
 #endif /* OSTREE_DISABLE_GPGME */
 }
 
@@ -5239,10 +5218,7 @@ ostree_repo_add_gpg_signature_summary (OstreeRepo     *self,
 
   return TRUE;
 #else
-  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-          "'%s': GPG feature is disabled in a build time",
-          __FUNCTION__);
-  return FALSE;
+  return glnx_throw (error, "GPG feature is disabled in a build time");
 #endif /* OSTREE_DISABLE_GPGME */
 }
 
@@ -5516,10 +5492,7 @@ ostree_repo_verify_commit (OstreeRepo   *self,
   return TRUE;
 #else
   /* FIXME: Return false until refactoring */
-  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-          "'%s': GPG feature is disabled in a build time",
-          __FUNCTION__);
-  return FALSE;
+  return glnx_throw (error, "GPG feature is disabled in a build time");
 #endif /* OSTREE_DISABLE_GPGME */
 }
 
@@ -5554,9 +5527,7 @@ ostree_repo_verify_commit_ext (OstreeRepo    *self,
                                               cancellable,
                                               error);
 #else
-  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-          "'%s': GPG feature is disabled in a build time",
-          __FUNCTION__);
+  glnx_throw (error, "GPG feature is disabled in a build time");
   return NULL;
 #endif /* OSTREE_DISABLE_GPGME */
 }
@@ -5593,9 +5564,7 @@ ostree_repo_verify_commit_for_remote (OstreeRepo    *self,
                                               cancellable,
                                               error);
 #else
-  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-          "'%s': GPG feature is disabled in a build time",
-          __FUNCTION__);
+  glnx_throw (error, "GPG feature is disabled in a build time");
   return NULL;
 #endif /* OSTREE_DISABLE_GPGME */
 }
@@ -5645,9 +5614,7 @@ ostree_repo_gpg_verify_data (OstreeRepo    *self,
                                                 cancellable,
                                                 error);
 #else
-  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-          "'%s': GPG feature is disabled in a build time",
-          __FUNCTION__);
+  glnx_throw (error, "GPG feature is disabled in a build time");
   return NULL;
 #endif /* OSTREE_DISABLE_GPGME */
 }
@@ -5693,9 +5660,7 @@ ostree_repo_verify_summary (OstreeRepo    *self,
                                                 cancellable,
                                                 error);
 #else
-  g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
-          "'%s': GPG feature is disabled in a build time",
-          __FUNCTION__);
+  glnx_throw (error, "GPG feature is disabled in a build time");
   return NULL;
 #endif /* OSTREE_DISABLE_GPGME */
 }
@@ -5998,7 +5963,7 @@ _ostree_repo_maybe_regenerate_summary (OstreeRepo    *self,
 }
 
 gboolean
-_ostree_repo_is_locked_tmpdir (const char *filename)
+_ostree_repo_has_staging_prefix (const char *filename)
 {
   return g_str_has_prefix (filename, OSTREE_REPO_TMPDIR_STAGING);
 }
@@ -6019,7 +5984,9 @@ _ostree_repo_try_lock_tmpdir (int            tmpdir_dfd,
   if (!glnx_make_lock_file (tmpdir_dfd, lock_name, LOCK_EX | LOCK_NB,
                             file_lock_out, &local_error))
     {
-      if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_WOULD_BLOCK))
+      /* we need to handle EACCES too in the case of POSIX locks; see F_SETLK in fcntl(2) */
+      if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_WOULD_BLOCK)
+          || g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_PERMISSION_DENIED))
         {
           did_lock = FALSE;
         }
@@ -6058,7 +6025,7 @@ _ostree_repo_allocate_tmpdir (int tmpdir_dfd,
                               GCancellable *cancellable,
                               GError **error)
 {
-  g_return_val_if_fail (_ostree_repo_is_locked_tmpdir (tmpdir_prefix), FALSE);
+  g_return_val_if_fail (_ostree_repo_has_staging_prefix (tmpdir_prefix), FALSE);
 
   /* Look for existing tmpdir (with same prefix) to reuse */
   g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
@@ -6279,4 +6246,108 @@ ostree_repo_get_bootloader (OstreeRepo   *self)
   g_return_val_if_fail (OSTREE_IS_REPO (self), NULL);
 
   return self->bootloader;
+}
+
+
+/**
+ * _ostree_repo_verify_bindings:
+ * @collection_id: (nullable): Locally specified collection ID for the remote
+ *    the @commit was retrieved from, or %NULL if none is configured
+ * @ref_name: (nullable): Ref name the commit was retrieved using, or %NULL if
+ *    the commit was retrieved by checksum
+ * @commit: Commit data to check
+ * @error: Return location for a #GError, or %NULL
+ *
+ * Verify the ref and collection bindings.
+ *
+ * The ref binding is verified only if it exists. But if we have the
+ * collection ID specified in the remote configuration (@collection_id is
+ * non-%NULL) then the ref binding must exist, otherwise the verification will
+ * fail. Parts of the verification can be skipped by passing %NULL to the
+ * @ref_name parameter (in case we requested a checksum directly, without
+ * looking it up from a ref).
+ *
+ * The collection binding is verified only when we have collection ID
+ * specified in the remote configuration. If it is specified, then the
+ * binding must exist and must be equal to the remote repository
+ * collection ID.
+ *
+ * Returns: %TRUE if bindings are correct, %FALSE otherwise
+ * Since: 2017.14
+ */
+gboolean
+_ostree_repo_verify_bindings (const char  *collection_id,
+                              const char  *ref_name,
+                              GVariant    *commit,
+                              GError     **error)
+{
+  g_autoptr(GVariant) metadata = g_variant_get_child_value (commit, 0);
+  g_autofree const char **refs = NULL;
+  if (!g_variant_lookup (metadata,
+                         OSTREE_COMMIT_META_KEY_REF_BINDING,
+                         "^a&s",
+                         &refs))
+    {
+      /* Early return here - if the remote collection ID is NULL, then
+       * we certainly will not verify the collection binding in the
+       * commit.
+       */
+      if (collection_id == NULL)
+        return TRUE;
+
+      return glnx_throw (error,
+                         "Expected commit metadata to have ref "
+                         "binding information, found none");
+    }
+
+  if (ref_name != NULL)
+    {
+      if (!g_strv_contains ((const char *const *) refs, ref_name))
+        {
+          g_autoptr(GString) refs_dump = g_string_new (NULL);
+          const char *refs_str;
+
+          if (refs != NULL && (*refs) != NULL)
+            {
+              for (const char **iter = refs; *iter != NULL; ++iter)
+                {
+                  const char *ref = *iter;
+
+                  if (refs_dump->len > 0)
+                    g_string_append (refs_dump, ", ");
+                  g_string_append_printf (refs_dump, "‘%s’", ref);
+                }
+
+              refs_str = refs_dump->str;
+            }
+          else
+            {
+              refs_str = "no refs";
+            }
+
+          return glnx_throw (error, "Commit has no requested ref ‘%s’ "
+                             "in ref binding metadata (%s)",
+                             ref_name, refs_str);
+        }
+    }
+
+  if (collection_id != NULL)
+    {
+      const char *collection_id_binding;
+      if (!g_variant_lookup (metadata,
+                             OSTREE_COMMIT_META_KEY_COLLECTION_BINDING,
+                             "&s",
+                             &collection_id_binding))
+        return glnx_throw (error,
+                           "Expected commit metadata to have collection ID "
+                           "binding information, found none");
+      if (!g_str_equal (collection_id_binding, collection_id))
+        return glnx_throw (error,
+                           "Commit has collection ID ‘%s’ in collection binding "
+                           "metadata, while the remote it came from has "
+                           "collection ID ‘%s’",
+                           collection_id_binding, collection_id);
+    }
+
+  return TRUE;
 }

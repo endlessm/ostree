@@ -29,6 +29,7 @@
 #include "otutil.h"
 
 static gboolean opt_disable_fsync;
+static gboolean opt_per_object_fsync;
 static gboolean opt_mirror;
 static gboolean opt_commit_only;
 static gboolean opt_dry_run;
@@ -37,6 +38,7 @@ static gboolean opt_require_static_deltas;
 static gboolean opt_untrusted;
 static gboolean opt_http_trusted;
 static gboolean opt_timestamp_check;
+static char* opt_timestamp_check_from_rev;
 static gboolean opt_bareuseronly_files;
 static char** opt_subpaths;
 static char** opt_http_headers;
@@ -57,6 +59,7 @@ static GOptionEntry options[] = {
    { "commit-metadata-only", 0, 0, G_OPTION_ARG_NONE, &opt_commit_only, "Fetch only the commit metadata", NULL },
    { "cache-dir", 0, 0, G_OPTION_ARG_FILENAME, &opt_cache_dir, "Use custom cache dir", NULL },
    { "disable-fsync", 0, 0, G_OPTION_ARG_NONE, &opt_disable_fsync, "Do not invoke fsync()", NULL },
+   { "per-object-fsync", 0, 0, G_OPTION_ARG_NONE, &opt_per_object_fsync, "Perform writes in such a way that avoids stalling concurrent processes", NULL },
    { "disable-static-deltas", 0, 0, G_OPTION_ARG_NONE, &opt_disable_static_deltas, "Do not use static deltas", NULL },
    { "require-static-deltas", 0, 0, G_OPTION_ARG_NONE, &opt_require_static_deltas, "Require static deltas", NULL },
    { "mirror", 0, 0, G_OPTION_ARG_NONE, &opt_mirror, "Write refs suitable for a mirror and fetches all refs if none provided", NULL },
@@ -72,6 +75,7 @@ static GOptionEntry options[] = {
    { "network-retries", 0, 0, G_OPTION_ARG_INT, &opt_network_retries, "Specifies how many times each download should be retried upon error (default: 5)", "N"},
    { "localcache-repo", 'L', 0, G_OPTION_ARG_FILENAME_ARRAY, &opt_localcache_repos, "Add REPO as local cache source for objects during this pull", "REPO" },
    { "timestamp-check", 'T', 0, G_OPTION_ARG_NONE, &opt_timestamp_check, "Require fetched commits to have newer timestamps", NULL },
+   { "timestamp-check-from-rev", 0, 0, G_OPTION_ARG_STRING, &opt_timestamp_check_from_rev, "Require fetched commits to have newer timestamps than given rev", NULL },
    /* let's leave this hidden for now; we just need it for tests */
    { "append-user-agent", 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &opt_append_user_agent, "Append string to user agent", NULL },
    { NULL }
@@ -313,6 +317,9 @@ ostree_builtin_pull (int argc, char **argv, OstreeCommandInvocation *invocation,
     if (opt_timestamp_check)
       g_variant_builder_add (&builder, "{s@v}", "timestamp-check",
                              g_variant_new_variant (g_variant_new_boolean (opt_timestamp_check)));
+    if (opt_timestamp_check_from_rev)
+      g_variant_builder_add (&builder, "{s@v}", "timestamp-check-from-rev",
+                             g_variant_new_variant (g_variant_new_string (opt_timestamp_check_from_rev)));
 
     if (override_commit_ids)
       g_variant_builder_add (&builder, "{s@v}", "override-commit-ids",
@@ -320,7 +327,9 @@ ostree_builtin_pull (int argc, char **argv, OstreeCommandInvocation *invocation,
     if (opt_localcache_repos)
       g_variant_builder_add (&builder, "{s@v}", "localcache-repos",
                              g_variant_new_variant (g_variant_new_strv ((const char*const*)opt_localcache_repos, -1)));
-
+    if (opt_per_object_fsync)
+      g_variant_builder_add (&builder, "{s@v}", "per-object-fsync",
+                             g_variant_new_variant (g_variant_new_boolean (TRUE)));
     if (opt_http_headers)
       {
         GVariantBuilder hdr_builder;

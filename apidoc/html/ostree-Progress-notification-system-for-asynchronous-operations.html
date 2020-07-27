@@ -8,7 +8,7 @@
 <link rel="up" href="reference.html" title="API Reference">
 <link rel="prev" href="ostree-Root-partition-mount-point.html" title="Root partition mount point">
 <link rel="next" href="ostree-SELinux-policy-management.html" title="SELinux policy management">
-<meta name="generator" content="GTK-Doc V1.29 (XML mode)">
+<meta name="generator" content="GTK-Doc V1.32 (XML mode)">
 <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
@@ -35,8 +35,8 @@
 <a name="ostree-Progress-notification-system-for-asynchronous-operations.functions"></a><h2>Functions</h2>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
-<col width="150px" class="functions_return">
-<col class="functions_name">
+<col width="150px" class="functions_proto_type">
+<col class="functions_proto_name">
 </colgroup>
 <tbody>
 <tr>
@@ -158,8 +158,8 @@
 <a name="ostree-Progress-notification-system-for-asynchronous-operations.other"></a><h2>Types and Values</h2>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
 <colgroup>
-<col width="150px" class="name">
-<col class="description">
+<col width="150px" class="other_proto_type">
+<col class="other_proto_name">
 </colgroup>
 <tbody><tr>
 <td class="typedef_keyword">typedef</td>
@@ -298,17 +298,17 @@ function returns.</p>
 9
 10
 11</pre></td>
-        <td class="listing_code"><pre class="programlisting"><span class="usertype">guint32</span><span class="normal"> outstanding_fetches</span><span class="symbol">;</span>
-<span class="usertype">guint64</span><span class="normal"> bytes_received</span><span class="symbol">;</span>
-<span class="usertype">g_autofree</span><span class="normal"> </span><span class="usertype">gchar</span><span class="normal"> </span><span class="symbol">*</span><span class="normal">status </span><span class="symbol">=</span><span class="normal"> NULL</span><span class="symbol">;</span>
-<span class="function">g_autoptr</span><span class="symbol">(</span><span class="normal">GVariant</span><span class="symbol">)</span><span class="normal"> refs_variant </span><span class="symbol">=</span><span class="normal"> NULL</span><span class="symbol">;</span>
+        <td class="listing_code"><pre class="programlisting"><span class="n">guint32</span> <span class="n">outstanding_fetches</span><span class="p">;</span>
+<span class="n">guint64</span> <span class="n">bytes_received</span><span class="p">;</span>
+<span class="n">g_autofree</span> <span class="n">gchar</span> <span class="o">*</span><span class="n">status</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="n">g_autoptr</span><span class="p">(</span><span class="n">GVariant</span><span class="p">)</span> <span class="n">refs_variant</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
 
-<span class="function"><a href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-get">ostree_async_progress_get</a></span><span class="normal"> </span><span class="symbol">(</span><span class="normal">progress</span><span class="symbol">,</span>
-<span class="normal">                           </span><span class="string">"outstanding-fetches"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"u"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">outstanding_fetches</span><span class="symbol">,</span>
-<span class="normal">                           </span><span class="string">"bytes-received"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"t"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">bytes_received</span><span class="symbol">,</span>
-<span class="normal">                           </span><span class="string">"status"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"s"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">status</span><span class="symbol">,</span>
-<span class="normal">                           </span><span class="string">"refs"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"@a{ss}"</span><span class="symbol">,</span><span class="normal"> </span><span class="symbol">&amp;</span><span class="normal">refs_variant</span><span class="symbol">,</span>
-<span class="normal">                           NULL</span><span class="symbol">);</span></pre></td>
+<span class="n">ostree_async_progress_get</span> <span class="p">(</span><span class="n">progress</span><span class="p">,</span>
+                           <span class="s">&quot;outstanding-fetches&quot;</span><span class="p">,</span> <span class="s">&quot;u&quot;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">outstanding_fetches</span><span class="p">,</span>
+                           <span class="s">&quot;bytes-received&quot;</span><span class="p">,</span> <span class="s">&quot;t&quot;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bytes_received</span><span class="p">,</span>
+                           <span class="s">&quot;status&quot;</span><span class="p">,</span> <span class="s">&quot;s&quot;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">,</span>
+                           <span class="s">&quot;refs&quot;</span><span class="p">,</span> <span class="s">&quot;@a{ss}&quot;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">refs_variant</span><span class="p">,</span>
+                           <span class="nb">NULL</span><span class="p">);</span></pre></td>
       </tr>
     </tbody>
   </table>
@@ -452,15 +452,15 @@ parameters, so they may be floating.</p>
 7
 8
 9</pre></td>
-        <td class="listing_code"><pre class="programlisting"><span class="usertype">guint32</span><span class="normal"> outstanding_fetches </span><span class="symbol">=</span><span class="normal"> </span><span class="number">15</span><span class="symbol">;</span>
-<span class="usertype">guint64</span><span class="normal"> bytes_received </span><span class="symbol">=</span><span class="normal"> </span><span class="number">1000</span><span class="symbol">;</span>
+        <td class="listing_code"><pre class="programlisting"><span class="n">guint32</span> <span class="n">outstanding_fetches</span> <span class="o">=</span> <span class="mi">15</span><span class="p">;</span>
+<span class="n">guint64</span> <span class="n">bytes_received</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">;</span>
 
-<span class="function"><a href="ostree-Progress-notification-system-for-asynchronous-operations.html#ostree-async-progress-set">ostree_async_progress_set</a></span><span class="normal"> </span><span class="symbol">(</span><span class="normal">progress</span><span class="symbol">,</span>
-<span class="normal">                           </span><span class="string">"outstanding-fetches"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"u"</span><span class="symbol">,</span><span class="normal"> outstanding_fetches</span><span class="symbol">,</span>
-<span class="normal">                           </span><span class="string">"bytes-received"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"t"</span><span class="symbol">,</span><span class="normal"> bytes_received</span><span class="symbol">,</span>
-<span class="normal">                           </span><span class="string">"status"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"s"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"Updated status"</span><span class="symbol">,</span>
-<span class="normal">                           </span><span class="string">"refs"</span><span class="symbol">,</span><span class="normal"> </span><span class="string">"@a{ss}"</span><span class="symbol">,</span><span class="normal"> </span><span class="function">g_variant_new_parsed</span><span class="normal"> </span><span class="symbol">(</span><span class="string">"@a{ss} {}"</span><span class="symbol">),</span>
-<span class="normal">                           NULL</span><span class="symbol">);</span></pre></td>
+<span class="n">ostree_async_progress_set</span> <span class="p">(</span><span class="n">progress</span><span class="p">,</span>
+                           <span class="s">&quot;outstanding-fetches&quot;</span><span class="p">,</span> <span class="s">&quot;u&quot;</span><span class="p">,</span> <span class="n">outstanding_fetches</span><span class="p">,</span>
+                           <span class="s">&quot;bytes-received&quot;</span><span class="p">,</span> <span class="s">&quot;t&quot;</span><span class="p">,</span> <span class="n">bytes_received</span><span class="p">,</span>
+                           <span class="s">&quot;status&quot;</span><span class="p">,</span> <span class="s">&quot;s&quot;</span><span class="p">,</span> <span class="s">&quot;Updated status&quot;</span><span class="p">,</span>
+                           <span class="s">&quot;refs&quot;</span><span class="p">,</span> <span class="s">&quot;@a{ss}&quot;</span><span class="p">,</span> <span class="n">g_variant_new_parsed</span> <span class="p">(</span><span class="s">&quot;@a{ss} {}&quot;</span><span class="p">),</span>
+                           <span class="nb">NULL</span><span class="p">);</span></pre></td>
       </tr>
     </tbody>
   </table>
@@ -589,6 +589,6 @@ events will be queued.</p>
 </div>
 </div>
 <div class="footer">
-<hr>Generated by GTK-Doc V1.29</div>
+<hr>Generated by GTK-Doc V1.32</div>
 </body>
 </html>

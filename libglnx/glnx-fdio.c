@@ -37,6 +37,7 @@
 #include <glnx-errors.h>
 #include <glnx-xattrs.h>
 #include <glnx-backport-autoptr.h>
+#include <glnx-backports.h>
 #include <glnx-local-alloc.h>
 #include <glnx-missing.h>
 
@@ -825,7 +826,7 @@ glnx_regfile_copy_bytes (int fdf, int fdt, off_t max_bytes)
                   have_cfr = 0;
                   try_cfr = false;
                 }
-              else if (errno == EXDEV)
+              else if (G_IN_SET (errno, EXDEV, EOPNOTSUPP))
                 /* We won't try cfr again for this run, but let's be
                  * conservative and not mark it as available/unavailable until
                  * we know for sure.
@@ -938,7 +939,7 @@ glnx_regfile_copy_bytes (int fdf, int fdt, off_t max_bytes)
 gboolean
 glnx_file_copy_at (int                   src_dfd,
                    const char           *src_subpath,
-                   struct stat          *src_stbuf,
+                   const struct stat    *src_stbuf,
                    int                   dest_dfd,
                    const char           *dest_subpath,
                    GLnxFileCopyFlags     copyflags,

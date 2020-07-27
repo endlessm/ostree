@@ -28,9 +28,11 @@
 
 static char **opt_set;
 static gboolean opt_no_gpg_verify;
+static gboolean opt_no_sign_verify;
 static gboolean opt_if_not_exists;
 static gboolean opt_force;
 static char *opt_gpg_import;
+static char **opt_sign_verify;
 static char *opt_contenturl;
 static char *opt_collection_id;
 static char *opt_sysroot;
@@ -44,6 +46,8 @@ static char *opt_repo;
 static GOptionEntry option_entries[] = {
   { "set", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_set, "Set config option KEY=VALUE for remote", "KEY=VALUE" },
   { "no-gpg-verify", 0, 0, G_OPTION_ARG_NONE, &opt_no_gpg_verify, "Disable GPG verification", NULL },
+  { "no-sign-verify", 0, 0, G_OPTION_ARG_NONE, &opt_no_sign_verify, "Disable signature verification", NULL },
+  { "sign-verify", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_sign_verify, "Verify signatures using KEYTYPE=inline:PUBKEY or KEYTYPE=file:/path/to/key", "KEYTYPE=[inline|file]:PUBKEY" },
   { "if-not-exists", 0, 0, G_OPTION_ARG_NONE, &opt_if_not_exists, "Do nothing if the provided remote exists", NULL },
   { "force", 0, 0, G_OPTION_ARG_NONE, &opt_force, "Replace the provided remote if it exists", NULL },
   { "gpg-import", 0, 0, G_OPTION_ARG_FILENAME, &opt_gpg_import, "Import GPG key from FILE", "FILE" },
@@ -55,12 +59,49 @@ static GOptionEntry option_entries[] = {
   { NULL }
 };
 
+static char *
+add_verify_opt (GVariantBuilder *builder,
+                const char *keyspec,
+                GError **error)
+{
+  g_auto(GStrv) parts = g_strsplit (keyspec, "=", 2);
+  g_assert (parts && *parts);
+  const char *keytype = parts[0];
+  if (!parts[1])
+    return glnx_null_throw (error, "Failed to parse KEYTYPE=[inline|file]:DATA in %s", keyspec);
+
+  g_autoptr(OstreeSign) sign = ostree_sign_get_by_name (keytype, error);
+  if (!sign)
+    return NULL;
+
+  const char *rest = parts[1];
+  g_assert (!parts[2]);
+  g_auto(GStrv) keyparts = g_strsplit (rest, ":", 2);
+  g_assert (keyparts && *keyparts);
+  const char *keyref = keyparts[0];
+  g_assert (keyref);
+  g_autofree char *optname = NULL;
+  if (g_str_equal (keyref, "inline"))
+    optname = g_strdup_printf ("verification-%s-key", keytype);
+  else if (g_str_equal (keyref, "file"))
+    optname = g_strdup_printf ("verification-%s-file", keytype);
+  else
+    return glnx_null_throw (error, "Invalid key reference %s, expected inline|file", keyref);
+
+  g_assert (keyparts[1] && !keyparts[2]);
+  g_variant_builder_add (builder, "{s@v}",
+                         optname,
+                         g_variant_new_variant (g_variant_new_string (keyparts[1])));
+  return g_strdup (ostree_sign_get_name (sign));
+}
+
 gboolean
 ot_remote_builtin_add (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
   g_autoptr(GOptionContext) context = NULL;
   g_autoptr(OstreeSysroot) sysroot = NULL;
   g_autoptr(OstreeRepo) repo = NULL;
+  g_autoptr(GString) sign_verify = NULL;
   const char *remote_name;
   const char *remote_url;
   char **iter;
@@ -134,11 +175,42 @@ ot_remote_builtin_add (int argc, char **argv, OstreeCommandInvocation *invocatio
     }
 
 #ifndef OSTREE_DISABLE_GPGME
-  if (opt_no_gpg_verify)
+  /* No signature verification implies no verification for GPG signature as well */
+  if (opt_no_gpg_verify || opt_no_sign_verify)
     g_variant_builder_add (optbuilder, "{s@v}",
                            "gpg-verify",
                            g_variant_new_variant (g_variant_new_boolean (FALSE)));
 #endif /* OSTREE_DISABLE_GPGME */
+
+  if (opt_no_sign_verify)
+    {
+      if (opt_sign_verify)
+        return glnx_throw (error, "Cannot specify both --sign-verify and --no-sign-verify");
+      g_variant_builder_add (optbuilder, "{s@v}",
+                            "sign-verify",
+                            g_variant_new_variant (g_variant_new_boolean (FALSE)));
+    }
+
+  for (char **iter = opt_sign_verify; iter && *iter; iter++)
+    {
+      const char *keyspec = *iter;
+      g_autofree char *signname = add_verify_opt (optbuilder, keyspec, error);
+      if (!signname)
+        return FALSE;
+      if (!sign_verify)
+        {
+          sign_verify = g_string_new (signname);
+        }
+      else
+        {
+          g_string_append_c (sign_verify, ',');
+          g_string_append (sign_verify, signname);
+        }
+    }
+  if (sign_verify != NULL)
+    g_variant_builder_add (optbuilder, "{s@v}",
+                          "sign-verify",
+                          g_variant_new_variant (g_variant_new_string (sign_verify->str)));
 
   if (opt_collection_id != NULL)
     g_variant_builder_add (optbuilder, "{s@v}", "collection-id",

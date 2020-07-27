@@ -38,13 +38,17 @@ G_BEGIN_DECLS
 #define _OSTREE_MAX_OUTSTANDING_FETCHER_REQUESTS 8
 #define _OSTREE_MAX_OUTSTANDING_DELTAPART_REQUESTS 2
 
-/* In most cases, writing to disk should be much faster than
- * fetching from the network, so we shouldn't actually hit
- * this. But if using pipelining and e.g. pulling over LAN
- * (or writing to slow media), we can have a runaway
- * situation towards EMFILE.
+/* We want some parallelism with disk writes, but we also
+ * want to avoid starting tens or hundreds of threads
+ * (via GTask) all writing to disk.  Eventually we may
+ * use io_uring which handles backpressure correctly.
+ * Also, in "immediate fsync" mode, this helps provide
+ * much more backpressure, helping our I/O patterns
+ * be nicer for any concurrent processes, such as etcd
+ * or other databases.
+ * https://github.com/openshift/machine-config-operator/issues/1897
  * */
-#define _OSTREE_MAX_OUTSTANDING_WRITE_REQUESTS 16
+#define _OSTREE_MAX_OUTSTANDING_WRITE_REQUESTS 3
 
 /* Well-known keys for the additional metadata field in a summary file. */
 #define OSTREE_SUMMARY_LAST_MODIFIED "ostree.summary.last-modified"
@@ -76,6 +80,7 @@ struct OstreeRepoCommitModifier {
   GDestroyNotify xattr_destroy;
   gpointer xattr_user_data;
 
+  GLnxTmpDir sepolicy_tmpdir;
   OstreeSePolicy *sepolicy;
   GHashTable *devino_cache;
 };
@@ -146,6 +151,7 @@ struct OstreeRepo {
   GError *writable_error;
   gboolean in_transaction;
   gboolean disable_fsync;
+  gboolean per_object_fsync;
   gboolean disable_xattrs;
   guint zlib_compression_level;
   GHashTable *loose_object_devino_hash;
@@ -246,7 +252,7 @@ _ostree_repo_allocate_tmpdir (int           tmpdir_dfd,
                               GError      **error);
 
 gboolean
-_ostree_repo_is_locked_tmpdir (const char *filename);
+_ostree_repo_has_staging_prefix (const char *filename);
 
 gboolean
 _ostree_repo_try_lock_tmpdir (int            tmpdir_dfd,
@@ -373,9 +379,9 @@ _ostree_repo_verify_commit_internal (OstreeRepo    *self,
 #endif /* OSTREE_DISABLE_GPGME */
 
 typedef enum {
-  _OSTREE_REPO_IMPORT_FLAGS_NONE,
-  _OSTREE_REPO_IMPORT_FLAGS_TRUSTED,
-  _OSTREE_REPO_IMPORT_FLAGS_VERIFY_BAREUSERONLY,
+  _OSTREE_REPO_IMPORT_FLAGS_NONE = 0,
+  _OSTREE_REPO_IMPORT_FLAGS_TRUSTED = (1 << 0),
+  _OSTREE_REPO_IMPORT_FLAGS_VERIFY_BAREUSERONLY = (1 << 1),
 } OstreeRepoImportFlags;
 
 gboolean
@@ -500,5 +506,11 @@ gboolean
 _ostree_tmpf_fsverity (OstreeRepo *self,
                        GLnxTmpfile *tmpf,
                        GError    **error);
+
+gboolean
+_ostree_repo_verify_bindings (const char  *collection_id,
+                              const char  *ref_name,
+                              GVariant    *commit,
+                              GError     **error);
 
 G_END_DECLS
