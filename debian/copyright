@@ -64,7 +64,6 @@ Copyright:
 License: GPL-2+ with Autoconf exception
 
 Files:
- buildutil/gtk-doc.m4
  gtk-doc.make
 Copyright:
  2003 James Henstridge
