@@ -1,11 +1,11 @@
-ostree (2020.4-2) UNRELEASED; urgency=medium
+ostree (2020.4-2) unstable; urgency=medium
 
   * Depend on bsdextrautils, for hexdump (used during testing)
     - Add to Build-Depends
     - Add to ostree-tests Depends
     - Allow bsdmainutils (<< 12) as an alternative, for backports
 
- -- Simon McVittie <smcv@debian.org>  Mon, 10 Aug 2020 11:19:27 +0100
+ -- Simon McVittie <smcv@debian.org>  Mon, 10 Aug 2020 12:33:14 +0100
 
 ostree (2020.4-1) unstable; urgency=medium
 
