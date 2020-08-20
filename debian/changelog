@@ -1,3 +1,9 @@
+ostree (2020.5-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 21 Aug 2020 00:20:29 +0100
+
 ostree (2020.4-2) unstable; urgency=medium
 
   * Depend on bsdextrautils, for hexdump (used during testing)
