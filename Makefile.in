@@ -454,16 +454,15 @@ check_PROGRAMS = $(am__EXEEXT_12) $(am__EXEEXT_13) $(am__EXEEXT_14)
 @USE_GPGME_FALSE@	src/libostree/ostree-gpg-verify-result-dummy.c \
 @USE_GPGME_FALSE@	$(NULL)
 
-@BUILDOPT_IS_DEVEL_BUILD_TRUE@am__append_26 = $(top_srcdir)/src/libostree/libostree-devel.sym
 # Some change between rust-1.21.0-1.fc27 and rust-1.22.1-1.fc27.x86_64
-@ENABLE_RUST_TRUE@am__append_27 = -ldl
-@USE_LIBARCHIVE_TRUE@am__append_28 = $(OT_DEP_LIBARCHIVE_CFLAGS)
-@USE_LIBARCHIVE_TRUE@am__append_29 = $(OT_DEP_LIBARCHIVE_LIBS)
-@USE_AVAHI_TRUE@am__append_30 = $(OT_DEP_AVAHI_CFLAGS)
-@USE_AVAHI_TRUE@am__append_31 = $(OT_DEP_AVAHI_LIBS)
-@BUILDOPT_SYSTEMD_TRUE@am__append_32 = $(LIBSYSTEMD_CFLAGS)
-@BUILDOPT_SYSTEMD_TRUE@am__append_33 = $(LIBSYSTEMD_LIBS)
-@USE_CURL_OR_SOUP_TRUE@am__append_34 = \
+@ENABLE_RUST_TRUE@am__append_26 = -ldl
+@USE_LIBARCHIVE_TRUE@am__append_27 = $(OT_DEP_LIBARCHIVE_CFLAGS)
+@USE_LIBARCHIVE_TRUE@am__append_28 = $(OT_DEP_LIBARCHIVE_LIBS)
+@USE_AVAHI_TRUE@am__append_29 = $(OT_DEP_AVAHI_CFLAGS)
+@USE_AVAHI_TRUE@am__append_30 = $(OT_DEP_AVAHI_LIBS)
+@BUILDOPT_SYSTEMD_TRUE@am__append_31 = $(LIBSYSTEMD_CFLAGS)
+@BUILDOPT_SYSTEMD_TRUE@am__append_32 = $(LIBSYSTEMD_LIBS)
+@USE_CURL_OR_SOUP_TRUE@am__append_33 = \
 @USE_CURL_OR_SOUP_TRUE@	src/libostree/ostree-fetcher.h \
 @USE_CURL_OR_SOUP_TRUE@	src/libostree/ostree-fetcher-util.h \
 @USE_CURL_OR_SOUP_TRUE@	src/libostree/ostree-fetcher-util.c \
@@ -472,45 +471,45 @@ check_PROGRAMS = $(am__EXEEXT_12) $(am__EXEEXT_13) $(am__EXEEXT_14)
 @USE_CURL_OR_SOUP_TRUE@	src/libostree/ostree-metalink.c \
 @USE_CURL_OR_SOUP_TRUE@	$(NULL)
 
-@USE_CURL_TRUE@am__append_35 = src/libostree/ostree-fetcher-curl.c \
+@USE_CURL_TRUE@am__append_34 = src/libostree/ostree-fetcher-curl.c \
 @USE_CURL_TRUE@	src/libostree/ostree-soup-uri.h src/libostree/ostree-soup-uri.c \
 @USE_CURL_TRUE@  src/libostree/ostree-soup-form.c \
 @USE_CURL_TRUE@  $(NULL)
 
-@USE_CURL_TRUE@am__append_36 = $(OT_DEP_CURL_CFLAGS)
-@USE_CURL_TRUE@am__append_37 = $(OT_DEP_CURL_LIBS)
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_38 = src/libostree/ostree-fetcher-soup.c
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_39 = $(OT_INTERNAL_SOUP_CFLAGS)
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_40 = $(OT_INTERNAL_SOUP_LIBS)
-@USE_AVAHI_TRUE@@USE_CURL_FALSE@@USE_LIBSOUP_FALSE@am__append_41 = src/libostree/ostree-soup-uri.h \
+@USE_CURL_TRUE@am__append_35 = $(OT_DEP_CURL_CFLAGS)
+@USE_CURL_TRUE@am__append_36 = $(OT_DEP_CURL_LIBS)
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_37 = src/libostree/ostree-fetcher-soup.c
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_38 = $(OT_INTERNAL_SOUP_CFLAGS)
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_39 = $(OT_INTERNAL_SOUP_LIBS)
+@USE_AVAHI_TRUE@@USE_CURL_FALSE@@USE_LIBSOUP_FALSE@am__append_40 = src/libostree/ostree-soup-uri.h \
 @USE_AVAHI_TRUE@@USE_CURL_FALSE@@USE_LIBSOUP_FALSE@	src/libostree/ostree-soup-uri.c \
 @USE_AVAHI_TRUE@@USE_CURL_FALSE@@USE_LIBSOUP_FALSE@	src/libostree/ostree-soup-form.c \
 @USE_AVAHI_TRUE@@USE_CURL_FALSE@@USE_LIBSOUP_FALSE@	$(NULL)
 
-@USE_LIBMOUNT_TRUE@am__append_42 = $(OT_DEP_LIBMOUNT_CFLAGS)
-@USE_LIBMOUNT_TRUE@am__append_43 = $(OT_DEP_LIBMOUNT_LIBS)
-@USE_SELINUX_TRUE@am__append_44 = $(OT_DEP_SELINUX_CFLAGS)
-@USE_SELINUX_TRUE@am__append_45 = $(OT_DEP_SELINUX_LIBS)
-@USE_LIBSODIUM_TRUE@am__append_46 = $(OT_DEP_LIBSODIUM_CFLAGS)
-@USE_LIBSODIUM_TRUE@am__append_47 = $(OT_DEP_LIBSODIUM_LIBS)
+@USE_LIBMOUNT_TRUE@am__append_41 = $(OT_DEP_LIBMOUNT_CFLAGS)
+@USE_LIBMOUNT_TRUE@am__append_42 = $(OT_DEP_LIBMOUNT_LIBS)
+@USE_SELINUX_TRUE@am__append_43 = $(OT_DEP_SELINUX_CFLAGS)
+@USE_SELINUX_TRUE@am__append_44 = $(OT_DEP_SELINUX_LIBS)
+@USE_LIBSODIUM_TRUE@am__append_45 = $(OT_DEP_LIBSODIUM_CFLAGS)
+@USE_LIBSODIUM_TRUE@am__append_46 = $(OT_DEP_LIBSODIUM_LIBS)
 # When compiling this is set via config.h, but g-ir-scanner can't use that
-@BUILDOPT_INTROSPECTION_TRUE@@ENABLE_EXPERIMENTAL_API_TRUE@am__append_48 = -DOSTREE_ENABLE_EXPERIMENTAL_API=1
+@BUILDOPT_INTROSPECTION_TRUE@@ENABLE_EXPERIMENTAL_API_TRUE@am__append_47 = -DOSTREE_ENABLE_EXPERIMENTAL_API=1
+@BUILDOPT_INTROSPECTION_TRUE@am__append_48 = OSTree-1.0.gir
 @BUILDOPT_INTROSPECTION_TRUE@am__append_49 = OSTree-1.0.gir
-@BUILDOPT_INTROSPECTION_TRUE@am__append_50 = OSTree-1.0.gir
-@BUILDOPT_INTROSPECTION_TRUE@am__append_51 = OSTree-1.0.typelib
-@BUILDOPT_INTROSPECTION_TRUE@am__append_52 = $(gir_DATA) $(typelib_DATA)
-@ENABLE_EXPERIMENTAL_API_TRUE@am__append_53 = \
+@BUILDOPT_INTROSPECTION_TRUE@am__append_50 = OSTree-1.0.typelib
+@BUILDOPT_INTROSPECTION_TRUE@am__append_51 = $(gir_DATA) $(typelib_DATA)
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_52 = \
 @ENABLE_EXPERIMENTAL_API_TRUE@	$(NULL)
 
-@USE_GPGME_TRUE@am__append_54 = \
+@USE_GPGME_TRUE@am__append_53 = \
 @USE_GPGME_TRUE@	src/ostree/ot-builtin-gpg-sign.c \
 @USE_GPGME_TRUE@	$(NULL)
 
-@USE_GPGME_TRUE@am__append_55 = \
+@USE_GPGME_TRUE@am__append_54 = \
 @USE_GPGME_TRUE@	src/ostree/ot-remote-builtin-gpg-import.c \
 @USE_GPGME_TRUE@	$(NULL)
 
-@USE_CURL_OR_SOUP_TRUE@am__append_56 = src/ostree/ot-remote-builtin-add-cookie.c \
+@USE_CURL_OR_SOUP_TRUE@am__append_55 = src/ostree/ot-remote-builtin-add-cookie.c \
 @USE_CURL_OR_SOUP_TRUE@	src/ostree/ot-remote-builtin-delete-cookie.c \
 @USE_CURL_OR_SOUP_TRUE@	src/ostree/ot-remote-builtin-list-cookies.c \
 @USE_CURL_OR_SOUP_TRUE@	src/ostree/ot-remote-cookie-util.h \
@@ -518,20 +517,20 @@ check_PROGRAMS = $(am__EXEEXT_12) $(am__EXEEXT_13) $(am__EXEEXT_14)
 @USE_CURL_OR_SOUP_TRUE@	$(NULL) src/ostree/ot-builtin-pull.c
 
 # Eventually once we stop things from using this, we should support disabling this
-@USE_LIBSOUP_TRUE@am__append_57 = src/ostree/ot-builtin-trivial-httpd.c
-@USE_LIBSOUP_TRUE@am__append_58 = ostree-trivial-httpd
+@USE_LIBSOUP_TRUE@am__append_56 = src/ostree/ot-builtin-trivial-httpd.c
+@USE_LIBSOUP_TRUE@am__append_57 = ostree-trivial-httpd
 
 # This is necessary for the cookie jar bits
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_59 = $(OT_INTERNAL_SOUP_CFLAGS)
-@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_60 = $(OT_INTERNAL_SOUP_LIBS)
-@USE_LIBARCHIVE_TRUE@am__append_61 = $(OT_DEP_LIBARCHIVE_CFLAGS)
-@USE_LIBARCHIVE_TRUE@am__append_62 = $(OT_DEP_LIBARCHIVE_LIBS)
-@USE_LIBSODIUM_TRUE@am__append_63 = $(OT_DEP_LIBSODIUM_CFLAGS)
-@USE_LIBSODIUM_TRUE@am__append_64 = $(OT_DEP_LIBSODIUM_LIBS)
-@BUILDOPT_SYSTEMD_TRUE@am__append_65 = ostree-remount
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_58 = $(OT_INTERNAL_SOUP_CFLAGS)
+@USE_CURL_FALSE@@USE_LIBSOUP_TRUE@am__append_59 = $(OT_INTERNAL_SOUP_LIBS)
+@USE_LIBARCHIVE_TRUE@am__append_60 = $(OT_DEP_LIBARCHIVE_CFLAGS)
+@USE_LIBARCHIVE_TRUE@am__append_61 = $(OT_DEP_LIBARCHIVE_LIBS)
+@USE_LIBSODIUM_TRUE@am__append_62 = $(OT_DEP_LIBSODIUM_CFLAGS)
+@USE_LIBSODIUM_TRUE@am__append_63 = $(OT_DEP_LIBSODIUM_LIBS)
+@BUILDOPT_SYSTEMD_TRUE@am__append_64 = ostree-remount
 # It is built anyway as a side-effect of having the symlink in tests/,
 # and if we declare it here, it gets cleaned up properly
-@BUILDOPT_SYSTEMD_FALSE@am__append_66 = ostree-remount
+@BUILDOPT_SYSTEMD_FALSE@am__append_65 = ostree-remount
 
 # ostree-prepare-root can be used as init in a system without a populated /lib.
 # To support this use case we need to link statically as we will be unable to
@@ -543,66 +542,66 @@ check_PROGRAMS = $(am__EXEEXT_12) $(am__EXEEXT_13) $(am__EXEEXT_14)
 # to get autotools to install this as an executable but without generating rules
 # to make it itself which we have specified manually.  See
 # https://lists.gnu.org/archive/html/help-gnu-utils/2007-01/msg00007.html
-@BUILDOPT_USE_STATIC_COMPILER_TRUE@am__append_67 = ostree-prepare-root
-@BUILDOPT_USE_STATIC_COMPILER_FALSE@am__append_68 = ostree-prepare-root
-@BUILDOPT_SYSTEMD_TRUE@am__append_69 = -DHAVE_SYSTEMD=1
+@BUILDOPT_USE_STATIC_COMPILER_TRUE@am__append_66 = ostree-prepare-root
+@BUILDOPT_USE_STATIC_COMPILER_FALSE@am__append_67 = ostree-prepare-root
+@BUILDOPT_SYSTEMD_TRUE@am__append_68 = -DHAVE_SYSTEMD=1
 
 # This is the "new mode" of using a generator for /var; see
 # https://github.com/ostreedev/ostree/issues/855
+@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_69 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_70 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
-@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_71 = -DHAVE_SYSTEMD_AND_LIBMOUNT=1
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@systemdsystemgenerator_PROGRAMS = ostree-system-generator$(EXEEXT)
-@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_72 = $(systemdsystemgenerator_PROGRAMS)
+@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_71 = $(systemdsystemgenerator_PROGRAMS)
 
 # Allow the distcheck install under $prefix test to pass
-@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_73 = --with-systemdsystemgeneratordir='$${libdir}/systemd/system-generators'
-@BUILDOPT_FUSE_TRUE@am__append_74 = rofiles-fuse
-@BUILDOPT_ASAN_TRUE@am__append_75 = OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
-@USE_GPGME_TRUE@am__append_76 = \
+@BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@am__append_72 = --with-systemdsystemgeneratordir='$${libdir}/systemd/system-generators'
+@BUILDOPT_FUSE_TRUE@am__append_73 = rofiles-fuse
+@BUILDOPT_ASAN_TRUE@am__append_74 = OT_SKIP_READDIR_RAND=1 G_SLICE=always-malloc
+@USE_GPGME_TRUE@am__append_75 = \
 @USE_GPGME_TRUE@	tests/test-remote-gpg-import.sh \
 @USE_GPGME_TRUE@	tests/test-gpg-signed-commit.sh \
 @USE_GPGME_TRUE@	tests/test-admin-gpg.sh \
 @USE_GPGME_TRUE@	$(NULL)
 
-@ENABLE_EXPERIMENTAL_API_TRUE@am__append_77 = $(experimental_test_scripts)
-@ENABLE_EXPERIMENTAL_API_FALSE@am__append_78 = $(experimental_test_scripts)
-@BUILDOPT_FUSE_TRUE@am__append_79 = tests/test-rofiles-fuse.sh
-@BUILDOPT_FUSE_TRUE@am__append_80 = tests/rofiles-fuse-symlink-stamp
-@BUILDOPT_FUSE_FALSE@am__append_81 = tests/test-rofiles-fuse.sh
-@USE_LIBSOUP_TRUE@am__append_82 = tests/test-remote-cookies.sh
-@BUILDOPT_GJS_TRUE@am__append_83 = $(js_tests) $(js_installed_tests)
-@BUILDOPT_GJS_FALSE@am__append_84 = $(js_tests)
-@BUILDOPT_GJS_FALSE@am__append_85 = $(js_installed_tests)
-@ENABLE_INSTALLED_TESTS_FALSE@am__append_86 = -rpath $(abs_builddir)
-@USE_GPGME_TRUE@am__append_87 = \
+@ENABLE_EXPERIMENTAL_API_TRUE@am__append_76 = $(experimental_test_scripts)
+@ENABLE_EXPERIMENTAL_API_FALSE@am__append_77 = $(experimental_test_scripts)
+@BUILDOPT_FUSE_TRUE@am__append_78 = tests/test-rofiles-fuse.sh
+@BUILDOPT_FUSE_TRUE@am__append_79 = tests/rofiles-fuse-symlink-stamp
+@BUILDOPT_FUSE_FALSE@am__append_80 = tests/test-rofiles-fuse.sh
+@USE_LIBSOUP_TRUE@am__append_81 = tests/test-remote-cookies.sh
+@BUILDOPT_GJS_TRUE@am__append_82 = $(js_tests) $(js_installed_tests)
+@BUILDOPT_GJS_FALSE@am__append_83 = $(js_tests)
+@BUILDOPT_GJS_FALSE@am__append_84 = $(js_installed_tests)
+@ENABLE_INSTALLED_TESTS_FALSE@am__append_85 = -rpath $(abs_builddir)
+@USE_GPGME_TRUE@am__append_86 = \
 @USE_GPGME_TRUE@	tests/test-gpg-verify-result \
 @USE_GPGME_TRUE@	$(NULL)
 
-@USE_AVAHI_TRUE@am__append_88 = tests/test-repo-finder-avahi
-@USE_LIBARCHIVE_TRUE@am__append_89 = tests/test-libarchive-import
-@USE_GPGME_TRUE@am__append_90 = \
+@USE_AVAHI_TRUE@am__append_87 = tests/test-repo-finder-avahi
+@USE_LIBARCHIVE_TRUE@am__append_88 = tests/test-libarchive-import
+@USE_GPGME_TRUE@am__append_89 = \
 @USE_GPGME_TRUE@	tests/gpg-verify-data/README.md \
 @USE_GPGME_TRUE@	$(NULL)
 
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_91 = $(_installed_or_uninstalled_test_scripts)
-@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_92 = $(_installed_or_uninstalled_test_programs)
-@ENABLE_INSTALLED_TESTS_TRUE@am__append_93 = install-installed-tests-extra
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_90 = $(_installed_or_uninstalled_test_scripts)
+@ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__append_91 = $(_installed_or_uninstalled_test_programs)
+@ENABLE_INSTALLED_TESTS_TRUE@am__append_92 = install-installed-tests-extra
 
 # Allow the distcheck install under $prefix test to pass
-@BUILDOPT_SYSTEMD_TRUE@am__append_94 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
+@BUILDOPT_SYSTEMD_TRUE@am__append_93 = --with-systemdsystemunitdir='$${libdir}/systemd/system'
 
 # We're using the system grub2-mkconfig generator
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_95 = src/boot/grub2/grub2-15_ostree
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_96 = install-grub2-config-hook
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_94 = src/boot/grub2/grub2-15_ostree
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_FALSE@am__append_95 = install-grub2-config-hook
 # We're using our internal generator
-@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_TRUE@am__append_97 = src/boot/grub2/ostree-grub-generator
-@ENABLE_MAN_TRUE@@USE_LIBSOUP_TRUE@am__append_98 = ostree-trivial-httpd.1
+@BUILDOPT_BUILTIN_GRUB2_MKCONFIG_TRUE@am__append_96 = src/boot/grub2/ostree-grub-generator
+@ENABLE_MAN_TRUE@@USE_LIBSOUP_TRUE@am__append_97 = ostree-trivial-httpd.1
 # We still want to distribute the source, even if we are not building it
-@ENABLE_MAN_TRUE@@USE_LIBSOUP_FALSE@am__append_99 = man/ostree-trivial-httpd.xml
-@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_100 = rofiles-fuse.1
-@ENABLE_MAN_TRUE@@USE_GPGME_TRUE@am__append_101 = ostree-gpg-sign.1
-@ENABLE_MAN_TRUE@am__append_102 = $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
-@ENABLE_MAN_TRUE@am__append_103 = \
+@ENABLE_MAN_TRUE@@USE_LIBSOUP_FALSE@am__append_98 = man/ostree-trivial-httpd.xml
+@BUILDOPT_FUSE_TRUE@@ENABLE_MAN_TRUE@am__append_99 = rofiles-fuse.1
+@ENABLE_MAN_TRUE@@USE_GPGME_TRUE@am__append_100 = ostree-gpg-sign.1
+@ENABLE_MAN_TRUE@am__append_101 = $(man1_MANS:.1=.xml) $(man5_MANS:.5=.xml)
+@ENABLE_MAN_TRUE@am__append_102 = \
 @ENABLE_MAN_TRUE@	$(man1_MANS) \
 @ENABLE_MAN_TRUE@	$(man5_MANS) \
 @ENABLE_MAN_TRUE@	$(NULL)
@@ -2079,8 +2078,8 @@ am__EXEEXT_25 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-signed-commit.sh tests/test-signed-pull.sh \
 	tests/test-pre-signed-pull.sh \
 	tests/test-signed-pull-summary.sh $(am__EXEEXT_2) \
-	$(am__EXEEXT_20) $(am__EXEEXT_22) $(am__append_79) \
-	$(am__append_82) $(am__EXEEXT_24)
+	$(am__EXEEXT_20) $(am__EXEEXT_22) $(am__append_78) \
+	$(am__append_81) $(am__EXEEXT_24)
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@am__EXEEXT_26 =  \
 @ENABLE_INSTALLED_TESTS_EXCLUSIVE_FALSE@	$(am__EXEEXT_25)
 am__EXEEXT_27 = $(am__EXEEXT_2) $(am__EXEEXT_26)
@@ -2383,21 +2382,21 @@ AM_CFLAGS = -std=gnu99 -fno-strict-aliasing $(WARN_CFLAGS)
 
 # Allow the distcheck install under $prefix test to pass
 AM_DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-man \
-	--disable-maintainer-mode $(NULL) $(am__append_73) \
-	$(am__append_94) \
+	--disable-maintainer-mode $(NULL) $(am__append_72) \
+	$(am__append_93) \
 	BASH_COMPLETIONSDIR='$${datadir}/bash-completion/completions'
 SUBDIRS = . $(am__append_14)
 NULL = 
 BUILT_SOURCES = $(nodist_libostree_1_la_SOURCES)
 MANPAGES = 
-CLEANFILES = $(am__append_13) $(BUILT_SOURCES) $(am__append_52) \
+CLEANFILES = $(am__append_13) $(BUILT_SOURCES) $(am__append_51) \
 	src/ostree/parse-datetime.c tests/libreaddir-rand.so \
 	tests/ostree-symlink-stamp \
 	tests/ostree-prepare-root-symlink-stamp \
 	tests/ostree-remount-symlink-stamp \
 	tests/rofiles-fuse-symlink-stamp tests/ostree \
 	tests/ostree-prepare-root tests/ostree-remount \
-	tests/rofiles-fuse $(am__append_103)
+	tests/rofiles-fuse $(am__append_102)
 EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	COPYING README.md $(am__append_15) libglnx/README.md \
 	libglnx/COPYING libglnx/libglnx.m4 $(NULL) \
@@ -2413,9 +2412,9 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/libostree/ostree-repo-deprecated.h \
 	src/libostree/ostree-version.h src/ostree/parse-datetime.y \
 	buildutil/tap-driver.sh buildutil/tap-test tests/glib.supp \
-	tests/ostree.supp $(NULL) $(am__append_78) $(am__append_81) \
-	$(am__append_84) tests/libtest.sh $(am__append_85) \
-	$(am__append_90) tests/libostreetest.h tests/libtest.sh \
+	tests/ostree.supp $(NULL) $(am__append_77) $(am__append_80) \
+	$(am__append_83) tests/libtest.sh $(am__append_84) \
+	$(am__append_89) tests/libostreetest.h tests/libtest.sh \
 	$(NULL) src/boot/dracut/module-setup.sh \
 	src/boot/dracut/ostree.conf src/boot/mkinitcpio/ostree \
 	src/boot/ostree-prepare-root.service \
@@ -2423,25 +2422,25 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/boot/ostree-remount.service \
 	src/boot/ostree-finalize-staged.service \
 	src/boot/grub2/grub2-15_ostree \
-	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_99) \
-	$(am__append_102)
+	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_98) \
+	$(am__append_101)
 bin_SCRIPTS = 
 lib_LTLIBRARIES = libostree-1.la
-pkglibexec_SCRIPTS = $(am__append_95)
+pkglibexec_SCRIPTS = $(am__append_94)
 noinst_LTLIBRARIES = $(am__append_1) libglnx.la libbsdiff.la \
 	libotutil.la $(am__append_18) libostreetest.la
 privlibdir = $(pkglibdir)
 privlib_LTLIBRARIES = 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = src/libostree/ostree-1.pc
-INTROSPECTION_GIRS = $(am__append_49)
+INTROSPECTION_GIRS = $(am__append_48)
 girdir = $(datadir)/gir-1.0
-gir_DATA = $(am__append_50)
+gir_DATA = $(am__append_49)
 typelibdir = $(libdir)/girepository-1.0
-typelib_DATA = $(am__append_51)
+typelib_DATA = $(am__append_50)
 gsettings_SCHEMAS = 
 ostree_bootdir = $(prefix)/lib/ostree
-ostree_boot_SCRIPTS = $(am__append_67) $(am__append_97)
+ostree_boot_SCRIPTS = $(am__append_66) $(am__append_96)
 
 # We should probably consider flipping the default for DEBUG.  Also,
 # include the builddir in $PATH so we find our just-built ostree
@@ -2458,7 +2457,7 @@ AM_TESTS_ENVIRONMENT = G_TEST_SRCDIR="$(abs_srcdir)" \
 	pwd)$${LD_LIBRARY_PATH:+:$${LD_LIBRARY_PATH}} PATH=$$(cd \
 	$(top_builddir)/tests && pwd):$${PATH} \
 	OSTREE_FEATURES="$(OSTREE_FEATURES)" PYTHONUNBUFFERED=1 \
-	$(NULL) $(am__append_75)
+	$(NULL) $(am__append_74)
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/buildutil/tap-driver.sh
 LOG_COMPILER = $(top_srcdir)/buildutil/tap-test
 installed_test_LTLIBRARIES = $(am__append_12)
@@ -2498,14 +2497,16 @@ all_test_ltlibs = $(test_ltlibraries) $(uninstalled_test_ltlibraries) $(installe
 # This initializes some more variables
 
 # This is a special facility to chain together hooks easily
-INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_93) \
-	$(am__append_96)
+INSTALL_DATA_HOOKS = install-mkdir-remotes-d-hook $(am__append_92) \
+	$(am__append_95)
 ALL_LOCAL_RULES = tests/libreaddir-rand.so
 shortened_sysconfdir = $$(echo "$(sysconfdir)" | sed -e 's|^$(prefix)||' -e 's|^/||')
 OSTREE_GITREV = $(shell cd $(srcdir) && if command -v git >/dev/null 2>&1 && test -d .git; then git describe --abbrev=42 --tags --always HEAD; fi)
 ACLOCAL_AMFLAGS = -I buildutil -I libglnx ${ACLOCAL_FLAGS}
+
+# Generated by coreos-assembler build-fast and kola
 GITIGNOREFILES = aclocal.m4 build-aux/ buildutil/*.m4 config.h.in \
-	gtk-doc.make $(am__append_72)
+	gtk-doc.make fastbuild-*.qcow2 _kola_temp/ $(am__append_71)
 OT_INTERNAL_GIO_UNIX_CFLAGS = $(OT_DEP_GIO_UNIX_CFLAGS)
 OT_INTERNAL_GIO_UNIX_LIBS = $(OT_DEP_GIO_UNIX_LIBS)
 OT_INTERNAL_SOUP_CFLAGS = $(OT_DEP_SOUP_CFLAGS)
@@ -2717,8 +2718,8 @@ libostree_1_la_SOURCES = src/libostree/ostree-async-progress.c \
 	src/libostree/ostree-kernel-args.c $(NULL) $(am__append_19) \
 	$(am__append_20) $(am__append_21) $(am__append_22) \
 	$(am__append_23) $(am__append_24) $(am__append_25) \
-	$(am__append_34) $(am__append_35) $(am__append_38) \
-	$(am__append_41) src/libostree/ostree-sign.c \
+	$(am__append_33) $(am__append_34) $(am__append_37) \
+	$(am__append_40) src/libostree/ostree-sign.c \
 	src/libostree/ostree-sign.h src/libostree/ostree-sign-dummy.c \
 	src/libostree/ostree-sign-dummy.h \
 	src/libostree/ostree-sign-ed25519.c \
@@ -2726,8 +2727,10 @@ libostree_1_la_SOURCES = src/libostree/ostree-async-progress.c \
 libostree_experimental_headers = \
 	$(NULL)
 
-symbol_files = $(top_srcdir)/src/libostree/libostree-released.sym \
-	$(am__append_26)
+symbol_files = $(top_srcdir)/src/libostree/libostree-released.sym
+#if BUILDOPT_IS_DEVEL_BUILD
+#symbol_files += $(top_srcdir)/src/libostree/libostree-devel.sym
+#endif
 # http://blog.jgc.org/2007/06/escaping-comma-and-space-in-gnu-make.html
 wl_versionscript_arg = -Wl,--version-script=
 libostree_1_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/bsdiff \
@@ -2737,17 +2740,17 @@ libostree_1_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/bsdiff \
 	$(OT_DEP_LZMA_CFLAGS) $(OT_DEP_ZLIB_CFLAGS) \
 	$(OT_DEP_CRYPTO_CFLAGS) -fvisibility=hidden \
 	'-D_OSTREE_PUBLIC=__attribute__((visibility("default"))) \
-	extern' $(am__append_28) $(am__append_30) $(am__append_32) \
-	$(am__append_36) $(am__append_39) $(am__append_42) \
-	$(am__append_44) $(am__append_46)
+	extern' $(am__append_27) $(am__append_29) $(am__append_31) \
+	$(am__append_35) $(am__append_38) $(am__append_41) \
+	$(am__append_43) $(am__append_45)
 libostree_1_la_LDFLAGS = -version-number 1:0:0 -Bsymbolic-functions $(addprefix $(wl_versionscript_arg),$(symbol_files))
 libostree_1_la_LIBADD = libotutil.la libglnx.la libbsdiff.la \
 	$(OT_INTERNAL_GIO_UNIX_LIBS) $(OT_INTERNAL_GPGME_LIBS) \
 	$(OT_DEP_LZMA_LIBS) $(OT_DEP_ZLIB_LIBS) $(OT_DEP_CRYPTO_LIBS) \
-	$(am__append_27) $(bupsplitpath) $(am__append_29) \
-	$(am__append_31) $(am__append_33) $(am__append_37) \
-	$(am__append_40) $(am__append_43) $(am__append_45) \
-	$(am__append_47)
+	$(am__append_26) $(bupsplitpath) $(am__append_28) \
+	$(am__append_30) $(am__append_32) $(am__append_36) \
+	$(am__append_39) $(am__append_42) $(am__append_44) \
+	$(am__append_46)
 EXTRA_libostree_1_la_DEPENDENCIES = $(symbol_files)
 
 # XXX: work around clang being passed -fstack-clash-protection which it doesn't understand
@@ -2757,7 +2760,7 @@ INTROSPECTION_SCANNER_ENV = CC=gcc
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_INCLUDES = Gio-2.0
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_CFLAGS =  \
 @BUILDOPT_INTROSPECTION_TRUE@	$(libostree_1_la_CFLAGS) \
-@BUILDOPT_INTROSPECTION_TRUE@	$(am__append_48)
+@BUILDOPT_INTROSPECTION_TRUE@	$(am__append_47)
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_LIBS = libostree-1.la
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_SCANNERFLAGS = --warn-all --identifier-prefix=Ostree --symbol-prefix=ostree $(GI_SCANNERFLAGS)
 @BUILDOPT_INTROSPECTION_TRUE@OSTree_1_0_gir_FILES = $(libostreeinclude_HEADERS) $(filter-out %-private.h %/ostree-soup-uri.h $(libostree_experimental_headers),$(libostree_1_la_SOURCES))
@@ -2786,8 +2789,8 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-builtin-static-delta.c src/ostree/ot-main.h \
 	src/ostree/ot-main.c src/ostree/ot-dump.h src/ostree/ot-dump.c \
 	src/ostree/ot-editor.c src/ostree/ot-editor.h \
-	src/ostree/parse-datetime.h $(NULL) $(am__append_53) \
-	$(am__append_54) src/ostree/ot-admin-builtin-init-fs.c \
+	src/ostree/parse-datetime.h $(NULL) $(am__append_52) \
+	$(am__append_53) src/ostree/ot-admin-builtin-init-fs.c \
 	src/ostree/ot-admin-builtin-diff.c \
 	src/ostree/ot-admin-builtin-deploy.c \
 	src/ostree/ot-admin-builtin-finalize-staged.c \
@@ -2815,7 +2818,7 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-remote-builtin-show-url.c \
 	src/ostree/ot-remote-builtin-refs.c \
 	src/ostree/ot-remote-builtin-summary.c $(NULL) \
-	$(am__append_55) $(am__append_56) $(am__append_57)
+	$(am__append_54) $(am__append_55) $(am__append_56)
 nodist_ostree_SOURCES = \
 	src/ostree/parse-datetime.c \
 	$(NULL)
@@ -2827,11 +2830,11 @@ ostree_bin_shared_cflags = $(AM_CFLAGS) -I$(srcdir)/src/libotutil -I$(srcdir)/sr
 ostree_bin_shared_ldadd = $(AM_LDFLAGS) libglnx.la libotutil.la libostree-1.la \
 	$(OT_INTERNAL_GIO_UNIX_LIBS)
 
-ostree_CFLAGS = $(ostree_bin_shared_cflags) $(am__append_59) \
-	$(am__append_61) $(am__append_63)
+ostree_CFLAGS = $(ostree_bin_shared_cflags) $(am__append_58) \
+	$(am__append_60) $(am__append_62)
 ostree_LDADD = $(ostree_bin_shared_ldadd) libbsdiff.la \
-	$(LIBSYSTEMD_LIBS) $(am__append_60) $(am__append_62) \
-	$(am__append_64)
+	$(LIBSYSTEMD_LIBS) $(am__append_59) $(am__append_61) \
+	$(am__append_63)
 @USE_LIBSOUP_TRUE@ostree_trivial_httpd_SOURCES = src/ostree/ostree-trivial-httpd.c
 @USE_LIBSOUP_TRUE@ostree_trivial_httpd_CFLAGS = $(ostree_bin_shared_cflags) $(OT_INTERNAL_SOUP_CFLAGS)
 @USE_LIBSOUP_TRUE@ostree_trivial_httpd_LDADD = $(ostree_bin_shared_ldadd) $(OT_INTERNAL_SOUP_LIBS)
@@ -2840,8 +2843,8 @@ ostree_prepare_root_SOURCES = \
     src/switchroot/ostree-prepare-root.c \
     $(NULL)
 
-ostree_prepare_root_CPPFLAGS = $(AM_CPPFLAGS) $(am__append_69) \
-	$(am__append_70)
+ostree_prepare_root_CPPFLAGS = $(AM_CPPFLAGS) $(am__append_68) \
+	$(am__append_69)
 @BUILDOPT_USE_STATIC_COMPILER_FALSE@ostree_prepare_root_CFLAGS = $(AM_CFLAGS) -Isrc/switchroot
 ostree_remount_SOURCES = \
     src/switchroot/ostree-mount-util.h \
@@ -2850,7 +2853,7 @@ ostree_remount_SOURCES = \
 
 ostree_remount_CPPFLAGS = $(AM_CPPFLAGS) \
 	$(OT_INTERNAL_GIO_UNIX_CFLAGS) -Isrc/switchroot \
-	-I$(srcdir)/libglnx $(am__append_71)
+	-I$(srcdir)/libglnx $(am__append_70)
 ostree_remount_LDADD = $(AM_LDFLAGS) $(OT_INTERNAL_GIO_UNIX_LIBS) libglnx.la
 @BUILDOPT_SYSTEMD_TRUE@ostree_prepare_root_LDADD = $(AM_LDFLAGS) $(LIBSYSTEMD_LIBS)
 @BUILDOPT_SYSTEMD_AND_LIBMOUNT_TRUE@ostree_system_generator_SOURCES = src/switchroot/ostree-mount-util.h \
@@ -2867,7 +2870,7 @@ ostree_remount_LDADD = $(AM_LDFLAGS) $(OT_INTERNAL_GIO_UNIX_LIBS) libglnx.la
 @BUILDOPT_FUSE_TRUE@rofiles_fuse_LDADD = libglnx.la $(BUILDOPT_FUSE_LIBS) $(OT_INTERNAL_GIO_UNIX_LIBS) libostree-1.la
 uninstalled_test_data = tests/ostree-symlink-stamp \
 	tests/ostree-prepare-root-symlink-stamp \
-	tests/ostree-remount-symlink-stamp $(am__append_80)
+	tests/ostree-remount-symlink-stamp $(am__append_79)
 dist_uninstalled_test_scripts = tests/test-symbols.sh tests/coccinelle.sh
 
 # This logic implements ENABLE_INSTALLED_TESTS_EXCLUSIVE; see below.
@@ -2875,10 +2878,10 @@ dist_uninstalled_test_scripts = tests/test-symbols.sh tests/coccinelle.sh
 # tests *only* run installed, to avoid having to run them twice in CI.
 # This overrides the glib-tap.mk emphasis on doing both, if we'd
 # used e.g. `dist_test_scripts`.
-dist_test_scripts = $(NULL) $(am__append_91)
+dist_test_scripts = $(NULL) $(am__append_90)
 test_programs = tests/test-bloom tests/test-repo-finder-config \
-	tests/test-repo-finder-mount $(NULL) $(am__append_88) \
-	$(am__append_92)
+	tests/test-repo-finder-mount $(NULL) $(am__append_87) \
+	$(am__append_91)
 _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-basic-user.sh tests/test-basic-user-only.sh \
 	tests/test-basic-root.sh tests/test-pull-subpath.sh \
@@ -2931,9 +2934,9 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-pull-collections.sh tests/test-config.sh \
 	tests/test-signed-commit.sh tests/test-signed-pull.sh \
 	tests/test-pre-signed-pull.sh \
-	tests/test-signed-pull-summary.sh $(NULL) $(am__append_76) \
-	$(am__append_77) $(am__append_79) $(am__append_82) \
-	$(am__append_83)
+	tests/test-signed-pull-summary.sh $(NULL) $(am__append_75) \
+	$(am__append_76) $(am__append_78) $(am__append_81) \
+	$(am__append_82)
 experimental_test_scripts = \
 	$(NULL)
 
@@ -3012,7 +3015,7 @@ libreaddir_rand_la_LIBADD = \
 	$(NULL)
 
 libreaddir_rand_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version \
-	$(am__append_86)
+	$(am__append_85)
 _installed_or_uninstalled_test_programs = tests/test-varint \
 	tests/test-ot-unix-utils tests/test-bsdiff \
 	tests/test-mutable-tree tests/test-keyfile-utils \
@@ -3020,7 +3023,7 @@ _installed_or_uninstalled_test_programs = tests/test-varint \
 	tests/test-checksum tests/test-lzma tests/test-rollsum \
 	tests/test-basic-c tests/test-sysroot-c tests/test-pull-c \
 	tests/test-repo tests/test-include-ostree-h tests/test-kargs \
-	$(am__append_87) $(am__append_89)
+	$(am__append_86) $(am__append_88)
 common_tests_cflags = $(ostree_bin_shared_cflags) $(OT_INTERNAL_GIO_UNIX_CFLAGS) -I$(srcdir)/libglnx
 common_tests_ldadd = $(ostree_bin_shared_ldadd) $(OT_INTERNAL_GIO_UNIX_LIBS)
 libostreetest_la_SOURCES = tests/libostreetest.c tests/test-mock-gio.c tests/test-mock-gio.h
@@ -3141,8 +3144,8 @@ tests_test_lzma_LDADD = $(TESTS_LDADD) $(OT_DEP_LZMA_LIBS)
 @ENABLE_MAN_TRUE@	ostree-pull.1 ostree-refs.1 ostree-remote.1 \
 @ENABLE_MAN_TRUE@	ostree-reset.1 ostree-rev-parse.1 \
 @ENABLE_MAN_TRUE@	ostree-show.1 ostree-sign.1 ostree-summary.1 \
-@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_98) \
-@ENABLE_MAN_TRUE@	$(am__append_100) $(am__append_101)
+@ENABLE_MAN_TRUE@	ostree-static-delta.1 $(am__append_97) \
+@ENABLE_MAN_TRUE@	$(am__append_99) $(am__append_100)
 @ENABLE_MAN_TRUE@man5_files = ostree.repo.5 ostree.repo-config.5
 @ENABLE_MAN_TRUE@man1_MANS = $(addprefix man/,$(man1_files))
 @ENABLE_MAN_TRUE@man5_MANS = $(addprefix man/,$(man5_files))

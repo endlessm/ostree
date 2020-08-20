@@ -7455,37 +7455,37 @@ ostree_repo_pull_with_options (<em class="parameter"><code><a class="link" href=
 <p>Like <a class="link" href="ostree-OstreeRepo.html#ostree-repo-pull" title="ostree_repo_pull ()"><code class="function">ostree_repo_pull()</code></a>, but supports an extensible set of flags.
 The following are currently defined:</p>
 <div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; ">
-<li class="listitem"><p>refs (as): Array of string refs</p></li>
-<li class="listitem"><p>collection-refs (a(sss)): Array of (collection ID, ref name, checksum) tuples to pull;
+<li class="listitem"><p><code class="literal">refs</code> (<code class="literal">as</code>): Array of string refs</p></li>
+<li class="listitem"><p><code class="literal">collection-refs</code> (<code class="literal">a(sss)</code>): Array of (collection ID, ref name, checksum) tuples to pull;
 mutually exclusive with <code class="literal">refs</code> and <code class="literal">override-commit-ids</code>. Checksums may be the empty
 string to pull the latest commit for that ref</p></li>
-<li class="listitem"><p>flags (i): An instance of <a class="link" href="ostree-OstreeRepo.html#OstreeRepoPullFlags" title="enum OstreeRepoPullFlags"><span class="type">OstreeRepoPullFlags</span></a></p></li>
-<li class="listitem"><p>subdir (s): Pull just this subdirectory</p></li>
-<li class="listitem"><p>subdirs (as): Pull just these subdirectories</p></li>
-<li class="listitem"><p>override-remote-name (s): If local, add this remote to refspec</p></li>
-<li class="listitem"><p>gpg-verify (b): GPG verify commits</p></li>
-<li class="listitem"><p>gpg-verify-summary (b): GPG verify summary</p></li>
-<li class="listitem"><p>disable-sign-verify (b): Disable signapi verification of commits</p></li>
-<li class="listitem"><p>disable-sign-verify-summary (b): Disable signapi verification of the summary</p></li>
-<li class="listitem"><p>depth (i): How far in the history to traverse; default is 0, -1 means infinite</p></li>
-<li class="listitem"><p>per-object-fsync (b): Perform disk writes more slowly, avoiding a single large I/O sync</p></li>
-<li class="listitem"><p>disable-static-deltas (b): Do not use static deltas</p></li>
-<li class="listitem"><p>require-static-deltas (b): Require static deltas</p></li>
-<li class="listitem"><p>override-commit-ids (as): Array of specific commit IDs to fetch for refs</p></li>
-<li class="listitem"><p>timestamp-check (b): Verify commit timestamps are newer than current (when pulling via ref); Since: 2017.11</p></li>
-<li class="listitem"><p>timestamp-check-from-rev (s): Verify that all fetched commit timestamps are newer than timestamp of given rev; Since: 2020.4</p></li>
-<li class="listitem"><p>metadata-size-restriction (t): Restrict metadata objects to a maximum number of bytes; 0 to disable.  Since: 2018.9</p></li>
-<li class="listitem"><p>dry-run (b): Only print information on what will be downloaded (requires static deltas)</p></li>
-<li class="listitem"><p>override-url (s): Fetch objects from this URL if remote specifies no metalink in options</p></li>
-<li class="listitem"><p>inherit-transaction (b): Don't initiate, finish or abort a transaction, useful to do multiple pulls in one transaction.</p></li>
-<li class="listitem"><p>http-headers (a(ss)): Additional headers to add to all HTTP requests</p></li>
-<li class="listitem"><p>update-frequency (u): Frequency to call the async progress callback in milliseconds, if any; only values higher than 0 are valid</p></li>
-<li class="listitem"><p>localcache-repos (as): File paths for local repos to use as caches when doing remote fetches</p></li>
-<li class="listitem"><p>append-user-agent (s): Additional string to append to the user agent</p></li>
-<li class="listitem"><p>n-network-retries (u): Number of times to retry each download on receiving
+<li class="listitem"><p><code class="literal">flags</code> (<code class="literal">i</code>): An instance of <a class="link" href="ostree-OstreeRepo.html#OstreeRepoPullFlags" title="enum OstreeRepoPullFlags"><span class="type">OstreeRepoPullFlags</span></a></p></li>
+<li class="listitem"><p><code class="literal">subdir</code> (<code class="literal">s</code>): Pull just this subdirectory</p></li>
+<li class="listitem"><p><code class="literal">subdirs</code> (<code class="literal">as</code>): Pull just these subdirectories</p></li>
+<li class="listitem"><p><code class="literal">override-remote-name</code> (<code class="literal">s</code>): If local, add this remote to refspec</p></li>
+<li class="listitem"><p><code class="literal">gpg-verify</code> (<code class="literal">b</code>): GPG verify commits</p></li>
+<li class="listitem"><p><code class="literal">gpg-verify-summary</code> (<code class="literal">b</code>): GPG verify summary</p></li>
+<li class="listitem"><p><code class="literal">disable-sign-verify</code> (<code class="literal">b</code>): Disable signapi verification of commits</p></li>
+<li class="listitem"><p><code class="literal">disable-sign-verify-summary</code> (<code class="literal">b</code>): Disable signapi verification of the summary</p></li>
+<li class="listitem"><p><code class="literal">depth</code> (<code class="literal">i</code>): How far in the history to traverse; default is 0, -1 means infinite</p></li>
+<li class="listitem"><p><code class="literal">per-object-fsync</code> (<code class="literal">b</code>): Perform disk writes more slowly, avoiding a single large I/O sync</p></li>
+<li class="listitem"><p><code class="literal">disable-static-deltas</code> (<code class="literal">b</code>): Do not use static deltas</p></li>
+<li class="listitem"><p><code class="literal">require-static-deltas</code> (<code class="literal">b</code>): Require static deltas</p></li>
+<li class="listitem"><p><code class="literal">override-commit-ids</code> (<code class="literal">as</code>): Array of specific commit IDs to fetch for refs</p></li>
+<li class="listitem"><p><code class="literal">timestamp-check</code> (<code class="literal">b</code>): Verify commit timestamps are newer than current (when pulling via ref); Since: 2017.11</p></li>
+<li class="listitem"><p><code class="literal">timestamp-check-from-rev</code> (<code class="literal">s</code>): Verify that all fetched commit timestamps are newer than timestamp of given rev; Since: 2020.4</p></li>
+<li class="listitem"><p><code class="literal">metadata-size-restriction</code> (<code class="literal">t</code>): Restrict metadata objects to a maximum number of bytes; 0 to disable.  Since: 2018.9</p></li>
+<li class="listitem"><p><code class="literal">dry-run</code> (<code class="literal">b</code>): Only print information on what will be downloaded (requires static deltas)</p></li>
+<li class="listitem"><p><code class="literal">override-url</code> (<code class="literal">s</code>): Fetch objects from this URL if remote specifies no metalink in options</p></li>
+<li class="listitem"><p><code class="literal">inherit-transaction</code> (<code class="literal">b</code>): Don't initiate, finish or abort a transaction, useful to do multiple pulls in one transaction.</p></li>
+<li class="listitem"><p><code class="literal">http-headers</code> (<code class="literal">a(ss)</code>): Additional headers to add to all HTTP requests</p></li>
+<li class="listitem"><p><code class="literal">update-frequency</code> (<code class="literal">u</code>): Frequency to call the async progress callback in milliseconds, if any; only values higher than 0 are valid</p></li>
+<li class="listitem"><p><code class="literal">localcache-repos</code> (<code class="literal">as</code>): File paths for local repos to use as caches when doing remote fetches</p></li>
+<li class="listitem"><p><code class="literal">append-user-agent</code> (<code class="literal">s</code>): Additional string to append to the user agent</p></li>
+<li class="listitem"><p><code class="literal">n-network-retries</code> (<code class="literal">u</code>): Number of times to retry each download on receiving
 a transient network error, such as a socket timeout; default is 5, 0
 means return errors without retrying. Since: 2018.6</p></li>
-<li class="listitem"><p>ref-keyring-map (a(sss)): Array of (collection ID, ref name, keyring
+<li class="listitem"><p><code class="literal">ref-keyring-map</code> (<code class="literal">a(sss)</code>): Array of (collection ID, ref name, keyring
 remote name) tuples specifying which remote's keyring should be used when
 doing GPG verification of each collection-ref. This is useful to prevent a
 remote from serving malicious updates to refs which did not originate from
