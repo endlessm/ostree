@@ -1,6 +1,8 @@
 ostree (2020.5-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * ostree-tests: Depend on gjs on s390x again.
+    mozjs and gjs are believed to work fine on s390x now.
 
  -- Simon McVittie <smcv@debian.org>  Fri, 21 Aug 2020 00:20:29 +0100
 
