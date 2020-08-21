@@ -1,10 +1,9 @@
 # Testing ostree-boot on an existing system
 
-Start from an amd64 Debian system (9 or newer, as long as a backported
-ostree-boot package is available) - it will be switched to a Debian
-unstable (sid) OSTree-based installation as part of following these
-instructions. A VM is obviously most convenient, but bare metal should
-work equally.
+Start from an amd64 system running Debian 10 or later - it will be
+switched to a Debian unstable (sid) OSTree-based installation as part
+of following these instructions. A VM is obviously most convenient,
+but bare metal should work equally.
 
 The installation needs to satisfy the following requirements:
 
@@ -16,6 +15,11 @@ The installation needs to satisfy the following requirements:
 
 [ostree issue 1452]: https://github.com/ostreedev/ostree/issues/1452
 [old Fedora instructions]: https://pagure.io/workstation-ostree-config/blob/5b574d39c63b82b397df789eb4a75a5bdcc13dd0/f/README-install-inside.md
+
+Using a caching apt proxy is suggested; in these examples it's
+assumed to be http://192.168.122.1:3142 (apt-cacher-ng on the host system,
+as seen from a virtual machine in a default libvirt configuration).
+Remove or amend the `http_proxy` if your configuration does not match.
 
 We need the bootloader integration files on the non-OSTree system from
 which we are switching, as well as in the OSTree-based installation,
@@ -34,17 +38,10 @@ debian/ostree-boot-examples/ to the test machine, and run the builder
 script:
 
     # chmod +x ./deb-ostree-builder
-    # ./deb-ostree-builder ./ostree-1.conf sid-1 /ostree/repo
-    # ./deb-ostree-builder ./ostree-2.conf sid-2 /ostree/repo
-
-If ostree-boot is not available in the target suite in the Debian
-archive yet, then you will need to edit ostree-1.conf and ostree-2.conf to
-remove ostree-boot from the bootstrap, and instead put the ostree-boot,
-ostree and libostree-1-1 packages in /root/extra-packages, and use
-modified-deb-ostree-builder instead of deb-ostree-builder. This is a
-temporary hack to solve the chicken-and-egg situation of not adding
-ostree-boot to the Debian archive until it is testable, but not being
-able to test it until it is in the archive.
+    # http_proxy=http://192.168.122.1:3142 ./deb-ostree-builder \
+        ./ostree-1.conf sid-1 /ostree/repo
+    # http_proxy=http://192.168.122.1:3142 ./deb-ostree-builder \
+        ./ostree-2.conf sid-2 /ostree/repo
 
 Then we deploy the first of those commits:
 
