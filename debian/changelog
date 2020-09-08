@@ -1,10 +1,10 @@
-ostree (2020.6-1) UNRELEASED; urgency=medium
+ostree (2020.6-1) unstable; urgency=medium
 
   * New upstream release
   * ostree-boot-examples: Update for ostree-boot being in Debian 10
   * Update documentation: separate /boot should no longer be required
 
- -- Simon McVittie <smcv@debian.org>  Tue, 08 Sep 2020 10:55:39 +0100
+ -- Simon McVittie <smcv@debian.org>  Tue, 08 Sep 2020 11:00:40 +0100
 
 ostree (2020.5-1) unstable; urgency=medium
 
