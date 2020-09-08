@@ -5,6 +5,5 @@ This integration currently has some limitations:
   - the root filesystem must be one that dracut can mount without a root=
     command-line argument (an EFI partition with the GUID defined in
     the Discoverable Partitions specification[1])
-  - /boot must be a separate partition
 
 [1] https://www.freedesktop.org/wiki/Specifications/DiscoverablePartitionsSpec/

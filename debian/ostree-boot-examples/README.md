@@ -7,13 +7,14 @@ but bare metal should work equally.
 
 The installation needs to satisfy the following requirements:
 
-* It must have a separate /boot partition (this is a general libostree
-  limitation, see [ostree issue 1452][]).
 * The root partition must not be encrypted.
 * It must use GRUB and BIOS booting. Other bootloaders or EFI may require
   different bootloader setup steps; see [old Fedora instructions][]
+* If you start from Debian 10 or older, it must have a separate
+  /boot partition due to limitations in ostree 2020.5 and older.
+  If the initial installation was with ostree 2020.6 or later, this
+  is no longer required.
 
-[ostree issue 1452]: https://github.com/ostreedev/ostree/issues/1452
 [old Fedora instructions]: https://pagure.io/workstation-ostree-config/blob/5b574d39c63b82b397df789eb4a75a5bdcc13dd0/f/README-install-inside.md
 
 Using a caching apt proxy is suggested; in these examples it's
