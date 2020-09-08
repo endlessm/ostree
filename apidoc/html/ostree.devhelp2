@@ -172,7 +172,7 @@
     <keyword type="function" name="OstreeRepoCommitModifierXattrCallback ()" link="ostree-OstreeRepo.html#OstreeRepoCommitModifierXattrCallback"/>
     <keyword type="function" name="ostree_repo_commit_modifier_set_xattr_callback ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-xattr-callback"/>
     <keyword type="function" name="ostree_repo_commit_modifier_set_sepolicy ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-sepolicy"/>
-    <keyword type="function" name="ostree_repo_commit_modifier_set_sepolicy_from_commit ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-sepolicy-from-commit"/>
+    <keyword type="function" name="ostree_repo_commit_modifier_set_sepolicy_from_commit ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-sepolicy-from-commit" since="2020.4"/>
     <keyword type="function" name="ostree_repo_commit_modifier_set_devino_cache ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-set-devino-cache" since="2017.13"/>
     <keyword type="function" name="ostree_repo_commit_modifier_ref ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-ref"/>
     <keyword type="function" name="ostree_repo_commit_modifier_unref ()" link="ostree-OstreeRepo.html#ostree-repo-commit-modifier-unref"/>
@@ -378,7 +378,7 @@
     <keyword type="function" name="ostree_sign_metadata_key ()" link="ostree-Signature-management.html#ostree-sign-metadata-key" since="2020.2"/>
     <keyword type="function" name="ostree_sign_set_pk ()" link="ostree-Signature-management.html#ostree-sign-set-pk" since="2020.2"/>
     <keyword type="function" name="ostree_sign_set_sk ()" link="ostree-Signature-management.html#ostree-sign-set-sk" since="2020.2"/>
-    <keyword type="function" name="ostree_sign_summary ()" link="ostree-Signature-management.html#ostree-sign-summary"/>
+    <keyword type="function" name="ostree_sign_summary ()" link="ostree-Signature-management.html#ostree-sign-summary" since="2020.2"/>
     <keyword type="struct" name="OstreeSign" link="ostree-Signature-management.html#OstreeSign"/>
     <keyword type="function" name="ostree_bootconfig_parser_new ()" link="ostree-ostree-bootconfig-parser.html#ostree-bootconfig-parser-new"/>
     <keyword type="function" name="ostree_bootconfig_parser_clone ()" link="ostree-ostree-bootconfig-parser.html#ostree-bootconfig-parser-clone"/>

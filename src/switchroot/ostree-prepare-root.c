@@ -101,10 +101,9 @@ sysroot_is_configured_ro (const char *sysroot)
   bool ret = false;
   char *line = NULL;
   size_t len = 0;
-  ssize_t nread;
   /* Note getline() will reuse the previous buffer */
   bool in_sysroot = false;
-  while ((nread = getline (&line, &len, f)) != -1)
+  while (getline (&line, &len, f) != -1)
     {
       /* This is an awful hack to avoid depending on GLib in the
        * initramfs right now.
@@ -252,7 +251,7 @@ main(int argc, char *argv[])
        * sysroot, we still need a writable /etc.  And to avoid race conditions
        * we ensure it's writable in the initramfs, before we switchroot at all.
        */
-      if (mount ("/etc", "/etc", NULL, MS_BIND, NULL) < 0)
+      if (mount ("etc", "etc", NULL, MS_BIND, NULL) < 0)
         err (EXIT_FAILURE, "failed to make /etc a bind mount");
       /* Pass on the fact that we discovered a readonly sysroot to ostree-remount.service */
       int fd = open (_OSTREE_SYSROOT_READONLY_STAMP, O_WRONLY | O_CREAT | O_CLOEXEC, 0644);
