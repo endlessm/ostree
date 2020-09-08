@@ -1,6 +1,7 @@
 ostree (2020.6-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * ostree-boot-examples: Update for ostree-boot being in Debian 10
 
  -- Simon McVittie <smcv@debian.org>  Tue, 08 Sep 2020 10:55:39 +0100
 
