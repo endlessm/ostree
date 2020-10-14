@@ -199,7 +199,9 @@
     <keyword type="function" name="ostree_repo_list_commit_objects_starting_with ()" link="ostree-OstreeRepo.html#ostree-repo-list-commit-objects-starting-with"/>
     <keyword type="function" name="ostree_repo_list_static_delta_names ()" link="ostree-OstreeRepo.html#ostree-repo-list-static-delta-names"/>
     <keyword type="function" name="ostree_repo_static_delta_generate ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-generate"/>
+    <keyword type="function" name="ostree_repo_static_delta_execute_offline_with_signature ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-execute-offline-with-signature" since="2020.7"/>
     <keyword type="function" name="ostree_repo_static_delta_execute_offline ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-execute-offline"/>
+    <keyword type="function" name="ostree_repo_static_delta_verify_signature ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-verify-signature" since="2020.7"/>
     <keyword type="function" name="ostree_repo_traverse_new_reachable ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-new-reachable"/>
     <keyword type="function" name="ostree_repo_traverse_new_parents ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-new-parents" since="2018.5"/>
     <keyword type="function" name="ostree_repo_traverse_parents_get_commits ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-parents-get-commits" since="2018.5"/>
@@ -305,7 +307,10 @@
     <keyword type="function" name="ostree_sysroot_write_deployments_with_options ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-deployments-with-options" since="2017.4"/>
     <keyword type="function" name="ostree_sysroot_write_origin_file ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-write-origin-file"/>
     <keyword type="function" name="ostree_sysroot_stage_tree ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-stage-tree" since="2018.5"/>
-    <keyword type="function" name="ostree_sysroot_deploy_tree ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deploy-tree"/>
+    <keyword type="function" name="ostree_sysroot_stage_tree_with_options ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-stage-tree-with-options" since="2020.7"/>
+    <keyword type="function" name="ostree_sysroot_stage_overlay_initrd ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-stage-overlay-initrd" since="2020.7"/>
+    <keyword type="function" name="ostree_sysroot_deploy_tree ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deploy-tree" since="2018.5"/>
+    <keyword type="function" name="ostree_sysroot_deploy_tree_with_options ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deploy-tree-with-options" since="2020.7"/>
     <keyword type="function" name="ostree_sysroot_get_merge_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-merge-deployment"/>
     <keyword type="function" name="ostree_sysroot_query_deployments_for ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-query-deployments-for" since="2017.7"/>
     <keyword type="function" name="ostree_sysroot_origin_new_from_refspec ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-origin-new-from-refspec"/>
@@ -388,6 +393,8 @@
     <keyword type="function" name="ostree_bootconfig_parser_write_at ()" link="ostree-ostree-bootconfig-parser.html#ostree-bootconfig-parser-write-at"/>
     <keyword type="function" name="ostree_bootconfig_parser_set ()" link="ostree-ostree-bootconfig-parser.html#ostree-bootconfig-parser-set"/>
     <keyword type="function" name="ostree_bootconfig_parser_get ()" link="ostree-ostree-bootconfig-parser.html#ostree-bootconfig-parser-get"/>
+    <keyword type="function" name="ostree_bootconfig_parser_set_overlay_initrds ()" link="ostree-ostree-bootconfig-parser.html#ostree-bootconfig-parser-set-overlay-initrds" since="2020.7"/>
+    <keyword type="function" name="ostree_bootconfig_parser_get_overlay_initrds ()" link="ostree-ostree-bootconfig-parser.html#ostree-bootconfig-parser-get-overlay-initrds" since="2020.7"/>
     <keyword type="struct" name="OstreeBootconfigParser" link="ostree-ostree-bootconfig-parser.html#OstreeBootconfigParser"/>
     <keyword type="function" name="ostree_chain_input_stream_new ()" link="ostree-ostree-chain-input-stream.html#ostree-chain-input-stream-new"/>
     <keyword type="struct" name="struct OstreeChainInputStream" link="ostree-ostree-chain-input-stream.html#OstreeChainInputStream"/>
@@ -559,5 +566,7 @@
     <keyword type="member" name="OstreeDeployment.origin" link="ostree-ostree-deployment.html#OstreeDeployment.origin"/>
     <keyword type="member" name="OstreeDeployment.unlocked" link="ostree-ostree-deployment.html#OstreeDeployment.unlocked"/>
     <keyword type="member" name="OstreeDeployment.staged" link="ostree-ostree-deployment.html#OstreeDeployment.staged"/>
+    <keyword type="member" name="OstreeDeployment.overlay-initrds" link="ostree-ostree-deployment.html#OstreeDeployment.overlay-initrds"/>
+    <keyword type="member" name="OstreeDeployment.overlay-initrds-id" link="ostree-ostree-deployment.html#OstreeDeployment.overlay-initrds-id"/>
   </functions>
 </book>

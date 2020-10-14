@@ -3782,14 +3782,14 @@ load_metadata_internal (OstreeRepo       *self,
           g_autofree char *commitpartial_path = _ostree_get_commitpartial_path (sha256);
           *out_state = 0;
 
-          glnx_autofd int fd = -1;
-          if (!ot_openat_ignore_enoent (self->repo_dir_fd, commitpartial_path, &fd, error))
+          glnx_autofd int commitpartial_fd = -1;
+          if (!ot_openat_ignore_enoent (self->repo_dir_fd, commitpartial_path, &commitpartial_fd, error))
             return FALSE;
-          if (fd != -1)
+          if (commitpartial_fd != -1)
             {
               *out_state |= OSTREE_REPO_COMMIT_STATE_PARTIAL;
                char reason;
-               if (read (fd, &reason, 1) == 1)
+               if (read (commitpartial_fd, &reason, 1) == 1)
                  {
                    if (reason == 'f')
                      *out_state |= OSTREE_REPO_COMMIT_STATE_FSCK_PARTIAL;
@@ -5793,25 +5793,18 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
       {
         g_autofree char *from = NULL;
         g_autofree char *to = NULL;
+        GVariant *digest;
+
         if (!_ostree_parse_delta_name (delta_names->pdata[i], &from, &to, error))
           return FALSE;
 
-        g_autofree char *superblock = _ostree_get_relative_static_delta_superblock_path ((from && from[0]) ? from : NULL, to);
-        glnx_autofd int superblock_file_fd = -1;
-
-        if (!glnx_openat_rdonly (self->repo_dir_fd, superblock, TRUE, &superblock_file_fd, error))
+        digest = _ostree_repo_static_delta_superblock_digest (self,
+                                                              (from && from[0]) ? from : NULL,
+                                                              to, cancellable, error);
+        if (digest == NULL)
           return FALSE;
 
-        g_autoptr(GBytes) superblock_content = ot_fd_readall_or_mmap (superblock_file_fd, 0, error);
-        if (!superblock_content)
-          return FALSE;
-        g_auto(OtChecksum) hasher = { 0, };
-        ot_checksum_init (&hasher);
-        ot_checksum_update_bytes (&hasher, superblock_content);
-        guint8 digest[OSTREE_SHA256_DIGEST_LEN];
-        ot_checksum_get_digest (&hasher, digest, sizeof (digest));
-
-        g_variant_dict_insert_value (&deltas_builder, delta_names->pdata[i], ot_gvariant_new_bytearray (digest, sizeof (digest)));
+        g_variant_dict_insert_value (&deltas_builder, delta_names->pdata[i], digest);
       }
 
     if (delta_names->len > 0)
@@ -5821,6 +5814,24 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
   {
     g_variant_dict_insert_value (&additional_metadata_builder, OSTREE_SUMMARY_LAST_MODIFIED,
                                  g_variant_new_uint64 (GUINT64_TO_BE (g_get_real_time () / G_USEC_PER_SEC)));
+  }
+
+  {
+    g_autofree char *remote_mode_str = NULL;
+    if (!ot_keyfile_get_value_with_default (self->config, "core", "mode", "bare",
+                                            &remote_mode_str, error))
+      return FALSE;
+    g_variant_dict_insert_value (&additional_metadata_builder, OSTREE_SUMMARY_MODE,
+                                 g_variant_new_string (remote_mode_str));
+  }
+
+  {
+    gboolean tombstone_commits = FALSE;
+    if (!ot_keyfile_get_boolean_with_default (self->config, "core", "tombstone-commits", FALSE,
+                                              &tombstone_commits, error))
+      return FALSE;
+    g_variant_dict_insert_value (&additional_metadata_builder, OSTREE_SUMMARY_TOMBSTONE_COMMITS,
+                                 g_variant_new_boolean (tombstone_commits));
   }
 
   /* Add refs which have a collection specified, which could be in refs/mirrors,
@@ -5838,19 +5849,19 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
     collection_map = g_hash_table_new_full (g_str_hash, g_str_equal, NULL,
                                             (GDestroyNotify) g_hash_table_unref);
 
-    const OstreeCollectionRef *ref;
+    const OstreeCollectionRef *c_ref;
     const char *checksum;
-    while (g_hash_table_iter_next (&iter, (gpointer *) &ref, (gpointer *) &checksum))
+    while (g_hash_table_iter_next (&iter, (gpointer *) &c_ref, (gpointer *) &checksum))
       {
-        GHashTable *ref_map = g_hash_table_lookup (collection_map, ref->collection_id);
+        GHashTable *ref_map = g_hash_table_lookup (collection_map, c_ref->collection_id);
 
         if (ref_map == NULL)
           {
             ref_map = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
-            g_hash_table_insert (collection_map, ref->collection_id, ref_map);
+            g_hash_table_insert (collection_map, c_ref->collection_id, ref_map);
           }
 
-        g_hash_table_insert (ref_map, ref->ref_name, (gpointer) checksum);
+        g_hash_table_insert (ref_map, c_ref->ref_name, (gpointer) checksum);
       }
 
     g_autoptr(GVariantBuilder) collection_refs_builder = g_variant_builder_new (G_VARIANT_TYPE ("a{sa(s(taya{sv}))}"));

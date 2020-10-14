@@ -105,6 +105,7 @@ _installed_or_uninstalled_test_scripts = \
 	tests/test-admin-deploy-nomerge.sh \
 	tests/test-admin-deploy-none.sh \
 	tests/test-admin-deploy-bootid-gc.sh \
+	tests/test-osupdate-dtb.sh \
 	tests/test-admin-instutil-set-kargs.sh \
 	tests/test-admin-upgrade-not-backwards.sh \
 	tests/test-admin-pull-deploy-commit.sh \
@@ -114,6 +115,8 @@ _installed_or_uninstalled_test_scripts = \
 	tests/test-reset-nonlinear.sh \
 	tests/test-oldstyle-partial.sh \
 	tests/test-delta.sh \
+	tests/test-delta-sign.sh \
+	tests/test-delta-ed25519.sh \
 	tests/test-xattrs.sh \
 	tests/test-auto-summary.sh \
 	tests/test-prune.sh \

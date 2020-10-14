@@ -574,6 +574,8 @@ ostree_deployment_unlocked_state_to_string
   GKeyFile *origin;
   OstreeDeploymentUnlockedState unlocked;
   gboolean staged;
+  char **overlay_initrds;
+  char *overlay_initrds_id;
 } OstreeDeployment;
 </pre>
 <div class="refsect3">
@@ -633,6 +635,16 @@ ostree_deployment_unlocked_state_to_string
 <tr>
 <td class="struct_member_name"><p><span class="type">gboolean</span> <em class="structfield"><code><a name="OstreeDeployment.staged"></a>staged</code></em>;</p></td>
 <td class="struct_member_description"><p>TRUE iff this deployment is staged</p></td>
+<td class="struct_member_annotations"> </td>
+</tr>
+<tr>
+<td class="struct_member_name"><p><span class="type">char</span> **<em class="structfield"><code><a name="OstreeDeployment.overlay-initrds"></a>overlay_initrds</code></em>;</p></td>
+<td class="struct_member_description"><p>Checksums of staged additional initrds for this deployment</p></td>
+<td class="struct_member_annotations"> </td>
+</tr>
+<tr>
+<td class="struct_member_name"><p><span class="type">char</span> *<em class="structfield"><code><a name="OstreeDeployment.overlay-initrds-id"></a>overlay_initrds_id</code></em>;</p></td>
+<td class="struct_member_description"><p>Unique ID generated from initrd checksums; used to compare deployments</p></td>
 <td class="struct_member_annotations"> </td>
 </tr>
 </tbody>

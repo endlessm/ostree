@@ -914,7 +914,23 @@
 <span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-static-delta-execute-offline-with-signature" title="ostree_repo_static_delta_execute_offline_with_signature ()">ostree_repo_static_delta_execute_offline_with_signature</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-static-delta-execute-offline" title="ostree_repo_static_delta_execute_offline ()">ostree_repo_static_delta_execute_offline</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-static-delta-verify-signature" title="ostree_repo_static_delta_verify_signature ()">ostree_repo_static_delta_verify_signature</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -6472,6 +6488,8 @@ for input files</p></li>
 <li class="listitem"><p>verbose: b: Print diagnostic messages.  Default FALSE.</p></li>
 <li class="listitem"><p>endianness: b: Deltas use host byte order by default; this option allows choosing (G_BIG_ENDIAN or G_LITTLE_ENDIAN)</p></li>
 <li class="listitem"><p>filename: ay: Save delta superblock to this filename, and parts in the same directory.  Default saves to repository.</p></li>
+<li class="listitem"><p>sign-name: ay: Signature type to use.</p></li>
+<li class="listitem"><p>sign-key-ids: as: Array of keys used to sign delta superblock.</p></li>
 </ul></div>
 <div class="refsect3">
 <a name="ostree-repo-static-delta-generate.parameters"></a><h4>Parameters</h4>
@@ -6528,6 +6546,69 @@ for input files</p></li>
 </div>
 <hr>
 <div class="refsect2">
+<a name="ostree-repo-static-delta-execute-offline-with-signature"></a><h3>ostree_repo_static_delta_execute_offline_with_signature ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_static_delta_execute_offline_with_signature
+                               (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                <em class="parameter"><code><span class="type">GFile</span> *dir_or_file</code></em>,
+                                <em class="parameter"><code><a class="link" href="ostree-Signature-management.html#OstreeSign" title="OstreeSign"><span class="type">OstreeSign</span></a> *sign</code></em>,
+                                <em class="parameter"><code><span class="type">gboolean</span> skip_validation</code></em>,
+                                <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Given a directory representing an already-downloaded static delta
+on disk, apply it, generating a new commit.
+If sign is passed, the static delta signature is verified.
+If sign-verify-deltas configuration option is set and static delta is signed,
+signature verification will be mandatory before apply the static delta.
+The directory must be named with the form "FROM-TO", where both are
+checksums, and it must contain a file named "superblock", along with at least
+one part.</p>
+<div class="refsect3">
+<a name="ostree-repo-static-delta-execute-offline-with-signature.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>dir_or_file</p></td>
+<td class="parameter_description"><p>Path to a directory containing static delta data, or directly to the superblock</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>sign</p></td>
+<td class="parameter_description"><p>Signature engine used to check superblock</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>skip_validation</p></td>
+<td class="parameter_description"><p>If <code class="literal">TRUE</code>, assume data integrity</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2020.7</p>
+</div>
+<hr>
+<div class="refsect2">
 <a name="ostree-repo-static-delta-execute-offline"></a><h3>ostree_repo_static_delta_execute_offline ()</h3>
 <pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_repo_static_delta_execute_offline
@@ -6577,6 +6658,61 @@ must contain a file named "superblock", along with at least one part.</p>
 </tbody>
 </table></div>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-static-delta-verify-signature"></a><h3>ostree_repo_static_delta_verify_signature ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_static_delta_verify_signature
+                               (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                <em class="parameter"><code>const <span class="type">char</span> *delta_id</code></em>,
+                                <em class="parameter"><code><a class="link" href="ostree-Signature-management.html#OstreeSign" title="OstreeSign"><span class="type">OstreeSign</span></a> *sign</code></em>,
+                                <em class="parameter"><code><span class="type">char</span> **out_success_message</code></em>,
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Verify static delta file signature.</p>
+<div class="refsect3">
+<a name="ostree-repo-static-delta-verify-signature.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>delta_id</p></td>
+<td class="parameter_description"><p>delta path</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>sign</p></td>
+<td class="parameter_description"><p>Signature engine used to check superblock</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>out_success_message</p></td>
+<td class="parameter_description"><p>success message</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-static-delta-verify-signature.returns"></a><h4>Returns</h4>
+<p> TRUE if the signature of static delta file is valid using the
+signature engine provided, FALSE otherwise.</p>
+</div>
+<p class="since">Since: 2020.7</p>
 </div>
 <hr>
 <div class="refsect2">
