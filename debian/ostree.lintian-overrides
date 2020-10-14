@@ -1,4 +1,2 @@
 # ostree-admin-cleanup(1) documents `ostree admin cleanup`, etc.
 ostree: spare-manual-page usr/share/man/man1/ostree-*.1.gz
-# Documentation about the directory it's in
-ostree: package-contains-documentation-outside-usr-share-doc usr/share/ostree/trusted.gpg.d/README-gpg
