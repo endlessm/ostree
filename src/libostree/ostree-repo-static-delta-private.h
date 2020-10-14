@@ -104,6 +104,25 @@ G_BEGIN_DECLS
  */ 
 #define OSTREE_STATIC_DELTA_SUPERBLOCK_FORMAT "(a{sv}tayay" OSTREE_COMMIT_GVARIANT_STRING "aya" OSTREE_STATIC_DELTA_META_ENTRY_FORMAT "a" OSTREE_STATIC_DELTA_FALLBACK_FORMAT ")"
 
+/**
+ * OSTREE_STATIC_DELTA_SIGNED_FORMAT
+ *
+ *   magic: t magic number, 8 bytes for alignment
+ *   superblock: ay delta supeblock variant
+ *   signatures: a{sv}
+ *
+ * The signed static delta starts with the 'OSTSGNDT' magic number followed by
+ * the array of bytes containing the superblock used for the signature.
+ *
+ * Then, the signatures array contains the signatures of the superblock. A
+ * signature has the following form:
+ *  type: signature key
+ *  signature: variant depending on type used
+ */
+#define OSTREE_STATIC_DELTA_SIGNED_FORMAT "(taya{sv})"
+
+#define OSTREE_STATIC_DELTA_SIGNED_MAGIC  0x4F535453474E4454 /* OSTSGNDT */
+
 typedef enum {
   OSTREE_STATIC_DELTA_OPEN_FLAGS_NONE = 0,
   OSTREE_STATIC_DELTA_OPEN_FLAGS_SKIP_CHECKSUM = (1 << 0),
@@ -190,6 +209,12 @@ _ostree_repo_static_delta_query_exists (OstreeRepo                 *repo,
                                         gboolean                   *out_exists,
                                         GCancellable               *cancellable,
                                         GError                    **error);
+GVariant *
+_ostree_repo_static_delta_superblock_digest (OstreeRepo    *repo,
+                                             const char    *from,
+                                             const char    *to,
+                                             GCancellable  *cancellable,
+                                             GError       **error);
 
 gboolean
 _ostree_repo_static_delta_dump (OstreeRepo                 *repo,

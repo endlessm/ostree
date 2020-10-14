@@ -190,6 +190,7 @@ ostree_sysroot_init (OstreeSysroot *self)
     { "test-fifreeze", OSTREE_SYSROOT_DEBUG_TEST_FIFREEZE },
     { "no-xattrs", OSTREE_SYSROOT_DEBUG_NO_XATTRS },
     { "test-staged-path", OSTREE_SYSROOT_DEBUG_TEST_STAGED_PATH },
+    { "no-dtb", OSTREE_SYSROOT_DEBUG_TEST_NO_DTB },
   };
 
   self->debug_flags = g_parse_debug_string (g_getenv ("OSTREE_SYSROOT_DEBUG"),
@@ -814,6 +815,24 @@ list_deployments_process_one_boot_entry (OstreeSysroot               *self,
     return FALSE;
 
   ostree_deployment_set_bootconfig (deployment, config);
+  char **overlay_initrds = ostree_bootconfig_parser_get_overlay_initrds (config);
+  g_autoptr(GPtrArray) initrds_chksums = NULL;
+  for (char **it = overlay_initrds; it && *it; it++)
+    {
+      const char *basename = glnx_basename (*it);
+      if (strlen (basename) != (_OSTREE_SHA256_STRING_LEN + strlen (".img")))
+        return glnx_throw (error, "Malformed overlay initrd filename: %s", basename);
+
+      if (!initrds_chksums) /* lazy init */
+        initrds_chksums = g_ptr_array_new_full (g_strv_length (overlay_initrds), g_free);
+      g_ptr_array_add (initrds_chksums, g_strndup (basename, _OSTREE_SHA256_STRING_LEN));
+    }
+
+  if (initrds_chksums)
+    {
+      g_ptr_array_add (initrds_chksums, NULL);
+      _ostree_deployment_set_overlay_initrds (deployment, (char**)initrds_chksums->pdata);
+    }
 
   g_ptr_array_add (inout_deployments, g_object_ref (deployment));
   return TRUE;
@@ -966,8 +985,10 @@ _ostree_sysroot_reload_staged (OstreeSysroot *self,
       /* Parse it */
       g_autoptr(GVariant) target = NULL;
       g_autofree char **kargs = NULL;
+      g_autofree char **overlay_initrds = NULL;
       g_variant_dict_lookup (staged_deployment_dict, "target", "@a{sv}", &target);
       g_variant_dict_lookup (staged_deployment_dict, "kargs", "^a&s", &kargs);
+      g_variant_dict_lookup (staged_deployment_dict, "overlay-initrds", "^a&s", &overlay_initrds);
       if (target)
         {
           g_autoptr(OstreeDeployment) staged =
@@ -978,6 +999,8 @@ _ostree_sysroot_reload_staged (OstreeSysroot *self,
           _ostree_deployment_set_bootconfig_from_kargs (staged, kargs);
           if (!load_origin (self, staged, NULL, error))
             return FALSE;
+
+          _ostree_deployment_set_overlay_initrds (staged, overlay_initrds);
 
           self->staged_deployment = g_steal_pointer (&staged);
           self->staged_deployment_data = g_steal_pointer (&staged_deployment_data);
