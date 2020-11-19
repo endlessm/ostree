@@ -35,6 +35,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2020.1@LIBOSTREE_2020.1 2020.1
  LIBOSTREE_2020.4@LIBOSTREE_2020.4 2020.4
  LIBOSTREE_2020.7@LIBOSTREE_2020.7 2020.7
+ LIBOSTREE_2020.8@LIBOSTREE_2020.8 2020.8
  ostree_async_progress_copy_state@LIBOSTREE_2019.6 2019.6
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
@@ -284,6 +285,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_get_remote_list_option@LIBOSTREE_2016.5 2016.5
  ostree_repo_get_remote_option@LIBOSTREE_2016.5 2016.5
  ostree_repo_get_type@LIBOSTREE_2016.3 2016.4
+ ostree_repo_gpg_sign_data@LIBOSTREE_2020.8 2020.8
  ostree_repo_gpg_verify_data@LIBOSTREE_2016.6 2016.6
  ostree_repo_has_object@LIBOSTREE_2016.3 2016.4
  ostree_repo_hash@LIBOSTREE_2017.12 2017.12
@@ -297,6 +299,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_list_objects@LIBOSTREE_2016.3 2016.4
  ostree_repo_list_refs@LIBOSTREE_2016.3 2016.4
  ostree_repo_list_refs_ext@LIBOSTREE_2016.4 2016.4
+ ostree_repo_list_static_delta_indexes@LIBOSTREE_2020.8 2020.8
  ostree_repo_list_static_delta_names@LIBOSTREE_2016.3 2016.4
  ostree_repo_load_commit@LIBOSTREE_2016.3 2016.4
  ostree_repo_load_file@LIBOSTREE_2016.3 2016.4
@@ -354,6 +357,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_static_delta_execute_offline@LIBOSTREE_2016.3 2016.4
  ostree_repo_static_delta_execute_offline_with_signature@LIBOSTREE_2020.7 2020.7
  ostree_repo_static_delta_generate@LIBOSTREE_2016.3 2016.4
+ ostree_repo_static_delta_reindex@LIBOSTREE_2020.8 2020.8
  ostree_repo_static_delta_verify_signature@LIBOSTREE_2020.7 2020.7
  ostree_repo_transaction_set_collection_ref@LIBOSTREE_2018.6 2018.6
  ostree_repo_transaction_set_ref@LIBOSTREE_2016.3 2016.4

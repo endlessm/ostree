@@ -1,3 +1,10 @@
+ostree (2020.8-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+  * Update symbols file
+
+ -- Simon McVittie <smcv@debian.org>  Thu, 19 Nov 2020 14:46:44 +0000
+
 ostree (2020.7-1) unstable; urgency=medium
 
   * New upstream release
