@@ -57,6 +57,7 @@ G_BEGIN_DECLS
 #define OSTREE_SUMMARY_COLLECTION_MAP "ostree.summary.collection-map"
 #define OSTREE_SUMMARY_MODE "ostree.summary.mode"
 #define OSTREE_SUMMARY_TOMBSTONE_COMMITS "ostree.summary.tombstone-commits"
+#define OSTREE_SUMMARY_INDEXED_DELTAS "ostree.summary.indexed-deltas"
 
 #define _OSTREE_PAYLOAD_LINK_PREFIX "../"
 #define _OSTREE_PAYLOAD_LINK_PREFIX_LEN (sizeof (_OSTREE_PAYLOAD_LINK_PREFIX) - 1)
@@ -71,7 +72,7 @@ typedef enum {
 } OstreeRepoTestErrorFlags;
 
 struct OstreeRepoCommitModifier {
-  volatile gint refcount;
+  gint refcount;  /* atomic */
 
   OstreeRepoCommitModifierFlags flags;
   OstreeRepoCommitFilter filter;
@@ -108,6 +109,28 @@ typedef enum {
   _OSTREE_FEATURE_MAYBE,
   _OSTREE_FEATURE_YES,
 } _OstreeFeatureSupport;
+
+/* Possible values for the sysroot.bootloader configuration variable */
+typedef enum {
+  CFG_SYSROOT_BOOTLOADER_OPT_AUTO = 0,
+  CFG_SYSROOT_BOOTLOADER_OPT_NONE,
+  CFG_SYSROOT_BOOTLOADER_OPT_GRUB2,
+  CFG_SYSROOT_BOOTLOADER_OPT_SYSLINUX,
+  CFG_SYSROOT_BOOTLOADER_OPT_UBOOT,
+  CFG_SYSROOT_BOOTLOADER_OPT_ZIPL,
+  /* Non-exhaustive */
+} OstreeCfgSysrootBootloaderOpt;
+
+static const char* const CFG_SYSROOT_BOOTLOADER_OPTS_STR[] = {
+  /* This must be kept in the same order as the enum */
+  "auto",
+  "none",
+  "grub2",
+  "syslinux",
+  "uboot",
+  "zipl",
+  NULL,
+};
 
 /**
  * OstreeRepo:
@@ -192,7 +215,7 @@ struct OstreeRepo {
   guint64 payload_link_threshold;
   gint fs_support_reflink; /* The underlying filesystem has support for ioctl (FICLONE..) */
   gchar **repo_finders;
-  gchar *bootloader; /* Configure which bootloader to use. */
+  OstreeCfgSysrootBootloaderOpt bootloader; /* Configure which bootloader to use. */
 
   OstreeRepo *parent_repo;
 };
