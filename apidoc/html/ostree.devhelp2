@@ -198,6 +198,8 @@
     <keyword type="function" name="ostree_repo_list_objects ()" link="ostree-OstreeRepo.html#ostree-repo-list-objects"/>
     <keyword type="function" name="ostree_repo_list_commit_objects_starting_with ()" link="ostree-OstreeRepo.html#ostree-repo-list-commit-objects-starting-with"/>
     <keyword type="function" name="ostree_repo_list_static_delta_names ()" link="ostree-OstreeRepo.html#ostree-repo-list-static-delta-names"/>
+    <keyword type="function" name="ostree_repo_list_static_delta_indexes ()" link="ostree-OstreeRepo.html#ostree-repo-list-static-delta-indexes" since="2020.7"/>
+    <keyword type="function" name="ostree_repo_static_delta_reindex ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-reindex"/>
     <keyword type="function" name="ostree_repo_static_delta_generate ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-generate"/>
     <keyword type="function" name="ostree_repo_static_delta_execute_offline_with_signature ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-execute-offline-with-signature" since="2020.7"/>
     <keyword type="function" name="ostree_repo_static_delta_execute_offline ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-execute-offline"/>
@@ -226,6 +228,7 @@
     <keyword type="function" name="ostree_repo_sign_commit ()" link="ostree-OstreeRepo.html#ostree-repo-sign-commit"/>
     <keyword type="function" name="ostree_repo_append_gpg_signature ()" link="ostree-OstreeRepo.html#ostree-repo-append-gpg-signature"/>
     <keyword type="function" name="ostree_repo_add_gpg_signature_summary ()" link="ostree-OstreeRepo.html#ostree-repo-add-gpg-signature-summary"/>
+    <keyword type="function" name="ostree_repo_gpg_sign_data ()" link="ostree-OstreeRepo.html#ostree-repo-gpg-sign-data" since="2020.8"/>
     <keyword type="function" name="ostree_repo_gpg_verify_data ()" link="ostree-OstreeRepo.html#ostree-repo-gpg-verify-data" since="2016.6"/>
     <keyword type="function" name="ostree_repo_verify_commit ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit"/>
     <keyword type="function" name="ostree_repo_verify_commit_ext ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit-ext"/>

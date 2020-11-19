@@ -36,6 +36,7 @@
 #include "ostree-bootloader-uboot.h"
 #include "ostree-bootloader-syslinux.h"
 #include "ostree-bootloader-grub2.h"
+#include "ostree-bootloader-zipl.h"
 
 /**
  * SECTION:ostree-sysroot
@@ -256,9 +257,9 @@ ostree_sysroot_set_mount_namespace_in_use (OstreeSysroot  *self)
 
 /**
  * ostree_sysroot_get_path:
- * @self:
+ * @self: Sysroot
  *
- * Returns: (transfer none): Path to rootfs
+ * Returns: (transfer none) (not nullable): Path to rootfs
  */
 GFile *
 ostree_sysroot_get_path (OstreeSysroot  *self)
@@ -1185,7 +1186,7 @@ ostree_sysroot_get_subbootversion (OstreeSysroot   *self)
  * ostree_sysroot_get_booted_deployment:
  * @self: Sysroot
  *
- * Returns: (transfer none): The currently booted deployment, or %NULL if none
+ * Returns: (transfer none) (nullable): The currently booted deployment, or %NULL if none
  */
 OstreeDeployment *
 ostree_sysroot_get_booted_deployment (OstreeSysroot       *self)
@@ -1199,7 +1200,7 @@ ostree_sysroot_get_booted_deployment (OstreeSysroot       *self)
  * ostree_sysroot_get_staged_deployment:
  * @self: Sysroot
  *
- * Returns: (transfer none): The currently staged deployment, or %NULL if none
+ * Returns: (transfer none) (nullable): The currently staged deployment, or %NULL if none
  *
  * Since: 2018.5
  */
@@ -1237,7 +1238,7 @@ ostree_sysroot_get_deployments (OstreeSysroot  *self)
  * to access, it, you must either use fd-relative api such as openat(),
  * or concatenate it with the full ostree_sysroot_get_path().
  *
- * Returns: (transfer full): Path to deployment root directory, relative to sysroot
+ * Returns: (transfer full) (not nullable): Path to deployment root directory, relative to sysroot
  */
 char *
 ostree_sysroot_get_deployment_dirpath (OstreeSysroot    *self,
@@ -1312,7 +1313,7 @@ ostree_sysroot_get_repo (OstreeSysroot         *self,
  * returns a cached repository. Can only be called after ostree_sysroot_initialize()
  * or ostree_sysroot_load() has been invoked successfully.
  *
- * Returns: (transfer none): The OSTree repository in sysroot @self.
+ * Returns: (transfer none) (not nullable): The OSTree repository in sysroot @self.
  *
  * Since: 2017.7
  */
@@ -1324,10 +1325,38 @@ ostree_sysroot_repo (OstreeSysroot *self)
   return self->repo;
 }
 
+static OstreeBootloader*
+_ostree_sysroot_new_bootloader_by_type (
+    OstreeSysroot                 *sysroot,
+    OstreeCfgSysrootBootloaderOpt  bl_type)
+{
+  switch (bl_type)
+    {
+    case CFG_SYSROOT_BOOTLOADER_OPT_NONE:
+      /* No bootloader specified; do not query bootloaders to run. */
+      return NULL;
+    case CFG_SYSROOT_BOOTLOADER_OPT_GRUB2:
+      return (OstreeBootloader*) _ostree_bootloader_grub2_new (sysroot);
+    case CFG_SYSROOT_BOOTLOADER_OPT_SYSLINUX:
+      return (OstreeBootloader*) _ostree_bootloader_syslinux_new (sysroot);
+    case CFG_SYSROOT_BOOTLOADER_OPT_UBOOT:
+      return (OstreeBootloader*) _ostree_bootloader_uboot_new (sysroot);
+    case CFG_SYSROOT_BOOTLOADER_OPT_ZIPL:
+      /* We never consider zipl as active by default, so it can only be created
+       * if it's explicitly requested in the config */
+      return (OstreeBootloader*) _ostree_bootloader_zipl_new (sysroot);
+    case CFG_SYSROOT_BOOTLOADER_OPT_AUTO:
+      /* "auto" is handled by ostree_sysroot_query_bootloader so we should
+       * never get here: Fallthrough */
+    default:
+      g_assert_not_reached ();
+    }
+}
+
 /**
  * ostree_sysroot_query_bootloader:
  * @sysroot: Sysroot
- * @out_bootloader: (out) (transfer full) (allow-none): Return location for bootloader, may be %NULL
+ * @out_bootloader: (out) (transfer full) (optional) (nullable): Return location for bootloader, may be %NULL
  * @cancellable: Cancellable
  * @error: Error
  */
@@ -1337,32 +1366,38 @@ _ostree_sysroot_query_bootloader (OstreeSysroot     *sysroot,
                                   GCancellable      *cancellable,
                                   GError           **error)
 {
-  gboolean is_active;
-  g_autoptr(OstreeBootloader) ret_loader =
-    (OstreeBootloader*)_ostree_bootloader_syslinux_new (sysroot);
-  if (!_ostree_bootloader_query (ret_loader, &is_active,
-                                 cancellable, error))
-    return FALSE;
+  OstreeRepo *repo = ostree_sysroot_repo (sysroot);
+  OstreeCfgSysrootBootloaderOpt bootloader_config = repo->bootloader;
 
-  if (!is_active)
-    {
-      g_object_unref (ret_loader);
-      ret_loader = (OstreeBootloader*)_ostree_bootloader_grub2_new (sysroot);
-      if (!_ostree_bootloader_query (ret_loader, &is_active,
-                                     cancellable, error))
-        return FALSE;
-    }
-  if (!is_active)
-    {
-      g_object_unref (ret_loader);
-      ret_loader = (OstreeBootloader*)_ostree_bootloader_uboot_new (sysroot);
-      if (!_ostree_bootloader_query (ret_loader, &is_active, cancellable, error))
-        return FALSE;
-    }
-  if (!is_active)
-    g_clear_object (&ret_loader);
+  g_debug ("Using bootloader configuration: %s",
+      CFG_SYSROOT_BOOTLOADER_OPTS_STR[bootloader_config]);
 
-  ot_transfer_out_value(out_bootloader, &ret_loader);
+  g_autoptr(OstreeBootloader) ret_loader = NULL;
+  if (bootloader_config == CFG_SYSROOT_BOOTLOADER_OPT_AUTO)
+    {
+      OstreeCfgSysrootBootloaderOpt probe[] = {
+        CFG_SYSROOT_BOOTLOADER_OPT_SYSLINUX,
+        CFG_SYSROOT_BOOTLOADER_OPT_GRUB2,
+        CFG_SYSROOT_BOOTLOADER_OPT_UBOOT,
+      };
+      for (int i = 0; i < G_N_ELEMENTS (probe); i++)
+        {
+          g_autoptr(OstreeBootloader) bl = _ostree_sysroot_new_bootloader_by_type (
+              sysroot, probe[i]);
+          gboolean is_active = FALSE;
+          if (!_ostree_bootloader_query (bl, &is_active, cancellable, error))
+            return FALSE;
+          if (is_active)
+            {
+              ret_loader = g_steal_pointer (&bl);
+              break;
+            }
+        }
+    }
+  else
+    ret_loader = _ostree_sysroot_new_bootloader_by_type (sysroot, bootloader_config);
+
+  ot_transfer_out_value (out_bootloader, &ret_loader)
   return TRUE;
 }
 
@@ -1393,8 +1428,8 @@ _ostree_sysroot_join_lines (GPtrArray  *lines)
  * ostree_sysroot_query_deployments_for:
  * @self: Sysroot
  * @osname: (allow-none): "stateroot" name
- * @out_pending: (out) (allow-none) (transfer full): The pending deployment
- * @out_rollback: (out) (allow-none) (transfer full): The rollback deployment
+ * @out_pending: (out) (nullable) (optional) (transfer full): The pending deployment
+ * @out_rollback: (out) (nullable) (optional) (transfer full): The rollback deployment
  *
  * Find the pending and rollback deployments for @osname. Pass %NULL for @osname
  * to use the booted deployment's osname. By default, pending deployment is the
@@ -1454,7 +1489,7 @@ ostree_sysroot_query_deployments_for (OstreeSysroot     *self,
  * Find the deployment to use as a configuration merge source; this is
  * the first one in the current deployment list which matches osname.
  *
- * Returns: (transfer full): Configuration merge deployment
+ * Returns: (transfer full) (nullable): Configuration merge deployment
  */
 OstreeDeployment *
 ostree_sysroot_get_merge_deployment (OstreeSysroot     *self,
@@ -1485,7 +1520,7 @@ ostree_sysroot_get_merge_deployment (OstreeSysroot     *self,
  * @self: Sysroot
  * @refspec: A refspec
  *
- * Returns: (transfer full): A new config file which sets @refspec as an origin
+ * Returns: (transfer full) (not nullable): A new config file which sets @refspec as an origin
  */
 GKeyFile *
 ostree_sysroot_origin_new_from_refspec (OstreeSysroot  *self,

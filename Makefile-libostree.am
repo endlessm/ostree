@@ -68,6 +68,8 @@ libostree_1_la_SOURCES = \
 	src/libostree/ostree-cmdprivate.c \
 	src/libostree/ostree-core-private.h \
 	src/libostree/ostree-core.c \
+	src/libostree/ostree-date-utils.c \
+	src/libostree/ostree-date-utils-private.h \
 	src/libostree/ostree-dummy-enumtypes.c \
 	src/libostree/ostree-checksum-input-stream.c \
 	src/libostree/ostree-checksum-input-stream.h \
@@ -182,9 +184,12 @@ libostree_1_la_SOURCES += \
 endif # USE_GPGME
 
 symbol_files = $(top_srcdir)/src/libostree/libostree-released.sym
-if BUILDOPT_IS_DEVEL_BUILD
-symbol_files += $(top_srcdir)/src/libostree/libostree-devel.sym
-endif
+
+## Uncomment this include when adding new development symbols.
+#if BUILDOPT_IS_DEVEL_BUILD
+#symbol_files += $(top_srcdir)/src/libostree/libostree-devel.sym
+#endif
+
 # http://blog.jgc.org/2007/06/escaping-comma-and-space-in-gnu-make.html
 wl_versionscript_arg = -Wl,--version-script=
 EXTRA_DIST += \
