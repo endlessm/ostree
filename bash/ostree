@@ -847,6 +847,7 @@ _ostree_pull_local() {
         --gpg-verify-summary
         --require-static-deltas
         --untrusted
+        --disable-verify-bindings
     "
 
     local options_with_args="
@@ -902,6 +903,7 @@ _ostree_pull() {
         --untrusted
         --bareuseronly-files
         --dry-run
+        --disable-verify-bindings
     "
 
     local options_with_args="

@@ -108,6 +108,7 @@ typedef struct {
   gboolean          disable_static_deltas;
   gboolean          gpg_verify_summary;
   gboolean          has_tombstone_commits;
+  gboolean          disable_verify_bindings;
 
   GBytes           *summary_data;
   GBytes           *summary_data_sig;
@@ -1808,15 +1809,17 @@ scan_commit_object (OtPullData                 *pull_data,
   if (!ostree_repo_load_commit (pull_data->repo, checksum, &commit, &commitstate, error))
     return FALSE;
 
-  /* If ref is non-NULL then the commit we fetched was requested through the
-   * branch, otherwise we requested a commit checksum without specifying a branch.
-   */
-  g_autofree char *remote_collection_id = NULL;
-  remote_collection_id = get_remote_repo_collection_id (pull_data);
-  if (!_ostree_repo_verify_bindings (remote_collection_id,
-                                     (ref != NULL) ? ref->ref_name : NULL,
-                                     commit, error))
-    return glnx_prefix_error (error, "Commit %s", checksum);
+  if (!pull_data->disable_verify_bindings) {
+    /* If ref is non-NULL then the commit we fetched was requested through the
+     * branch, otherwise we requested a commit checksum without specifying a branch.
+     */
+    g_autofree char *remote_collection_id = NULL;
+    remote_collection_id = get_remote_repo_collection_id (pull_data);
+    if (!_ostree_repo_verify_bindings (remote_collection_id,
+                                       (ref != NULL) ? ref->ref_name : NULL,
+                                       commit, error))
+      return glnx_prefix_error (error, "Commit %s", checksum);
+  }
 
   if (pull_data->timestamp_check)
     {
@@ -3497,6 +3500,8 @@ initiate_request (OtPullData                 *pull_data,
  *   * n-network-retries (u): Number of times to retry each download on receiving
  *     a transient network error, such as a socket timeout; default is 5, 0
  *     means return errors without retrying
+ *   * `disable-verify-bindings` (`b`): Disable verification of commit bindings.
+ *     Since: 2020.9
  */
 static gboolean
 ostree_repo_pull_with_options_internal (OstreeRepo           *self,
@@ -3572,6 +3577,7 @@ ostree_repo_pull_with_options_internal (OstreeRepo           *self,
       (void) g_variant_lookup (options, "append-user-agent", "s", &pull_data->append_user_agent);
       opt_n_network_retries_set =
         g_variant_lookup (options, "n-network-retries", "u", &pull_data->n_network_retries);
+      (void) g_variant_lookup (options, "disable-verify-bindings", "b", &pull_data->disable_verify_bindings);
 
       if (pull_data->remote_refspec_name != NULL)
         pull_data->remote_name = g_strdup (pull_data->remote_refspec_name);
