@@ -119,7 +119,7 @@ typedef struct {
   GHashTable       *ref_keyring_map; /* Maps OstreeCollectionRef to keyring remote name */
   GPtrArray        *static_delta_superblocks;
   GHashTable       *expected_commit_sizes; /* Maps commit checksum to known size */
-  GHashTable       *commit_to_depth; /* Maps commit checksum maximum depth */
+  GHashTable       *commit_to_depth; /* Maps parent commit checksum maximum depth */
   GHashTable       *scanned_metadata; /* Maps object name to itself */
   GHashTable       *fetched_detached_metadata; /* Map<checksum,GVariant> */
   GHashTable       *requested_metadata; /* Maps object name to itself */
@@ -1200,6 +1200,18 @@ on_metadata_written (GObject           *object,
   check_outstanding_requests_handle_error (pull_data, &local_error);
 }
 
+static gboolean
+is_parent_commit (OtPullData *pull_data,
+                  const char *checksum)
+{
+  /* FIXME: Only parent commits are added to the commit_to_depth table,
+   * so if the checksum isn't in the table then a new commit chain is
+   * being started. However, if the desired commit was a parent in a
+   * previously followed chain, then this will be wrong.
+   */
+  return g_hash_table_contains (pull_data->commit_to_depth, checksum);
+}
+
 static void
 meta_fetch_on_complete (GObject           *object,
                         GAsyncResult      *result,
@@ -1245,7 +1257,8 @@ meta_fetch_on_complete (GObject           *object,
            * We may be pulling from a partial repository that ends in
            * a dangling parent reference. */
           else if (objtype == OSTREE_OBJECT_TYPE_COMMIT &&
-                   pull_data->maxdepth != 0)
+                   pull_data->maxdepth != 0 &&
+                   is_parent_commit (pull_data, checksum))
             {
               g_clear_error (&local_error);
               /* If the remote repo supports tombstone commits, check if the commit was intentionally
@@ -1801,8 +1814,6 @@ scan_commit_object (OtPullData                 *pull_data,
   else
     {
       depth = pull_data->maxdepth;
-      g_hash_table_insert (pull_data->commit_to_depth, g_strdup (checksum),
-                           GINT_TO_POINTER (depth));
     }
 
 #ifndef OSTREE_DISABLE_GPGME
@@ -1891,40 +1902,19 @@ scan_commit_object (OtPullData                 *pull_data,
         return FALSE;
     }
 
-  if (parent_csum_bytes != NULL && pull_data->maxdepth == -1)
-    {
-      queue_scan_one_metadata_object_c (pull_data, parent_csum_bytes,
-                                        OSTREE_OBJECT_TYPE_COMMIT, NULL,
-                                        recursion_depth + 1, NULL);
-    }
-  else if (parent_csum_bytes != NULL && depth > 0)
+  if (parent_csum_bytes != NULL && (pull_data->maxdepth == -1 || depth > 0))
     {
       char parent_checksum[OSTREE_SHA256_STRING_LEN+1];
-      gpointer parent_depthp;
-      int parent_depth;
-
       ostree_checksum_inplace_from_bytes (parent_csum_bytes, parent_checksum);
 
-      if (g_hash_table_lookup_extended (pull_data->commit_to_depth, parent_checksum,
-                                        NULL, &parent_depthp))
-        {
-          parent_depth = GPOINTER_TO_INT (parent_depthp);
-        }
-      else
-        {
-          parent_depth = depth - 1;
-        }
-
-      if (parent_depth >= 0)
-        {
-          g_hash_table_insert (pull_data->commit_to_depth, g_strdup (parent_checksum),
-                               GINT_TO_POINTER (parent_depth));
-          queue_scan_one_metadata_object_c (pull_data, parent_csum_bytes,
-                                            OSTREE_OBJECT_TYPE_COMMIT,
-                                            NULL,
-                                            recursion_depth + 1,
-                                            NULL);
-        }
+      int parent_depth = (depth > 0) ? depth - 1 : -1;
+      g_hash_table_insert (pull_data->commit_to_depth, g_strdup (parent_checksum),
+                           GINT_TO_POINTER (parent_depth));
+      queue_scan_one_metadata_object_c (pull_data, parent_csum_bytes,
+                                        OSTREE_OBJECT_TYPE_COMMIT,
+                                        NULL,
+                                        recursion_depth + 1,
+                                        NULL);
     }
 
   /* We only recurse to looking whether we need dirtree/dirmeta
