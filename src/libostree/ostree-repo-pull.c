@@ -108,6 +108,7 @@ typedef struct {
   gboolean          require_static_deltas;
   gboolean          disable_static_deltas;
   gboolean          has_tombstone_commits;
+  gboolean          disable_verify_bindings;
 
   GBytes           *summary_data;
   GBytes           *summary_data_sig;
@@ -1838,15 +1839,19 @@ scan_commit_object (OtPullData                 *pull_data,
   if (!ostree_repo_load_commit (pull_data->repo, checksum, &commit, &commitstate, error))
     return FALSE;
 
-  /* If ref is non-NULL then the commit we fetched was requested through the
-   * branch, otherwise we requested a commit checksum without specifying a branch.
-   */
-  g_autofree char *remote_collection_id = NULL;
-  remote_collection_id = get_remote_repo_collection_id (pull_data);
-  if (!_ostree_repo_verify_bindings (remote_collection_id,
-                                     (ref != NULL) ? ref->ref_name : NULL,
-                                     commit, error))
-    return glnx_prefix_error (error, "Commit %s", checksum);
+  if (!pull_data->disable_verify_bindings)
+    {
+      /* If ref is non-NULL then the commit we fetched was requested through
+       * the branch, otherwise we requested a commit checksum without
+       * specifying a branch.
+       */
+      g_autofree char *remote_collection_id = NULL;
+      remote_collection_id = get_remote_repo_collection_id (pull_data);
+      if (!_ostree_repo_verify_bindings (remote_collection_id,
+                                         (ref != NULL) ? ref->ref_name : NULL,
+                                         commit, error))
+        return glnx_prefix_error (error, "Commit %s", checksum);
+    }
 
   if (pull_data->timestamp_check)
     {
@@ -3557,6 +3562,8 @@ initiate_request (OtPullData                 *pull_data,
  *     specified, the `summary` will be downloaded from the remote. Since: 2020.5
  *   * `summary-sig-bytes` (`ay`): Contents of the `summary.sig` file. If this
  *     is specified, `summary-bytes` must also be specified. Since: 2020.5
+ *   * `disable-verify-bindings` (`b`): Disable verification of commit bindings.
+ *     Since: 2020.9
  */
 static gboolean
 ostree_repo_pull_with_options_internal (OstreeRepo           *self,
@@ -3644,6 +3651,7 @@ ostree_repo_pull_with_options_internal (OstreeRepo           *self,
 	g_variant_lookup (options, "ref-keyring-map", "a(sss)", &ref_keyring_map_iter);
       (void) g_variant_lookup (options, "summary-bytes", "@ay", &summary_bytes_v);
       (void) g_variant_lookup (options, "summary-sig-bytes", "@ay", &summary_sig_bytes_v);
+      (void) g_variant_lookup (options, "disable-verify-bindings", "b", &pull_data->disable_verify_bindings);
 
       if (pull_data->remote_refspec_name != NULL)
         pull_data->remote_name = g_strdup (pull_data->remote_refspec_name);
