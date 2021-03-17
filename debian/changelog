@@ -1,3 +1,15 @@
+ostree (2020.8-2endless1) master; urgency=medium
+
+  * Resync Endless changes (T31593):
+    - Add README.endless
+    - Remove grub.cfg handling in ostree-boot package
+    - Re-add the build dependency on gjs (except on s390x and sparc64). Debian
+      removed the build dependency but given we don't have any issues
+      installing gjs and can run the tests fine we can re-add it.
+    - Bring back trivial-httpd subcommand
+
+ -- Dan Nicholson <dbn@endlessos.org>  Wed, 17 Mar 2021 15:18:32 -0600
+
 ostree (2020.8-2) unstable; urgency=medium
 
   * d/p/test-pull-summary-sigs-Set-timestamps-to-serve-expected-f.patch:
