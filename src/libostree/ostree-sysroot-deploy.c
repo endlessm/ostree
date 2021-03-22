@@ -2166,11 +2166,18 @@ prepare_new_bootloader_link (OstreeSysroot  *sysroot,
   g_assert ((current_bootversion == 0 && new_bootversion == 1) ||
             (current_bootversion == 1 && new_bootversion == 0));
 
+  /* Check if we're on a FAT FS, and unable to symlink */
+  gboolean fat = FALSE;
+  glnx_autofd int dest_dir_dfd = -1;
+  if (glnx_opendirat (sysroot->sysroot_fd, "boot", TRUE, &dest_dir_dfd, error))
+    fat = fs_is_fat (dest_dir_dfd);
+
   /* This allows us to support both /boot on a seperate filesystem to / as well
    * as on the same filesystem. */
-  if (TEMP_FAILURE_RETRY (symlinkat (".", sysroot->sysroot_fd, "boot/boot")) < 0)
-    if (errno != EEXIST)
-      return glnx_throw_errno_prefix (error, "symlinkat");
+  if (!fat)
+    if (TEMP_FAILURE_RETRY (symlinkat (".", sysroot->sysroot_fd, "boot/boot")) < 0)
+      if (errno != EEXIST)
+        return glnx_throw_errno_prefix (error, "symlinkat");
 
   g_autofree char *new_target = g_strdup_printf ("loader.%d", new_bootversion);
 
