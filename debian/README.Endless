@@ -13,7 +13,6 @@ Ways in which the Endless package differs from Debian:
  1. We don’t use the full OSTree grub integration (etc/grub.d/15_ostree,
     usr/libexec/libostree/grub2-15_ostree). (See T18848.)
  2. We re-enable gjs build dependency as we have a way to install/test it
- 3. We bring back trivial-httpd subcommand
 
-These can be fixed at some point in the future (especially #2 and #3 if
-debian decides to re-add the support).
+These can be fixed at some point in the future (especially #2 if debian
+decides to re-add the support).
