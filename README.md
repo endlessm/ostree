@@ -28,7 +28,7 @@ version of
  - Binary history on the server side (and client)
  - Introspectable shared library API for build and deployment systems
  - Flexible support for multiple branches and repositories, supporting
-   projects like [flatpak](https://github.com/flatpak/flatpak) which
+   projects like [Flatpak](https://github.com/flatpak/flatpak) which
    use libostree for applications, rather than hosts.
 
 ## Documentation
@@ -38,11 +38,18 @@ For more information, see the [project documentation](docs/index.md) or the
 
 ## Operating systems and distributions using OSTree
 
+[Apertis](https://www.apertis.org/) uses libostree for their host system as
+well as Flatpak. See [update documentation](https://www.apertis.org/guides/ostree/) and
+[apertis-update-manager](https://gitlab.apertis.org/pkg/apertis-update-manager)
+
 [Endless OS](https://endlessos.com/) uses libostree for their host system as
-well as flatpak. See
+well as Flatpak. See
 their [eos-updater](https://github.com/endlessm/eos-updater)
 and [deb-ostree-builder](https://github.com/dbnicholson/deb-ostree-builder)
 projects.
+
+For Debian/apt, see also https://github.com/stb-tester/apt2ostree
+and the LWN article [Merkle trees and build systems](https://lwn.net/Articles/821367/).
 
 Fedora derivatives use rpm-ostree (noted below); there are 3 variants using OSTree:
 
@@ -58,6 +65,9 @@ uses rpm-ostree as well.
 [GNOME Continuous](https://wiki.gnome.org/Projects/GnomeContinuous) is
 where OSTree was born - as a high performance continuous delivery/testing
 system for GNOME.
+
+[GNOME OS](https://os.gnome.org/) is a testing OS that uses libostree for
+their host system as well as Flatpak.
 
 [Liri OS](https://liri.io/download/silverblue/) has the option to install
 their distribution using ostree.
@@ -89,10 +99,10 @@ model for image and package systems.
 [eos-updater](https://github.com/endlessm/eos-updater) is a daemon that implements updates
 on EndlessOS.
 
-[flatpak](https://github.com/flatpak/flatpak) uses libostree for desktop
-application containers. Unlike most of the other systems here, flatpak does not
+[Flatpak](https://github.com/flatpak/flatpak) uses libostree for desktop
+application containers. Unlike most of the other systems here, Flatpak does not
 use the "libostree host system" aspects (e.g. bootloader management), just the
-"git-like hardlink dedup". For example, flatpak supports a per-user OSTree
+"git-like hardlink dedup". For example, Flatpak supports a per-user OSTree
 repository.
 
 ## Language bindings
@@ -134,9 +144,15 @@ make
 make install DESTDIR=/path/to/dest
 ```
 
+## Contact and discussion forums
+
+OSTree has a [mailing list](https://mail.gnome.org/archives/ostree-list/) and
+there is also an `#ostree` channel on FreeNode.  However, asynchronous+logged
+communication is preferred for nontrivial questions.
+
 ## Contributing
 
-See [Contributing](docs/CONTRIBUTING.md).
+See [Contributing](CONTRIBUTING.md).
 
 ## Licensing
 

@@ -1,6 +1,6 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Define if we are building with -fsanitize=address */
+/* Define if we are building with asan and ubsan */
 #undef BUILDOPT_ASAN
 
 /* Define if we are enabling ostree trivial-httpd entrypoint */
@@ -192,6 +192,9 @@
 # undef __EXTENSIONS__
 #endif
 
+
+/* Define if we have a GRUB version newer than 2.02 */
+#undef WITH_MODERN_GRUB
 
 /* Define if we have smack.pc */
 #undef WITH_SMACK

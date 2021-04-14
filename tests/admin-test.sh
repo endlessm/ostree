@@ -65,6 +65,12 @@ assert_not_file_has_content status.txt "pending"
 assert_not_file_has_content status.txt "rollback"
 validate_bootloader
 
+# Test the bootable and linux keys
+${CMD_PREFIX} ostree --repo=sysroot/ostree/repo --print-metadata-key=ostree.linux show testos:testos/buildmaster/x86_64-runtime >out.txt
+assert_file_has_content_literal out.txt 3.6.0
+${CMD_PREFIX} ostree --repo=sysroot/ostree/repo --print-metadata-key=ostree.bootable show testos:testos/buildmaster/x86_64-runtime >out.txt
+assert_file_has_content_literal out.txt true
+
 echo "ok deploy command"
 
 ${CMD_PREFIX} ostree admin --print-current-dir > curdir
@@ -89,7 +95,7 @@ echo "ok layout"
 if ${CMD_PREFIX} ostree admin deploy --stage --os=testos testos:testos/buildmaster/x86_64-runtime 2>err.txt; then
     fatal "staged when not booted"
 fi
-assert_file_has_content_literal err.txt "Cannot stage a deployment when not currently booted into an OSTree system"
+assert_file_has_content_literal err.txt "Cannot stage deployment: Not currently booted into an OSTree system"
 echo "ok staging does not work when not booted"
 
 orig_mtime=$(stat -c '%.Y' sysroot/ostree/deploy)
