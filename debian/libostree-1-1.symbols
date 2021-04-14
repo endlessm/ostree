@@ -36,6 +36,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2020.4@LIBOSTREE_2020.4 2020.4
  LIBOSTREE_2020.7@LIBOSTREE_2020.7 2020.7
  LIBOSTREE_2020.8@LIBOSTREE_2020.8 2020.8
+ LIBOSTREE_2021.1@LIBOSTREE_2021.1 2021.1
  ostree_async_progress_copy_state@LIBOSTREE_2019.6 2019.6
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
@@ -99,6 +100,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_commit_get_object_sizes@LIBOSTREE_2020.1 2020.1
  ostree_commit_get_parent@LIBOSTREE_2016.3 2016.4
  ostree_commit_get_timestamp@LIBOSTREE_2016.3 2016.4
+ ostree_commit_metadata_for_bootable@LIBOSTREE_2021.1 2021.1
  ostree_commit_sizes_entry_copy@LIBOSTREE_2020.1 2020.1
  ostree_commit_sizes_entry_free@LIBOSTREE_2020.1 2020.1
  ostree_commit_sizes_entry_get_type@LIBOSTREE_2020.1 2020.1
@@ -454,6 +456,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sysroot_prepare_cleanup@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_query_deployments_for@LIBOSTREE_2017.7 2017.7
  ostree_sysroot_repo@LIBOSTREE_2017.7 2017.7
+ ostree_sysroot_require_booted_deployment@LIBOSTREE_2021.1 2021.1
  ostree_sysroot_set_mount_namespace_in_use@LIBOSTREE_2020.1 2020.1
  ostree_sysroot_simple_write_deployment@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_stage_overlay_initrd@LIBOSTREE_2020.7 2020.7
