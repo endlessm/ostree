@@ -1,3 +1,16 @@
+ostree (2021.1-1) experimental; urgency=medium
+
+  * d/gbp.conf: Branch for experimental
+  * New upstream release
+    - Update symbols file
+    - Drop a patch that was applied upstream
+  * d/rules: Declare that we have grub >= 2.02.
+    Debian's grub packaging runs grub-install in postinst, so we should
+    be able to rely on grub actually getting updated.
+  * Standards-Version: 4.5.1 (no changes required)
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 14 Apr 2021 13:53:50 +0100
+
 ostree (2020.8-2) unstable; urgency=medium
 
   * d/p/test-pull-summary-sigs-Set-timestamps-to-serve-expected-f.patch:
