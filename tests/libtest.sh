@@ -147,6 +147,9 @@ fi
 
 # This is substituted by the build for installed tests
 BUILT_WITH_ASAN=""
+if test -n "${ASAN_OPTIONS:-}"; then
+    BUILT_WITH_ASAN=1
+fi
 
 if test -n "${OT_TESTS_VALGRIND:-}"; then
     CMD_PREFIX="env G_SLICE=always-malloc OSTREE_SUPPRESS_SYNCFS=1 valgrind -q --error-exitcode=1 --leak-check=full --num-callers=30 --suppressions=${test_srcdir}/glib.supp --suppressions=${test_srcdir}/ostree.supp"
@@ -412,11 +415,14 @@ setup_os_repository () {
     echo "an hmac file" > ${hmac_path}
     bootcsum=$(cat ${kernel_path} ${initramfs_path} | sha256sum | cut -f 1 -d ' ')
     export bootcsum
+    bootable_flag=""
     # Add the checksum for legacy dirs (/boot, /usr/lib/ostree-boot), but not
     # /usr/lib/modules.
     if [[ $bootdir != usr/lib/modules/* ]]; then
         mv ${kernel_path}{,-${bootcsum}}
         mv ${initramfs_path}{,-${bootcsum}}
+    else
+        bootable_flag="--bootable"
     fi
 
     echo "an executable" > usr/bin/sh
@@ -436,12 +442,12 @@ EOF
     mkdir -p usr/etc/testdirectory
     echo "a default daemon file" > usr/etc/testdirectory/test
 
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit --add-metadata-string version=1.0.9 -b testos/buildmaster/x86_64-runtime -s "Build"
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit ${bootable_flag} --add-metadata-string version=1.0.9 -b testos/buildmaster/x86_64-runtime -s "Build"
 
     # Ensure these commits have distinct second timestamps
     sleep 2
     echo "a new executable" > usr/bin/sh
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit --add-metadata-string version=1.0.10 -b testos/buildmaster/x86_64-runtime -s "Build"
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit ${bootable_flag} --add-metadata-string version=1.0.10 -b testos/buildmaster/x86_64-runtime -s "Build"
 
     cd ${test_tmpdir}
     rm -rf osdata-devel
@@ -450,7 +456,7 @@ EOF
     cd osdata-devel
     mkdir -p usr/include
     echo "a development header" > usr/include/foo.h
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit --add-metadata-string version=1.0.9 -b testos/buildmaster/x86_64-devel -s "Build"
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit ${bootable_flag} --add-metadata-string version=1.0.9 -b testos/buildmaster/x86_64-devel -s "Build"
 
     ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo fsck -q
 

@@ -34,7 +34,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_YEAR_VERSION (2020)
+#define OSTREE_YEAR_VERSION (2021)
 
 /**
  * OSTREE_RELEASE_VERSION:
@@ -43,7 +43,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_RELEASE_VERSION (8)
+#define OSTREE_RELEASE_VERSION (1)
 
 /**
  * OSTREE_VERSION
@@ -52,7 +52,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION (2020.8)
+#define OSTREE_VERSION (2021.1)
 
 /**
  * OSTREE_VERSION_S:
@@ -62,7 +62,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION_S "2020.8"
+#define OSTREE_VERSION_S "2021.1"
 
 #define OSTREE_ENCODE_VERSION(year,release) \
         ((year) << 16 | (release))
@@ -100,4 +100,4 @@
  *
  * Since: 2019.3
  */
-#define OSTREE_BUILT_FEATURES "libsoup gpgme ex-fsverity libarchive selinux avahi libmount systemd release p2p"
+#define OSTREE_BUILT_FEATURES "libsoup gpgme ex-fsverity libarchive selinux libmount systemd release p2p"

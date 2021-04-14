@@ -69,6 +69,7 @@
     <keyword type="function" name="ostree_validate_structureof_dirmeta ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-structureof-dirmeta"/>
     <keyword type="function" name="ostree_commit_get_parent ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-parent"/>
     <keyword type="function" name="ostree_commit_get_timestamp ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-timestamp" since="2016.3"/>
+    <keyword type="function" name="ostree_commit_metadata_for_bootable ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-metadata-for-bootable" since="2021.1"/>
     <keyword type="function" name="ostree_commit_get_content_checksum ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-content-checksum" since="2018.2"/>
     <keyword type="function" name="ostree_commit_get_object_sizes ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-get-object-sizes" since="2020.1"/>
     <keyword type="function" name="ostree_commit_sizes_entry_new ()" link="ostree-Core-repository-independent-functions.html#ostree-commit-sizes-entry-new" since="2020.1"/>
@@ -223,7 +224,7 @@
     <keyword type="function" name="ostree_repo_prune_from_reachable ()" link="ostree-OstreeRepo.html#ostree-repo-prune-from-reachable" since="2017.1"/>
     <keyword type="function" name="ostree_repo_pull ()" link="ostree-OstreeRepo.html#ostree-repo-pull"/>
     <keyword type="function" name="ostree_repo_pull_one_dir ()" link="ostree-OstreeRepo.html#ostree-repo-pull-one-dir"/>
-    <keyword type="function" name="ostree_repo_pull_with_options ()" link="ostree-OstreeRepo.html#ostree-repo-pull-with-options" since="2019.2"/>
+    <keyword type="function" name="ostree_repo_pull_with_options ()" link="ostree-OstreeRepo.html#ostree-repo-pull-with-options" since="2020.9"/>
     <keyword type="function" name="ostree_repo_pull_default_console_progress_changed ()" link="ostree-OstreeRepo.html#ostree-repo-pull-default-console-progress-changed"/>
     <keyword type="function" name="ostree_repo_sign_commit ()" link="ostree-OstreeRepo.html#ostree-repo-sign-commit"/>
     <keyword type="function" name="ostree_repo_append_gpg_signature ()" link="ostree-OstreeRepo.html#ostree-repo-append-gpg-signature"/>
@@ -292,6 +293,7 @@
     <keyword type="function" name="ostree_sysroot_get_subbootversion ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-subbootversion"/>
     <keyword type="function" name="ostree_sysroot_get_deployments ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-deployments"/>
     <keyword type="function" name="ostree_sysroot_get_booted_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-booted-deployment"/>
+    <keyword type="function" name="ostree_sysroot_require_booted_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-require-booted-deployment" since="2021.1"/>
     <keyword type="function" name="ostree_sysroot_get_deployment_directory ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-deployment-directory"/>
     <keyword type="function" name="ostree_sysroot_get_deployment_dirpath ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-deployment-dirpath"/>
     <keyword type="function" name="ostree_sysroot_get_deployment_origin_path ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-deployment-origin-path"/>

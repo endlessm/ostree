@@ -1,13 +1,7 @@
 AC_PREREQ([2.63])
-dnl To do a release: follow the instructions to update libostree-released.sym from
-dnl libostree-devel.sym, update the checksum in test-symbols.sh, set is_release_build=yes
-dnl below. Then make another post-release commit to bump the version and set
-dnl is_release_build=no.
-dnl Seed the release notes with `git-shortlog-with-prs <previous-release>..`. Then use
-dnl `git-evtag` to create the tag and push it. Finally, create a GitHub release and attach
-dnl the tarball from `make dist`.
-m4_define([year_version], [2020])
-m4_define([release_version], [8])
+dnl To perform a release, follow the instructions in `docs/CONTRIBUTING.md`.
+m4_define([year_version], [2021])
+m4_define([release_version], [1])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -57,16 +51,17 @@ CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
 ])])
 AC_SUBST(WARN_CFLAGS)
 
-AC_MSG_CHECKING([for -fsanitize=address in CFLAGS])
-if echo $CFLAGS | grep -q -e -fsanitize=address; then
-  AC_MSG_RESULT([yes])
-  using_asan=yes
-else
-  AC_MSG_RESULT([no])
-fi
-AM_CONDITIONAL(BUILDOPT_ASAN, [test x$using_asan = xyes])
-AM_COND_IF([BUILDOPT_ASAN],
-  [AC_DEFINE([BUILDOPT_ASAN], 1, [Define if we are building with -fsanitize=address])])
+AC_ARG_ENABLE(sanitizers,
+              AS_HELP_STRING([--enable-sanitizers],
+                             [Enable ASAN and UBSAN (default: no)]),,
+              [enable_sanitizers=no])
+AM_CONDITIONAL(BUILDOPT_ASAN, [test x$enable_sanitizers != xno])
+AM_COND_IF([BUILDOPT_ASAN], [
+  sanitizer_flags="-fsanitize=address -fsanitize=undefined -fsanitize-undefined-trap-on-error"
+  CFLAGS="$CFLAGS ${sanitizer_flags}"
+  CXXFLAGS="$CXXFLAGS ${sanitizer_flags}"
+  AC_DEFINE([BUILDOPT_ASAN], 1, [Define if we are building with asan and ubsan])
+])
 
 AC_MSG_CHECKING([for -fsanitize=thread in CFLAGS])
 if echo $CFLAGS | grep -q -e -fsanitize=thread; then
@@ -291,39 +286,6 @@ AS_IF([test "$enable_man" != no], [
   ])
 ])
 AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" != no)
-
-AC_ARG_ENABLE(rust,
-  [AS_HELP_STRING([--enable-rust],
-  [Compile Rust code instead of C [default=no]])],,
-   [enable_rust=no; rust_debug_release=no])
-
-AS_IF([test "$enable_rust" = yes], [
-   AC_PATH_PROG([cargo], [cargo])
-   AS_IF([test -z "$cargo"], [AC_MSG_ERROR([cargo is required for --enable-rust])])
-   AC_PATH_PROG([rustc], [rustc])
-   AS_IF([test -z "$rustc"], [AC_MSG_ERROR([rustc is required for --enable-rust])])
-
-   dnl These bits based on gnome:librsvg/configure.ac
-
-   dnl By default, we build in public release mode.
-   AC_ARG_ENABLE(rust-debug,
-      AC_HELP_STRING([--enable-rust-debug],
-       [Build Rust code with debugging information [default=no]]),
-       [rust_debug_release=$enableval],
-       [rust_debug_release=release])
-
-   AC_MSG_CHECKING(whether to build Rust code with debugging information)
-   if test "x$rust_debug_release" = "xyes" ; then
-      rust_debug_release=debug
-      AC_MSG_RESULT(yes)
-   else
-      AC_MSG_RESULT(no)
-   fi
-   RUST_TARGET_SUBDIR=${rust_debug_release}
-   AC_SUBST([RUST_TARGET_SUBDIR])
-])
-AM_CONDITIONAL(RUST_DEBUG, [test "x$rust_debug_release" = "xdebug"])
-AM_CONDITIONAL(ENABLE_RUST, [test "$enable_rust" != no])
 
 AC_ARG_WITH(libarchive,
 	    AS_HELP_STRING([--without-libarchive], [Do not use libarchive]),
@@ -553,6 +515,14 @@ AM_COND_IF(BUILDOPT_SYSTEMD_AND_LIBMOUNT,
   AC_DEFINE([BUILDOPT_LIBSYSTEMD_AND_LIBMOUNT], 1, [Define if systemd and libmount]))
 if test x$with_libsystemd = xyes; then OSTREE_FEATURES="$OSTREE_FEATURES systemd"; fi
 
+AC_ARG_WITH(modern-grub,
+	    AS_HELP_STRING([--with-modern-grub],
+                           [Omit grub linux and initrd suffixes for EFI/BIOS booting on GRUB >2.02 (default: no)]),,
+              [with_modern_grub=no])
+AS_IF([ test x$with_modern_grub = xyes], [
+  AC_DEFINE([WITH_MODERN_GRUB], 1, [Define if we have a GRUB version newer than 2.02])
+])
+
 AC_ARG_WITH(builtin-grub2-mkconfig,
             AS_HELP_STRING([--with-builtin-grub2-mkconfig],
                            [Use a builtin minimal grub2-mkconfig to generate a GRUB2 configuration file (default: no)]),,
@@ -633,7 +603,6 @@ echo "
 
 
     introspection:                                $found_introspection
-    Rust (internal oxidation):                    $rust_debug_release
     rofiles-fuse:                                 $enable_rofiles_fuse
     HTTP backend:                                 $fetcher_backend
     \"ostree trivial-httpd\":                       $enable_trivial_httpd_cmdline

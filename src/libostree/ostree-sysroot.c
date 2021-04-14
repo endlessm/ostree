@@ -198,6 +198,7 @@ ostree_sysroot_init (OstreeSysroot *self)
                                             keys, G_N_ELEMENTS (keys));
 
   self->sysroot_fd = -1;
+  self->boot_fd = -1;
 }
 
 /**
@@ -278,6 +279,44 @@ ensure_sysroot_fd (OstreeSysroot          *self,
                            &self->sysroot_fd, error))
         return FALSE;
     }
+
+  return TRUE;
+}
+
+gboolean
+_ostree_sysroot_ensure_boot_fd (OstreeSysroot *self, GError **error)
+{
+  if (self->boot_fd == -1)
+    {
+      if (!glnx_opendirat (self->sysroot_fd, "boot", TRUE,
+                           &self->boot_fd, error))
+        return FALSE;
+    }
+  return TRUE;
+}
+
+static gboolean
+remount_writable (const char *path, gboolean *did_remount, GError **error)
+{
+  *did_remount = FALSE;
+  struct statvfs stvfsbuf;
+  if (statvfs (path, &stvfsbuf) < 0)
+    {
+      if (errno != ENOENT)
+        return glnx_throw_errno_prefix (error, "statvfs(%s)", path);
+      else
+        return TRUE;
+    }
+
+  if ((stvfsbuf.f_flag & ST_RDONLY) != 0)
+    {
+      /* OK, let's remount writable. */
+      if (mount (path, path, NULL, MS_REMOUNT | MS_RELATIME, "") < 0)
+        return glnx_throw_errno_prefix (error, "Remounting %s read-write", path);
+      *did_remount = TRUE;
+      g_debug ("remounted %s writable", path);
+    }
+
   return TRUE;
 }
 
@@ -300,19 +339,19 @@ _ostree_sysroot_ensure_writable (OstreeSysroot      *self,
   if (!self->root_is_ostree_booted)
     return TRUE;
 
-  /* Check if /sysroot is a read-only mountpoint */
-  struct statvfs stvfsbuf;
-  if (statvfs ("/sysroot", &stvfsbuf) < 0)
-    return glnx_throw_errno_prefix (error, "fstatvfs(/sysroot)");
-  if ((stvfsbuf.f_flag & ST_RDONLY) == 0)
-    return TRUE;
+  /* In these cases we also require /boot */
+  if (!_ostree_sysroot_ensure_boot_fd (self, error))
+    return FALSE;
 
-  /* OK, let's remount writable. */
-  if (mount ("/sysroot", "/sysroot", NULL, MS_REMOUNT | MS_RELATIME, "") < 0)
-    return glnx_throw_errno_prefix (error, "Remounting /sysroot read-write");
+  gboolean did_remount_sysroot = FALSE;
+  if (!remount_writable ("/sysroot", &did_remount_sysroot, error))
+    return FALSE;
+  gboolean did_remount_boot = FALSE;
+  if (!remount_writable ("/boot", &did_remount_boot, error))
+    return FALSE;
 
-  /* Reopen our fd */
-  glnx_close_fd (&self->sysroot_fd);
+  /* Now close and reopen our file descriptors */
+  ostree_sysroot_unload (self);
   if (!ensure_sysroot_fd (self, error))
     return FALSE;
 
@@ -380,6 +419,7 @@ void
 ostree_sysroot_unload (OstreeSysroot  *self)
 {
   glnx_close_fd (&self->sysroot_fd);
+  glnx_close_fd (&self->boot_fd);
 }
 
 /**
@@ -449,6 +489,7 @@ _ostree_sysroot_parse_deploy_path_name (const char *name,
   return TRUE;
 }
 
+/* For a given bootversion, get its subbootversion from `/ostree/boot.$bootversion`. */
 gboolean
 _ostree_sysroot_read_current_subbootversion (OstreeSysroot *self,
                                              int            bootversion,
@@ -465,6 +506,7 @@ _ostree_sysroot_read_current_subbootversion (OstreeSysroot *self,
     return FALSE;
   if (errno == ENOENT)
     {
+      g_debug ("Didn't find $sysroot/ostree/boot.%d symlink; assuming subbootversion 0", bootversion);
       *out_subbootversion = 0;
     }
   else
@@ -516,6 +558,7 @@ compare_loader_configs_for_sorting (gconstpointer  a_pp,
   return compare_boot_loader_configs (a, b);
 }
 
+/* Read all the bootconfigs from `/boot/loader/`. */
 gboolean
 _ostree_sysroot_read_boot_loader_configs (OstreeSysroot *self,
                                           int            bootversion,
@@ -574,6 +617,7 @@ _ostree_sysroot_read_boot_loader_configs (OstreeSysroot *self,
   return TRUE;
 }
 
+/* Get the bootversion from the `/boot/loader` symlink. */
 static gboolean
 read_current_bootversion (OstreeSysroot *self,
                           int           *out_bootversion,
@@ -587,6 +631,7 @@ read_current_bootversion (OstreeSysroot *self,
     return FALSE;
   if (errno == ENOENT)
     {
+      g_debug ("Didn't find $sysroot/boot/loader symlink; assuming bootversion 0");
       ret_bootversion = 0;
     }
   else
@@ -698,7 +743,7 @@ parse_deployment (OstreeSysroot       *self,
     return FALSE;
 
   g_autofree char *errprefix =
-    g_strdup_printf ("Parsing deployment %i in stateroot '%s'", treebootserial, osname);
+    g_strdup_printf ("Parsing deployment %s in stateroot '%s'", boot_link, osname);
   GLNX_AUTO_PREFIX_ERROR(errprefix, error);
 
   const char *relative_boot_link = boot_link;
@@ -799,6 +844,8 @@ get_ostree_kernel_arg_from_config (OstreeBootconfigParser  *config)
   return NULL;
 }
 
+/* From a BLS config, use its ostree= karg to find the deployment it points to and add it to
+ * the inout_deployments array. */
 static gboolean
 list_deployments_process_one_boot_entry (OstreeSysroot               *self,
                                          OstreeBootconfigParser      *config,
@@ -1016,6 +1063,9 @@ _ostree_sysroot_reload_staged (OstreeSysroot *self,
   return TRUE;
 }
 
+/* Loads the current bootversion, subbootversion, and deplyments, starting from the
+ * bootloader configs which are the source of truth.
+ */
 static gboolean
 sysroot_load_from_bootloader_configs (OstreeSysroot  *self,
                                       GCancellable   *cancellable,
@@ -1195,6 +1245,27 @@ ostree_sysroot_get_booted_deployment (OstreeSysroot       *self)
 
   return self->booted_deployment;
 }
+
+
+/**
+ * ostree_sysroot_require_booted_deployment:
+ * @self: Sysroot
+ *
+ * Find the booted deployment, or return an error if not booted via OSTree.
+ *
+ * Returns: (transfer none) (not nullable): The currently booted deployment, or an error
+ * Since: 2021.1
+ */
+OstreeDeployment *
+ostree_sysroot_require_booted_deployment (OstreeSysroot *self, GError **error)
+{
+  g_return_val_if_fail (self->loadstate == OSTREE_SYSROOT_LOAD_STATE_LOADED, NULL);
+
+  if (!self->booted_deployment)
+    return glnx_null_throw (error, "Not currently booted into an OSTree system");
+  return self->booted_deployment;
+}
+
 
 /**
  * ostree_sysroot_get_staged_deployment:

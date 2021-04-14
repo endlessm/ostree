@@ -318,7 +318,6 @@ PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
 RELEASE_VERSION = @RELEASE_VERSION@
-RUST_TARGET_SUBDIR = @RUST_TARGET_SUBDIR@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -351,7 +350,6 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
-cargo = @cargo@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -379,8 +377,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
-rustc = @rustc@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -399,6 +395,7 @@ libostree_public_headers = \
 	src/libostree/ostree-dummy-enumtypes.h \
 	src/libostree/ostree-mutable-tree.h \
 	src/libostree/ostree-repo.h \
+	src/libostree/ostree-repo-os.h \
 	src/libostree/ostree-types.h \
 	src/libostree/ostree-repo-file.h \
 	src/libostree/ostree-diff.h \
@@ -549,6 +546,7 @@ DOC_STAMPS = setup-build.stamp scan-build.stamp sgml-build.stamp \
 	sgml.stamp html.stamp pdf.stamp
 
 SCANOBJ_FILES = \
+	$(DOC_MODULE).actions	 \
 	$(DOC_MODULE).args 	 \
 	$(DOC_MODULE).hierarchy  \
 	$(DOC_MODULE).interfaces \

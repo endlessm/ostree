@@ -321,6 +321,7 @@ _ostree_commit() {
         --canonical-permissions
         --editor -e
         --generate-sizes
+        --bootable
         --link-checkout-speedup
         --no-xattrs
         --orphan
@@ -849,6 +850,7 @@ _ostree_pull_local() {
         --gpg-verify-summary
         --require-static-deltas
         --untrusted
+        --disable-verify-bindings
     "
 
     local options_with_args="
@@ -904,6 +906,7 @@ _ostree_pull() {
         --untrusted
         --bareuseronly-files
         --dry-run
+        --disable-verify-bindings
     "
 
     local options_with_args="
