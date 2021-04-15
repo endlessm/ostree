@@ -638,6 +638,18 @@ global:
   ostree_repo_gpg_sign_data;
 } LIBOSTREE_2020.7;
 
+/* Endless backported symbols. Note that the upstream symbol version is
+ * used so that programs linking to the symbols don't need to be rebuilt
+ * when we get to the upstream release containing the symbols.
+ */
+LIBOSTREE_2021.3 {
+global:
+  ostree_repo_auto_lock_push;
+  ostree_repo_auto_lock_cleanup;
+  ostree_repo_lock_push;
+  ostree_repo_lock_pop;
+} LIBOSTREE_2020.8;
+
 /* NOTE: Only add more content here in release commits!  See the
  * comments at the top of this file.
  */
