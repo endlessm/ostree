@@ -141,9 +141,6 @@
 /* Define to disable internal GPGME support */
 #undef OSTREE_DISABLE_GPGME
 
-/* Define if experimental API should be enabled */
-#undef OSTREE_ENABLE_EXPERIMENTAL_API
-
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 

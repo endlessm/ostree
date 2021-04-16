@@ -24,6 +24,7 @@
     <keyword type="macro" name="OSTREE_OBJECT_TYPE_IS_META()" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-IS-META:CAPS"/>
     <keyword type="function" name="ostree_metadata_variant_type ()" link="ostree-Core-repository-independent-functions.html#ostree-metadata-variant-type"/>
     <keyword type="function" name="ostree_validate_checksum_string ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-checksum-string"/>
+    <keyword type="function" name="ostree_validate_collection_id ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-collection-id" since="2018.6"/>
     <keyword type="function" name="ostree_checksum_to_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-to-bytes"/>
     <keyword type="function" name="ostree_checksum_to_bytes_v ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-to-bytes-v"/>
     <keyword type="function" name="ostree_checksum_from_bytes ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-from-bytes"/>
@@ -103,6 +104,7 @@
     <keyword type="function" name="ostree_repo_is_writable ()" link="ostree-OstreeRepo.html#ostree-repo-is-writable"/>
     <keyword type="function" name="ostree_repo_create_at ()" link="ostree-OstreeRepo.html#ostree-repo-create-at" since="2017.10"/>
     <keyword type="function" name="ostree_repo_create ()" link="ostree-OstreeRepo.html#ostree-repo-create"/>
+    <keyword type="function" name="ostree_repo_get_collection_id ()" link="ostree-OstreeRepo.html#ostree-repo-get-collection-id" since="2018.6"/>
     <keyword type="function" name="ostree_repo_get_bootloader ()" link="ostree-OstreeRepo.html#ostree-repo-get-bootloader" since="2019.2"/>
     <keyword type="function" name="ostree_repo_get_path ()" link="ostree-OstreeRepo.html#ostree-repo-get-path"/>
     <keyword type="function" name="ostree_repo_get_mode ()" link="ostree-OstreeRepo.html#ostree-repo-get-mode"/>
@@ -117,6 +119,7 @@
     <keyword type="function" name="ostree_repo_remote_delete ()" link="ostree-OstreeRepo.html#ostree-repo-remote-delete"/>
     <keyword type="function" name="ostree_repo_remote_change ()" link="ostree-OstreeRepo.html#ostree-repo-remote-change"/>
     <keyword type="function" name="ostree_repo_remote_list ()" link="ostree-OstreeRepo.html#ostree-repo-remote-list"/>
+    <keyword type="function" name="ostree_repo_remote_list_collection_refs ()" link="ostree-OstreeRepo.html#ostree-repo-remote-list-collection-refs" since="2018.6"/>
     <keyword type="function" name="ostree_repo_remote_get_url ()" link="ostree-OstreeRepo.html#ostree-repo-remote-get-url"/>
     <keyword type="function" name="ostree_repo_remote_get_gpg_verify ()" link="ostree-OstreeRepo.html#ostree-repo-remote-get-gpg-verify"/>
     <keyword type="function" name="ostree_repo_remote_get_gpg_verify_summary ()" link="ostree-OstreeRepo.html#ostree-repo-remote-get-gpg-verify-summary"/>
@@ -134,10 +137,13 @@
     <keyword type="function" name="ostree_repo_commit_transaction ()" link="ostree-OstreeRepo.html#ostree-repo-commit-transaction"/>
     <keyword type="function" name="ostree_repo_abort_transaction ()" link="ostree-OstreeRepo.html#ostree-repo-abort-transaction"/>
     <keyword type="function" name="ostree_repo_transaction_set_refspec ()" link="ostree-OstreeRepo.html#ostree-repo-transaction-set-refspec"/>
+    <keyword type="function" name="ostree_repo_transaction_set_collection_ref ()" link="ostree-OstreeRepo.html#ostree-repo-transaction-set-collection-ref" since="2018.6"/>
     <keyword type="function" name="ostree_repo_transaction_set_ref ()" link="ostree-OstreeRepo.html#ostree-repo-transaction-set-ref"/>
     <keyword type="function" name="ostree_repo_set_ref_immediate ()" link="ostree-OstreeRepo.html#ostree-repo-set-ref-immediate"/>
     <keyword type="function" name="ostree_repo_set_alias_ref_immediate ()" link="ostree-OstreeRepo.html#ostree-repo-set-alias-ref-immediate" since="2017.10"/>
     <keyword type="function" name="ostree_repo_set_cache_dir ()" link="ostree-OstreeRepo.html#ostree-repo-set-cache-dir" since="2016.5"/>
+    <keyword type="function" name="ostree_repo_set_collection_id ()" link="ostree-OstreeRepo.html#ostree-repo-set-collection-id" since="2018.6"/>
+    <keyword type="function" name="ostree_repo_set_collection_ref_immediate ()" link="ostree-OstreeRepo.html#ostree-repo-set-collection-ref-immediate" since="2018.6"/>
     <keyword type="function" name="ostree_repo_sign_delta ()" link="ostree-OstreeRepo.html#ostree-repo-sign-delta"/>
     <keyword type="function" name="ostree_repo_has_object ()" link="ostree-OstreeRepo.html#ostree-repo-has-object"/>
     <keyword type="function" name="ostree_repo_mark_commit_partial ()" link="ostree-OstreeRepo.html#ostree-repo-mark-commit-partial" since="2017.15"/>
@@ -146,6 +152,9 @@
     <keyword type="function" name="ostree_repo_write_metadata_async ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata-async"/>
     <keyword type="function" name="ostree_repo_write_metadata_finish ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata-finish"/>
     <keyword type="function" name="ostree_repo_write_content ()" link="ostree-OstreeRepo.html#ostree-repo-write-content"/>
+    <keyword type="function" name="ostree_repo_write_regfile ()" link="ostree-OstreeRepo.html#ostree-repo-write-regfile" since="2021.2"/>
+    <keyword type="function" name="ostree_repo_write_regfile_inline ()" link="ostree-OstreeRepo.html#ostree-repo-write-regfile-inline" since="2021.2"/>
+    <keyword type="function" name="ostree_repo_write_symlink ()" link="ostree-OstreeRepo.html#ostree-repo-write-symlink" since="2021.2"/>
     <keyword type="function" name="ostree_repo_write_metadata_trusted ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata-trusted"/>
     <keyword type="function" name="ostree_repo_write_metadata_stream_trusted ()" link="ostree-OstreeRepo.html#ostree-repo-write-metadata-stream-trusted"/>
     <keyword type="function" name="ostree_repo_write_content_trusted ()" link="ostree-OstreeRepo.html#ostree-repo-write-content-trusted"/>
@@ -155,7 +164,9 @@
     <keyword type="function" name="ostree_repo_resolve_rev_ext ()" link="ostree-OstreeRepo.html#ostree-repo-resolve-rev-ext" since="2016.7"/>
     <keyword type="function" name="ostree_repo_list_refs ()" link="ostree-OstreeRepo.html#ostree-repo-list-refs"/>
     <keyword type="function" name="ostree_repo_list_refs_ext ()" link="ostree-OstreeRepo.html#ostree-repo-list-refs-ext" since="2016.4"/>
+    <keyword type="function" name="ostree_repo_list_collection_refs ()" link="ostree-OstreeRepo.html#ostree-repo-list-collection-refs" since="2018.6"/>
     <keyword type="function" name="ostree_repo_remote_list_refs ()" link="ostree-OstreeRepo.html#ostree-repo-remote-list-refs"/>
+    <keyword type="function" name="ostree_repo_resolve_collection_ref ()" link="ostree-OstreeRepo.html#ostree-repo-resolve-collection-ref" since="2018.6"/>
     <keyword type="function" name="ostree_repo_load_variant ()" link="ostree-OstreeRepo.html#ostree-repo-load-variant"/>
     <keyword type="function" name="ostree_repo_load_commit ()" link="ostree-OstreeRepo.html#ostree-repo-load-commit"/>
     <keyword type="function" name="ostree_repo_load_variant_if_exists ()" link="ostree-OstreeRepo.html#ostree-repo-load-variant-if-exists"/>
@@ -199,8 +210,8 @@
     <keyword type="function" name="ostree_repo_list_objects ()" link="ostree-OstreeRepo.html#ostree-repo-list-objects"/>
     <keyword type="function" name="ostree_repo_list_commit_objects_starting_with ()" link="ostree-OstreeRepo.html#ostree-repo-list-commit-objects-starting-with"/>
     <keyword type="function" name="ostree_repo_list_static_delta_names ()" link="ostree-OstreeRepo.html#ostree-repo-list-static-delta-names"/>
-    <keyword type="function" name="ostree_repo_list_static_delta_indexes ()" link="ostree-OstreeRepo.html#ostree-repo-list-static-delta-indexes" since="2020.7"/>
-    <keyword type="function" name="ostree_repo_static_delta_reindex ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-reindex"/>
+    <keyword type="function" name="ostree_repo_list_static_delta_indexes ()" link="ostree-OstreeRepo.html#ostree-repo-list-static-delta-indexes" since="2020.8"/>
+    <keyword type="function" name="ostree_repo_static_delta_reindex ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-reindex" since="2020.8"/>
     <keyword type="function" name="ostree_repo_static_delta_generate ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-generate"/>
     <keyword type="function" name="ostree_repo_static_delta_execute_offline_with_signature ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-execute-offline-with-signature" since="2020.7"/>
     <keyword type="function" name="ostree_repo_static_delta_execute_offline ()" link="ostree-OstreeRepo.html#ostree-repo-static-delta-execute-offline"/>

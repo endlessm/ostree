@@ -369,6 +369,10 @@ ostree_collection_ref_new, function in ostree-ref
 </dt>
 <dd></dd>
 <dt>
+ostree_content_writer_finish, function in ostree-content-writer
+</dt>
+<dd></dd>
+<dt>
 <a class="link" href="ostree-Core-repository-independent-functions.html#ostree-create-directory-metadata" title="ostree_create_directory_metadata ()">ostree_create_directory_metadata</a>, function in <a class="link" href="ostree-Core-repository-independent-functions.html" title="Core repository-independent functions">Core repository-independent functions</a>
 </dt>
 <dd></dd>
@@ -655,7 +659,7 @@ ostree_kernel_args_to_strv, function in ostree-kernel-args
 </dt>
 <dd></dd>
 <dt>
-OSTREE_META_KEY_DEPLOY_COLLECTION_ID, macro in ostree-repo-experimental
+OSTREE_META_KEY_DEPLOY_COLLECTION_ID, macro in ostree-repo-remote-finder
 </dt>
 <dd></dd>
 <dt>
@@ -1130,11 +1134,11 @@ ostree_repo_finder_result_new, function in ostree-repo-finder
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_find_remotes_async, function in ostree-repo-experimental
+ostree_repo_find_remotes_async, function in ostree-repo-remote-finder
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_find_remotes_finish, function in ostree-repo-experimental
+ostree_repo_find_remotes_finish, function in ostree-repo-remote-finder
 </dt>
 <dd></dd>
 <dt>
@@ -1146,7 +1150,7 @@ ostree_repo_find_remotes_finish, function in ostree-repo-experimental
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_get_collection_id, function in ostree-misc-experimental
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-get-collection-id" title="ostree_repo_get_collection_id ()">ostree_repo_get_collection_id</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
 <dt>
@@ -1230,7 +1234,7 @@ ostree_repo_get_collection_id, function in ostree-misc-experimental
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_list_collection_refs, function in ostree-misc-experimental
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-list-collection-refs" title="ostree_repo_list_collection_refs ()">ostree_repo_list_collection_refs</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
 <dt>
@@ -1290,7 +1294,7 @@ ostree_repo_list_collection_refs, function in ostree-misc-experimental
 </dt>
 <dd></dd>
 <dt>
-OSTREE_REPO_METADATA_REF, macro in ostree-repo-experimental
+OSTREE_REPO_METADATA_REF, macro in ostree-repo-remote-finder
 </dt>
 <dd></dd>
 <dt>
@@ -1342,11 +1346,11 @@ OSTREE_REPO_METADATA_REF, macro in ostree-repo-experimental
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_pull_from_remotes_async, function in ostree-repo-experimental
+ostree_repo_pull_from_remotes_async, function in ostree-repo-remote-finder
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_pull_from_remotes_finish, function in ostree-repo-experimental
+ostree_repo_pull_from_remotes_finish, function in ostree-repo-remote-finder
 </dt>
 <dd></dd>
 <dt>
@@ -1418,7 +1422,7 @@ ostree_repo_pull_from_remotes_finish, function in ostree-repo-experimental
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_remote_list_collection_refs, function in ostree-misc-experimental
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-remote-list-collection-refs" title="ostree_repo_remote_list_collection_refs ()">ostree_repo_remote_list_collection_refs</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
 <dt>
@@ -1426,11 +1430,11 @@ ostree_repo_remote_list_collection_refs, function in ostree-misc-experimental
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_resolve_collection_ref, function in ostree-misc-experimental
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-resolve-collection-ref" title="ostree_repo_resolve_collection_ref ()">ostree_repo_resolve_collection_ref</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_resolve_keyring_for_collection, function in ostree-repo-experimental
+ostree_repo_resolve_keyring_for_collection, function in ostree-repo-remote-finder
 </dt>
 <dd></dd>
 <dt>
@@ -1454,11 +1458,11 @@ ostree_repo_resolve_keyring_for_collection, function in ostree-repo-experimental
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_set_collection_id, function in ostree-misc-experimental
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-set-collection-id" title="ostree_repo_set_collection_id ()">ostree_repo_set_collection_id</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_set_collection_ref_immediate, function in ostree-misc-experimental
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-set-collection-ref-immediate" title="ostree_repo_set_collection_ref_immediate ()">ostree_repo_set_collection_ref_immediate</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
 <dt>
@@ -1498,7 +1502,7 @@ ostree_repo_set_collection_ref_immediate, function in ostree-misc-experimental
 </dt>
 <dd></dd>
 <dt>
-ostree_repo_transaction_set_collection_ref, function in ostree-misc-experimental
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-transaction-set-collection-ref" title="ostree_repo_transaction_set_collection_ref ()">ostree_repo_transaction_set_collection_ref</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
 <dt>
@@ -1623,6 +1627,18 @@ ostree_repo_transaction_set_collection_ref, function in ostree-misc-experimental
 <dd></dd>
 <dt>
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-mtree" title="ostree_repo_write_mtree ()">ostree_repo_write_mtree</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-regfile" title="ostree_repo_write_regfile ()">ostree_repo_write_regfile</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-regfile-inline" title="ostree_repo_write_regfile_inline ()">ostree_repo_write_regfile_inline</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
+</dt>
+<dd></dd>
+<dt>
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-symlink" title="ostree_repo_write_symlink ()">ostree_repo_write_symlink</a>, function in <a class="link" href="ostree-OstreeRepo.html" title="OstreeRepo: Content-addressed object store">OstreeRepo</a>
 </dt>
 <dd></dd>
 <a name="idxS"></a><h3 class="title">S</h3>
@@ -2013,7 +2029,7 @@ ostree_repo_transaction_set_collection_ref, function in ostree-misc-experimental
 </dt>
 <dd></dd>
 <dt>
-ostree_validate_collection_id, function in ostree-misc-experimental
+<a class="link" href="ostree-Core-repository-independent-functions.html#ostree-validate-collection-id" title="ostree_validate_collection_id ()">ostree_validate_collection_id</a>, function in <a class="link" href="ostree-Core-repository-independent-functions.html" title="Core repository-independent functions">Core repository-independent functions</a>
 </dt>
 <dd></dd>
 <dt>

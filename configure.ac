@@ -1,7 +1,7 @@
 AC_PREREQ([2.63])
 dnl To perform a release, follow the instructions in `docs/CONTRIBUTING.md`.
 m4_define([year_version], [2021])
-m4_define([release_version], [1])
+m4_define([release_version], [2])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -560,21 +560,6 @@ AS_IF([test "x$found_introspection" = xyes && test x$using_asan != xyes], [
 ], [have_gjs=no])
 AM_CONDITIONAL(BUILDOPT_GJS, test x$have_gjs = xyes)
 
-# Do we enable building experimental (non-stable) API?
-# The OSTREE_ENABLE_EXPERIMENTAL_API #define is used internally and in public
-# headers, so any consumer of libostree who wants to use experimental API must
-#    #define OSTREE_ENABLE_EXPERIMENTAL_API 1
-# before including libostree headers. This means the name in the AC_DEFINE below
-# is public API.
-AC_ARG_ENABLE([experimental-api],
-  [AS_HELP_STRING([--enable-experimental-api],
-                  [Enable unstable experimental API in libostree [default=no]])],,
-  [enable_experimental_api=no])
-AS_IF([test x$enable_experimental_api = xyes],
-  [AC_DEFINE([OSTREE_ENABLE_EXPERIMENTAL_API],[1],[Define if experimental API should be enabled])
-   OSTREE_FEATURES="$OSTREE_FEATURES experimental"]
-)
-AM_CONDITIONAL([ENABLE_EXPERIMENTAL_API],[test x$enable_experimental_api = xyes])
 AM_CONDITIONAL([BUILDOPT_IS_DEVEL_BUILD],[test x$is_release_build != xyes])
 AM_COND_IF([BUILDOPT_IS_DEVEL_BUILD],
             AC_DEFINE([BUILDOPT_IS_DEVEL_BUILD], [1], [Define if doing a development build])
@@ -622,8 +607,7 @@ echo "
     gjs-based tests:                              $have_gjs
     dracut:                                       $with_dracut
     mkinitcpio:                                   $with_mkinitcpio
-    Static compiler for ostree-prepare-root:      $with_static_compiler
-    Experimental API                              $enable_experimental_api"
+    Static compiler for ostree-prepare-root:      $with_static_compiler"
 AS_IF([test x$with_builtin_grub2_mkconfig = xyes], [
     echo "    builtin grub2-mkconfig (instead of system):   $with_builtin_grub2_mkconfig"
 ], [

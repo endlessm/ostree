@@ -139,6 +139,13 @@
 <td class="function_type">const <span class="returnvalue">gchar</span> *
 </td>
 <td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-get-collection-id" title="ostree_repo_get_collection_id ()">ostree_repo_get_collection_id</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">const <span class="returnvalue">gchar</span> *
+</td>
+<td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-get-bootloader" title="ostree_repo_get_bootloader ()">ostree_repo_get_bootloader</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
@@ -243,6 +250,14 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-remote-list" title="ostree_repo_remote_list ()">ostree_repo_remote_list</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-remote-list-collection-refs" title="ostree_repo_remote_list_collection_refs ()">ostree_repo_remote_list_collection_refs</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -386,6 +401,14 @@
 <span class="returnvalue">void</span>
 </td>
 <td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-transaction-set-collection-ref" title="ostree_repo_transaction_set_collection_ref ()">ostree_repo_transaction_set_collection_ref</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">void</span>
+</td>
+<td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-transaction-set-ref" title="ostree_repo_transaction_set_ref ()">ostree_repo_transaction_set_ref</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
@@ -411,6 +434,22 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-set-cache-dir" title="ostree_repo_set_cache_dir ()">ostree_repo_set_cache_dir</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-set-collection-id" title="ostree_repo_set_collection_id ()">ostree_repo_set_collection_id</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-set-collection-ref-immediate" title="ostree_repo_set_collection_ref_immediate ()">ostree_repo_set_collection_ref_immediate</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -475,6 +514,30 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-content" title="ostree_repo_write_content ()">ostree_repo_write_content</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">OstreeContentWriter</span> *
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-regfile" title="ostree_repo_write_regfile ()">ostree_repo_write_regfile</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">char</span> *
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-regfile-inline" title="ostree_repo_write_regfile_inline ()">ostree_repo_write_regfile_inline</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">char</span> *
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-symlink" title="ostree_repo_write_symlink ()">ostree_repo_write_symlink</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -554,7 +617,23 @@
 <span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-list-collection-refs" title="ostree_repo_list_collection_refs ()">ostree_repo_list_collection_refs</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
 <a class="link" href="ostree-OstreeRepo.html#ostree-repo-remote-list-refs" title="ostree_repo_remote_list_refs ()">ostree_repo_remote_list_refs</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-resolve-collection-ref" title="ostree_repo_resolve_collection_ref ()">ostree_repo_resolve_collection_ref</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 <tr>
@@ -1332,7 +1411,7 @@ control of the curator of the collection, so they can demonstrate ownership
 of the collection. The later elements in the reverse DNS name can be used to
 disambiguate between multiple collections from the same curator. For example,
 <code class="literal">org.exampleos.Main</code> and <code class="literal">org.exampleos.Apps</code>. For the complete format of
-collection IDs, see <code class="function">ostree_validate_collection_id()</code>.</p>
+collection IDs, see <a class="link" href="ostree-Core-repository-independent-functions.html#ostree-validate-collection-id" title="ostree_validate_collection_id ()"><code class="function">ostree_validate_collection_id()</code></a>.</p>
 </div>
 </div>
 <div class="refsect1">
@@ -1743,6 +1822,34 @@ this function on a repository initialized via <a class="link" href="ostree-Ostre
 </tbody>
 </table></div>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-get-collection-id"></a><h3>ostree_repo_get_collection_id ()</h3>
+<pre class="programlisting">const <span class="returnvalue">gchar</span> *
+ostree_repo_get_collection_id (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>);</pre>
+<p>Get the collection ID of this repository. See collection IDs.</p>
+<div class="refsect3">
+<a name="ostree-repo-get-collection-id.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody><tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr></tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-get-collection-id.returns"></a><h4>Returns</h4>
+<p>collection ID for the repository. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
+</div>
+<p class="since">Since: 2018.6</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -2220,6 +2327,64 @@ alphabetically.  If no remotes are available the function returns <code class="l
 array of remote names. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> length=out_n_remotes][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-remote-list-collection-refs"></a><h3>ostree_repo_remote_list_collection_refs ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_remote_list_collection_refs
+                               (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                <em class="parameter"><code>const <span class="type">char</span> *remote_name</code></em>,
+                                <em class="parameter"><code><span class="type">GHashTable</span> **out_all_refs</code></em>,
+                                <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>List refs advertised by <em class="parameter"><code>remote_name</code></em>
+, including refs which are part of
+collections. If the repository at <em class="parameter"><code>remote_name</code></em>
+ has a collection ID set, its
+refs will be returned with that collection ID; otherwise, they will be returned
+with a <code class="literal">NULL</code> collection ID in each <span class="type">OstreeCollectionRef</span> key in <em class="parameter"><code>out_all_refs</code></em>
+.
+Any refs for other collections stored in the repository will also be returned.
+No filtering is performed.</p>
+<div class="refsect3">
+<a name="ostree-repo-remote-list-collection-refs.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>remote_name</p></td>
+<td class="parameter_description"><p>Name of the remote.</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>out_all_refs</p></td>
+<td class="parameter_description"><p>Mapping from collection–ref to checksum. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> OstreeCollectionRef utf8][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2018.6</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -3136,6 +3301,55 @@ arguments.</p>
 </div>
 <hr>
 <div class="refsect2">
+<a name="ostree-repo-transaction-set-collection-ref"></a><h3>ostree_repo_transaction_set_collection_ref ()</h3>
+<pre class="programlisting"><span class="returnvalue">void</span>
+ostree_repo_transaction_set_collection_ref
+                               (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                <em class="parameter"><code>const <span class="type">OstreeCollectionRef</span> *ref</code></em>,
+                                <em class="parameter"><code>const <span class="type">char</span> *checksum</code></em>);</pre>
+<p>If <em class="parameter"><code>checksum</code></em>
+ is not <code class="literal">NULL</code>, then record it as the target of local ref named
+<em class="parameter"><code>ref</code></em>
+.</p>
+<p>Otherwise, if <em class="parameter"><code>checksum</code></em>
+ is <code class="literal">NULL</code>, then record that the ref should
+be deleted.</p>
+<p>The change will not be written out immediately, but when the transaction
+is completed with <a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-transaction" title="ostree_repo_commit_transaction ()"><code class="function">ostree_repo_commit_transaction()</code></a>. If the transaction
+is instead aborted with <a class="link" href="ostree-OstreeRepo.html#ostree-repo-abort-transaction" title="ostree_repo_abort_transaction ()"><code class="function">ostree_repo_abort_transaction()</code></a>, no changes will
+be made to the repository.</p>
+<p>Multithreading: Since v2017.15 this function is MT safe.</p>
+<div class="refsect3">
+<a name="ostree-repo-transaction-set-collection-ref.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>An <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>ref</p></td>
+<td class="parameter_description"><p>The collection–ref to write</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>checksum</p></td>
+<td class="parameter_description"><p>The checksum to point it to. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p class="since">Since: 2018.6</p>
+</div>
+<hr>
+<div class="refsect2">
 <a name="ostree-repo-transaction-set-ref"></a><h3>ostree_repo_transaction_set_ref ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_repo_transaction_set_ref (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
@@ -3361,6 +3575,105 @@ write permissions in the repo, where the cache is normally stored.</p>
 </table></div>
 </div>
 <p class="since">Since: 2016.5</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-set-collection-id"></a><h3>ostree_repo_set_collection_id ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_set_collection_id (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                               <em class="parameter"><code>const <span class="type">gchar</span> *collection_id</code></em>,
+                               <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Set or clear the collection ID of this repository. See collection IDs.
+The update will be made in memory, but must be written out to the repository
+configuration on disk using <a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-config" title="ostree_repo_write_config ()"><code class="function">ostree_repo_write_config()</code></a>.</p>
+<div class="refsect3">
+<a name="ostree-repo-set-collection-id.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>collection_id</p></td>
+<td class="parameter_description"><p>new collection ID, or <code class="literal">NULL</code> to unset it. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>return location for a <span class="type">GError</span>, or <code class="literal">NULL</code></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-set-collection-id.returns"></a><h4>Returns</h4>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> otherwise</p>
+</div>
+<p class="since">Since: 2018.6</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-set-collection-ref-immediate"></a><h3>ostree_repo_set_collection_ref_immediate ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_set_collection_ref_immediate
+                               (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                <em class="parameter"><code>const <span class="type">OstreeCollectionRef</span> *ref</code></em>,
+                                <em class="parameter"><code>const <span class="type">char</span> *checksum</code></em>,
+                                <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>This is like <a class="link" href="ostree-OstreeRepo.html#ostree-repo-transaction-set-collection-ref" title="ostree_repo_transaction_set_collection_ref ()"><code class="function">ostree_repo_transaction_set_collection_ref()</code></a>, except it may be
+invoked outside of a transaction.  This is presently safe for the
+case where we're creating or overwriting an existing ref.</p>
+<div class="refsect3">
+<a name="ostree-repo-set-collection-ref-immediate.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>An <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>ref</p></td>
+<td class="parameter_description"><p>The collection–ref to write</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>checksum</p></td>
+<td class="parameter_description"><p>The checksum to point it to, or <code class="literal">NULL</code> to unset. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>GCancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>GError</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-set-collection-ref-immediate.returns"></a><h4>Returns</h4>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> otherwise</p>
+</div>
+<p class="since">Since: 2018.6</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -3825,6 +4138,238 @@ be returned as <em class="parameter"><code>out_csum</code></em>
 </tbody>
 </table></div>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-write-regfile"></a><h3>ostree_repo_write_regfile ()</h3>
+<pre class="programlisting"><span class="returnvalue">OstreeContentWriter</span> *
+ostree_repo_write_regfile (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                           <em class="parameter"><code>const <span class="type">char</span> *expected_checksum</code></em>,
+                           <em class="parameter"><code><span class="type">guint32</span> uid</code></em>,
+                           <em class="parameter"><code><span class="type">guint32</span> gid</code></em>,
+                           <em class="parameter"><code><span class="type">guint32</span> mode</code></em>,
+                           <em class="parameter"><code><span class="type">guint64</span> content_len</code></em>,
+                           <em class="parameter"><code><span class="type">GVariant</span> *xattrs</code></em>,
+                           <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Create an <code class="literal">OstreeContentWriter</code> that allows streaming output into
+the repository.</p>
+<div class="refsect3">
+<a name="ostree-repo-write-regfile.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo,</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>expected_checksum</p></td>
+<td class="parameter_description"><p>Expected checksum (SHA-256 hex string). </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>uid</p></td>
+<td class="parameter_description"><p>user id</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>gid</p></td>
+<td class="parameter_description"><p>group id</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>mode</p></td>
+<td class="parameter_description"><p>Unix file mode</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>content_len</p></td>
+<td class="parameter_description"><p>Expected content length</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>xattrs</p></td>
+<td class="parameter_description"><p>Extended attributes (GVariant type <code class="literal">(ayay)</code>). </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-write-regfile.returns"></a><h4>Returns</h4>
+<p>A new writer, or <code class="literal">NULL</code> on error. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
+</div>
+<p class="since">Since: 2021.2</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-write-regfile-inline"></a><h3>ostree_repo_write_regfile_inline ()</h3>
+<pre class="programlisting"><span class="returnvalue">char</span> *
+ostree_repo_write_regfile_inline (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                  <em class="parameter"><code>const <span class="type">char</span> *expected_checksum</code></em>,
+                                  <em class="parameter"><code><span class="type">guint32</span> uid</code></em>,
+                                  <em class="parameter"><code><span class="type">guint32</span> gid</code></em>,
+                                  <em class="parameter"><code><span class="type">guint32</span> mode</code></em>,
+                                  <em class="parameter"><code><span class="type">GVariant</span> *xattrs</code></em>,
+                                  <em class="parameter"><code>const <span class="type">guint8</span> *buf</code></em>,
+                                  <em class="parameter"><code><span class="type">gsize</span> len</code></em>,
+                                  <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                  <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Synchronously create a file object from the provided content.  This API
+is intended for small files where it is reasonable to buffer the entire
+content in memory.</p>
+<p>Unlike <code class="literal"><a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-content" title="ostree_repo_write_content ()"><code class="function">ostree_repo_write_content()</code></a></code>, if <em class="parameter"><code>expected_checksum</code></em>
+ is provided,
+this function will not check for the presence of the object beforehand.</p>
+<div class="refsect3">
+<a name="ostree-repo-write-regfile-inline.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>expected_checksum</p></td>
+<td class="parameter_description"><p>The expected checksum. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>uid</p></td>
+<td class="parameter_description"><p>User id</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>gid</p></td>
+<td class="parameter_description"><p>Group id</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>mode</p></td>
+<td class="parameter_description"><p>File mode</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>xattrs</p></td>
+<td class="parameter_description"><p>Extended attributes, GVariant of type (ayay). </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>buf</p></td>
+<td class="parameter_description"><p>File contents. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> length=len][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> guint8]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-write-regfile-inline.returns"></a><h4>Returns</h4>
+<p>Checksum (as a hex string) of the committed file. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
+</div>
+<p class="since">Since: 2021.2</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-write-symlink"></a><h3>ostree_repo_write_symlink ()</h3>
+<pre class="programlisting"><span class="returnvalue">char</span> *
+ostree_repo_write_symlink (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                           <em class="parameter"><code>const <span class="type">char</span> *expected_checksum</code></em>,
+                           <em class="parameter"><code><span class="type">guint32</span> uid</code></em>,
+                           <em class="parameter"><code><span class="type">guint32</span> gid</code></em>,
+                           <em class="parameter"><code><span class="type">GVariant</span> *xattrs</code></em>,
+                           <em class="parameter"><code>const <span class="type">char</span> *symlink_target</code></em>,
+                           <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                           <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Synchronously create a symlink object.</p>
+<p>Unlike <code class="literal"><a class="link" href="ostree-OstreeRepo.html#ostree-repo-write-content" title="ostree_repo_write_content ()"><code class="function">ostree_repo_write_content()</code></a></code>, if <em class="parameter"><code>expected_checksum</code></em>
+ is provided,
+this function will not check for the presence of the object beforehand.</p>
+<div class="refsect3">
+<a name="ostree-repo-write-symlink.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>expected_checksum</p></td>
+<td class="parameter_description"><p>The expected checksum. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>uid</p></td>
+<td class="parameter_description"><p>User id</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>gid</p></td>
+<td class="parameter_description"><p>Group id</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>xattrs</p></td>
+<td class="parameter_description"><p>Extended attributes, GVariant of type (ayay). </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>symlink_target</p></td>
+<td class="parameter_description"><p>Target of the symbolic link</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-write-symlink.returns"></a><h4>Returns</h4>
+<p>Checksum (as a hex string) of the committed file. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
+</div>
+<p class="since">Since: 2021.2</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -4355,6 +4900,79 @@ remote name) to checksums. Differently from <a class="link" href="ostree-OstreeR
 </div>
 <hr>
 <div class="refsect2">
+<a name="ostree-repo-list-collection-refs"></a><h3>ostree_repo_list_collection_refs ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_list_collection_refs (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                  <em class="parameter"><code>const <span class="type">char</span> *match_collection_id</code></em>,
+                                  <em class="parameter"><code><span class="type">GHashTable</span> **out_all_refs</code></em>,
+                                  <em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepoListRefsExtFlags" title="enum OstreeRepoListRefsExtFlags"><span class="type">OstreeRepoListRefsExtFlags</span></a> flags</code></em>,
+                                  <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                  <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>List all local, mirrored, and remote refs, mapping them to the commit
+checksums they currently point to in <em class="parameter"><code>out_all_refs</code></em>
+. If <em class="parameter"><code>match_collection_id</code></em>
+
+is specified, the results will be limited to those with an equal collection
+ID.</p>
+<p><span class="type">OstreeCollectionRefs</span> are guaranteed to be returned with their collection ID
+set to a non-<code class="literal">NULL</code> value; so no refs from <code class="literal">refs/heads</code> will be listed if no
+collection ID is configured for the repository
+(<a class="link" href="ostree-OstreeRepo.html#ostree-repo-get-collection-id" title="ostree_repo_get_collection_id ()"><code class="function">ostree_repo_get_collection_id()</code></a>).</p>
+<p>If you want to exclude refs from <code class="literal">refs/remotes</code>, use
+<a class="link" href="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-EXCLUDE-REMOTES:CAPS"><code class="literal">OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_REMOTES</code></a> in <em class="parameter"><code>flags</code></em>
+. Similarly use
+<a class="link" href="ostree-OstreeRepo.html#OSTREE-REPO-LIST-REFS-EXT-EXCLUDE-MIRRORS:CAPS"><code class="literal">OSTREE_REPO_LIST_REFS_EXT_EXCLUDE_MIRRORS</code></a> to exclude refs from
+<code class="literal">refs/mirrors</code>.</p>
+<div class="refsect3">
+<a name="ostree-repo-list-collection-refs.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>match_collection_id</p></td>
+<td class="parameter_description"><p>If non-<code class="literal">NULL</code>, only list refs from this collection. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>out_all_refs</p></td>
+<td class="parameter_description"><p>Mapping from collection–ref to checksum. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> OstreeCollectionRef utf8][<a href="http://foldoc.org/transfer%20container"><span class="acronym">transfer container</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>flags</p></td>
+<td class="parameter_description"><p>Options controlling listing behavior</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-list-collection-refs.returns"></a><h4>Returns</h4>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> otherwise</p>
+</div>
+<p class="since">Since: 2018.6</p>
+</div>
+<hr>
+<div class="refsect2">
 <a name="ostree-repo-remote-list-refs"></a><h3>ostree_repo_remote_list_refs ()</h3>
 <pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_repo_remote_list_refs (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
@@ -4399,6 +5017,91 @@ ostree_repo_remote_list_refs (<em class="parameter"><code><a class="link" href="
 </tbody>
 </table></div>
 </div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-resolve-collection-ref"></a><h3>ostree_repo_resolve_collection_ref ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_resolve_collection_ref (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                    <em class="parameter"><code>const <span class="type">OstreeCollectionRef</span> *ref</code></em>,
+                                    <em class="parameter"><code><span class="type">gboolean</span> allow_noent</code></em>,
+                                    <em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepoResolveRevExtFlags" title="enum OstreeRepoResolveRevExtFlags"><span class="type">OstreeRepoResolveRevExtFlags</span></a> flags</code></em>,
+                                    <em class="parameter"><code><span class="type">char</span> **out_rev</code></em>,
+                                    <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                    <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Look up the checksum for the given collection–ref, returning it in <em class="parameter"><code>out_rev</code></em>
+.
+This will search through the mirrors and remote refs.</p>
+<p>If <em class="parameter"><code>allow_noent</code></em>
+ is <code class="literal">TRUE</code> and the given <em class="parameter"><code>ref</code></em>
+ cannot be found, <code class="literal">TRUE</code> will be
+returned and <em class="parameter"><code>out_rev</code></em>
+ will be set to <code class="literal">NULL</code>. If <em class="parameter"><code>allow_noent</code></em>
+ is <code class="literal">FALSE</code> and
+the given <em class="parameter"><code>ref</code></em>
+ cannot be found, a <code class="literal">G_IO_ERROR_NOT_FOUND</code> error will be
+returned.</p>
+<p>If you want to check only local refs, not remote or mirrored ones, use the
+flag <a class="link" href="ostree-OstreeRepo.html#OSTREE-REPO-RESOLVE-REV-EXT-LOCAL-ONLY:CAPS"><code class="literal">OSTREE_REPO_RESOLVE_REV_EXT_LOCAL_ONLY</code></a>. This is analogous to using
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-resolve-rev-ext" title="ostree_repo_resolve_rev_ext ()"><code class="function">ostree_repo_resolve_rev_ext()</code></a> but for collection-refs.</p>
+<div class="refsect3">
+<a name="ostree-repo-resolve-collection-ref.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>an <a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>ref</p></td>
+<td class="parameter_description"><p>a collection–ref to resolve</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>allow_noent</p></td>
+<td class="parameter_description"><p><code class="literal">TRUE</code> to not throw an error if <em class="parameter"><code>ref</code></em>
+doesn’t exist</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>flags</p></td>
+<td class="parameter_description"><p>options controlling behaviour</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>out_rev</p></td>
+<td class="parameter_description"><p>return location for
+the checksum corresponding to <em class="parameter"><code>ref</code></em>
+, or <code class="literal">NULL</code> if <em class="parameter"><code>allow_noent</code></em>
+is <code class="literal">TRUE</code> and
+the <em class="parameter"><code>ref</code></em>
+could not be found. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>a <span class="type">GCancellable</span>, or <code class="literal">NULL</code>. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>return location for a <span class="type">GError</span>, or <code class="literal">NULL</code></p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-repo-resolve-collection-ref.returns"></a><h4>Returns</h4>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> on failure</p>
+</div>
+<p class="since">Since: 2018.6</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -4517,7 +5220,9 @@ ostree_repo_load_variant_if_exists (<em class="parameter"><code><a class="link" 
  if it
 exists, storing the result in <em class="parameter"><code>out_variant</code></em>
 .  If it doesn't exist,
-<code class="literal">NULL</code> is returned.</p>
+<em class="parameter"><code>out_variant</code></em>
+ will be set to <code class="literal">NULL</code> and the function will still
+return TRUE.</p>
 <div class="refsect3">
 <a name="ostree-repo-load-variant-if-exists.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -4545,7 +5250,7 @@ exists, storing the result in <em class="parameter"><code>out_variant</code></em
 <tr>
 <td class="parameter_name"><p>out_variant</p></td>
 <td class="parameter_description"><p>Metadata. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>error</p></td>
@@ -6524,7 +7229,7 @@ repository, returning its result in <em class="parameter"><code>out_indexes</cod
 </tbody>
 </table></div>
 </div>
-<p class="since">Since: 2020.7</p>
+<p class="since">Since: 2020.8</p>
 </div>
 <hr>
 <div class="refsect2">
@@ -6580,6 +7285,7 @@ are reachable by an existing delta (if <em class="parameter"><code>opt_to_commit
 </tbody>
 </table></div>
 </div>
+<p class="since">Since: 2020.8</p>
 </div>
 <hr>
 <div class="refsect2">
