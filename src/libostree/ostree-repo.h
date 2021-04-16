@@ -424,6 +424,38 @@ gboolean      ostree_repo_write_content (OstreeRepo       *self,
                                          GError          **error);
 
 _OSTREE_PUBLIC
+char *      ostree_repo_write_regfile_inline (OstreeRepo       *self,
+                                                const char       *expected_checksum,
+                                                guint32           uid,
+                                                guint32           gid,
+                                                guint32           mode,
+                                                GVariant         *xattrs,
+                                                const guint8*     buf,
+                                                gsize             len,
+                                                GCancellable     *cancellable,
+                                                GError          **error);
+
+_OSTREE_PUBLIC
+OstreeContentWriter *    ostree_repo_write_regfile (OstreeRepo       *self,
+                                                    const char       *expected_checksum,
+                                                    guint32           uid,
+                                                    guint32           gid,
+                                                    guint32           mode,
+                                                    guint64           content_len,
+                                                    GVariant         *xattrs,
+                                                    GError          **error);
+             
+_OSTREE_PUBLIC
+char *      ostree_repo_write_symlink (OstreeRepo       *self,
+                                       const char       *expected_checksum,
+                                       guint32           uid,
+                                       guint32           gid,
+                                       GVariant         *xattrs,
+                                       const char       *symlink_target,
+                                       GCancellable     *cancellable,
+                                       GError          **error);
+
+_OSTREE_PUBLIC
 gboolean      ostree_repo_write_metadata_trusted (OstreeRepo        *self,
                                                   OstreeObjectType   objtype,
                                                   const char        *checksum,

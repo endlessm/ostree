@@ -3686,6 +3686,10 @@ load_metadata_internal (OstreeRepo       *self,
   g_return_val_if_fail (OSTREE_OBJECT_TYPE_IS_META (objtype), FALSE);
   g_return_val_if_fail (objtype == OSTREE_OBJECT_TYPE_COMMIT || out_state == NULL, FALSE);
 
+  /* Ensure this is set to NULL if we didn't find the object */
+  if (out_variant)
+    *out_variant = NULL;
+
   /* Special caching for dirmeta objects, since they're commonly referenced many
    * times.
    */
@@ -4452,12 +4456,13 @@ ostree_repo_query_object_storage_size (OstreeRepo           *self,
  * @self: Repo
  * @objtype: Object type
  * @sha256: ASCII checksum
- * @out_variant: (out) (transfer full): Metadata
+ * @out_variant: (out) (nullable) (transfer full): Metadata
  * @error: Error
  *
  * Attempt to load the metadata object @sha256 of type @objtype if it
  * exists, storing the result in @out_variant.  If it doesn't exist,
- * %NULL is returned.
+ * @out_variant will be set to %NULL and the function will still
+ * return TRUE.
  */
 gboolean
 ostree_repo_load_variant_if_exists (OstreeRepo       *self,

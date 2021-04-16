@@ -2769,6 +2769,126 @@ ostree_repo_write_content (OstreeRepo       *self,
                                cancellable, error);
 }
 
+/**
+ * ostree_repo_write_regfile_inline:
+ * @self: repo
+ * @expected_checksum: (allow-none): The expected checksum
+ * @uid: User id
+ * @gid: Group id
+ * @mode: File mode
+ * @xattrs: (allow-none): Extended attributes, GVariant of type (ayay)
+ * @buf: (array length=len) (element-type guint8): File contents
+ * @cancellable: Cancellable
+ * @error: Error
+ *
+ * Synchronously create a file object from the provided content.  This API
+ * is intended for small files where it is reasonable to buffer the entire
+ * content in memory.
+ *
+ * Unlike `ostree_repo_write_content()`, if @expected_checksum is provided,
+ * this function will not check for the presence of the object beforehand.
+ *
+ * Returns: (transfer full): Checksum (as a hex string) of the committed file
+ * Since: 2021.2
+ */
+_OSTREE_PUBLIC
+char *
+ostree_repo_write_regfile_inline (OstreeRepo       *self,
+                                  const char       *expected_checksum,
+                                  guint32           uid,
+                                  guint32           gid,
+                                  guint32           mode,
+                                  GVariant         *xattrs,
+                                  const guint8*     buf,
+                                  gsize             len,
+                                  GCancellable     *cancellable,
+                                  GError          **error)
+{
+  g_autoptr(GInputStream) memin = g_memory_input_stream_new_from_data (buf, len, NULL);
+  g_autoptr(GFileInfo) finfo = _ostree_mode_uidgid_to_gfileinfo (mode, uid, gid);
+  g_file_info_set_size (finfo, len);
+  g_autofree guint8* csum = NULL;
+  if (!write_content_object (self, expected_checksum,
+                             memin, finfo, xattrs, &csum,
+                             cancellable, error))
+    return NULL;
+  return ostree_checksum_from_bytes (csum);
+}
+
+/**
+ * ostree_repo_write_symlink:
+ * @self: repo
+ * @expected_checksum: (allow-none): The expected checksum
+ * @uid: User id
+ * @gid: Group id
+ * @xattrs: (allow-none): Extended attributes, GVariant of type (ayay)
+ * @symlink_target: Target of the symbolic link
+ * @cancellable: Cancellable
+ * @error: Error
+ *
+ * Synchronously create a symlink object.
+ *
+ * Unlike `ostree_repo_write_content()`, if @expected_checksum is provided,
+ * this function will not check for the presence of the object beforehand.
+ *
+ * Returns: (transfer full): Checksum (as a hex string) of the committed file
+ * Since: 2021.2
+ */
+char *      
+ostree_repo_write_symlink (OstreeRepo       *self,
+                           const char       *expected_checksum,
+                           guint32           uid,
+                           guint32           gid,
+                           GVariant         *xattrs,
+                           const char       *symlink_target,
+                           GCancellable     *cancellable,
+                           GError          **error)
+{
+  g_assert (symlink_target != NULL);
+
+  g_autoptr(GFileInfo) finfo = _ostree_mode_uidgid_to_gfileinfo (S_IFLNK | 0777, uid, gid);
+  g_file_info_set_attribute_byte_string (finfo, "standard::symlink-target", symlink_target);
+  g_autofree guint8* csum = NULL;
+  if (!write_content_object (self, expected_checksum,
+                             NULL, finfo, xattrs, &csum,
+                             cancellable, error))
+    return NULL;
+  return ostree_checksum_from_bytes (csum);
+}
+
+/**
+ * ostree_repo_write_regfile:
+ * @self: Repo,
+ * @expected_checksum: (allow-none): Expected checksum (SHA-256 hex string)
+ * @uid: user id
+ * @gid: group id
+ * @mode: Unix file mode
+ * @content_len: Expected content length
+ * @xattrs: (allow-none): Extended attributes (GVariant type `(ayay)`)
+ * @error: Error
+ * 
+ * Create an `OstreeContentWriter` that allows streaming output into
+ * the repository.
+ *
+ * Returns: (transfer full): A new writer, or %NULL on error
+ * Since: 2021.2
+ */
+OstreeContentWriter *    
+ostree_repo_write_regfile (OstreeRepo       *self,
+                           const char       *expected_checksum,
+                           guint32           uid,
+                           guint32           gid,
+                           guint32           mode,
+                           guint64           content_len,
+                           GVariant         *xattrs,
+                           GError          **error)
+{
+  if (self->mode == OSTREE_REPO_MODE_ARCHIVE)
+    return glnx_null_throw (error, "Cannot currently use ostree_repo_write_regfile() on an archive mode repository");
+
+  return _ostree_content_writer_new (self, expected_checksum, uid, gid, mode, content_len, xattrs, error);
+}
+
 typedef struct {
   OstreeRepo *repo;
   char *expected_checksum;
