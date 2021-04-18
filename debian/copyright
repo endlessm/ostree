@@ -8,7 +8,10 @@ Copyright:
  © 1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald
  © 1995-2015 Free Software Foundation, Inc.
  © 1999-2003 Ximian, Inc.
- © 2008-2020 Red Hat, Inc
+ © 2007-2008 Ryan Lortie
+ © 2008-2021 Red Hat, Inc
+ © 2010-2011 Lennart Poettering
+ © 2010 Codethink Ltd.
  © 2011-2019 Colin Walters <walters@verbum.org>
  © 2011 Avery Pennarun
  © 2013-2020 Collabora Ltd.
@@ -24,6 +27,7 @@ Copyright:
  © 2015 Matthew Barnes
  © 2016-2019 Endless Mobile, Inc.
  © 2016 Kinvolk GmbH
+ © 2016 Zbigniew Jędrzejewski-Szmek
  © 2017 Georges Basile Stavracas Neto
  © 2018 Matthew Leeds
  © 2018 Sinny Kumari
@@ -31,22 +35,7 @@ Copyright:
  © 2019 Robert Fairley
  © 2019 Wind River Systems, Inc.
  © 2019 Denis Pynkin
-License: LGPL-2+
-
-Files:
- libglnx/glnx-lockfile.*
- libglnx/glnx-fdio.*
- libglnx/glnx-missing-syscall.h
- libglnx/glnx-missing.h
- src/libotutil/ot-variant-builder.c
-Copyright:
- © 2007-2008 Ryan Lortie
- © 2010-2011 Lennart Poettering
- © 2010 Codethink Ltd.
- © 2014-2015 Colin Walters <walters@verbum.org>
- © 2016 Zbigniew Jędrzejewski-Szmek
- © 2017 Alexander Larsson <alexl@redhat.com>
-License: LGPL-2.1+
+License: LGPL-2+ and LGPL-2.1+
 
 Files:
  src/libostree/ostree-varint.c
@@ -89,8 +78,8 @@ License: BSD-2-clause
 Files: debian/*
 Copyright:
  © 2015 David King <amigadave@amigadave.com>
- © 2016-2020 Collabora Ltd.
- © 2017-2020 Simon McVittie
+ © 2016-2021 Collabora Ltd.
+ © 2017-2021 Simon McVittie
 License: LGPL-2+
 
 License: GPL-2+ with Autoconf exception
