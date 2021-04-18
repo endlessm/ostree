@@ -1,8 +1,15 @@
-ostree (2021.2-1) UNRELEASED; urgency=medium
+ostree (2021.2-1) experimental; urgency=medium
 
   * New upstream release
+    - Update symbols file
+    - d/copyright: Update
+  * d/test.sh: Line-buffer stdout.
+    Otherwise, lines from stdout appear with an arbitrary delay, making it
+    hard to tell what the order of events was.
+  * d/p/libtest-On-failure-make-it-clearer-what-has-happened.patch:
+    Add proposed patch to make test failures easier to debug
 
- -- Simon McVittie <smcv@debian.org>  Sun, 18 Apr 2021 11:02:33 +0100
+ -- Simon McVittie <smcv@debian.org>  Sun, 18 Apr 2021 12:20:49 +0100
 
 ostree (2021.1-1) experimental; urgency=medium
 
