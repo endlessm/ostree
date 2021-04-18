@@ -14,7 +14,8 @@ unset https_proxy
 unset no_proxy
 
 failed=0
-make check || failed=1
+# Use line-buffering so stdout and stderr interleave somewhat nicely
+stdbuf -oL make check || failed=1
 
 pkill --full "gpg-agent --homedir /var/tmp/tap-test\\.[^/]+/.*" || :
 pkill --full '\.libs/ostree-trivial-httpd' || :
