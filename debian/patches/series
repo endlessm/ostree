@@ -1,1 +1,2 @@
+libtest-On-failure-make-it-clearer-what-has-happened.patch
 debian/Skip-test-pull-repeated-during-CI.patch
