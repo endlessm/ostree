@@ -8,6 +8,7 @@ failed, and its exit status.
 
 Signed-off-by: Simon McVittie <smcv@collabora.com>
 Forwarded: https://github.com/ostreedev/ostree/pull/2350
+Applied-upstream: 2021.3, commit:9d48d39a4b16c4faa58488107cd0a53c8144a7ca
 ---
  tests/libtest.sh | 8 ++++++++
  1 file changed, 8 insertions(+)
