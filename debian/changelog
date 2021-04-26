@@ -1,3 +1,12 @@
+ostree (2021.2-2) experimental; urgency=medium
+
+  * d/p/libtest-On-failure-make-it-clearer-what-has-happened.patch:
+    Mark patch as applied upstream
+  * d/p/tests-Test-without-a-cache-directory-by-default.patch:
+    Add patch from upstream to fix intermittent FTBFS on some filesystems
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 26 Apr 2021 10:15:06 +0100
+
 ostree (2021.2-1) experimental; urgency=medium
 
   * New upstream release
