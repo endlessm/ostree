@@ -2451,7 +2451,7 @@ ostree_repo_commit_transaction (OstreeRepo                  *self,
 
   if (self->txn_locked)
     {
-      if (!ostree_repo_lock_pop (self, cancellable, error))
+      if (!ostree_repo_lock_pop (self, OSTREE_REPO_LOCK_SHARED, cancellable, error))
         return FALSE;
       self->txn_locked = FALSE;
     }
@@ -2509,7 +2509,7 @@ ostree_repo_abort_transaction (OstreeRepo     *self,
 
   if (self->txn_locked)
     {
-      if (!ostree_repo_lock_pop (self, cancellable, error))
+      if (!ostree_repo_lock_pop (self, OSTREE_REPO_LOCK_SHARED, cancellable, error))
         return FALSE;
       self->txn_locked = FALSE;
     }

@@ -73,9 +73,9 @@ assertEquals(readCommit, null);
 // Basic locking API sanity test
 repo.lock_push(OSTree.RepoLockType.SHARED, null);
 repo.lock_push(OSTree.RepoLockType.SHARED, null);
-repo.lock_pop(null);
-repo.lock_pop(null);
+repo.lock_pop(OSTree.RepoLockType.SHARED, null);
+repo.lock_pop(OSTree.RepoLockType.SHARED, null);
 repo.lock_push(OSTree.RepoLockType.EXCLUSIVE, null);
-repo.lock_pop(null);
+repo.lock_pop(OSTree.RepoLockType.EXCLUSIVE, null);
 
 print("ok test-core");
