@@ -32,7 +32,7 @@ Build-Depends:
  libcap-dev,
  libfuse-dev,
  libgirepository1.0-dev,
- libglib2.0-dev (>= 2.40.0),
+ libglib2.0-dev (>= 2.44.0),
  libgpgme-dev,
  liblzma-dev,
  libmount-dev (>= 2.23),
