@@ -78,6 +78,11 @@ unset TAR_OPTIONS
 # easily clean up.
 export OSTREE_SYSROOT_DEBUG=mutable-deployments
 
+# By default, don't use a cache directory since it makes the tests racy.
+# Tests that are explicitly testing the cache operation should unset
+# this.
+export OSTREE_SKIP_CACHE=1
+
 export TEST_GPG_KEYID_1="7FCA23D8472CDAFA"
 export TEST_GPG_KEYFPR_1="5E65DE75AB1C501862D476347FCA23D8472CDAFA"
 export TEST_GPG_KEYID_2="D8228CFECA950D41"
@@ -442,12 +447,12 @@ EOF
     mkdir -p usr/etc/testdirectory
     echo "a default daemon file" > usr/etc/testdirectory/test
 
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit ${bootable_flag} --add-metadata-string version=1.0.9 -b testos/buildmaster/x86_64-runtime -s "Build"
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit ${bootable_flag} --add-metadata-string version=1.0.9 -b testos/buildmain/x86_64-runtime -s "Build"
 
     # Ensure these commits have distinct second timestamps
     sleep 2
     echo "a new executable" > usr/bin/sh
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit ${bootable_flag} --add-metadata-string version=1.0.10 -b testos/buildmaster/x86_64-runtime -s "Build"
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit ${bootable_flag} --add-metadata-string version=1.0.10 -b testos/buildmain/x86_64-runtime -s "Build"
 
     cd ${test_tmpdir}
     rm -rf osdata-devel
@@ -456,7 +461,7 @@ EOF
     cd osdata-devel
     mkdir -p usr/include
     echo "a development header" > usr/include/foo.h
-    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit ${bootable_flag} --add-metadata-string version=1.0.9 -b testos/buildmaster/x86_64-devel -s "Build"
+    ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo commit ${bootable_flag} --add-metadata-string version=1.0.9 -b testos/buildmain/x86_64-devel -s "Build"
 
     ${CMD_PREFIX} ostree --repo=${test_tmpdir}/testos-repo fsck -q
 
@@ -503,7 +508,7 @@ os_repository_new_commit ()
 {
     boot_checksum_iteration=${1:-0}
     content_iteration=${2:-0}
-    branch=${3:-testos/buildmaster/x86_64-runtime}
+    branch=${3:-testos/buildmain/x86_64-runtime}
     export version=${4:-$(date "+%Y%m%d.${content_iteration}")}
     echo "BOOT ITERATION: $boot_checksum_iteration"
     cd ${test_tmpdir}/osdata

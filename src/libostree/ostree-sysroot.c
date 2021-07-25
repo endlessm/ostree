@@ -190,7 +190,6 @@ ostree_sysroot_init (OstreeSysroot *self)
     { "mutable-deployments", OSTREE_SYSROOT_DEBUG_MUTABLE_DEPLOYMENTS },
     { "test-fifreeze", OSTREE_SYSROOT_DEBUG_TEST_FIFREEZE },
     { "no-xattrs", OSTREE_SYSROOT_DEBUG_NO_XATTRS },
-    { "test-staged-path", OSTREE_SYSROOT_DEBUG_TEST_STAGED_PATH },
     { "no-dtb", OSTREE_SYSROOT_DEBUG_TEST_NO_DTB },
   };
 
@@ -1063,7 +1062,7 @@ _ostree_sysroot_reload_staged (OstreeSysroot *self,
   return TRUE;
 }
 
-/* Loads the current bootversion, subbootversion, and deplyments, starting from the
+/* Loads the current bootversion, subbootversion, and deployments, starting from the
  * bootloader configs which are the source of truth.
  */
 static gboolean

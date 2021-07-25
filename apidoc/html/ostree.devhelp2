@@ -112,6 +112,10 @@
     <keyword type="function" name="ostree_repo_get_config ()" link="ostree-OstreeRepo.html#ostree-repo-get-config"/>
     <keyword type="function" name="ostree_repo_get_dfd ()" link="ostree-OstreeRepo.html#ostree-repo-get-dfd" since="2016.4"/>
     <keyword type="function" name="ostree_repo_get_default_repo_finders ()" link="ostree-OstreeRepo.html#ostree-repo-get-default-repo-finders" since="2018.9"/>
+    <keyword type="function" name="ostree_repo_lock_pop ()" link="ostree-OstreeRepo.html#ostree-repo-lock-pop" since="2021.3"/>
+    <keyword type="function" name="ostree_repo_lock_push ()" link="ostree-OstreeRepo.html#ostree-repo-lock-push" since="2021.3"/>
+    <keyword type="function" name="ostree_repo_auto_lock_push ()" link="ostree-OstreeRepo.html#ostree-repo-auto-lock-push" since="2021.3"/>
+    <keyword type="function" name="ostree_repo_auto_lock_cleanup ()" link="ostree-OstreeRepo.html#ostree-repo-auto-lock-cleanup" since="2021.3"/>
     <keyword type="function" name="ostree_repo_hash ()" link="ostree-OstreeRepo.html#ostree-repo-hash" since="2017.12"/>
     <keyword type="function" name="ostree_repo_equal ()" link="ostree-OstreeRepo.html#ostree-repo-equal" since="2017.12"/>
     <keyword type="function" name="ostree_repo_copy_config ()" link="ostree-OstreeRepo.html#ostree-repo-copy-config"/>
@@ -249,6 +253,8 @@
     <keyword type="function" name="ostree_repo_regenerate_summary ()" link="ostree-OstreeRepo.html#ostree-repo-regenerate-summary"/>
     <keyword type="typedef" name="OstreeRepo" link="ostree-OstreeRepo.html#OstreeRepo"/>
     <keyword type="enum" name="enum OstreeRepoMode" link="ostree-OstreeRepo.html#OstreeRepoMode"/>
+    <keyword type="enum" name="enum OstreeRepoLockType" link="ostree-OstreeRepo.html#OstreeRepoLockType" since="2021.3"/>
+    <keyword type="typedef" name="OstreeRepoAutoLock" link="ostree-OstreeRepo.html#OstreeRepoAutoLock" since="2021.3"/>
     <keyword type="enum" name="enum OstreeRepoRemoteChange" link="ostree-OstreeRepo.html#OstreeRepoRemoteChange"/>
     <keyword type="struct" name="struct OstreeRepoTransactionStats" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats"/>
     <keyword type="enum" name="enum OstreeRepoResolveRevExtFlags" link="ostree-OstreeRepo.html#OstreeRepoResolveRevExtFlags"/>
@@ -471,6 +477,8 @@
     <keyword type="constant" name="OSTREE_REPO_MODE_ARCHIVE_Z2" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-ARCHIVE-Z2:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE_USER" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE-USER:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE_USER_ONLY" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE-USER-ONLY:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_LOCK_SHARED" link="ostree-OstreeRepo.html#OSTREE-REPO-LOCK-SHARED:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_LOCK_EXCLUSIVE" link="ostree-OstreeRepo.html#OSTREE-REPO-LOCK-EXCLUSIVE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_ADD" link="ostree-OstreeRepo.html#OSTREE-REPO-REMOTE-CHANGE-ADD:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_ADD_IF_NOT_EXISTS" link="ostree-OstreeRepo.html#OSTREE-REPO-REMOTE-CHANGE-ADD-IF-NOT-EXISTS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_DELETE" link="ostree-OstreeRepo.html#OSTREE-REPO-REMOTE-CHANGE-DELETE:CAPS"/>

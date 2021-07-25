@@ -1,7 +1,7 @@
 AC_PREREQ([2.63])
 dnl To perform a release, follow the instructions in `docs/CONTRIBUTING.md`.
 m4_define([year_version], [2021])
-m4_define([release_version], [2])
+m4_define([release_version], [3])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -109,7 +109,7 @@ AM_PATH_GLIB_2_0(,,AC_MSG_ERROR([GLib not found]))
 dnl When bumping the gio-unix-2.0 dependency (or glib-2.0 in general),
 dnl remember to bump GLIB_VERSION_MIN_REQUIRED and
 dnl GLIB_VERSION_MAX_ALLOWED in Makefile.am
-GIO_DEPENDENCY="gio-unix-2.0 >= 2.40.0"
+GIO_DEPENDENCY="gio-unix-2.0 >= 2.44.0"
 PKG_CHECK_MODULES(OT_DEP_GIO_UNIX, $GIO_DEPENDENCY)
 
 dnl 5.1.0 is an arbitrary version here
@@ -499,6 +499,7 @@ AS_IF([test "x$with_libsystemd" = "xyes"], [
               [with_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)])
   AS_IF([test "x$with_systemdsystemunitdir" != "xno"], [
     AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])
+    AC_DEFINE_UNQUOTED([SYSTEM_DATA_UNIT_PATH], ["$with_systemdsystemunitdir"], ["unit path"])
   ])
   AC_ARG_WITH([systemdsystemgeneratordir],
               AS_HELP_STRING([--with-systemdsystemgeneratordir=DIR], [Directory for systemd generators]),
