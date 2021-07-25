@@ -1,5 +1,6 @@
-ostree (2021.2-3) UNRELEASED; urgency=medium
+ostree (2021.3-1) UNRELEASED; urgency=medium
 
+  * New upstream release
   * Re-enable gjs tests on architectures where it is available
 
  -- Simon McVittie <smcv@debian.org>  Sun, 25 Jul 2021 16:53:31 +0100
