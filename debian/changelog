@@ -2,9 +2,11 @@ ostree (2021.3-1) UNRELEASED; urgency=medium
 
   * New upstream release
     - Increase build-dependency to GLib 2.44
+    - d/libostree-1-1.symbols: Update
   * Re-enable gjs tests on architectures where it is available
+  * d/libostree-1-1.symbols: Remove a duplicate symbol
 
- -- Simon McVittie <smcv@debian.org>  Sun, 25 Jul 2021 16:53:31 +0100
+ -- Simon McVittie <smcv@debian.org>  Sun, 25 Jul 2021 19:02:39 +0100
 
 ostree (2021.2-2) experimental; urgency=medium
 
