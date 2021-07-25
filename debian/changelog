@@ -1,6 +1,7 @@
 ostree (2021.3-1) UNRELEASED; urgency=medium
 
   * New upstream release
+    - Increase build-dependency to GLib 2.44
   * Re-enable gjs tests on architectures where it is available
 
  -- Simon McVittie <smcv@debian.org>  Sun, 25 Jul 2021 16:53:31 +0100
