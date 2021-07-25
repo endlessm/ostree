@@ -1684,8 +1684,8 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
 
   memset (&self->txn.stats, 0, sizeof (OstreeRepoTransactionStats));
 
-  self->txn_locked = _ostree_repo_lock_push (self, OSTREE_REPO_LOCK_SHARED,
-                                             cancellable, error);
+  self->txn_locked = ostree_repo_lock_push (self, OSTREE_REPO_LOCK_SHARED,
+                                            cancellable, error);
   if (!self->txn_locked)
     return FALSE;
 
@@ -2341,7 +2341,7 @@ ostree_repo_commit_transaction (OstreeRepo                  *self,
 
   if (self->txn_locked)
     {
-      if (!_ostree_repo_lock_pop (self, cancellable, error))
+      if (!ostree_repo_lock_pop (self, OSTREE_REPO_LOCK_SHARED, cancellable, error))
         return FALSE;
       self->txn_locked = FALSE;
     }
@@ -2399,7 +2399,7 @@ ostree_repo_abort_transaction (OstreeRepo     *self,
 
   if (self->txn_locked)
     {
-      if (!_ostree_repo_lock_pop (self, cancellable, error))
+      if (!ostree_repo_lock_pop (self, OSTREE_REPO_LOCK_SHARED, cancellable, error))
         return FALSE;
       self->txn_locked = FALSE;
     }
@@ -3020,6 +3020,10 @@ create_empty_gvariant_dict (void)
  *
  * Write a commit metadata object, referencing @root_contents_checksum
  * and @root_metadata_checksum.
+ * This uses the current time as the commit timestamp, but it can be
+ * overridden with an explicit timestamp via the
+ * [standard](https://reproducible-builds.org/specs/source-date-epoch/)
+ * `SOURCE_DATE_EPOCH` environment flag.
  */
 gboolean
 ostree_repo_write_commit (OstreeRepo      *self,
@@ -3032,9 +3036,26 @@ ostree_repo_write_commit (OstreeRepo      *self,
                           GCancellable    *cancellable,
                           GError         **error)
 {
-  g_autoptr(GDateTime) now = g_date_time_new_now_utc ();
+  gint64 timestamp = 0;
+  const gchar *env_timestamp = g_getenv ("SOURCE_DATE_EPOCH");
+  if (env_timestamp == NULL)
+    {
+      g_autoptr(GDateTime) now = g_date_time_new_now_utc ();
+      timestamp = g_date_time_to_unix (now);
+    }
+  else
+    {
+      gchar *ret = NULL;
+      errno = 0;
+      timestamp = g_ascii_strtoll (env_timestamp, &ret, 10);
+      if (errno != 0)
+        return glnx_throw_errno_prefix (error, "Parsing SOURCE_DATE_EPOCH");
+      if (ret == env_timestamp)
+        return glnx_throw (error, "Failed to convert SOURCE_DATE_EPOCH");
+    }
+
   return ostree_repo_write_commit_with_time (self, parent, subject, body,
-                                             metadata, root, g_date_time_to_unix (now),
+                                             metadata, root, timestamp,
                                              out_commit, cancellable, error);
 }
 

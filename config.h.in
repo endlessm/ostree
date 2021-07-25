@@ -162,6 +162,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* "unit path" */
+#undef SYSTEM_DATA_UNIT_PATH
+
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
 #undef TM_IN_SYS_TIME
 
