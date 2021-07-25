@@ -1,3 +1,9 @@
+ostree (2021.2-3) UNRELEASED; urgency=medium
+
+  * Re-enable gjs tests on architectures where it is available
+
+ -- Simon McVittie <smcv@debian.org>  Sun, 25 Jul 2021 16:53:31 +0100
+
 ostree (2021.2-2) experimental; urgency=medium
 
   * d/p/libtest-On-failure-make-it-clearer-what-has-happened.patch:
