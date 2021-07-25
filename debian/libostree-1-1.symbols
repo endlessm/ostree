@@ -112,7 +112,6 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_content_stream_parse@LIBOSTREE_2016.3 2016.4
  ostree_content_writer_get_type@LIBOSTREE_2021.2 2021.2
  ostree_content_writer_finish@LIBOSTREE_2021.2 2021.2
- ostree_repo_write_regfile_inline@LIBOSTREE_2021.2 2021.2
  ostree_create_directory_metadata@LIBOSTREE_2016.3 2016.4
  ostree_deployment_clone@LIBOSTREE_2016.3 2016.4
  ostree_deployment_equal@LIBOSTREE_2016.3 2016.4
