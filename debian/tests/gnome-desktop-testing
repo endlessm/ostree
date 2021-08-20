@@ -11,9 +11,6 @@ unset http_proxy
 unset https_proxy
 unset no_proxy
 
-# Some tests assume this isn't set
-unset SOURCE_DATE_EPOCH
-
 tests="$(gnome-desktop-testing-runner -l libostree | while read -r t; do
 	t="${t%% *}"
 

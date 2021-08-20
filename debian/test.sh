@@ -13,9 +13,6 @@ unset http_proxy
 unset https_proxy
 unset no_proxy
 
-# Some tests assume this isn't set
-unset SOURCE_DATE_EPOCH
-
 failed=0
 # Use line-buffering so stdout and stderr interleave somewhat nicely
 stdbuf -oL make check || failed=1
