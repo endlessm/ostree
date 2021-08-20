@@ -1,0 +1,34 @@
+From: Simon McVittie <smcv@collabora.com>
+Date: Mon, 26 Jul 2021 11:48:45 +0100
+Subject: tests: Unset SOURCE_DATE_EPOCH
+
+Some distributions set this during build in order to have reproducible
+builds from the same source code: for example, Debian uses the date
+from debian/changelog.
+
+However, some of our tests assume that `ostree commit` will result in
+a commit with the current date/time, and SOURCE_DATE_EPOCH breaks that
+assumption. Unset it for our build-time tests.
+
+Bug: https://github.com/ostreedev/ostree/issues/2405
+Signed-off-by: Simon McVittie <smcv@collabora.com>
+Applied-upstream: 2021.4, commit:2c5fa2cdb6c304394ca629c959ec53d878f3f93a
+---
+ tests/libtest.sh | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/tests/libtest.sh b/tests/libtest.sh
+index 260b8d1..f04ccaa 100755
+--- a/tests/libtest.sh
++++ b/tests/libtest.sh
+@@ -69,6 +69,10 @@ if ! test -f .testtmp; then
+     touch .testtmp
+ fi
+ 
++# Some distribution builds set this, but some of our build-time tests
++# assume this won't be used when committing
++unset SOURCE_DATE_EPOCH
++
+ # Also, unbreak `tar` inside `make check`...Automake will inject
+ # TAR_OPTIONS: --owner=0 --group=0 --numeric-owner presumably so that
+ # tarballs are predictable, except we don't want this in our tests.
