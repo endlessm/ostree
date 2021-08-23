@@ -1,3 +1,17 @@
+ostree (2021.3-2) unstable; urgency=medium
+
+  * d/gbp.conf: Switch branch back to debian/master
+  * d/p/tests-Unset-SOURCE_DATE_EPOCH.patch:
+    Apply patch from upstream to fix tests with SOURCE_DATE_EPOCH
+    - Revert "d/test.sh, d/tests: Unset SOURCE_DATE_EPOCH",
+      no longer needed
+  * d/rules: Normalize permissions of installed-tests
+  * Adjust Lintian overrides.
+    Recent debhelper installs units into /usr/lib/systemd, so adjust our
+    override to match either way.
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 23 Aug 2021 19:30:23 +0100
+
 ostree (2021.3-1) experimental; urgency=medium
 
   * New upstream release
