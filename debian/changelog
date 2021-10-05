@@ -1,3 +1,9 @@
+ostree (2021.4-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 05 Oct 2021 21:03:51 +0100
+
 ostree (2021.3-2) unstable; urgency=medium
 
   * d/gbp.conf: Switch branch back to debian/master
