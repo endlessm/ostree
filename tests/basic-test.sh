@@ -29,10 +29,8 @@ COMMIT_ARGS=""
 DIFF_ARGS=""
 if is_bare_user_only_repo repo; then
     # In bare-user-only repos we can only represent files with uid/gid 0, no
-    # xattrs and canonical permissions, so we need to commit them as such, or
-    # we end up with repos that don't pass fsck
-    COMMIT_ARGS="--canonical-permissions"
-    DIFF_ARGS="--owner-uid=0 --owner-gid=0 --no-xattrs"
+    # xattrs and canonical permissions.
+    DIFF_ARGS="--owner-uid=0 --owner-gid=0"
     # Also, since we can't check out uid=0 files we need to check out in user mode
     CHECKOUT_U_ARG="-U"
     CHECKOUT_H_ARGS="-U -H"
@@ -314,7 +312,7 @@ echo "ok diff revisions"
 
 cd ${test_tmpdir}/checkout-test2-4
 echo afile > oh-look-a-file
-$OSTREE diff test2 ./ > ${test_tmpdir}/diff-test2-2
+$OSTREE diff ${DIFF_ARGS} test2 ./ > ${test_tmpdir}/diff-test2-2
 rm oh-look-a-file
 cd ${test_tmpdir}
 assert_file_has_content diff-test2-2 'A *oh-look-a-file$'
@@ -437,7 +435,7 @@ echo "ok user checkout"
 $OSTREE commit ${COMMIT_ARGS} -b test2 -s "Another commit" --tree=ref=test2
 echo "ok commit from ref"
 
-$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Another commit with modifier" --tree=ref=test2 --owner-uid=`id -u`
+$OSTREE commit ${COMMIT_ARGS} -b test2 -s "Another commit with modifier" --tree=ref=test2 --mode-ro-executables
 echo "ok commit from ref with modifier"
 
 $OSTREE commit ${COMMIT_ARGS} -b trees/test2 -s 'ref with / in it' --tree=ref=test2
@@ -457,11 +455,18 @@ $OSTREE commit ${COMMIT_ARGS} --skip-if-unchanged -b trees/test2 -s 'should not 
 $OSTREE ls -R -C test2
 new_rev=$($OSTREE rev-parse test2)
 assert_streq "${old_rev}" "${new_rev}"
+$OSTREE fsck
 echo "ok commit --skip-if-unchanged"
 
 cd ${test_tmpdir}/checkout-test2-4
+# Unfortunately later tests depend on this right now, so commit anyways
 $OSTREE commit ${COMMIT_ARGS} -b test2 -s "no xattrs" --no-xattrs
-echo "ok commit with no xattrs"
+if have_selinux_relabel; then
+    echo "ok # SKIP we get an injected security.selinux xattr regardless, so we can't do this"
+else
+    $OSTREE fsck
+    echo "ok commit with no xattrs"
+fi
 
 mkdir tree-A tree-B
 touch tree-A/file-a tree-B/file-b
@@ -706,7 +711,7 @@ for x in $(seq 3); do
     # But they share the GPL
     echo 'this is the GPL' > pkg${x}/usr/share/licenses/COPYING
     ln -s COPYING pkg${x}/usr/share/licenses/LICENSE
-    $OSTREE commit -b union-identical-pkg${x} --tree=dir=pkg${x}
+    $OSTREE commit ${COMMIT_ARGS} -b union-identical-pkg${x} --tree=dir=pkg${x}
 done
 rm union-identical-test -rf
 for x in $(seq 3); do
@@ -756,7 +761,7 @@ cd ${test_tmpdir}
 rm files -rf && mkdir files
 touch files/anemptyfile
 touch files/anotheremptyfile
-$CMD_PREFIX ostree --repo=repo commit --consume -b tree-with-empty-files --tree=dir=files
+$CMD_PREFIX ostree --repo=repo commit ${COMMIT_ARGS} --consume -b tree-with-empty-files --tree=dir=files
 $CMD_PREFIX ostree --repo=repo checkout ${CHECKOUT_H_ARGS} tree-with-empty-files tree-with-empty-files
 if files_are_hardlinked tree-with-empty-files/an{,other}emptyfile; then
     fatal "--force-copy-zerosized failed"
@@ -773,7 +778,7 @@ echo "ok checkout zero sized files are not hardlinked"
 $CMD_PREFIX ostree --repo=repo checkout ${CHECKOUT_H_ARGS} --union-identical -z tree-with-empty-files tree-with-empty-files
 $CMD_PREFIX ostree --repo=repo checkout ${CHECKOUT_H_ARGS} --union-identical -z tree-with-empty-files tree-with-empty-files
 echo notempty > tree-with-empty-files/anemptyfile.new && mv tree-with-empty-files/anemptyfile{.new,}
-$CMD_PREFIX ostree --repo=repo commit --consume -b tree-with-conflicting-empty-files --tree=dir=tree-with-empty-files
+$CMD_PREFIX ostree --repo=repo commit ${COMMIT_ARGS} --consume -b tree-with-conflicting-empty-files --tree=dir=tree-with-empty-files
 # Reset back to base
 rm tree-with-empty-files -rf
 $CMD_PREFIX ostree --repo=repo checkout ${CHECKOUT_H_ARGS} --union-identical -z tree-with-empty-files tree-with-empty-files
@@ -787,11 +792,17 @@ cd ${test_tmpdir}
 rm files -rf && mkdir files
 mkdir files/worldwritable-dir
 chmod a+w files/worldwritable-dir
-$CMD_PREFIX ostree --repo=repo commit -b content-with-dir-world-writable --tree=dir=files
+$OSTREE commit ${COMMIT_ARGS} -b content-with-dir-world-writable --tree=dir=files
+# FIXME(lucab): this seems to fail in unprivileged bare mode.
+if ! have_selinux_relabel; then
+    $OSTREE fsck
+fi
 rm dir-co -rf
-$CMD_PREFIX ostree --repo=repo checkout -U -H -M content-with-dir-world-writable dir-co
-assert_file_has_mode dir-co/worldwritable-dir 775
-if ! is_bare_user_only_repo repo; then
+$OSTREE checkout -U -H -M content-with-dir-world-writable dir-co
+if is_bare_user_only_repo repo; then
+    assert_file_has_mode dir-co/worldwritable-dir 755
+else
+    assert_file_has_mode dir-co/worldwritable-dir 775
     rm dir-co -rf
     $CMD_PREFIX ostree --repo=repo checkout -U -H content-with-dir-world-writable dir-co
     assert_file_has_mode dir-co/worldwritable-dir 777

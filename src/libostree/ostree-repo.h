@@ -678,10 +678,14 @@ typedef OstreeRepoCommitFilterResult (*OstreeRepoCommitFilter) (OstreeRepo    *r
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE: No special flags
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS: Do not process extended attributes
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_GENERATE_SIZES: Generate size information.
- * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS: Canonicalize permissions for bare-user-only mode.
+ * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS: Canonicalize permissions.
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_ERROR_ON_UNLABELED: Emit an error if configured SELinux policy does not provide a label
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CONSUME: Delete added files/directories after commit; Since: 2017.13
  * @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL: If a devino cache hit is found, skip modifier filters (non-directories only); Since: 2017.14
+ *
+ * Flags modifying commit behavior. In bare-user-only mode, @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS
+ * and @OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS are automatically enabled.
+ *
  */
 typedef enum {
   OSTREE_REPO_COMMIT_MODIFIER_FLAGS_NONE = 0,
@@ -1425,6 +1429,48 @@ gboolean      ostree_repo_remote_get_gpg_verify_summary (OstreeRepo  *self,
                                                          const char  *name,
                                                          gboolean    *out_gpg_verify_summary,
                                                          GError     **error);
+
+/**
+ * OSTREE_GPG_KEY_GVARIANT_FORMAT:
+ *
+ * - aa{sv} - Array of subkeys. Each a{sv} dictionary represents a
+ *   subkey. The primary key is the first subkey. The following keys are
+ *   currently recognized:
+ *   - key: `fingerprint`, value: `s`, key fingerprint hexadecimal string
+ *   - key: `created`, value: `x`, key creation timestamp (seconds since
+ *     the Unix epoch in UTC, big-endian)
+ *   - key: `expires`, value: `x`, key expiration timestamp (seconds since
+ *     the Unix epoch in UTC, big-endian). If this value is 0, the key does
+ *     not expire.
+ *   - key: `revoked`, value: `b`, whether key is revoked
+ *   - key: `expired`, value: `b`, whether key is expired
+ *   - key: `invalid`, value: `b`, whether key is invalid
+ * - aa{sv} - Array of user IDs. Each a{sv} dictionary represents a
+ *   user ID. The following keys are currently recognized:
+ *   - key: `uid`, value: `s`, full user ID (name, email and comment)
+ *   - key: `name`, value: `s`, user ID name component
+ *   - key: `comment`, value: `s`, user ID comment component
+ *   - key: `email`, value: `s`, user ID email component
+ *   - key: `revoked`, value: `b`, whether user ID is revoked
+ *   - key: `invalid`, value: `b`, whether user ID is invalid
+ *   - key: `advanced_url`, value: `ms`, advanced WKD update URL
+ *   - key: `direct_url`, value: `ms`, direct WKD update URL
+ * - a{sv} - Additional metadata dictionary. There are currently no
+ *   additional metadata keys defined.
+ *
+ * Since: 2021.4
+ */
+#define OSTREE_GPG_KEY_GVARIANT_STRING "(aa{sv}aa{sv}a{sv})"
+#define OSTREE_GPG_KEY_GVARIANT_FORMAT G_VARIANT_TYPE (OSTREE_GPG_KEY_GVARIANT_STRING)
+
+_OSTREE_PUBLIC
+gboolean      ostree_repo_remote_get_gpg_keys (OstreeRepo          *self,
+                                               const char          *name,
+                                               const char * const  *key_ids,
+                                               GPtrArray          **out_keys,
+                                               GCancellable        *cancellable,
+                                               GError             **error);
+
 _OSTREE_PUBLIC
 gboolean ostree_repo_remote_gpg_import (OstreeRepo         *self,
                                         const char         *name,
@@ -1491,6 +1537,29 @@ OstreeGpgVerifyResult * ostree_repo_verify_summary (OstreeRepo    *self,
                                                     GBytes        *signatures,
                                                     GCancellable  *cancellable,
                                                     GError       **error);
+
+/**
+ * OstreeRepoVerifyFlags:
+ * @OSTREE_REPO_VERIFY_FLAGS_NONE: No flags
+ * @OSTREE_REPO_VERIFY_FLAGS_NO_GPG: Skip GPG verification
+ * @OSTREE_REPO_VERIFY_FLAGS_NO_SIGNAPI: Skip all other signature verification methods
+ * 
+ * Since: 2021.4
+ */
+typedef enum {
+  OSTREE_REPO_VERIFY_FLAGS_NONE = 0,
+  OSTREE_REPO_VERIFY_FLAGS_NO_GPG = (1 << 0),
+  OSTREE_REPO_VERIFY_FLAGS_NO_SIGNAPI = (1 << 1),
+} OstreeRepoVerifyFlags;
+
+_OSTREE_PUBLIC
+gboolean ostree_repo_signature_verify_commit_data (OstreeRepo    *self,
+                                                   const char    *remote_name,
+                                                   GBytes        *commit_data,
+                                                   GBytes        *commit_metadata,
+                                                   OstreeRepoVerifyFlags flags,
+                                                   char         **out_results,
+                                                   GError       **error);
 
 _OSTREE_PUBLIC
 gboolean ostree_repo_regenerate_summary (OstreeRepo     *self,

@@ -3117,7 +3117,7 @@ ostree_repo_write_commit_with_time (OstreeRepo      *self,
  * ostree_repo_read_commit_detached_metadata:
  * @self: Repo
  * @checksum: ASCII SHA256 commit checksum
- * @out_metadata: (out) (transfer full): Metadata associated with commit in with format "a{sv}", or %NULL if none exists
+ * @out_metadata: (out) (nullable) (transfer full): Metadata associated with commit in with format "a{sv}", or %NULL if none exists
  * @cancellable: Cancellable
  * @error: Error
  *
@@ -3132,6 +3132,8 @@ ostree_repo_read_commit_detached_metadata (OstreeRepo      *self,
                                            GCancellable    *cancellable,
                                            GError         **error)
 {
+  g_assert (out_metadata != NULL);
+
   char buf[_OSTREE_LOOSE_PATH_MAX];
   _ostree_loose_path (buf, checksum, OSTREE_OBJECT_TYPE_COMMIT_META, self->mode);
 
@@ -3286,22 +3288,35 @@ _ostree_repo_commit_modifier_apply (OstreeRepo               *self,
                                     GFileInfo                *file_info,
                                     GFileInfo               **out_modified_info)
 {
+  gboolean canonicalize_perms = FALSE;
+  gboolean has_filter = FALSE;
   OstreeRepoCommitFilterResult result = OSTREE_REPO_COMMIT_FILTER_ALLOW;
   GFileInfo *modified_info;
 
-  if (modifier == NULL ||
-      (modifier->filter == NULL &&
-       (modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS) == 0))
+  /* Auto-detect bare-user-only repo, force canonical permissions. */
+  if (self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY)
+    canonicalize_perms = TRUE;
+
+  if (modifier != NULL)
+    {
+      if ((modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS) != 0)
+        canonicalize_perms = TRUE;
+      if (modifier->filter != NULL)
+        has_filter = TRUE;
+    }
+
+  if (!(canonicalize_perms || has_filter))
     {
       *out_modified_info = g_object_ref (file_info);
-      return OSTREE_REPO_COMMIT_FILTER_ALLOW;
+      return OSTREE_REPO_COMMIT_FILTER_ALLOW; /* Note: early return (no actions needed) */
     }
 
   modified_info = g_file_info_dup (file_info);
-  if (modifier->filter)
+
+  if (has_filter)
     result = modifier->filter (self, path, modified_info, modifier->user_data);
 
-  if ((modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS) != 0)
+  if (canonicalize_perms)
     {
       guint mode = g_file_info_get_attribute_uint32 (modified_info, "unix::mode");
       switch (g_file_info_get_file_type (file_info))
@@ -3369,8 +3384,9 @@ get_final_xattrs (OstreeRepo                       *self,
   /* track whether the returned xattrs differ from the file on disk */
   gboolean modified = TRUE;
   const gboolean skip_xattrs = (modifier &&
-      modifier->flags & (OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS |
-                         OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS)) > 0;
+      (modifier->flags & (OSTREE_REPO_COMMIT_MODIFIER_FLAGS_SKIP_XATTRS |
+                          OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS)) > 0) ||
+      self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY;
 
   /* fetch on-disk xattrs if needed & not disabled */
   g_autoptr(GVariant) original_xattrs = NULL;
@@ -3618,8 +3634,8 @@ write_content_to_mtree_internal (OstreeRepo                  *self,
   /* Load flags into boolean constants for ease of readability (we also need to
    * NULL-check modifier)
    */
-  const gboolean canonical_permissions = modifier &&
-    (modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS);
+  const gboolean canonical_permissions = self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY ||
+    (modifier && (modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_CANONICAL_PERMISSIONS));
   const gboolean devino_canonical = modifier &&
     (modifier->flags & OSTREE_REPO_COMMIT_MODIFIER_FLAGS_DEVINO_CANONICAL);
   /* We currently only honor the CONSUME flag in the dfd_iter case to avoid even
