@@ -78,7 +78,7 @@ Pre-Depends:
  ${misc:Pre-Depends},
 Breaks:
  flatpak (<< 0.8.7-2~),
-Multi-arch: same
+Multi-Arch: same
 Description: content-addressed filesystem for operating system binaries (library)
  libostree is a library for managing bootable, immutable, versioned
  filesystem trees. It is like git in that it checksums individual files
