@@ -1,8 +1,19 @@
-ostree (2021.4-1) UNRELEASED; urgency=medium
+ostree (2021.4-1) unstable; urgency=medium
 
   * New upstream release
+    - Update symbols file
+    - d/copyright: Update
+    - Drop patch that was applied upstream
+  * Standards-Version: 4.6.0 (no further changes)
+  * d/control: Canonicalize field name case Multi-arch => Multi-Arch
+  * Bump debhelper compat level from 12 to 13
+    - debian/rules: Drop --fail-missing argument to dh_missing, which is
+      now the default.
+  * Remove Lintian override for #947258, fixed in lintian 2.105.0
+  * d/p/test-commit-sign.sh-Skip-a-unit-test-when-running-as-an-i.patch:
+    Add patch to fix installed-tests
 
- -- Simon McVittie <smcv@debian.org>  Tue, 05 Oct 2021 21:03:51 +0100
+ -- Simon McVittie <smcv@debian.org>  Tue, 05 Oct 2021 23:53:20 +0100
 
 ostree (2021.3-2) unstable; urgency=medium
 
