@@ -1,1 +1,2 @@
+test-commit-sign.sh-Skip-a-unit-test-when-running-as-an-i.patch
 debian/Skip-test-pull-repeated-during-CI.patch

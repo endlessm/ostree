@@ -1,0 +1,29 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Tue, 5 Oct 2021 23:51:37 +0100
+Subject: test-commit-sign.sh: Skip a unit test when running as an
+ installed-test
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ tests/test-commit-sign.sh | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/tests/test-commit-sign.sh b/tests/test-commit-sign.sh
+index c3f9ce6..e175919 100755
+--- a/tests/test-commit-sign.sh
++++ b/tests/test-commit-sign.sh
+@@ -88,8 +88,12 @@ assert_file_has_content_literal show.txt 'Found 1 signature'
+ echo "ok pull verify"
+ 
+ # Run tests written in C
+-${OSTREE_UNINSTALLED}/tests/test-commit-sign-sh-ext
+-echo "ok extra C tests"
++if [ -n "${OSTREE_UNINSTALLED:-}" ]; then
++  ${OSTREE_UNINSTALLED}/tests/test-commit-sign-sh-ext
++  echo "ok extra C tests"
++else
++  echo "ok # SKIP test only available when running uninstalled"
++fi
+ 
+ # Clean things up and reinit
+ rm repo -rf
