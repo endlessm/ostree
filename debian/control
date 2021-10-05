@@ -14,7 +14,7 @@ Build-Depends:
  bsdextrautils <!nocheck> | bsdmainutils (<< 12) <!nocheck>,
  ca-certificates,
  cpio,
- debhelper-compat (= 12),
+ debhelper-compat (= 13),
  dh-exec (>= 0.23~),
  docbook-xml <!nodoc>,
  docbook-xsl <!nodoc>,
