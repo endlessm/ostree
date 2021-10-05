@@ -127,6 +127,7 @@
     <keyword type="function" name="ostree_repo_remote_get_url ()" link="ostree-OstreeRepo.html#ostree-repo-remote-get-url"/>
     <keyword type="function" name="ostree_repo_remote_get_gpg_verify ()" link="ostree-OstreeRepo.html#ostree-repo-remote-get-gpg-verify"/>
     <keyword type="function" name="ostree_repo_remote_get_gpg_verify_summary ()" link="ostree-OstreeRepo.html#ostree-repo-remote-get-gpg-verify-summary"/>
+    <keyword type="function" name="ostree_repo_remote_get_gpg_keys ()" link="ostree-OstreeRepo.html#ostree-repo-remote-get-gpg-keys" since="2021.4"/>
     <keyword type="function" name="ostree_repo_remote_gpg_import ()" link="ostree-OstreeRepo.html#ostree-repo-remote-gpg-import"/>
     <keyword type="function" name="ostree_repo_remote_fetch_summary ()" link="ostree-OstreeRepo.html#ostree-repo-remote-fetch-summary"/>
     <keyword type="function" name="ostree_repo_remote_fetch_summary_with_options ()" link="ostree-OstreeRepo.html#ostree-repo-remote-fetch-summary-with-options" since="2016.6"/>
@@ -246,6 +247,7 @@
     <keyword type="function" name="ostree_repo_add_gpg_signature_summary ()" link="ostree-OstreeRepo.html#ostree-repo-add-gpg-signature-summary"/>
     <keyword type="function" name="ostree_repo_gpg_sign_data ()" link="ostree-OstreeRepo.html#ostree-repo-gpg-sign-data" since="2020.8"/>
     <keyword type="function" name="ostree_repo_gpg_verify_data ()" link="ostree-OstreeRepo.html#ostree-repo-gpg-verify-data" since="2016.6"/>
+    <keyword type="function" name="ostree_repo_signature_verify_commit_data ()" link="ostree-OstreeRepo.html#ostree-repo-signature-verify-commit-data"/>
     <keyword type="function" name="ostree_repo_verify_commit ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit"/>
     <keyword type="function" name="ostree_repo_verify_commit_ext ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit-ext"/>
     <keyword type="function" name="ostree_repo_verify_commit_for_remote ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit-for-remote" since="2016.14"/>
@@ -539,6 +541,7 @@
     <keyword type="constant" name="OSTREE_SEPOLICY_RESTORECON_FLAGS_KEEP_EXISTING" link="ostree-SELinux-policy-management.html#OSTREE-SEPOLICY-RESTORECON-FLAGS-KEEP-EXISTING:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_FLAGS_NONE" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_FLAGS_IGNORE_UNCONFIGURED" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-FLAGS-IGNORE-UNCONFIGURED:CAPS"/>
+    <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_FLAGS_STAGE" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-FLAGS-STAGE:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_NONE" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-PULL-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_ALLOW_OLDER" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-PULL-FLAGS-ALLOW-OLDER:CAPS"/>
     <keyword type="constant" name="OSTREE_SYSROOT_UPGRADER_PULL_FLAGS_SYNTHETIC" link="ostree-Simple-upgrade-class.html#OSTREE-SYSROOT-UPGRADER-PULL-FLAGS-SYNTHETIC:CAPS"/>

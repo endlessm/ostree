@@ -372,8 +372,11 @@ create_file_copy_from_input_at (OstreeRepo     *repo,
                  * checkout_file_hardlink().
                  */
                 OstreeChecksumFlags flags = 0;
-                if (repo->disable_xattrs)
+                if (repo->disable_xattrs || repo->mode == OSTREE_REPO_MODE_BARE_USER_ONLY)
                   flags |= OSTREE_CHECKSUM_FLAGS_IGNORE_XATTRS;
+
+                if (repo->mode == OSTREE_REPO_MODE_BARE_USER_ONLY)
+                  flags |= OSTREE_CHECKSUM_FLAGS_CANONICAL_PERMISSIONS;
 
                 g_autofree char *actual_checksum = NULL;
                 if (!ostree_checksum_file_at (destination_dfd, destination_name,
@@ -478,6 +481,7 @@ checkout_file_hardlink (OstreeRepo                          *self,
     }
   else if (errno == EEXIST)
     {
+      int saved_errno = errno;
       /* When we get EEXIST, we need to handle the different overwrite modes. */
       switch (options->overwrite_mode)
         {
@@ -525,8 +529,11 @@ checkout_file_hardlink (OstreeRepo                          *self,
                  * shouldn't hit this anymore. https://github.com/ostreedev/ostree/pull/1258
                  * */
                 OstreeChecksumFlags flags = 0;
-                if (self->disable_xattrs)
-                    flags |= OSTREE_CHECKSUM_FLAGS_IGNORE_XATTRS;
+                if (self->disable_xattrs || self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY)
+                  flags |= OSTREE_CHECKSUM_FLAGS_IGNORE_XATTRS;
+
+                if (self->mode == OSTREE_REPO_MODE_BARE_USER_ONLY)
+                  flags |= OSTREE_CHECKSUM_FLAGS_CANONICAL_PERMISSIONS;
 
                 g_autofree char *actual_checksum = NULL;
                 if (!ostree_checksum_file_at (destination_dfd, destination_name,
@@ -560,6 +567,7 @@ checkout_file_hardlink (OstreeRepo                          *self,
             else
               {
                 g_assert_cmpint (options->overwrite_mode, ==, OSTREE_REPO_CHECKOUT_OVERWRITE_UNION_IDENTICAL);
+                errno = saved_errno;
                 return glnx_throw_errno_prefix (error, "Hardlinking %s to %s", loose_path, destination_name);
               }
             break;

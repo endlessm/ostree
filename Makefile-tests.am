@@ -152,6 +152,7 @@ _installed_or_uninstalled_test_scripts = \
 if USE_GPGME
 _installed_or_uninstalled_test_scripts += \
 	tests/test-remote-gpg-import.sh \
+	tests/test-remote-gpg-list-keys.sh \
 	tests/test-gpg-signed-commit.sh \
 	tests/test-admin-gpg.sh \
 	$(NULL)
@@ -389,6 +390,10 @@ tests_test_rfc2616_dates_SOURCES = \
 	tests/test-rfc2616-dates.c
 tests_test_rfc2616_dates_CFLAGS = $(TESTS_CFLAGS)
 tests_test_rfc2616_dates_LDADD = $(TESTS_LDADD)
+
+noinst_PROGRAMS += tests/test-commit-sign-sh-ext
+tests_test_commit_sign_sh_ext_CFLAGS = $(TESTS_CFLAGS)
+tests_test_commit_sign_sh_ext_LDADD = $(TESTS_LDADD)
 
 if USE_GPGME
 tests_test_gpg_verify_result_SOURCES = \

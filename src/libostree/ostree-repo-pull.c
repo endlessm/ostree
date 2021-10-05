@@ -2439,7 +2439,7 @@ get_best_static_delta_start_for (OtPullData *pull_data,
       if (!ostree_repo_load_commit (pull_data->repo, to_revision,
                                     NULL, &to_rev_state, error))
         return FALSE;
-      if (!(to_rev_state & OSTREE_REPO_COMMIT_STATE_PARTIAL))
+      if (!(commitstate_is_partial(pull_data, to_rev_state)))
         {
           /* We already have this commit, we're done! */
           out_result->result = DELTA_SEARCH_RESULT_UNCHANGED;
@@ -3965,6 +3965,7 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
   else
     {
       g_autofree char *unconfigured_state = NULL;
+      g_autofree char *custom_backend = NULL;
 
       g_free (pull_data->remote_name);
       pull_data->remote_name = g_strdup (remote_name_or_baseurl);
@@ -3994,6 +3995,20 @@ ostree_repo_pull_with_options (OstreeRepo             *self,
         {
           g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
                        "remote unconfigured-state: %s", unconfigured_state);
+          goto out;
+        }
+
+      if (!ostree_repo_get_remote_option (self, pull_data->remote_name,
+                                          "custom-backend", NULL,
+                                          &custom_backend,
+                                          error))
+        goto out;
+
+      if (custom_backend)
+        {
+          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                       "Cannot fetch via libostree - remote '%s' uses custom backend '%s'", 
+                       pull_data->remote_name, custom_backend);
           goto out;
         }
     }
