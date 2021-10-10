@@ -40,6 +40,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2021.2@LIBOSTREE_2021.2 2021.2
  LIBOSTREE_2021.3@LIBOSTREE_2021.3 2021.3
  LIBOSTREE_2021.4@LIBOSTREE_2021.4 2021.4
+ LIBOSTREE_2021.5@LIBOSTREE_2021.5 2021.5
  ostree_async_progress_copy_state@LIBOSTREE_2019.6 2019.6
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
@@ -186,6 +187,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_mutable_tree_lookup@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_new@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_new_from_checksum@LIBOSTREE_2018.7 2018.7
+ ostree_mutable_tree_new_from_commit@LIBOSTREE_2021.5 2021.5
  ostree_mutable_tree_remove@LIBOSTREE_2018.9 2018.9
  ostree_mutable_tree_replace_file@LIBOSTREE_2016.3 2016.4
  ostree_mutable_tree_set_contents_checksum@LIBOSTREE_2016.3 2016.4
@@ -416,6 +418,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sepolicy_get_type@LIBOSTREE_2016.3 2016.4
  ostree_sepolicy_new@LIBOSTREE_2016.3 2016.4
  ostree_sepolicy_new_at@LIBOSTREE_2017.4 2017.4
+ ostree_sepolicy_new_from_commit@LIBOSTREE_2021.5 2021.5
  ostree_sepolicy_restorecon@LIBOSTREE_2016.3 2016.4
  ostree_sepolicy_setfscreatecon@LIBOSTREE_2016.3 2016.4
  ostree_sign_add_pk@LIBOSTREE_2020.4 2020.4
