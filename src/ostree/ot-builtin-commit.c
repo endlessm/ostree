@@ -602,6 +602,17 @@ ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocatio
       filter_data.skip_list = skip_list;
       modifier = ostree_repo_commit_modifier_new (flags, commit_filter,
                                                   &filter_data, NULL);
+
+      if (opt_selinux_policy)
+        {
+          glnx_autofd int rootfs_dfd = -1;
+          if (!glnx_opendirat (AT_FDCWD, opt_selinux_policy, TRUE, &rootfs_dfd, error))
+            goto out;
+          policy = ostree_sepolicy_new_at (rootfs_dfd, cancellable, error);
+          if (!policy)
+            goto out;
+          ostree_repo_commit_modifier_set_sepolicy (modifier, policy);
+        }
     }
 
   if (opt_editor)
@@ -627,20 +638,14 @@ ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocatio
 
   if (opt_base)
     {
-      g_autofree char *base_commit = NULL;
-      g_autoptr(GFile) base_root = NULL;
-      if (!ostree_repo_read_commit (repo, opt_base, &base_root, &base_commit, cancellable, error))
+      mtree = ostree_mutable_tree_new_from_commit (repo, opt_base, error);
+      if (!mtree)
         goto out;
-      OstreeRepoFile *rootf = (OstreeRepoFile*) base_root;
-
-      mtree = ostree_mutable_tree_new_from_checksum (repo,
-                                                     ostree_repo_file_tree_get_contents_checksum (rootf),
-                                                     ostree_repo_file_tree_get_metadata_checksum (rootf));
 
       if (opt_selinux_policy_from_base)
         {
           g_assert (modifier);
-          if (!ostree_repo_commit_modifier_set_sepolicy_from_commit (modifier, repo, base_commit, cancellable, error))
+          if (!ostree_repo_commit_modifier_set_sepolicy_from_commit (modifier, repo, opt_base, cancellable, error))
             goto out;
           /* Don't try to handle it twice */
           opt_selinux_policy_from_base = FALSE;
@@ -691,14 +696,8 @@ ostree_builtin_commit (int argc, char **argv, OstreeCommandInvocation *invocatio
         {
           if (first && opt_selinux_policy_from_base)
             {
-              opt_selinux_policy = g_strdup (tree);
-              opt_selinux_policy_from_base = FALSE;
-            }
-          if (first && opt_selinux_policy)
-            {
-              g_assert (modifier);
               glnx_autofd int rootfs_dfd = -1;
-              if (!glnx_opendirat (AT_FDCWD, opt_selinux_policy, TRUE, &rootfs_dfd, error))
+              if (!glnx_opendirat (AT_FDCWD, tree, TRUE, &rootfs_dfd, error))
                 goto out;
               policy = ostree_sepolicy_new_at (rootfs_dfd, cancellable, error);
               if (!policy)

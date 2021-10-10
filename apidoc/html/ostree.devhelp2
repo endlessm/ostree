@@ -276,6 +276,7 @@
     <keyword type="enum" name="enum OstreeRepoPruneFlags" link="ostree-OstreeRepo.html#OstreeRepoPruneFlags"/>
     <keyword type="enum" name="enum OstreeRepoPullFlags" link="ostree-OstreeRepo.html#OstreeRepoPullFlags"/>
     <keyword type="function" name="ostree_mutable_tree_new ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-new"/>
+    <keyword type="function" name="ostree_mutable_tree_new_from_commit ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-new-from-commit" since="2021.5"/>
     <keyword type="function" name="ostree_mutable_tree_new_from_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-new-from-checksum" since="2018.7"/>
     <keyword type="function" name="ostree_mutable_tree_check_error ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-check-error" since="2018.7"/>
     <keyword type="function" name="ostree_mutable_tree_set_metadata_checksum ()" link="ostree-In-memory-modifiable-filesystem-tree.html#ostree-mutable-tree-set-metadata-checksum"/>
@@ -358,6 +359,7 @@
     <keyword type="typedef" name="OstreeAsyncProgress" link="ostree-Progress-notification-system-for-asynchronous-operations.html#OstreeAsyncProgress"/>
     <keyword type="function" name="ostree_sepolicy_new ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-new"/>
     <keyword type="function" name="ostree_sepolicy_new_at ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-new-at" since="2017.4"/>
+    <keyword type="function" name="ostree_sepolicy_new_from_commit ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-new-from-commit"/>
     <keyword type="function" name="ostree_sepolicy_get_path ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-path"/>
     <keyword type="function" name="ostree_sepolicy_get_name ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-name"/>
     <keyword type="function" name="ostree_sepolicy_get_label ()" link="ostree-SELinux-policy-management.html#ostree-sepolicy-get-label"/>

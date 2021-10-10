@@ -26,8 +26,6 @@ set -euo pipefail
 # Exports OSTREE_SYSROOT so --sysroot not needed.
 setup_os_repository "archive" "syslinux"
 
-echo "1..2"
-
 ${CMD_PREFIX} ostree --repo=sysroot/ostree/repo pull-local --remote=testos testos-repo testos/buildmain/x86_64-runtime
 rev=$(${CMD_PREFIX} ostree --repo=sysroot/ostree/repo rev-parse testos/buildmain/x86_64-runtime)
 export rev
@@ -53,6 +51,9 @@ chmod 700 ${etc}/a/long/dir/forking
 # Symlink to nonexistent path, to ensure we aren't walking symlinks
 ln -s no-such-file ${etc}/a/link-to-no-such-file
 
+# fifo which should be ignored
+mkfifo "${etc}/fifo-to-ignore"
+
 # Remove a directory
 rm ${etc}/testdirectory -rf
 
@@ -67,6 +68,10 @@ newetc=${newroot}/etc
 
 assert_file_has_content ${newroot}/usr/etc/NetworkManager/nm.conf "a default daemon file"
 assert_file_has_content ${newetc}/NetworkManager/nm.conf "a modified config file"
+
+if test -e "${newetc}"/fifo-to-ignore; then
+  fatal "Should not have copied fifo!"
+fi
 
 assert_file_has_mode() {
   stat -c '%a' $1 > mode.txt
@@ -89,7 +94,7 @@ test -L ${newetc}/a/link-to-no-such-file || assert_not_reached "should have syml
 assert_has_dir ${newroot}/usr/etc/testdirectory
 assert_not_has_dir ${newetc}/testdirectory
 
-echo "ok"
+tap_ok first
 
 # Add /etc/initially-empty
 cd "${test_tmpdir}/osdata"
@@ -141,4 +146,6 @@ assert_not_has_file sysroot/ostree/deploy/testos/deploy/${rev}.0/usr/etc/initial
 assert_has_file sysroot/ostree/deploy/testos/deploy/${rev}.0/etc/initially-empty/mynewfile
 rm ${newconfpath}
 
-echo "ok"
+tap_ok second
+
+tap_end
