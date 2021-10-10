@@ -1,11 +1,11 @@
-ostree (2021.5-1) UNRELEASED; urgency=medium
+ostree (2021.5-1) unstable; urgency=medium
 
   * New upstream release
     - Update symbols file
   * d/p/test-commit-sign.sh-Skip-a-unit-test-when-running-as-an-i.patch:
     Mark as applied upstream
 
- -- Simon McVittie <smcv@debian.org>  Sun, 10 Oct 2021 17:34:51 +0100
+ -- Simon McVittie <smcv@debian.org>  Sun, 10 Oct 2021 17:51:27 +0100
 
 ostree (2021.4-1) unstable; urgency=medium
 
