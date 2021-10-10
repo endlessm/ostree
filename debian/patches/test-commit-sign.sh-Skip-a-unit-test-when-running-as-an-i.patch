@@ -4,6 +4,8 @@ Subject: test-commit-sign.sh: Skip a unit test when running as an
  installed-test
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Forwarded: https://github.com/ostreedev/ostree/pull/2459
+Applied-upstream: 2021.6, commit:92ed1857ae49a5e4d16bea345b6b5bf6671bf990
 ---
  tests/test-commit-sign.sh | 8 ++++++--
  1 file changed, 6 insertions(+), 2 deletions(-)
