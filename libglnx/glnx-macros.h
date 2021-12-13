@@ -52,7 +52,7 @@ G_BEGIN_DECLS
                 unsigned _i_;                                           \
                 for (_i_ = 0; _i_ < G_N_ELEMENTS(_appendees_) && _appendees_[_i_]; _i_++) \
                         _len_ += strlen(_appendees_[_i_]);              \
-                _p_ = _d_ = alloca(_len_ + 1);                          \
+                _p_ = _d_ = (char*) alloca(_len_ + 1);                          \
                 for (_i_ = 0; _i_ < G_N_ELEMENTS(_appendees_) && _appendees_[_i_]; _i_++) \
                         _p_ = stpcpy(_p_, _appendees_[_i_]);            \
                 *_p_ = 0;                                               \
@@ -136,7 +136,7 @@ G_BEGIN_DECLS
          guard && ({ g_hash_table_iter_init (&it, ht), TRUE; });               \
          guard = FALSE)                                                        \
             for (kt k; guard; guard = FALSE)                                   \
-                for (vt v; g_hash_table_iter_next (&it, (gpointer)&k, (gpointer)&v);)
+                for (vt v; g_hash_table_iter_next (&it, (void**)&k, (void**)&v);)
 
 
 /* Cleaner method to iterate over a GHashTable. I.e. rather than

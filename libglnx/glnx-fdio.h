@@ -43,7 +43,7 @@ G_BEGIN_DECLS
 static inline
 const char *glnx_basename (const char *path)
 {
-  gchar *base = strrchr (path, G_DIR_SEPARATOR);
+  const gchar *base = strrchr (path, G_DIR_SEPARATOR);
 
   if (base)
     return base + 1;
@@ -55,7 +55,7 @@ const char *glnx_basename (const char *path)
 static inline void
 glnx_stdio_file_cleanup (void *filep)
 {
-  FILE *f = filep;
+  FILE *f = (FILE*)filep;
   if (f)
     fclose (f);
 }
@@ -143,12 +143,14 @@ glnx_file_get_contents_utf8_at (int                   dfd,
  * GLnxFileReplaceFlags:
  * @GLNX_FILE_REPLACE_DATASYNC_NEW: Call fdatasync() even if the file did not exist
  * @GLNX_FILE_REPLACE_NODATASYNC: Never call fdatasync()
+ * @GLNX_FILE_REPLACE_INCREASING_MTIME: Ensure that st_mtime increases (in second precision)
  *
  * Flags controlling file replacement.
  */
 typedef enum {
   GLNX_FILE_REPLACE_DATASYNC_NEW = (1 << 0),
   GLNX_FILE_REPLACE_NODATASYNC = (1 << 1),
+  GLNX_FILE_REPLACE_INCREASING_MTIME = (1 << 2),
 } GLnxFileReplaceFlags;
 
 gboolean
@@ -187,7 +189,8 @@ glnx_regfile_copy_bytes (int fdf, int fdt, off_t max_bytes);
 typedef enum {
   GLNX_FILE_COPY_OVERWRITE = (1 << 0),
   GLNX_FILE_COPY_NOXATTRS = (1 << 1),
-  GLNX_FILE_COPY_DATASYNC = (1 << 2)
+  GLNX_FILE_COPY_DATASYNC = (1 << 2),
+  GLNX_FILE_COPY_NOCHOWN = (1 << 3)
 } GLnxFileCopyFlags;
 
 gboolean
