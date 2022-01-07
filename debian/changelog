@@ -1,3 +1,9 @@
+ostree (2022.1-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 07 Jan 2022 10:40:55 +0000
+
 ostree (2021.6-1) unstable; urgency=medium
 
   * New upstream release
