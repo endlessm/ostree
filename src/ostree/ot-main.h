@@ -14,9 +14,7 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library. If not, see <https://www.gnu.org/licenses/>.
  *
  * Author: Colin Walters <walters@verbum.org>
  */
@@ -60,9 +58,15 @@ struct OstreeCommandInvocation {
   OstreeCommand *command;
 };
 
+int ostree_main (int argc, char **argv, OstreeCommand *commands);
+
 int ostree_run (int argc, char **argv, OstreeCommand *commands, GError **error);
 
 int ostree_usage (OstreeCommand *commands, gboolean is_error);
+
+char* ostree_command_lookup_external (int argc, char **argv, OstreeCommand *commands);
+
+int ostree_command_exec_external (char **argv);
 
 gboolean ostree_parse_sysroot_or_repo_option (GOptionContext *context,
                                               const char *sysroot_path,

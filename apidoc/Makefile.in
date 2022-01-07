@@ -29,9 +29,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Shared variables between toplevel Makefile.am and doc/Makefile.am
 # ...since gtk-doc forces use of recursive make =(
@@ -51,9 +49,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # -*- mode: makefile -*-
 #
@@ -222,6 +218,10 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FUSE3_CFLAGS = @FUSE3_CFLAGS@
+FUSE3_LIBS = @FUSE3_LIBS@
+FUSE_CFLAGS = @FUSE_CFLAGS@
+FUSE_LIBS = @FUSE_LIBS@
 GJS = @GJS@
 GLIB_CFLAGS = @GLIB_CFLAGS@
 GLIB_COMPILE_RESOURCES = @GLIB_COMPILE_RESOURCES@
@@ -392,6 +392,7 @@ libostree_public_headers = \
 	src/libostree/ostree.h \
 	src/libostree/ostree-async-progress.h \
 	src/libostree/ostree-autocleanups.h \
+	src/libostree/ostree-content-writer.h \
 	src/libostree/ostree-core.h \
 	src/libostree/ostree-dummy-enumtypes.h \
 	src/libostree/ostree-mutable-tree.h \

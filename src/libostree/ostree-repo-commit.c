@@ -14,9 +14,7 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library. If not, see <https://www.gnu.org/licenses/>.
  *
  * Author: Colin Walters <walters@verbum.org>
  */
@@ -1683,8 +1681,8 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
   /* Set up to abort the transaction if we return early from this function.
    * This needs to be manually built here due to a circular dependency. */
   g_autoptr(OstreeRepoAutoTransaction) txn = g_malloc(sizeof(OstreeRepoAutoTransaction));
+  g_assert (txn != NULL);
   txn->repo = self;
-  (void) txn; /* Add use to silence static analysis */
 
   memset (&self->txn.stats, 0, sizeof (OstreeRepoTransactionStats));
 

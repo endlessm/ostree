@@ -12,9 +12,7 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General
- * Public License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place, Suite 330,
- * Boston, MA 02111-1307, USA.
+ * Public License along with this library. If not, see <https://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -34,7 +32,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_YEAR_VERSION (2021)
+#define OSTREE_YEAR_VERSION (2022)
 
 /**
  * OSTREE_RELEASE_VERSION:
@@ -43,7 +41,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_RELEASE_VERSION (6)
+#define OSTREE_RELEASE_VERSION (1)
 
 /**
  * OSTREE_VERSION
@@ -52,7 +50,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION (2021.6)
+#define OSTREE_VERSION (2022.1)
 
 /**
  * OSTREE_VERSION_S:
@@ -62,7 +60,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION_S "2021.6"
+#define OSTREE_VERSION_S "2022.1"
 
 #define OSTREE_ENCODE_VERSION(year,release) \
         ((year) << 16 | (release))

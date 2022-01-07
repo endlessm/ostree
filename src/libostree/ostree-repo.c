@@ -15,9 +15,7 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library. If not, see <https://www.gnu.org/licenses/>.
  *
  * Author: Colin Walters <walters@verbum.org>
  */
@@ -1560,8 +1558,10 @@ gboolean
 ostree_repo_is_writable (OstreeRepo *self,
                          GError **error)
 {
-  g_return_val_if_fail (self->inited, FALSE);
+  g_assert (self != NULL);
+  g_assert (self->inited);
 
+  g_assert (self->writable == (self->writable_error == NULL));
   if (error != NULL && self->writable_error != NULL)
     *error = g_error_copy (self->writable_error);
 
@@ -1597,7 +1597,8 @@ _ostree_repo_update_mtime (OstreeRepo        *self,
 GKeyFile *
 ostree_repo_get_config (OstreeRepo *self)
 {
-  g_return_val_if_fail (self->inited, NULL);
+  g_assert (self != NULL);
+  g_assert (self->inited);
 
   return self->config;
 }
@@ -1615,7 +1616,8 @@ ostree_repo_copy_config (OstreeRepo *self)
   char *data;
   gsize len;
 
-  g_return_val_if_fail (self->inited, NULL);
+  g_assert (self != NULL);
+  g_assert (self->inited);
 
   copy = g_key_file_new ();
   data = g_key_file_to_data (self->config, &len, NULL);
@@ -3814,7 +3816,8 @@ ostree_repo_equal (OstreeRepo *a,
 OstreeRepoMode
 ostree_repo_get_mode (OstreeRepo  *self)
 {
-  g_return_val_if_fail (self->inited, FALSE);
+  g_assert (self != NULL);
+  g_assert (self->inited);
 
   return self->mode;
 }
@@ -6105,7 +6108,7 @@ summary_add_ref_entry (OstreeRepo       *self,
  * and refs in %OSTREE_SUMMARY_COLLECTION_MAP are guaranteed to be in
  * lexicographic order.
  *
- * Locking: exclusive
+ * Locking: shared (Prior to 2021.7, this was exclusive)
  */
 gboolean
 ostree_repo_regenerate_summary (OstreeRepo     *self,
@@ -6113,16 +6116,10 @@ ostree_repo_regenerate_summary (OstreeRepo     *self,
                                 GCancellable   *cancellable,
                                 GError        **error)
 {
-  /* Take an exclusive lock. This makes sure the commits and deltas don't get
-   * deleted while generating the summary. It also means we can be sure refs
-   * won't be created/updated/deleted during the operation, without having to
-   * add exclusive locks to those operations which would prevent concurrent
-   * commits from working.
-   */
   g_autoptr(OstreeRepoAutoLock) lock = NULL;
   gboolean no_deltas_in_summary = FALSE;
 
-  lock = ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_EXCLUSIVE,
+  lock = ostree_repo_auto_lock_push (self, OSTREE_REPO_LOCK_SHARED,
                                      cancellable, error);
   if (!lock)
     return FALSE;

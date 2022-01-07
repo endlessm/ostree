@@ -29,9 +29,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Copyright (C) 2011,2014 Colin Walters <walters@verbum.org>
 #
@@ -48,9 +46,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # GLIB - Library of useful C routines
 
@@ -112,9 +108,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Makefile for C source code
 #
@@ -133,9 +127,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Shared variables between toplevel Makefile.am and doc/Makefile.am
 # ...since gtk-doc forces use of recursive make =(
@@ -155,9 +147,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Makefile for C source code
 #
@@ -176,9 +166,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Copyright (C) 2011 Colin Walters <walters@verbum.org>
 #
@@ -195,9 +183,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Copyright (C) 2016 Colin Walters <walters@verbum.org>
 #
@@ -214,9 +200,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Makefile for tests code
 #
@@ -235,9 +219,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Makefile for boot module
 #
@@ -256,9 +238,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Makefile for man/
 #
@@ -277,9 +257,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 # Makefile for bash/
 #
@@ -298,9 +276,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-# Boston, MA 02111-1307, USA.
+# License along with this library. If not, see <https://www.gnu.org/licenses/>.
 
 
 
@@ -2049,13 +2025,13 @@ am__EXEEXT_21 = tests/test-core.js tests/test-remotes-config-dir.js \
 @BUILDOPT_GJS_TRUE@am__EXEEXT_22 = $(js_tests) $(am__EXEEXT_21)
 am__EXEEXT_23 = tests/test-basic.sh tests/test-basic-user.sh \
 	tests/test-basic-user-only.sh tests/test-basic-root.sh \
-	tests/test-pull-subpath.sh tests/test-archivez.sh \
-	tests/test-remote-add.sh tests/test-remote-headers.sh \
-	tests/test-commit-sign.sh tests/test-commit-timestamp.sh \
-	tests/test-export.sh tests/test-help.sh \
-	tests/test-libarchive.sh tests/test-parent.sh \
-	tests/test-pull-bare.sh tests/test-pull-bareuser.sh \
-	tests/test-pull-bareuseronly.sh \
+	tests/test-cli-extensions.sh tests/test-pull-subpath.sh \
+	tests/test-archivez.sh tests/test-remote-add.sh \
+	tests/test-remote-headers.sh tests/test-commit-sign.sh \
+	tests/test-commit-timestamp.sh tests/test-export.sh \
+	tests/test-help.sh tests/test-libarchive.sh \
+	tests/test-parent.sh tests/test-pull-bare.sh \
+	tests/test-pull-bareuser.sh tests/test-pull-bareuseronly.sh \
 	tests/test-pull2-bareuseronly.sh \
 	tests/test-pull-commit-only.sh tests/test-pull-depth.sh \
 	tests/test-pull-mirror-summary.sh \
@@ -2224,6 +2200,10 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FUSE3_CFLAGS = @FUSE3_CFLAGS@
+FUSE3_LIBS = @FUSE3_LIBS@
+FUSE_CFLAGS = @FUSE_CFLAGS@
+FUSE_LIBS = @FUSE_LIBS@
 GJS = @GJS@
 GLIB_CFLAGS = @GLIB_CFLAGS@
 GLIB_COMPILE_RESOURCES = @GLIB_COMPILE_RESOURCES@
@@ -2627,6 +2607,7 @@ libostree_public_headers = \
 	src/libostree/ostree.h \
 	src/libostree/ostree-async-progress.h \
 	src/libostree/ostree-autocleanups.h \
+	src/libostree/ostree-content-writer.h \
 	src/libostree/ostree-core.h \
 	src/libostree/ostree-dummy-enumtypes.h \
 	src/libostree/ostree-mutable-tree.h \
@@ -2909,13 +2890,14 @@ test_programs = tests/test-bloom tests/test-repo-finder-config \
 	$(am__append_81)
 _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-basic-user.sh tests/test-basic-user-only.sh \
-	tests/test-basic-root.sh tests/test-pull-subpath.sh \
-	tests/test-archivez.sh tests/test-remote-add.sh \
-	tests/test-remote-headers.sh tests/test-commit-sign.sh \
-	tests/test-commit-timestamp.sh tests/test-export.sh \
-	tests/test-help.sh tests/test-libarchive.sh \
-	tests/test-parent.sh tests/test-pull-bare.sh \
-	tests/test-pull-bareuser.sh tests/test-pull-bareuseronly.sh \
+	tests/test-basic-root.sh tests/test-cli-extensions.sh \
+	tests/test-pull-subpath.sh tests/test-archivez.sh \
+	tests/test-remote-add.sh tests/test-remote-headers.sh \
+	tests/test-commit-sign.sh tests/test-commit-timestamp.sh \
+	tests/test-export.sh tests/test-help.sh \
+	tests/test-libarchive.sh tests/test-parent.sh \
+	tests/test-pull-bare.sh tests/test-pull-bareuser.sh \
+	tests/test-pull-bareuseronly.sh \
 	tests/test-pull2-bareuseronly.sh \
 	tests/test-pull-commit-only.sh tests/test-pull-depth.sh \
 	tests/test-pull-mirror-summary.sh \
@@ -8240,6 +8222,13 @@ tests/test-basic-user-only.sh.log: tests/test-basic-user-only.sh
 tests/test-basic-root.sh.log: tests/test-basic-root.sh
 	@p='tests/test-basic-root.sh'; \
 	b='tests/test-basic-root.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-cli-extensions.sh.log: tests/test-cli-extensions.sh
+	@p='tests/test-cli-extensions.sh'; \
+	b='tests/test-cli-extensions.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

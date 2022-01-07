@@ -14,9 +14,7 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library. If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -458,7 +456,7 @@ dispatch_bspatch (OstreeRepo                 *repo,
                    buf,
                    state->content_size,
                    &stream) < 0)
-        return FALSE;
+        return glnx_throw (error, "bsdiff patch failed");
 
       if (!_ostree_repo_bare_content_write (repo, &state->content_out,
                                             buf, state->content_size,
