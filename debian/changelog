@@ -1,6 +1,7 @@
 ostree (2022.1-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Build using FUSE 3
 
  -- Simon McVittie <smcv@debian.org>  Fri, 07 Jan 2022 10:40:55 +0000
 
