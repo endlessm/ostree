@@ -1,2 +1,2 @@
 # ostree-remount genuinely does need to be run that early
-ostree-boot: systemd-service-file-refers-to-unusual-wantedby-target */systemd/system/ostree-remount.service local-fs.target
+ostree-boot: systemd-service-file-refers-to-unusual-wantedby-target local-fs.target [*/systemd/system/ostree-remount.service]

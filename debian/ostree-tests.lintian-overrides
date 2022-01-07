@@ -4,7 +4,7 @@ ostree-tests: extra-license-file usr/libexec/installed-tests/libostree/gpg-verif
 ostree-tests: extra-license-file usr/libexec/installed-tests/libostree/gpg-verify-data/lgpl2.sig*
 
 # This is deliberate, working around the assumption of recursive make
-ostree-tests: symlink-is-self-recursive usr/libexec/installed-tests/libostree/tests .
+ostree-tests: symlink-is-self-recursive . [usr/libexec/installed-tests/libostree/tests]
 
 # gjs has been broken on sparc64 for a while, and is missing on the
 # other architectures mentioned here.
@@ -14,4 +14,4 @@ ostree-tests: symlink-is-self-recursive usr/libexec/installed-tests/libostree/te
 
 # This shared object genuinely doesn't use any libc ABIs directly,
 # only via GLib
-library-not-linked-against-libc usr/libexec/installed-tests/libostree/libreaddir-rand.so
+library-not-linked-against-libc [usr/libexec/installed-tests/libostree/libreaddir-rand.so]
