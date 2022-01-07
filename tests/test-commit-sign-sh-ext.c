@@ -14,9 +14,7 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library. If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -44,6 +42,7 @@ corrupt (GBytes *input)
   g_assert_cmpint (len, >, 0);
   g_assert_cmpint (len, <, G_MAXINT);
   g_autofree char *newbuf = g_memdup (buf, len);
+  g_assert (newbuf != NULL);
   int o = g_random_int_range (0, len);
   newbuf[o] = (newbuf[0] + 1);
 
@@ -81,26 +80,26 @@ run (GError **error)
   if (ostree_repo_signature_verify_commit_data (repo, "origin", commit_bytes, detached_meta_bytes, 
                                                 OSTREE_REPO_VERIFY_FLAGS_NO_GPG | OSTREE_REPO_VERIFY_FLAGS_NO_SIGNAPI, 
                                                 &verify_report, error))
-    g_error ("Should not have validated");
+    return glnx_throw (error, "Should not have validated");
   assert_error_contains (error, "No commit verification types enabled");
 
   // No signatures
   g_autoptr(GBytes) empty = g_bytes_new_static ("", 0);
   if (ostree_repo_signature_verify_commit_data (repo, "origin", commit_bytes, empty, 0, 
                                                  &verify_report, error))
-    g_error ("Should not have validated");
+    return glnx_throw (error, "Should not have validated");
   assert_error_contains (error, "no signatures found");
   // No such remote
   if (ostree_repo_signature_verify_commit_data (repo, "nosuchremote", commit_bytes, detached_meta_bytes, 0, 
                                                  &verify_report, error))
-    g_error ("Should not have validated");
+    return glnx_throw (error, "Should not have validated");
   assert_error_contains (error, "Remote \"nosuchremote\" not found");
 
   // Corrupted commit
   g_autoptr(GBytes) corrupted_commit = corrupt (commit_bytes);
   if (ostree_repo_signature_verify_commit_data (repo, "origin", corrupted_commit, detached_meta_bytes, 0, 
                                                  &verify_report, error))
-    g_error ("Should not have validated");
+    return glnx_throw (error, "Should not have validated");
   assert_error_contains (error, "BAD signature");
 
   return TRUE;

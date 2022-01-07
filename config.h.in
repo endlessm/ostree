@@ -24,6 +24,9 @@
 /* Define if we should be compatible with pseudo */
 #undef ENABLE_WRPSEUDO_COMPAT
 
+/* Define to the FUSE API version */
+#undef FUSE_USE_VERSION
+
 /* The system grub2-mkconfig executable name */
 #undef GRUB2_MKCONFIG_PATH
 

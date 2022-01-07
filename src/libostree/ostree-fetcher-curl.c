@@ -14,9 +14,7 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library. If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include "config.h"
@@ -770,8 +768,8 @@ initiate_next_curl_request (FetcherRequest *req,
     curl_easy_setopt (req->easy, CURLOPT_URL, uri);
   }
 
-  curl_easy_setopt (req->easy, CURLOPT_USERAGENT,
-                    self->custom_user_agent ?: OSTREE_FETCHER_USERAGENT_STRING);
+  (void) curl_easy_setopt (req->easy, CURLOPT_USERAGENT,
+                           self->custom_user_agent ?: OSTREE_FETCHER_USERAGENT_STRING);
 
   /* Set caching request headers */
   if (req->if_none_match != NULL)
