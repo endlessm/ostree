@@ -18,10 +18,10 @@ Signed-off-by: Simon McVittie <smcv@debian.org>
  1 file changed, 4 insertions(+)
 
 diff --git a/tests/test-pull-repeated.sh b/tests/test-pull-repeated.sh
-index f0ea157..e068e0f 100755
+index 4c32161..3b7d10b 100755
 --- a/tests/test-pull-repeated.sh
 +++ b/tests/test-pull-repeated.sh
-@@ -23,6 +23,10 @@ set -euo pipefail
+@@ -21,6 +21,10 @@ set -euo pipefail
  
  . $(dirname $0)/libtest.sh
  
