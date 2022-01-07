@@ -1,9 +1,10 @@
-ostree (2022.1-1) UNRELEASED; urgency=medium
+ostree (2022.1-1) experimental; urgency=medium
 
   * New upstream release
   * Build using FUSE 3
+  * Update syntax of Lintian overrides for newer Lintian
 
- -- Simon McVittie <smcv@debian.org>  Fri, 07 Jan 2022 10:40:55 +0000
+ -- Simon McVittie <smcv@debian.org>  Fri, 07 Jan 2022 10:44:49 +0000
 
 ostree (2021.6-1) unstable; urgency=medium
 
