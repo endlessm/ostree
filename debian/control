@@ -137,6 +137,8 @@ Architecture: linux-any
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
+Breaks:
+ flatpak-builder (<< 1.2.1-2~),
 Description: content-addressed filesystem for operating system binaries
  libostree provides a library and tools for managing bootable, immutable,
  versioned filesystem trees. It is like git in that it checksums
