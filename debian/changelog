@@ -1,3 +1,11 @@
+ostree (2022.1-2) experimental; urgency=medium
+
+  * ostree Breaks flatpak-builder (<< 1.2.1-2~).
+    Previous versions relied on being able to use FUSE 2 options that are
+    no longer supported by FUSE 3, so prepare a lockstep transition.
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 10 Jan 2022 12:42:08 +0000
+
 ostree (2022.1-1) experimental; urgency=medium
 
   * New upstream release
