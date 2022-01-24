@@ -1,3 +1,11 @@
+ostree (2022.1-3) unstable; urgency=medium
+
+  * Use debhelper 11 features instead of dh-exec
+  * Move README.md from gir1.2-ostree-1.0 to libostree-doc
+  * Release to unstable
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 24 Jan 2022 10:43:09 +0000
+
 ostree (2022.1-2) experimental; urgency=medium
 
   * ostree Breaks flatpak-builder (<< 1.2.1-2~).
