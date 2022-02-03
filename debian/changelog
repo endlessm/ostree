@@ -1,3 +1,14 @@
+ostree (2022.1-3endless1) master; urgency=medium
+
+  * Rebase Endless changes (T32964):
+    - Add README.endless
+    - Remove grub.cfg handling in ostree-boot package
+    - Switch from FUSE 3 back to FUSE 2 and remove the associated Breaks
+      flatpak-builder as our flatpak-builder is older and isn't compatible
+      with FUSE 3.
+
+ -- Dan Nicholson <dbn@endlessos.org>  Fri, 04 Feb 2022 10:30:15 -0700
+
 ostree (2022.1-3) unstable; urgency=medium
 
   * Use debhelper 11 features instead of dh-exec
