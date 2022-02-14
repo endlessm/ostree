@@ -1,4 +1,4 @@
-(This README is correct as of 2022-02-04.)
+(This README is correct as of 2022-02-09.)
 
 The packaging in this branch is based on debian's git repo at
 https://salsa.debian.org/debian/ostree.git. When updating, changes
@@ -9,8 +9,5 @@ in the following ways:
 
 1. We don’t use the full OSTree grub integration (etc/grub.d/15_ostree,
    usr/libexec/libostree/grub2-15_ostree). (See T18848.)
-
-2. We build against FUSE 2 rather than FUSE 3 until our
-   `flatpak-builder` is new enough to also use FUSE 3.
 
 These can be fixed in the future.

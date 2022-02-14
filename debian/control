@@ -20,7 +20,7 @@ Build-Depends:
  docbook-xsl <!nodoc>,
  e2fslibs-dev,
  elfutils,
- fuse,
+ fuse3,
  gjs [!alpha !hppa !ia64 !m68k !sh4 !sparc64 !x32],
  gnupg <!nocheck>,
  gobject-introspection,
@@ -30,7 +30,7 @@ Build-Depends:
  libavahi-client-dev (>= 0.6.31),
  libavahi-glib-dev (>= 0.6.31),
  libcap-dev,
- libfuse-dev,
+ libfuse3-dev,
  libgirepository1.0-dev,
  libglib2.0-dev (>= 2.44.0),
  libgpgme-dev,
@@ -137,6 +137,8 @@ Architecture: linux-any
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
+Breaks:
+ flatpak-builder (<< 1.2.1-2~),
 Description: content-addressed filesystem for operating system binaries
  libostree provides a library and tools for managing bootable, immutable,
  versioned filesystem trees. It is like git in that it checksums
@@ -187,7 +189,7 @@ Depends:
  bsdextrautils | bsdmainutils (<< 12),
  ca-certificates,
  cpio,
- fuse,
+ fuse3,
  gir1.2-ostree-1.0,
  gjs [!alpha !hppa !ia64 !m68k !sh4 !sparc64 !x32],
  gnupg,
