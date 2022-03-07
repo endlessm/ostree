@@ -1,2 +1,3 @@
 debian/Skip-test-pull-repeated-during-CI.patch
 s390x-se-luks-gencpio-Use-interoperable-path-for-bash.patch
+test-prune-Read-to-the-end-of-cut-1-output.patch

@@ -8,6 +8,8 @@ ostree (2022.2-1) UNRELEASED; urgency=medium
   * d/p/s390x-se-luks-gencpio-Use-interoperable-path-for-bash.patch:
     Add patch to retain compatibility with non-/usr-merged systems
   * d/libostree-1-1.symbols: Update
+  * d/p/test-prune-Read-to-the-end-of-cut-1-output.patch:
+    Add patch to fix an intermittent test failure involving SIGPIPE
 
  -- Simon McVittie <smcv@debian.org>  Mon, 07 Mar 2022 19:16:49 +0000
 
