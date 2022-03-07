@@ -1,0 +1,22 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Mon, 7 Mar 2022 19:23:09 +0000
+Subject: s390x-se-luks-gencpio: Use interoperable path for bash
+
+On OSs that do not consistently merge /usr/bin with /bin, the path to
+bash has traditionally been /bin/bash.
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ src/libostree/s390x-se-luks-gencpio | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libostree/s390x-se-luks-gencpio b/src/libostree/s390x-se-luks-gencpio
+index f0ad24e..a62d43e 100755
+--- a/src/libostree/s390x-se-luks-gencpio
++++ b/src/libostree/s390x-se-luks-gencpio
+@@ -1,4 +1,4 @@
+- #!/usr/bin/bash
++ #!/bin/bash
+  # This script creates new initramdisk with LUKS config within
+ set -euo pipefail
+ 

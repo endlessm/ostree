@@ -10,3 +10,4 @@ usr/lib/ostree/ostree-prepare-root
 usr/lib/ostree/ostree-remount
 usr/lib/tmpfiles.d/ostree-tmpfiles.conf
 usr/libexec/libostree/grub2-15_ostree
+usr/libexec/libostree/s390x-se-luks-gencpio

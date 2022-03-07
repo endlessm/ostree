@@ -41,6 +41,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2021.3@LIBOSTREE_2021.3 2021.3
  LIBOSTREE_2021.4@LIBOSTREE_2021.4 2021.4
  LIBOSTREE_2021.5@LIBOSTREE_2021.5 2021.5
+ LIBOSTREE_2022.2@LIBOSTREE_2022.2 2022.2
  ostree_async_progress_copy_state@LIBOSTREE_2019.6 2019.6
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
@@ -381,6 +382,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_traverse_commit@LIBOSTREE_2016.3 2016.4
  ostree_repo_traverse_commit_union@LIBOSTREE_2016.3 2016.4
  ostree_repo_traverse_commit_union_with_parents@LIBOSTREE_2018.5 2018.5
+ ostree_repo_traverse_commit_with_flags@LIBOSTREE_2022.2 2022.2
  ostree_repo_traverse_new_parents@LIBOSTREE_2018.5 2018.5
  ostree_repo_traverse_new_reachable@LIBOSTREE_2016.3 2016.4
  ostree_repo_traverse_parents_get_commits@LIBOSTREE_2018.5 2018.5
