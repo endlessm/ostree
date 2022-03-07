@@ -1,0 +1,24 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Mon, 7 Mar 2022 21:06:48 +0000
+Subject: s390x-se-luks-gencpio: Fix shebang syntax
+
+An indented `#!` is technically meaningless, although many shells will
+run text files with the shell if asked to execute them.
+
+Signed-off-by: Simon McVittie <smcv@debian.org>
+---
+ src/libostree/s390x-se-luks-gencpio | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/libostree/s390x-se-luks-gencpio b/src/libostree/s390x-se-luks-gencpio
+index f0ad24e..729aff6 100755
+--- a/src/libostree/s390x-se-luks-gencpio
++++ b/src/libostree/s390x-se-luks-gencpio
+@@ -1,5 +1,5 @@
+- #!/usr/bin/bash
+- # This script creates new initramdisk with LUKS config within
++#!/usr/bin/bash
++# This script creates new initramdisk with LUKS config within
+ set -euo pipefail
+ 
+ old_initrd=$1
