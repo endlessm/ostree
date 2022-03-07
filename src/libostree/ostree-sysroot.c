@@ -184,6 +184,9 @@ ostree_sysroot_class_init (OstreeSysrootClass *klass)
 static void
 ostree_sysroot_init (OstreeSysroot *self)
 {
+  const GDebugKey globalopt_keys[] = {
+    { "skip-sync", OSTREE_SYSROOT_GLOBAL_OPT_SKIP_SYNC },
+  };
   const GDebugKey keys[] = {
     { "mutable-deployments", OSTREE_SYSROOT_DEBUG_MUTABLE_DEPLOYMENTS },
     { "test-fifreeze", OSTREE_SYSROOT_DEBUG_TEST_FIFREEZE },
@@ -191,6 +194,8 @@ ostree_sysroot_init (OstreeSysroot *self)
     { "no-dtb", OSTREE_SYSROOT_DEBUG_TEST_NO_DTB },
   };
 
+  self->opt_flags = g_parse_debug_string (g_getenv ("OSTREE_SYSROOT_OPTS"),
+                                          globalopt_keys, G_N_ELEMENTS (globalopt_keys));
   self->debug_flags = g_parse_debug_string (g_getenv ("OSTREE_SYSROOT_DEBUG"),
                                             keys, G_N_ELEMENTS (keys));
 
@@ -973,7 +978,7 @@ ostree_sysroot_initialize (OstreeSysroot  *self,
        * we'll use it to sanity check that we found a booted deployment for example.
        * Second, we also find out whether sysroot == /.
        */
-      if (!glnx_fstatat_allow_noent (AT_FDCWD, "/run/ostree-booted", NULL, 0, error))
+      if (!glnx_fstatat_allow_noent (AT_FDCWD, OSTREE_PATH_BOOTED, NULL, 0, error))
         return FALSE;
       const gboolean ostree_booted = (errno == 0);
 
@@ -1106,11 +1111,11 @@ sysroot_load_from_bootloader_configs (OstreeSysroot  *self,
         return FALSE;
       if (errno == ENOENT)
         {
-          return glnx_throw (error, "Unexpected state: /run/ostree-booted found, but no /boot/loader directory");
+          return glnx_throw (error, "Unexpected state: %s found, but no /boot/loader directory", OSTREE_PATH_BOOTED);
         }
       else
         {
-          return glnx_throw (error, "Unexpected state: /run/ostree-booted found and in / sysroot, but bootloader entry not found");
+          return glnx_throw (error, "Unexpected state: %s found and in / sysroot, but bootloader entry not found", OSTREE_PATH_BOOTED);
         }
      }
 

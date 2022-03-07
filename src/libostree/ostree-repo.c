@@ -2704,6 +2704,9 @@ ostree_repo_mode_to_string (OstreeRepoMode   mode,
       /* Legacy alias */
       ret_mode ="archive-z2";
       break;
+    case OSTREE_REPO_MODE_BARE_SPLIT_XATTRS:
+      ret_mode = "bare-split-xattrs";
+      break;
     default:
       return glnx_throw (error, "Invalid mode '%d'", mode);
     }
@@ -2734,6 +2737,8 @@ ostree_repo_mode_from_string (const char      *mode,
   else if (strcmp (mode, "archive-z2") == 0 ||
            strcmp (mode, "archive") == 0)
     ret_mode = OSTREE_REPO_MODE_ARCHIVE;
+  else if (strcmp (mode, "bare-split-xattrs") == 0)
+    ret_mode = OSTREE_REPO_MODE_BARE_SPLIT_XATTRS;
   else
     return glnx_throw (error, "Invalid mode '%s' in repository configuration", mode);
 
@@ -4171,6 +4176,32 @@ repo_load_file_archive (OstreeRepo *self,
     }
 }
 
+static GVariant *
+_ostree_repo_read_xattrs_file_link (OstreeRepo   *self,
+                                    const char   *checksum,
+                                    GCancellable *cancellable,
+                                    GError      **error)
+{
+  g_assert (self != NULL);
+  g_assert (checksum != NULL);
+
+  char xattr_path[_OSTREE_LOOSE_PATH_MAX];
+  _ostree_loose_path (xattr_path, checksum, OSTREE_OBJECT_TYPE_FILE_XATTRS_LINK, self->mode);
+
+  g_autoptr(GVariant) xattrs = NULL;
+  glnx_autofd int fd = -1;
+  if (!glnx_openat_rdonly (self->objects_dir_fd, xattr_path, FALSE, &fd, error))
+    return FALSE;
+
+  g_assert (fd >= 0);
+  if (!ot_variant_read_fd (fd, 0, G_VARIANT_TYPE ("a(ayay)"), TRUE,
+                           &xattrs, error))
+    return glnx_prefix_error_null (error, "Deserializing xattrs content");
+
+  g_assert (xattrs != NULL);
+  return g_steal_pointer (&xattrs);
+}
+
 gboolean
 _ostree_repo_load_file_bare (OstreeRepo         *self,
                              const char         *checksum,
@@ -4218,8 +4249,9 @@ _ostree_repo_load_file_bare (OstreeRepo         *self,
                                           cancellable, error);
     }
 
-  const gboolean need_open =
-    (out_fd || out_xattrs || self->mode == OSTREE_REPO_MODE_BARE_USER);
+  const gboolean need_open = (out_fd ||
+                              (out_xattrs && self->mode == OSTREE_REPO_MODE_BARE) ||
+                              self->mode == OSTREE_REPO_MODE_BARE_USER);
   /* If it's a regular file and we're requested to return the fd, do it now. As
    * a special case in bare-user, we always do an open, since the stat() metadata
    * lives there.
@@ -4284,10 +4316,8 @@ _ostree_repo_load_file_bare (OstreeRepo         *self,
           ret_xattrs = g_variant_ref_sink (g_variant_builder_end (&builder));
         }
     }
-  else
+  else if (self->mode == OSTREE_REPO_MODE_BARE)
     {
-      g_assert (self->mode == OSTREE_REPO_MODE_BARE);
-
       if (S_ISREG (stbuf.st_mode) && out_xattrs)
         {
           if (self->disable_xattrs)
@@ -4305,6 +4335,19 @@ _ostree_repo_load_file_bare (OstreeRepo         *self,
                                                   cancellable, error))
             return FALSE;
         }
+    }
+  else if (self->mode == OSTREE_REPO_MODE_BARE_SPLIT_XATTRS)
+    {
+      if (out_xattrs)
+        {
+          ret_xattrs = _ostree_repo_read_xattrs_file_link(self, checksum, cancellable, error);
+          if (ret_xattrs == NULL)
+            return FALSE;
+        }
+    }
+  else
+    {
+      g_assert_not_reached ();
     }
 
   if (out_fd)
@@ -6064,16 +6107,21 @@ summary_add_ref_entry (OstreeRepo       *self,
   g_autoptr(GVariant) commit_obj = NULL;
   if (!ostree_repo_load_variant (self, OSTREE_OBJECT_TYPE_COMMIT, checksum, &commit_obj, error))
     return FALSE;
+  g_autoptr(GVariant) orig_metadata = g_variant_get_child_value (commit_obj, 0);
 
   g_variant_dict_init (&commit_metadata_builder, NULL);
 
-  /* Forward the commit’s timestamp if it’s valid. */
+  /* Forward the commit’s timestamp and version if they're valid. */
   guint64 commit_timestamp = ostree_commit_get_timestamp (commit_obj);
   g_autoptr(GDateTime) dt = g_date_time_new_from_unix_utc (commit_timestamp);
 
   if (dt != NULL)
     g_variant_dict_insert_value (&commit_metadata_builder, OSTREE_COMMIT_TIMESTAMP,
                                  g_variant_new_uint64 (GUINT64_TO_BE (commit_timestamp)));
+
+  const char *version = NULL;
+  if (g_variant_lookup (orig_metadata, OSTREE_COMMIT_META_KEY_VERSION, "&s", &version))
+    g_variant_dict_insert (&commit_metadata_builder, OSTREE_COMMIT_VERSION, "s", version);
 
   g_variant_builder_add_value (refs_builder,
                                g_variant_new ("(s(t@ay@a{sv}))", ref,

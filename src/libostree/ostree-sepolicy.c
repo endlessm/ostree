@@ -422,7 +422,6 @@ initable_init (GInitable     *initable,
     {
       const char *policy_rootpath = gs_file_get_path_cached (policy_root);
 
-      g_setenv ("LIBSELINUX_DISABLE_PCRE_PRECOMPILED", "1", FALSE);
       if (selinux_set_policy_root (policy_rootpath) != 0)
         return glnx_throw_errno_prefix (error, "selinux_set_policy_root(%s)", policy_rootpath);
 
