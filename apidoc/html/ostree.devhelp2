@@ -227,6 +227,7 @@
     <keyword type="function" name="ostree_repo_traverse_commit ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-commit"/>
     <keyword type="function" name="ostree_repo_traverse_commit_union ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-commit-union"/>
     <keyword type="function" name="ostree_repo_traverse_commit_union_with_parents ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-commit-union-with-parents" since="2018.5"/>
+    <keyword type="function" name="ostree_repo_traverse_commit_with_flags ()" link="ostree-OstreeRepo.html#ostree-repo-traverse-commit-with-flags" since="2018.5"/>
     <keyword type="function" name="ostree_repo_commit_traverse_iter_cleanup ()" link="ostree-OstreeRepo.html#ostree-repo-commit-traverse-iter-cleanup"/>
     <keyword type="function" name="ostree_repo_commit_traverse_iter_clear ()" link="ostree-OstreeRepo.html#ostree-repo-commit-traverse-iter-clear"/>
     <keyword type="function" name="ostree_repo_commit_traverse_iter_get_dir ()" link="ostree-OstreeRepo.html#ostree-repo-commit-traverse-iter-get-dir"/>
@@ -476,11 +477,14 @@
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_TOMBSTONE_COMMIT" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-TOMBSTONE-COMMIT:CAPS"/>
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_COMMIT_META" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-COMMIT-META:CAPS"/>
     <keyword type="constant" name="OSTREE_OBJECT_TYPE_PAYLOAD_LINK" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-PAYLOAD-LINK:CAPS"/>
+    <keyword type="constant" name="OSTREE_OBJECT_TYPE_FILE_XATTRS" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-FILE-XATTRS:CAPS"/>
+    <keyword type="constant" name="OSTREE_OBJECT_TYPE_FILE_XATTRS_LINK" link="ostree-Core-repository-independent-functions.html#OSTREE-OBJECT-TYPE-FILE-XATTRS-LINK:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_ARCHIVE" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-ARCHIVE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_ARCHIVE_Z2" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-ARCHIVE-Z2:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE_USER" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE-USER:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_MODE_BARE_USER_ONLY" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE-USER-ONLY:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_MODE_BARE_SPLIT_XATTRS" link="ostree-OstreeRepo.html#OSTREE-REPO-MODE-BARE-SPLIT-XATTRS:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LOCK_SHARED" link="ostree-OstreeRepo.html#OSTREE-REPO-LOCK-SHARED:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_LOCK_EXCLUSIVE" link="ostree-OstreeRepo.html#OSTREE-REPO-LOCK-EXCLUSIVE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_REMOTE_CHANGE_ADD" link="ostree-OstreeRepo.html#OSTREE-REPO-REMOTE-CHANGE-ADD:CAPS"/>
@@ -519,6 +523,7 @@
     <keyword type="constant" name="OSTREE_STATIC_DELTA_GENERATE_OPT_LOWLATENCY" link="ostree-OstreeRepo.html#OSTREE-STATIC-DELTA-GENERATE-OPT-LOWLATENCY:CAPS"/>
     <keyword type="constant" name="OSTREE_STATIC_DELTA_GENERATE_OPT_MAJOR" link="ostree-OstreeRepo.html#OSTREE-STATIC-DELTA-GENERATE-OPT-MAJOR:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_TRAVERSE_FLAG_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-TRAVERSE-FLAG-NONE:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_COMMIT_TRAVERSE_FLAG_COMMIT_ONLY" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-TRAVERSE-FLAG-COMMIT-ONLY:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_ITER_RESULT_ERROR" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-ITER-RESULT-ERROR:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_ITER_RESULT_END" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-ITER-RESULT-END:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_COMMIT_ITER_RESULT_FILE" link="ostree-OstreeRepo.html#OSTREE-REPO-COMMIT-ITER-RESULT-FILE:CAPS"/>
@@ -526,6 +531,7 @@
     <keyword type="constant" name="OSTREE_REPO_PRUNE_FLAGS_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-PRUNE-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PRUNE_FLAGS_NO_PRUNE" link="ostree-OstreeRepo.html#OSTREE-REPO-PRUNE-FLAGS-NO-PRUNE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PRUNE_FLAGS_REFS_ONLY" link="ostree-OstreeRepo.html#OSTREE-REPO-PRUNE-FLAGS-REFS-ONLY:CAPS"/>
+    <keyword type="constant" name="OSTREE_REPO_PRUNE_FLAGS_COMMIT_ONLY" link="ostree-OstreeRepo.html#OSTREE-REPO-PRUNE-FLAGS-COMMIT-ONLY:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_NONE" link="ostree-OstreeRepo.html#OSTREE-REPO-PULL-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_MIRROR" link="ostree-OstreeRepo.html#OSTREE-REPO-PULL-FLAGS-MIRROR:CAPS"/>
     <keyword type="constant" name="OSTREE_REPO_PULL_FLAGS_COMMIT_ONLY" link="ostree-OstreeRepo.html#OSTREE-REPO-PULL-FLAGS-COMMIT-ONLY:CAPS"/>

@@ -41,6 +41,10 @@ static gboolean opt_verbose;
 static gboolean opt_version;
 static gboolean opt_print_current_dir;
 
+// TODO: make this public?  But no one sane wants to use our C headers
+// to find where to put files.  Maybe we can make it printed by the CLI?
+#define _OSTREE_EXT_DIR PKGLIBEXECDIR "/ext"
+
 static GOptionEntry global_entries[] = {
   { "verbose", 'v', 0, G_OPTION_ARG_NONE, &opt_verbose, "Print debug information during command processing", NULL },
   { "version", 0, 0, G_OPTION_ARG_NONE, &opt_version, "Print version information and exit", NULL },
@@ -116,7 +120,7 @@ maybe_setup_mount_namespace (gboolean    *out_ns,
     return TRUE;
 
   /* If the system isn't booted via libostree, also nothing to do */
-  if (!glnx_fstatat_allow_noent (AT_FDCWD, "/run/ostree-booted", NULL, 0, error))
+  if (!glnx_fstatat_allow_noent (AT_FDCWD, OSTREE_PATH_BOOTED, NULL, 0, error))
     return FALSE;
   if (errno == ENOENT)
     return TRUE;
@@ -188,7 +192,7 @@ ostree_command_lookup_external (int argc,
 
   // Find the first verb (ignoring all earlier flags), then
   // check if it is a known native command. Otherwise, try to look it
-  // up in $PATH.
+  // up in /usr/lib/ostree/ostree-$cmd or $PATH.
   // We ignore argv[0] here, the ostree binary itself is not multicall.
   for (guint arg_index = 1; arg_index < argc; arg_index++)
     {
@@ -204,10 +208,18 @@ ostree_command_lookup_external (int argc,
             return NULL;
         }
 
+
       g_autofree gchar *ext_command = g_strdup_printf ("ostree-%s", current_arg);
+
+      /* First, search in our libdir /usr/lib/ostree/ostree-$cmd */
+      g_autofree char *ext_lib = g_strconcat (_OSTREE_EXT_DIR, "/", ext_command, NULL);
+      struct stat stbuf;
+      if (stat (ext_lib, &stbuf) == 0)
+        return g_steal_pointer (&ext_lib);
+
+      /* Otherwise, look in $PATH */
       if (g_find_program_in_path (ext_command) == NULL)
           return NULL;
-
       return g_steal_pointer (&ext_command);
     }
 
@@ -253,7 +265,11 @@ ostree_run (int    argc,
   int in, out;
 
   /* avoid gvfs (http://bugzilla.gnome.org/show_bug.cgi?id=526454) */
-  g_setenv ("GIO_USE_VFS", "local", TRUE);
+  if (!g_setenv ("GIO_USE_VFS", "local", TRUE))
+    {
+      (void) glnx_throw (res_error, "Failed to set environment variable GIO_USE_FVS");
+      return 1;
+    }
 
   g_log_set_handler (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, message_handler, NULL);
 

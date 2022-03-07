@@ -1,7 +1,7 @@
 AC_PREREQ([2.63])
 dnl To perform a release, follow the instructions in `docs/CONTRIBUTING.md`.
 m4_define([year_version], [2022])
-m4_define([release_version], [1])
+m4_define([release_version], [2])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -25,6 +25,10 @@ AC_SUBST([YEAR_VERSION], [year_version])
 AC_SUBST([RELEASE_VERSION], [release_version])
 AC_SUBST([PACKAGE_VERSION], [package_version])
 
+dnl automake variables we want in pkg-config
+pkglibexecdir=$libexecdir/$PACKAGE
+AC_SUBST(pkglibexecdir)
+
 AS_IF([echo "$CFLAGS" | grep -q -E -e '-Werror($| )'], [], [
 CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
   -pipe \
@@ -45,7 +49,7 @@ CC_CHECK_FLAGS_APPEND([WARN_CFLAGS], [CFLAGS], [\
   -Werror=undef \
   -Werror=incompatible-pointer-types \
   -Werror=misleading-indentation \
-  -Werror=missing-include-dirs -Werror=aggregate-return \
+  -Werror=missing-include-dirs  \
   -Wstrict-aliasing=2 \
   -Werror=unused-result \
 ])])

@@ -39,6 +39,7 @@ G_STATIC_ASSERT(OSTREE_REPO_MODE_ARCHIVE_Z2 == 1);
 G_STATIC_ASSERT(OSTREE_REPO_MODE_ARCHIVE == OSTREE_REPO_MODE_ARCHIVE_Z2);
 G_STATIC_ASSERT(OSTREE_REPO_MODE_BARE_USER == 2);
 G_STATIC_ASSERT(OSTREE_REPO_MODE_BARE_USER_ONLY == 3);
+G_STATIC_ASSERT(OSTREE_REPO_MODE_BARE_SPLIT_XATTRS == 4);
 
 static GBytes *variant_to_lenprefixed_buffer (GVariant *variant);
 
@@ -1141,7 +1142,7 @@ _ostree_compare_object_checksum (OstreeObjectType objtype,
  * @dir_info: a #GFileInfo containing directory information
  * @xattrs: (allow-none): Optional extended attributes
  *
- * Returns: (transfer full): A new #GVariant containing %OSTREE_OBJECT_TYPE_DIR_META
+ * Returns: (transfer full) (not nullable): A new #GVariant containing %OSTREE_OBJECT_TYPE_DIR_META
  */
 GVariant *
 ostree_create_directory_metadata (GFileInfo    *dir_info,
@@ -1228,6 +1229,10 @@ ostree_object_type_to_string (OstreeObjectType objtype)
       return "commitmeta";
     case OSTREE_OBJECT_TYPE_PAYLOAD_LINK:
       return "payload-link";
+    case OSTREE_OBJECT_TYPE_FILE_XATTRS:
+      return "file-xattrs";
+    case OSTREE_OBJECT_TYPE_FILE_XATTRS_LINK:
+      return "file-xattrs-link";
     default:
       g_assert_not_reached ();
       return NULL;
@@ -1257,6 +1262,10 @@ ostree_object_type_from_string (const char *str)
     return OSTREE_OBJECT_TYPE_COMMIT_META;
   else if (!strcmp (str, "payload-link"))
     return OSTREE_OBJECT_TYPE_PAYLOAD_LINK;
+  else if (!strcmp (str, "file-xattrs"))
+    return OSTREE_OBJECT_TYPE_FILE_XATTRS;
+  else if (!strcmp (str, "file-xattrs-link"))
+    return OSTREE_OBJECT_TYPE_FILE_XATTRS_LINK;
   g_assert_not_reached ();
   return 0;
 }
@@ -2141,6 +2150,8 @@ _ostree_validate_structureof_metadata (OstreeObjectType objtype,
       /* TODO */
       break;
     case OSTREE_OBJECT_TYPE_FILE:
+    case OSTREE_OBJECT_TYPE_FILE_XATTRS:
+    case OSTREE_OBJECT_TYPE_FILE_XATTRS_LINK:
       g_assert_not_reached ();
       break;
     }
@@ -2196,6 +2207,19 @@ ostree_validate_structureof_commit (GVariant      *commit,
 {
   if (!validate_variant (commit, OSTREE_COMMIT_GVARIANT_FORMAT, error))
     return FALSE;
+
+  g_autoptr(GVariant) metadata = NULL;
+  g_variant_get_child (commit, 0, "@a{sv}", &metadata);
+  g_assert (metadata != NULL);
+  g_autoptr(GVariantIter) metadata_iter = g_variant_iter_new (metadata);
+  g_assert (metadata_iter != NULL);
+  g_autoptr(GVariant) metadata_entry = NULL;
+  const gchar *metadata_key = NULL;
+  while (g_variant_iter_loop (metadata_iter, "{sv}", &metadata_key, NULL))
+    {
+      if (metadata_key == NULL || strlen (metadata_key) == 0)
+        return glnx_throw (error, "Empty metadata key");
+    }
 
   g_autoptr(GVariant) parent_csum_v = NULL;
   g_variant_get_child (commit, 1, "@ay", &parent_csum_v);
