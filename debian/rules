@@ -27,6 +27,10 @@ configure_options = \
 	--without-smack \
 	$(NULL)
 
+ifneq ($(filter alpha hppa ia64 m68k s390x sh4 sparc64 x32,$(DEB_HOST_ARCH)),)
+configure_options += GJS=/nonexistent/gjs
+endif
+
 ifneq ($(filter libostree-doc,$(binaries)),)
 configure_options += --enable-gtk-doc
 else
