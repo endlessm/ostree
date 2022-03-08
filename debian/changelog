@@ -1,3 +1,9 @@
+ostree (2022.2-3) unstable; urgency=medium
+
+  * d/rules: Correct argument used to disable gjs on s390x
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 08 Mar 2022 16:16:43 +0000
+
 ostree (2022.2-2) unstable; urgency=medium
 
   * d/control: Disable JavaScript-based tests on s390x.
