@@ -1,3 +1,15 @@
+ostree (2022.2-2) unstable; urgency=medium
+
+  * d/control: Disable JavaScript-based tests on s390x.
+    Mitigates: ostreedev/ostree#2527
+  * d/rules: Explicitly disable JS-based tests on architectures where
+    they're unreliable, or where an up-to-date gjs is unavailable.
+    Otherwise we'd build and install these tests if gjs (maybe an
+    old version) happens to be installed, despite it not being in
+    Build-Depends.
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 08 Mar 2022 09:55:53 +0000
+
 ostree (2022.2-1) unstable; urgency=medium
 
   * New upstream release
