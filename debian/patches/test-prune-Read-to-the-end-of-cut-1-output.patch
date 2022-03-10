@@ -9,6 +9,7 @@ Use an equivalent sed command to take exactly the second line, but
 without SIGPIPE.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Applied-upstream: 2022.3, commit:92ca2c7794afd06c1f3a602b53ac5e51ec34bfd4
 ---
  tests/test-prune.sh | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

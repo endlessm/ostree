@@ -6,6 +6,7 @@ An indented `#!` is technically meaningless, although many shells will
 run text files with the shell if asked to execute them.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Applied-upstream: 2022.3, commit:084f8913f02340831e91c4e39f6037af6ceb63e4
 ---
  src/libostree/s390x-se-luks-gencpio | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)

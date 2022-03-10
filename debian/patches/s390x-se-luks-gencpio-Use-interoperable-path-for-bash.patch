@@ -6,6 +6,7 @@ On OSs that do not consistently merge /usr/bin with /bin, the path to
 bash has traditionally been /bin/bash.
 
 Signed-off-by: Simon McVittie <smcv@debian.org>
+Applied-upstream: 2022.3, commit:a9a0110f440d10a4c9f51bf0f0ab9a7b3b79e2c5
 ---
  src/libostree/s390x-se-luks-gencpio | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
