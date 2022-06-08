@@ -1,7 +1,7 @@
 AC_PREREQ([2.63])
 dnl To perform a release, follow the instructions in `docs/CONTRIBUTING.md`.
 m4_define([year_version], [2022])
-m4_define([release_version], [2])
+m4_define([release_version], [3])
 m4_define([package_version], [year_version.release_version])
 AC_INIT([libostree], [package_version], [walters@verbum.org])
 is_release_build=yes
@@ -113,7 +113,7 @@ AM_PATH_GLIB_2_0(,,AC_MSG_ERROR([GLib not found]))
 dnl When bumping the gio-unix-2.0 dependency (or glib-2.0 in general),
 dnl remember to bump GLIB_VERSION_MIN_REQUIRED and
 dnl GLIB_VERSION_MAX_ALLOWED in Makefile.am
-GIO_DEPENDENCY="gio-unix-2.0 >= 2.44.0"
+GIO_DEPENDENCY="gio-unix-2.0 >= 2.66.0"
 PKG_CHECK_MODULES(OT_DEP_GIO_UNIX, $GIO_DEPENDENCY)
 
 dnl 5.1.0 is an arbitrary version here
@@ -291,6 +291,16 @@ AS_IF([test "$enable_man" != no], [
   ])
 ])
 AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" != no)
+
+AC_ARG_ENABLE([man-html],
+              [AS_HELP_STRING([--enable-man-html],
+                              [generate man HTML pages [default=no]])],,
+              enable_man_html=no)
+
+AS_IF([test "$enable_man_html" = yes && test "$enable_man" = no], [
+  AC_MSG_ERROR([--enable-man is required for --enable-man-html])
+])
+AM_CONDITIONAL(ENABLE_MAN_HTML, test "$enable_man_html" = yes)
 
 AC_ARG_WITH(libarchive,
 	    AS_HELP_STRING([--without-libarchive], [Do not use libarchive]),
