@@ -2830,6 +2830,121 @@ get_var_dfd (OstreeSysroot      *self,
   return glnx_opendirat (base_dfd, base_path, TRUE, ret_fd, error);
 }
 
+#ifdef HAVE_SELINUX
+static void
+child_setup_fchdir (gpointer data)
+{
+  int fd = (int) (uintptr_t) data;
+  int rc __attribute__((unused));
+
+  rc = fchdir (fd);
+}
+
+/*
+ * Derived from rpm-ostree's rust/src/bwrap.rs
+ */
+static gboolean
+run_in_deployment (int deployment_dfd,
+                   const gchar * const *child_argv,
+                   gsize child_argc,
+                   gint *exit_status,
+                   gchar **stdout,
+                   GError **error)
+{
+  static const gchar * const COMMON_ARGV[] = {
+    "/usr/bin/bwrap",
+    "--dev", "/dev", "--proc", "/proc", "--dir", "/run", "--dir", "/tmp",
+    "--chdir", "/",
+    "--die-with-parent",
+    "--unshare-pid",
+    "--unshare-uts",
+    "--unshare-ipc",
+    "--unshare-cgroup-try",
+    "--ro-bind", "/sys/block",    "/sys/block",
+    "--ro-bind", "/sys/bus",      "/sys/bus",
+    "--ro-bind", "/sys/class",    "/sys/class",
+    "--ro-bind", "/sys/dev",      "/sys/dev",
+    "--ro-bind", "/sys/devices",  "/sys/devices",
+    "--bind", "usr", "/usr",
+    "--bind", "etc", "/etc",
+    "--bind", "var", "/var",
+    "--symlink", "/usr/lib",      "/lib",
+    "--symlink", "/usr/lib32",    "/lib32",
+    "--symlink", "/usr/lib64",    "/lib64",
+    "--symlink", "/usr/bin",      "/bin",
+    "--symlink", "/usr/sbin",     "/sbin",
+  };
+  static const gsize COMMON_ARGC = sizeof (COMMON_ARGV) / sizeof (*COMMON_ARGV);
+
+  gsize i;
+  GPtrArray *args = g_ptr_array_sized_new (COMMON_ARGC + child_argc + 1);
+  g_autofree gchar **args_raw = NULL;
+
+  for (i = 0; i < COMMON_ARGC; i++)
+    g_ptr_array_add (args, (gchar *) COMMON_ARGV[i]);
+
+  for (i = 0; i < child_argc; i++)
+    g_ptr_array_add (args, (gchar *) child_argv[i]);
+
+  g_ptr_array_add (args, NULL);
+
+  args_raw = (gchar **) g_ptr_array_free (args, FALSE);
+
+  return g_spawn_sync (NULL, args_raw, NULL, 0, &child_setup_fchdir,
+                       (gpointer) (uintptr_t) deployment_dfd,
+                       stdout, NULL, exit_status, error);
+}
+
+/*
+ * Run semodule to check if the module content changed after merging /etc
+ * and rebuild the policy if needed.
+ */
+static gboolean
+sysroot_finalize_selinux_policy (int deployment_dfd, GError **error)
+{
+  struct stat stbuf;
+  gint exit_status;
+  g_autofree gchar *stdout = NULL;
+
+  if (!glnx_fstatat_allow_noent (deployment_dfd, "etc/selinux/config", &stbuf,
+                                 AT_SYMLINK_NOFOLLOW, error))
+    return FALSE;
+
+  /* Skip the SELinux policy refresh if /etc/selinux/config doesn't exist. */
+  if (errno != 0)
+    return TRUE;
+
+  /*
+   * Skip the SELinux policy refresh if the --rebuild-if-modules-changed
+   * flag is not supported by semodule.
+   */
+  static const gchar * const SEMODULE_HELP_ARGV[] = {
+    "semodule", "--help"
+  };
+  static const gsize SEMODULE_HELP_ARGC = sizeof (SEMODULE_HELP_ARGV) / sizeof (*SEMODULE_HELP_ARGV);
+  if (!run_in_deployment (deployment_dfd, SEMODULE_HELP_ARGV,
+                          SEMODULE_HELP_ARGC, &exit_status, &stdout, error))
+    return FALSE;
+  if (!g_spawn_check_exit_status (exit_status, error))
+    return glnx_prefix_error (error, "failed to run semodule");
+  if (!strstr(stdout, "--rebuild-if-modules-changed"))
+    {
+      ot_journal_print (LOG_INFO, "semodule does not have --rebuild-if-modules-changed");
+      return TRUE;
+    }
+
+  static const gchar * const SEMODULE_REBUILD_ARGV[] = {
+    "semodule", "-N", "--rebuild-if-modules-changed"
+  };
+  static const gsize SEMODULE_REBUILD_ARGC = sizeof (SEMODULE_REBUILD_ARGV) / sizeof (*SEMODULE_REBUILD_ARGV);
+
+  if (!run_in_deployment (deployment_dfd, SEMODULE_REBUILD_ARGV,
+                          SEMODULE_REBUILD_ARGC, &exit_status, NULL, error))
+    return FALSE;
+  return g_spawn_check_exit_status (exit_status, error);
+}
+#endif /* HAVE_SELINUX */
+
 static gboolean
 sysroot_finalize_deployment (OstreeSysroot     *self,
                              OstreeDeployment  *deployment,
@@ -2865,6 +2980,11 @@ sysroot_finalize_deployment (OstreeSysroot     *self,
                                      cancellable, error))
         return FALSE;
     }
+
+#ifdef HAVE_SELINUX
+  if (!sysroot_finalize_selinux_policy(deployment_dfd, error))
+    return FALSE;
+#endif /* HAVE_SELINUX */
 
   const char *osdeploypath = glnx_strjoina ("ostree/deploy/", ostree_deployment_get_osname (deployment));
   glnx_autofd int os_deploy_dfd = -1;
@@ -3255,10 +3375,10 @@ ostree_sysroot_stage_tree_with_options (OstreeSysroot     *self,
 }
 
 /* Invoked at shutdown time by ostree-finalize-staged.service */
-gboolean
-_ostree_sysroot_finalize_staged (OstreeSysroot *self,
-                                 GCancellable  *cancellable,
-                                 GError       **error)
+static gboolean
+_ostree_sysroot_finalize_staged_inner (OstreeSysroot *self,
+                                       GCancellable  *cancellable,
+                                       GError       **error)
 {
   /* It's totally fine if there's no staged deployment; perhaps down the line
    * though we could teach the ostree cmdline to tell systemd to activate the
@@ -3355,7 +3475,61 @@ _ostree_sysroot_finalize_staged (OstreeSysroot *self,
   if (!ostree_sysroot_prepare_cleanup (self, cancellable, error))
     return FALSE;
 
+  // Cleanup will have closed some FDs, re-ensure writability
+  if (!_ostree_sysroot_ensure_writable (self, error))
+    return FALSE;
+
   return TRUE;
+}
+
+/* Invoked at shutdown time by ostree-finalize-staged.service */
+gboolean
+_ostree_sysroot_finalize_staged (OstreeSysroot *self,
+                                 GCancellable  *cancellable,
+                                 GError       **error)
+{
+  g_autoptr(GError) finalization_error = NULL;
+  if (!_ostree_sysroot_ensure_boot_fd (self, error))
+    return FALSE;
+  if (!_ostree_sysroot_finalize_staged_inner (self, cancellable, &finalization_error))
+    {
+      g_autoptr(GError) writing_error = NULL;
+      g_assert_cmpint (self->boot_fd, !=, -1);
+      if (!glnx_file_replace_contents_at (self->boot_fd, _OSTREE_FINALIZE_STAGED_FAILURE_PATH, 
+                                           (guint8*)finalization_error->message, -1,
+                                           0, cancellable, &writing_error))
+        {
+          // We somehow failed to write the failure message...that's not great.  Maybe ENOSPC on /boot.
+          g_printerr ("Failed to write %s: %s\n", _OSTREE_FINALIZE_STAGED_FAILURE_PATH, writing_error->message);
+        }
+      g_propagate_error (error, g_steal_pointer (&finalization_error));
+      return FALSE;
+    }
+  return TRUE;
+}
+
+/* Invoked at bootup time by ostree-boot-complete.service */
+gboolean
+_ostree_sysroot_boot_complete (OstreeSysroot *self,
+                               GCancellable  *cancellable,
+                               GError       **error)
+{
+  if (!_ostree_sysroot_ensure_boot_fd (self, error))
+    return FALSE;
+
+  glnx_autofd int failure_fd = -1;
+  if (!ot_openat_ignore_enoent (self->boot_fd, _OSTREE_FINALIZE_STAGED_FAILURE_PATH, &failure_fd, error))
+    return FALSE;
+  // If we didn't find a failure log, then there's nothing to do right now.
+  // (Actually this unit shouldn't even be invoked, but we may do more in the future)
+  if (failure_fd == -1)
+    return TRUE;
+  g_autofree char *failure_data = glnx_fd_readall_utf8 (failure_fd, NULL, cancellable, error);
+  if (failure_data == NULL)
+    return glnx_prefix_error (error, "Reading from %s", _OSTREE_FINALIZE_STAGED_FAILURE_PATH);
+  // Remove the file; we don't want to continually error out.
+  (void) unlinkat (self->boot_fd, _OSTREE_FINALIZE_STAGED_FAILURE_PATH, 0);
+  return glnx_throw (error, "ostree-finalize-staged.service failed on previous boot: %s", failure_data);
 }
 
 /**
