@@ -1,3 +1,10 @@
+ostree (2022.3-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+    - Drop patches that were applied upstream
+
+ -- Dan Nicholson <dbn@endlessos.org>  Wed, 08 Jun 2022 16:54:16 +0000
+
 ostree (2022.2-3) unstable; urgency=medium
 
   * d/rules: Correct argument used to disable gjs on s390x
