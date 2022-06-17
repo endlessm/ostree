@@ -9,7 +9,7 @@ Copyright:
  © 1995-2015 Free Software Foundation, Inc.
  © 1999-2003 Ximian, Inc.
  © 2007-2008 Ryan Lortie
- © 2008-2021 Red Hat, Inc
+ © 2008-2022 Red Hat, Inc
  © 2010-2011 Lennart Poettering
  © 2010 Codethink Ltd.
  © 2011-2019 Colin Walters <walters@verbum.org>
@@ -36,6 +36,7 @@ Copyright:
  © 2019 Wind River Systems, Inc.
  © 2019 Denis Pynkin
  © 2021 Endless OS Foundation LLC
+ © 2022 Igalia S.L.
 License: LGPL-2+ and LGPL-2.1+
 
 Files:
