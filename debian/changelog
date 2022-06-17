@@ -1,4 +1,4 @@
-ostree (2022.4-1) UNRELEASED; urgency=medium
+ostree (2022.4-1) unstable; urgency=medium
 
   [ Dan Nicholson ]
   * New upstream release
@@ -13,7 +13,7 @@ ostree (2022.4-1) UNRELEASED; urgency=medium
   * d/p/test-basic-c-Don-t-assert-that-extended-attributes-are-av.patch:
     Add patch to skip a test-case if /var/tmp doesn't support xattrs
 
- -- Simon McVittie <smcv@debian.org>  Fri, 17 Jun 2022 14:30:36 +0100
+ -- Simon McVittie <smcv@debian.org>  Fri, 17 Jun 2022 16:35:46 +0100
 
 ostree (2022.2-3) unstable; urgency=medium
 
