@@ -1,9 +1,15 @@
 ostree (2022.3-1) UNRELEASED; urgency=medium
 
+  [ Dan Nicholson ]
   * New upstream release
     - Drop patches that were applied upstream
+  * d/control: Bump libglib2.0-dev dependency to 2.66.0
+  * Add new ostree-boot-complete.service unit to ostree-boot
 
- -- Dan Nicholson <dbn@endlessos.org>  Wed, 08 Jun 2022 16:54:16 +0000
+  [ Simon McVittie ]
+  * d/copyright: Update
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 17 Jun 2022 14:06:20 +0100
 
 ostree (2022.2-3) unstable; urgency=medium
 
