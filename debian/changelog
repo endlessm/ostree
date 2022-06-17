@@ -9,8 +9,11 @@ ostree (2022.4-1) UNRELEASED; urgency=medium
   [ Simon McVittie ]
   * d/copyright: Update
   * New upstream release
+  * d/libostree-1-1.symbols: Update
+  * d/p/test-basic-c-Don-t-assert-that-extended-attributes-are-av.patch:
+    Add patch to skip a test-case if /var/tmp doesn't support xattrs
 
- -- Simon McVittie <smcv@debian.org>  Fri, 17 Jun 2022 14:06:20 +0100
+ -- Simon McVittie <smcv@debian.org>  Fri, 17 Jun 2022 14:30:36 +0100
 
 ostree (2022.2-3) unstable; urgency=medium
 
