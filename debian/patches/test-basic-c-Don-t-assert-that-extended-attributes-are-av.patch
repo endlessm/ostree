@@ -9,14 +9,14 @@ but that might not succeed.
 Signed-off-by: Simon McVittie <smcv@debian.org>
 Forwarded: https://github.com/ostreedev/ostree/pull/2652
 ---
- tests/test-basic-c.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ tests/test-basic-c.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
 diff --git a/tests/test-basic-c.c b/tests/test-basic-c.c
-index 1886feb..abaeca5 100644
+index 1886feb..fc99529 100644
 --- a/tests/test-basic-c.c
 +++ b/tests/test-basic-c.c
-@@ -514,8 +514,16 @@ test_read_xattrs (void)
+@@ -514,8 +514,15 @@ test_read_xattrs (void)
      g_assert_no_error (local_error);
    
      int r = fsetxattr (tmpd.fd, "user.ostreetesting", value, sizeof (value), 0);
@@ -25,9 +25,8 @@ index 1886feb..abaeca5 100644
 +
 +    if (r != 0)
 +      {
-+        gchar *message = g_strdup_printf ("Unable to set extended attributes in /var/tmp: %s",
-+                                          g_strerror (errno));
-+
++        g_autofree gchar *message = g_strdup_printf ("Unable to set extended attributes in /var/tmp: %s",
++                                                     g_strerror (errno));
 +        g_test_skip (message);
 +        return;
 +      }
