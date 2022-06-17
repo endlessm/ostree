@@ -42,6 +42,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2021.4@LIBOSTREE_2021.4 2021.4
  LIBOSTREE_2021.5@LIBOSTREE_2021.5 2021.5
  LIBOSTREE_2022.2@LIBOSTREE_2022.2 2022.2
+ LIBOSTREE_2022.4@LIBOSTREE_2022.4 2022.4
  ostree_async_progress_copy_state@LIBOSTREE_2019.6 2019.6
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
@@ -113,8 +114,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_content_file_parse@LIBOSTREE_2016.3 2016.4
  ostree_content_file_parse_at@LIBOSTREE_2016.3 2016.4
  ostree_content_stream_parse@LIBOSTREE_2016.3 2016.4
- ostree_content_writer_get_type@LIBOSTREE_2021.2 2021.2
  ostree_content_writer_finish@LIBOSTREE_2021.2 2021.2
+ ostree_content_writer_get_type@LIBOSTREE_2021.2 2021.2
  ostree_create_directory_metadata@LIBOSTREE_2016.3 2016.4
  ostree_deployment_clone@LIBOSTREE_2016.3 2016.4
  ostree_deployment_equal@LIBOSTREE_2016.3 2016.4
@@ -146,6 +147,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_diff_item_unref@LIBOSTREE_2016.3 2016.4
  ostree_diff_print@LIBOSTREE_2016.3 2016.4
  ostree_fetcher_config_flags_get_type@LIBOSTREE_2016.3 2016.4
+ ostree_fs_get_all_xattrs@LIBOSTREE_2022.4 2022.4
+ ostree_fs_get_all_xattrs_at@LIBOSTREE_2022.4 2022.4
  ostree_gpg_error_quark@LIBOSTREE_2017.10 2017.10
  ostree_gpg_verify_result_count_all@LIBOSTREE_2016.3 2016.4
  ostree_gpg_verify_result_count_valid@LIBOSTREE_2016.3 2016.4
@@ -212,8 +215,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_abort_transaction@LIBOSTREE_2016.3 2016.4
  ostree_repo_add_gpg_signature_summary@LIBOSTREE_2016.3 2016.4
  ostree_repo_append_gpg_signature@LIBOSTREE_2016.3 2016.4
- ostree_repo_auto_lock_push@LIBOSTREE_2021.3 2021.3
  ostree_repo_auto_lock_cleanup@LIBOSTREE_2021.3 2021.3
+ ostree_repo_auto_lock_push@LIBOSTREE_2021.3 2021.3
  ostree_repo_checkout_at@LIBOSTREE_2016.8 2016.8
  ostree_repo_checkout_at_options_set_devino@LIBOSTREE_2017.13 2017.13
  ostree_repo_checkout_gc@LIBOSTREE_2016.3 2016.4
@@ -318,8 +321,8 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_load_object_stream@LIBOSTREE_2016.3 2016.4
  ostree_repo_load_variant@LIBOSTREE_2016.3 2016.4
  ostree_repo_load_variant_if_exists@LIBOSTREE_2016.3 2016.4
- ostree_repo_lock_push@LIBOSTREE_2021.3 2021.3
  ostree_repo_lock_pop@LIBOSTREE_2021.3 2021.3
+ ostree_repo_lock_push@LIBOSTREE_2021.3 2021.3
  ostree_repo_mark_commit_partial@LIBOSTREE_2017.15 2017.15
  ostree_repo_mark_commit_partial_reason@LIBOSTREE_2019.4 2019.4
  ostree_repo_mode_from_string@LIBOSTREE_2016.3 2016.4
