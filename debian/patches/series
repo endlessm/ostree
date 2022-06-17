@@ -1,1 +1,2 @@
+test-basic-c-Don-t-assert-that-extended-attributes-are-av.patch
 debian/Skip-test-pull-repeated-during-CI.patch
