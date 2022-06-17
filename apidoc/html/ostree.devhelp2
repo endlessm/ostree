@@ -67,6 +67,8 @@
     <keyword type="function" name="ostree_checksum_file_at ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file-at" since="2017.13"/>
     <keyword type="function" name="ostree_checksum_file_async ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file-async"/>
     <keyword type="function" name="ostree_checksum_file_async_finish ()" link="ostree-Core-repository-independent-functions.html#ostree-checksum-file-async-finish"/>
+    <keyword type="function" name="ostree_fs_get_all_xattrs ()" link="ostree-Core-repository-independent-functions.html#ostree-fs-get-all-xattrs"/>
+    <keyword type="function" name="ostree_fs_get_all_xattrs_at ()" link="ostree-Core-repository-independent-functions.html#ostree-fs-get-all-xattrs-at"/>
     <keyword type="function" name="ostree_create_directory_metadata ()" link="ostree-Core-repository-independent-functions.html#ostree-create-directory-metadata"/>
     <keyword type="function" name="ostree_validate_structureof_objtype ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-structureof-objtype"/>
     <keyword type="function" name="ostree_validate_structureof_csum_v ()" link="ostree-Core-repository-independent-functions.html#ostree-validate-structureof-csum-v"/>

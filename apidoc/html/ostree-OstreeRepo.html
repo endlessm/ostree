@@ -2244,10 +2244,10 @@ This will automatically release the lock if it was acquired successfully.</p>
 2
 3
 4</pre></td>
-        <td class="listing_code"><pre class="programlisting"><span class="n">g_autoptr</span><span class="p">(</span><span class="n">OstreeRepoAutoLock</span><span class="p">)</span> <span class="n">lock</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-<span class="n">lock</span> <span class="o">=</span> <span class="n">ostree_repo_auto_lock_push</span> <span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">lock_type</span><span class="p">,</span> <span class="n">cancellable</span><span class="p">,</span> <span class="n">error</span><span class="p">);</span>
-<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">lock</span><span class="p">)</span>
-  <span class="k">return</span> <span class="n">FALSE</span><span class="p">;</span></pre></td>
+        <td class="listing_code"><pre class="programlisting"><span class="n">g_autoptr</span><span class="p">(</span><span class="n">OstreeRepoAutoLock</span><span class="p">)</span><span class="w"> </span><span class="n">lock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"></span>
+<span class="n">lock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ostree_repo_auto_lock_push</span><span class="w"> </span><span class="p">(</span><span class="n">repo</span><span class="p">,</span><span class="w"> </span><span class="n">lock_type</span><span class="p">,</span><span class="w"> </span><span class="n">cancellable</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">);</span><span class="w"></span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">lock</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">FALSE</span><span class="p">;</span><span class="w"></span></pre></td>
       </tr>
     </tbody>
   </table>
