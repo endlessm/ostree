@@ -1238,6 +1238,7 @@ ostree_repo_finalize (GObject *object)
   g_mutex_clear (&self->txn_lock);
   g_free (self->collection_id);
   g_strfreev (self->repo_finders);
+  g_clear_pointer (&self->bls_append_values, g_hash_table_unref);
 
   g_clear_pointer (&self->remotes, g_hash_table_destroy);
   g_mutex_clear (&self->remotes_lock);
@@ -1412,6 +1413,9 @@ ostree_repo_init (OstreeRepo *self)
   self->remotes = g_hash_table_new_full (g_str_hash, g_str_equal,
                                          (GDestroyNotify) NULL,
                                          (GDestroyNotify) ostree_remote_unref);
+  self->bls_append_values = g_hash_table_new_full (g_str_hash, g_str_equal, 
+                                                   (GDestroyNotify) g_free, 
+                                                   (GDestroyNotify) g_free);
   g_mutex_init (&self->remotes_lock);
 
   self->repo_dir_fd = -1;
@@ -3510,16 +3514,42 @@ reload_sysroot_config (OstreeRepo          *self,
    * https://github.com/ostreedev/ostree/issues/1719
    * https://github.com/ostreedev/ostree/issues/1801
    */
+  gboolean valid_bootloader;
   for (int i = 0; CFG_SYSROOT_BOOTLOADER_OPTS_STR[i]; i++)
     {
       if (g_str_equal (bootloader, CFG_SYSROOT_BOOTLOADER_OPTS_STR[i]))
         {
           self->bootloader = (OstreeCfgSysrootBootloaderOpt) i;
-          return TRUE;
+          valid_bootloader = TRUE;
         }
     }
+  if (!valid_bootloader) 
+  {
+    return glnx_throw (error, "Invalid bootloader configuration: '%s'", bootloader);
+  }
+  /* Parse bls-append-except-default string list. */
+  g_auto(GStrv) read_values = NULL;
+  if (!ot_keyfile_get_string_list_with_default (self->config, "sysroot", "bls-append-except-default", 
+                                                ';', NULL, &read_values, error))
+      return glnx_throw(error, "Unable to parse bls-append-except-default");
+    
+  /* get all key value pairs in bls-append-except-default */
+  g_hash_table_remove_all (self->bls_append_values);
+  for (char **iter = read_values; iter && *iter; iter++)
+    {
+      const char *key_value = *iter;
+      const char *sep = strchr (key_value, '=');
+      if (sep == NULL)
+        {
+          glnx_throw (error, "bls-append-except-default key must be of the form \"key1=value1;key2=value2...\"");
+          return FALSE;
+        }
+      char *key = g_strndup (key_value, sep - key_value);
+      char *value = g_strdup (sep + 1);
+      g_hash_table_replace (self->bls_append_values, key, value); 
+    }
 
-  return glnx_throw (error, "Invalid bootloader configuration: '%s'", bootloader);
+  return TRUE;
 }
 
 /**
@@ -3895,6 +3925,7 @@ ostree_repo_get_parent (OstreeRepo  *self)
 
 static gboolean
 list_loose_objects_at (OstreeRepo             *self,
+                       GVariant               *dummy_value,
                        GHashTable             *inout_objects,
                        int                     dfd,
                        const char             *prefix,
@@ -3902,7 +3933,7 @@ list_loose_objects_at (OstreeRepo             *self,
                        GCancellable           *cancellable,
                        GError                **error)
 {
-  GVariant *key, *value;
+  GVariant *key;
 
   g_auto(GLnxDirFdIterator) dfd_iter = { 0, };
   gboolean exists;
@@ -3971,11 +4002,13 @@ list_loose_objects_at (OstreeRepo             *self,
         }
 
       key = ostree_object_name_serialize (buf, objtype);
-      value = g_variant_new ("(b@as)",
-                             TRUE, g_variant_new_strv (NULL, 0));
+
       /* transfer ownership */
-      g_hash_table_replace (inout_objects, g_variant_ref_sink (key),
-                            g_variant_ref_sink (value));
+      if (dummy_value)
+        g_hash_table_replace (inout_objects, g_variant_ref_sink (key),
+                              g_variant_ref (dummy_value));
+      else
+        g_hash_table_add (inout_objects, g_variant_ref_sink (key));
     }
 
   return TRUE;
@@ -3983,6 +4016,7 @@ list_loose_objects_at (OstreeRepo             *self,
 
 static gboolean
 list_loose_objects (OstreeRepo                     *self,
+                    GVariant                       *dummy_value,
                     GHashTable                     *inout_objects,
                     const char                     *commit_starting_with,
                     GCancellable                   *cancellable,
@@ -3996,7 +4030,8 @@ list_loose_objects (OstreeRepo                     *self,
       buf[0] = hexchars[c >> 4];
       buf[1] = hexchars[c & 0xF];
       buf[2] = '\0';
-      if (!list_loose_objects_at (self, inout_objects, self->objects_dir_fd, buf,
+      if (!list_loose_objects_at (self, dummy_value,
+                                  inout_objects, self->objects_dir_fd, buf,
                                   commit_starting_with,
                                   cancellable, error))
         return FALSE;
@@ -4901,6 +4936,65 @@ ostree_repo_load_commit (OstreeRepo            *self,
                                  out_variant, NULL, NULL, out_state, NULL, error);
 }
 
+static GHashTable *
+repo_list_objects_impl (OstreeRepo                  *self,
+                        OstreeRepoListObjectsFlags   flags,
+                        GVariant                    *dummy_value,
+                        GCancellable                *cancellable,
+                        GError                     **error)
+{
+  g_assert (error == NULL || *error == NULL);
+  g_assert (self->inited);
+
+  g_autoptr(GHashTable) ret_objects =
+    g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
+                           (GDestroyNotify) g_variant_unref,
+                           dummy_value ? (GDestroyNotify) g_variant_unref : NULL);
+
+  if (flags & OSTREE_REPO_LIST_OBJECTS_ALL)
+    flags |= (OSTREE_REPO_LIST_OBJECTS_LOOSE | OSTREE_REPO_LIST_OBJECTS_PACKED);
+
+  if (flags & OSTREE_REPO_LIST_OBJECTS_LOOSE)
+    {
+      if (!list_loose_objects (self, dummy_value, ret_objects, NULL, cancellable, error))
+        return FALSE;
+      if ((flags & OSTREE_REPO_LIST_OBJECTS_NO_PARENTS) == 0 && self->parent_repo)
+        {
+          if (!list_loose_objects (self->parent_repo, dummy_value, ret_objects, NULL, cancellable, error))
+            return FALSE;
+        }
+    }
+
+  if (flags & OSTREE_REPO_LIST_OBJECTS_PACKED)
+    {
+      /* Nothing for now... */
+    }
+
+  return g_steal_pointer (&ret_objects);
+}
+
+/* A currently-internal version of ostree_repo_list_objects which returns
+ * a set, and not a map (with a useless value).
+ */
+GHashTable *
+ostree_repo_list_objects_set (OstreeRepo                  *self,
+                              OstreeRepoListObjectsFlags   flags,
+                              GCancellable                *cancellable,
+                              GError                     **error)
+{
+  return repo_list_objects_impl (self, flags, NULL, cancellable, error);
+}
+
+/* For unfortunate historical reasons we emit this dummy value.
+ * It was intended to provide additional information about the object (e.g. "is in a pack file")
+ * but we ended up not shipping pack files.
+ */
+static GVariant *
+get_dummy_list_objects_variant (void)
+{
+  return g_variant_ref_sink (g_variant_new ("(b@as)", TRUE, g_variant_new_strv (NULL, 0)));
+}
+
 /**
  * ostree_repo_list_objects:
  * @self: Repo
@@ -4924,41 +5018,18 @@ ostree_repo_list_objects (OstreeRepo                  *self,
                           GCancellable                *cancellable,
                           GError                     **error)
 {
-  g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
-  g_return_val_if_fail (self->inited, FALSE);
-
-  g_autoptr(GHashTable) ret_objects =
-    g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
-                           (GDestroyNotify) g_variant_unref,
-                           (GDestroyNotify) g_variant_unref);
-
-  if (flags & OSTREE_REPO_LIST_OBJECTS_ALL)
-    flags |= (OSTREE_REPO_LIST_OBJECTS_LOOSE | OSTREE_REPO_LIST_OBJECTS_PACKED);
-
-  if (flags & OSTREE_REPO_LIST_OBJECTS_LOOSE)
-    {
-      if (!list_loose_objects (self, ret_objects, NULL, cancellable, error))
-        return FALSE;
-      if ((flags & OSTREE_REPO_LIST_OBJECTS_NO_PARENTS) == 0 && self->parent_repo)
-        {
-          if (!list_loose_objects (self->parent_repo, ret_objects, NULL, cancellable, error))
-            return FALSE;
-        }
-    }
-
-  if (flags & OSTREE_REPO_LIST_OBJECTS_PACKED)
-    {
-      /* Nothing for now... */
-    }
-
-  ot_transfer_out_value (out_objects, &ret_objects);
+  g_autoptr(GVariant) dummy_value = get_dummy_list_objects_variant ();
+  g_autoptr(GHashTable) ret = repo_list_objects_impl (self, flags, dummy_value, cancellable, error);
+  if (!ret)
+    return FALSE;
+  ot_transfer_out_value (out_objects, &ret);
   return TRUE;
 }
 
 /**
  * ostree_repo_list_commit_objects_starting_with:
  * @self: Repo
- * @start: List commits starting with this checksum
+ * @start: List commits starting with this checksum (empty string for all)
  * @out_commits: (out) (transfer container) (element-type GVariant GVariant):
  * Map of serialized commit name to variant data
  * @cancellable: Cancellable
@@ -4966,6 +5037,8 @@ ostree_repo_list_objects (OstreeRepo                  *self,
  *
  * This function synchronously enumerates all commit objects starting
  * with @start, returning data in @out_commits.
+ *
+ * To list all commit objects, provide the empty string `""` for @start.
  *
  * Returns: %TRUE on success, %FALSE on error, and @error will be set
  */
@@ -4983,13 +5056,14 @@ ostree_repo_list_commit_objects_starting_with (OstreeRepo                  *self
     g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
                            (GDestroyNotify) g_variant_unref,
                            (GDestroyNotify) g_variant_unref);
+  g_autoptr(GVariant) dummy_loose_object_variant = get_dummy_list_objects_variant ();
 
-  if (!list_loose_objects (self, ret_commits, start, cancellable, error))
+  if (!list_loose_objects (self, dummy_loose_object_variant, ret_commits, start, cancellable, error))
     return FALSE;
 
   if (self->parent_repo)
     {
-      if (!list_loose_objects (self->parent_repo, ret_commits, start,
+      if (!list_loose_objects (self->parent_repo, dummy_loose_object_variant, ret_commits, start,
                                cancellable, error))
         return FALSE;
     }

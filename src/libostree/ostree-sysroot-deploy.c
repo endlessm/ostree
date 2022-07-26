@@ -1614,6 +1614,7 @@ full_system_sync (OstreeSysroot     *self,
     return FALSE;
 
   start_msec = g_get_monotonic_time () / 1000;
+  g_assert_cmpint (self->boot_fd, !=, -1);
   if (!fsfreeze_thaw_cycle (self, self->boot_fd, cancellable, error))
     return FALSE;
   end_msec = g_get_monotonic_time () / 1000;
@@ -1807,7 +1808,6 @@ parse_os_release (const char *contents,
  */
 static gboolean
 install_deployment_kernel (OstreeSysroot   *sysroot,
-                           OstreeRepo      *repo,
                            int             new_bootversion,
                            OstreeDeployment   *deployment,
                            guint           n_deployments,
@@ -1854,6 +1854,8 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
 
   if (!glnx_shutil_mkdir_p_at (sysroot->boot_fd, bootconfdir, 0775, cancellable, error))
     return FALSE;
+
+  OstreeRepo *repo = ostree_sysroot_repo (sysroot);
 
   /* Install (hardlink/copy) the kernel into /boot/ostree/osname-${bootcsum} if
    * it doesn't exist already.
@@ -2082,25 +2084,6 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
   g_autofree char *options_key = ostree_kernel_args_to_string (kargs);
   ostree_bootconfig_parser_set (bootconfig, "options", options_key);
 
-  g_autoptr(GError) local_error = NULL;
-  GKeyFile *config = ostree_repo_get_config (repo);
-  gchar **read_values = g_key_file_get_string_list (config, "sysroot", "bls-append-except-default", NULL, &local_error);
-  /* We can ignore not found errors */
-  if (!read_values)
-    {
-      gboolean not_found = g_error_matches (local_error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_KEY_NOT_FOUND) || \
-                           g_error_matches (local_error, G_KEY_FILE_ERROR, G_KEY_FILE_ERROR_GROUP_NOT_FOUND);
-      if (not_found)
-        {
-          g_clear_error (&local_error);
-        }
-      else
-        {
-          g_propagate_error (error, g_steal_pointer (&local_error));
-          return FALSE;
-        }
-    }
-
   /* Only append to this BLS config if:
    * - this is not the default deployment
    */
@@ -2110,20 +2093,8 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
   if (allow_append)
     {
       /* get all key value pairs in bls-append */
-      for (char **iter = read_values; iter && *iter; iter++)
-        {
-          const char *key_value = *iter;
-          const char *sep = strchr (key_value, '=');
-          if (sep == NULL)
-            {
-              glnx_throw (error, "bls-append-except-default key must be of the form \"key1=value1;key2=value2...\"");
-              return FALSE;
-            }
-          g_autofree char *key = g_strndup (key_value, sep - key_value);
-          g_autofree char *value = g_strdup (sep + 1);
-          ostree_bootconfig_parser_set (bootconfig, key, value);
-        }
-
+      GLNX_HASH_TABLE_FOREACH_KV (repo->bls_append_values, const char *, key, const char *, value)
+        ostree_bootconfig_parser_set (bootconfig, key, value);
     }
 
   glnx_autofd int bootconf_dfd = -1;
@@ -2378,13 +2349,6 @@ write_deployments_bootswap (OstreeSysroot     *self,
                                cancellable, error))
     return FALSE;
 
-  /* Need the repo to try and extract the versions for deployments.
-   * But this is a "nice-to-have" for the bootloader UI, so failure
-   * here is not fatal to the whole operation.  We just gracefully
-   * fall back to the deployment index. */
-  g_autoptr(OstreeRepo) repo = NULL;
-  (void) ostree_sysroot_get_repo (self, &repo, cancellable, NULL);
-
   /* Only show the osname in bootloader titles if there are multiple
    * osname's among the new deployments.  Check for that here. */
   gboolean show_osname = FALSE;
@@ -2402,7 +2366,7 @@ write_deployments_bootswap (OstreeSysroot     *self,
   for (guint i = 0; i < new_deployments->len; i++)
     {
       OstreeDeployment *deployment = new_deployments->pdata[i];
-      if (!install_deployment_kernel (self, repo, new_bootversion,
+      if (!install_deployment_kernel (self, new_bootversion,
                                       deployment, new_deployments->len,
                                       show_osname, cancellable, error))
         return FALSE;
@@ -3563,6 +3527,7 @@ _ostree_sysroot_boot_complete (OstreeSysroot *self,
     return FALSE;
 
   glnx_autofd int failure_fd = -1;
+  g_assert_cmpint (self->boot_fd, !=, -1);
   if (!ot_openat_ignore_enoent (self->boot_fd, _OSTREE_FINALIZE_STAGED_FAILURE_PATH, &failure_fd, error))
     return FALSE;
   // If we didn't find a failure log, then there's nothing to do right now.
@@ -3621,6 +3586,53 @@ ostree_sysroot_deployment_set_kargs (OstreeSysroot     *self,
 
   if (!ostree_sysroot_write_deployments (self, new_deployments,
                                          cancellable, error))
+    return FALSE;
+
+  return TRUE;
+}
+
+/**
+ * ostree_sysroot_deployment_set_kargs_in_place:
+ * @self: Sysroot
+ * @deployment: A deployment
+ * @kargs_str: (allow none): Replace @deployment's kernel arguments
+ * @cancellable: Cancellable
+ * @error: Error
+ *
+ * Replace the kernel arguments of @deployment with the values in @kargs_str.
+ */
+gboolean
+ostree_sysroot_deployment_set_kargs_in_place (OstreeSysroot     *self,
+                                              OstreeDeployment  *deployment,
+                                              char              *kargs_str,
+                                              GCancellable      *cancellable,
+                                              GError           **error)
+{
+  if (!ostree_sysroot_initialize (self, error))
+    return FALSE;
+  if (!_ostree_sysroot_ensure_boot_fd (self, error))
+    return FALSE;
+  if (!_ostree_sysroot_ensure_writable (self, error))
+    return FALSE;
+
+  g_assert (!ostree_deployment_is_staged (deployment));
+
+  OstreeBootconfigParser *new_bootconfig = ostree_deployment_get_bootconfig (deployment);
+  ostree_bootconfig_parser_set (new_bootconfig, "options", kargs_str);
+
+  g_autofree char *bootconf_name =
+    g_strdup_printf ("ostree-%d-%s.conf",
+                     self->deployments->len - ostree_deployment_get_index (deployment),
+                     ostree_deployment_get_osname (deployment));
+
+  g_autofree char *bootconfdir = g_strdup_printf ("loader.%d/entries", self->bootversion);
+  glnx_autofd int bootconf_dfd = -1;
+  if (!glnx_opendirat (self->boot_fd, bootconfdir, TRUE, &bootconf_dfd, error))
+    return FALSE;
+
+  if (!ostree_bootconfig_parser_write_at (new_bootconfig,
+                                          bootconf_dfd, bootconf_name,
+                                          cancellable, error))
     return FALSE;
 
   return TRUE;

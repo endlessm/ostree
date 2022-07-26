@@ -300,6 +300,14 @@
 <span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
+<a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-kargs-in-place" title="ostree_sysroot_deployment_set_kargs_in_place ()">ostree_sysroot_deployment_set_kargs_in_place</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
 <a class="link" href="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-mutable" title="ostree_sysroot_deployment_set_mutable ()">ostree_sysroot_deployment_set_mutable</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
@@ -1469,6 +1477,58 @@ values in <em class="parameter"><code>new_kargs</code></em>
 <td class="parameter_name"><p>new_kargs</p></td>
 <td class="parameter_description"><p>Replace deployment's kernel arguments. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-sysroot-deployment-set-kargs-in-place"></a><h3>ostree_sysroot_deployment_set_kargs_in_place ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_sysroot_deployment_set_kargs_in_place
+                               (<em class="parameter"><code><a class="link" href="ostree-Root-partition-mount-point.html#OstreeSysroot" title="OstreeSysroot"><span class="type">OstreeSysroot</span></a> *self</code></em>,
+                                <em class="parameter"><code><a class="link" href="ostree-ostree-deployment.html#OstreeDeployment" title="OstreeDeployment"><span class="type">OstreeDeployment</span></a> *deployment</code></em>,
+                                <em class="parameter"><code><span class="type">char</span> *kargs_str</code></em>,
+                                <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Replace the kernel arguments of <em class="parameter"><code>deployment</code></em>
+ with the values in <em class="parameter"><code>kargs_str</code></em>
+.</p>
+<div class="refsect3">
+<a name="ostree-sysroot-deployment-set-kargs-in-place.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Sysroot</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>deployment</p></td>
+<td class="parameter_description"><p>A deployment</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>kargs_str</p></td>
+<td class="parameter_description"><p>Replace <em class="parameter"><code>deployment</code></em>
+'s kernel arguments. </p></td>
+<td class="parameter_annotations"><span class="annotation">[allow none]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>

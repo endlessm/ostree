@@ -189,7 +189,6 @@ _ostree_repo_prune_tmp (OstreeRepo *self,
   return TRUE;
 }
 
-
 /**
  * ostree_repo_prune_static_deltas:
  * @self: Repo
@@ -280,15 +279,8 @@ repo_prune_internal (OstreeRepo        *self,
   g_autoptr(GHashTable) reachable_owned = g_hash_table_ref (options->reachable);
   data.reachable = reachable_owned;
 
-  GLNX_HASH_TABLE_FOREACH_KV (objects, GVariant*, serialized_key, GVariant*, objdata)
+  GLNX_HASH_TABLE_FOREACH (objects, GVariant*, serialized_key)
     {
-      gboolean is_loose;
-
-      g_variant_get_child (objdata, 0, "b", &is_loose);
-
-      if (!is_loose)
-        continue;
-
       if (!maybe_prune_loose_object (&data, options->flags, serialized_key,
                                      cancellable, error))
         return FALSE;
@@ -444,8 +436,18 @@ ostree_repo_prune (OstreeRepo        *self,
         return FALSE;
     }
 
-  if (!ostree_repo_list_objects (self, OSTREE_REPO_LIST_OBJECTS_ALL | OSTREE_REPO_LIST_OBJECTS_NO_PARENTS,
-                                 &objects, cancellable, error))
+  if (commit_only)
+    {
+      if (!ostree_repo_list_commit_objects_starting_with (self, "", &objects, cancellable, error))
+        return FALSE; 
+    }
+  else 
+    {
+      objects = ostree_repo_list_objects_set (self, OSTREE_REPO_LIST_OBJECTS_ALL | OSTREE_REPO_LIST_OBJECTS_NO_PARENTS,
+                                          cancellable, error);
+    }
+
+  if (!objects)
     return FALSE;
 
   if (!refs_only)
@@ -515,9 +517,20 @@ ostree_repo_prune_from_reachable (OstreeRepo        *self,
     return FALSE;
 
   g_autoptr(GHashTable) objects = NULL;
-
-  if (!ostree_repo_list_objects (self, OSTREE_REPO_LIST_OBJECTS_ALL | OSTREE_REPO_LIST_OBJECTS_NO_PARENTS,
-                                 &objects, cancellable, error))
+  OstreeRepoPruneFlags flags = options->flags;
+  gboolean commit_only = (flags & OSTREE_REPO_PRUNE_FLAGS_COMMIT_ONLY) > 0;
+  if (commit_only) 
+    {
+      if (!ostree_repo_list_commit_objects_starting_with (self, "", &objects, cancellable, error))
+        return FALSE;  
+    } 
+  else
+    {
+      objects =
+        ostree_repo_list_objects_set (self, OSTREE_REPO_LIST_OBJECTS_ALL | OSTREE_REPO_LIST_OBJECTS_NO_PARENTS,
+                                      cancellable, error);
+    }
+  if (!objects)
     return FALSE;
 
   return repo_prune_internal (self, objects, options, out_objects_total,

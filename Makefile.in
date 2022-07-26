@@ -1022,6 +1022,7 @@ am__ostree_SOURCES_DIST = src/ostree/main.c \
 	src/ostree/ot-admin-builtin-boot-complete.c \
 	src/ostree/ot-admin-builtin-undeploy.c \
 	src/ostree/ot-admin-builtin-instutil.c \
+	src/ostree/ot-admin-builtin-kargs.c \
 	src/ostree/ot-admin-builtin-cleanup.c \
 	src/ostree/ot-admin-builtin-os-init.c \
 	src/ostree/ot-admin-builtin-set-origin.c \
@@ -1037,6 +1038,8 @@ am__ostree_SOURCES_DIST = src/ostree/main.c \
 	src/ostree/ot-admin-instutil-builtins.h \
 	src/ostree/ot-admin-functions.h \
 	src/ostree/ot-admin-functions.c \
+	src/ostree/ot-admin-kargs-builtins.h \
+	src/ostree/ot-admin-kargs-builtin-edit-in-place.c \
 	src/ostree/ot-remote-builtins.h \
 	src/ostree/ot-remote-builtin-add.c \
 	src/ostree/ot-remote-builtin-delete.c \
@@ -1101,6 +1104,7 @@ am_ostree_OBJECTS = src/ostree/ostree-main.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-boot-complete.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-undeploy.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-instutil.$(OBJEXT) \
+	src/ostree/ostree-ot-admin-builtin-kargs.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-cleanup.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-os-init.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-builtin-set-origin.$(OBJEXT) \
@@ -1113,6 +1117,7 @@ am_ostree_OBJECTS = src/ostree/ostree-main.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-instutil-builtin-set-kargs.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-instutil-builtin-grub2-generate.$(OBJEXT) \
 	src/ostree/ostree-ot-admin-functions.$(OBJEXT) \
+	src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.$(OBJEXT) \
 	$(am__objects_1) \
 	src/ostree/ostree-ot-remote-builtin-add.$(OBJEXT) \
 	src/ostree/ostree-ot-remote-builtin-delete.$(OBJEXT) \
@@ -1612,6 +1617,7 @@ am__depfiles_remade = bsdiff/$(DEPDIR)/libbsdiff_la-bsdiff.Plo \
 	src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Po \
 	src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-init-fs.Po \
 	src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-instutil.Po \
+	src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-kargs.Po \
 	src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-os-init.Po \
 	src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Po \
 	src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-set-origin.Po \
@@ -1624,6 +1630,7 @@ am__depfiles_remade = bsdiff/$(DEPDIR)/libbsdiff_la-bsdiff.Plo \
 	src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-grub2-generate.Po \
 	src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-selinux-ensure-labeled.Po \
 	src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-set-kargs.Po \
+	src/ostree/$(DEPDIR)/ostree-ot-admin-kargs-builtin-edit-in-place.Po \
 	src/ostree/$(DEPDIR)/ostree-ot-builtin-admin.Po \
 	src/ostree/$(DEPDIR)/ostree-ot-builtin-cat.Po \
 	src/ostree/$(DEPDIR)/ostree-ot-builtin-checkout.Po \
@@ -2047,18 +2054,19 @@ am__EXEEXT_23 = tests/test-basic.sh \
 	tests/test-admin-pull-deploy-commit.sh \
 	tests/test-admin-pull-deploy-split.sh \
 	tests/test-admin-locking.sh tests/test-admin-deploy-clean.sh \
-	tests/test-reset-nonlinear.sh tests/test-oldstyle-partial.sh \
-	tests/test-delta.sh tests/test-delta-sign.sh \
-	tests/test-delta-ed25519.sh tests/test-xattrs.sh \
-	tests/test-auto-summary.sh tests/test-prune.sh \
-	tests/test-concurrency.py tests/test-refs.sh \
-	tests/test-demo-buildsystem.sh tests/test-switchroot.sh \
-	tests/test-pull-contenturl.sh tests/test-pull-mirrorlist.sh \
-	tests/test-summary-update.sh tests/test-summary-view.sh \
-	tests/test-no-initramfs.sh tests/test-create-usb.sh \
-	tests/test-find-remotes.sh tests/test-fsck-collections.sh \
-	tests/test-fsck-delete.sh tests/test-init-collections.sh \
-	tests/test-prune-collections.sh tests/test-refs-collections.sh \
+	tests/test-admin-kargs.sh tests/test-reset-nonlinear.sh \
+	tests/test-oldstyle-partial.sh tests/test-delta.sh \
+	tests/test-delta-sign.sh tests/test-delta-ed25519.sh \
+	tests/test-xattrs.sh tests/test-auto-summary.sh \
+	tests/test-prune.sh tests/test-concurrency.py \
+	tests/test-refs.sh tests/test-demo-buildsystem.sh \
+	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
+	tests/test-pull-mirrorlist.sh tests/test-summary-update.sh \
+	tests/test-summary-view.sh tests/test-no-initramfs.sh \
+	tests/test-create-usb.sh tests/test-find-remotes.sh \
+	tests/test-fsck-collections.sh tests/test-fsck-delete.sh \
+	tests/test-init-collections.sh tests/test-prune-collections.sh \
+	tests/test-refs-collections.sh \
 	tests/test-remote-add-collections.sh \
 	tests/test-repo-finder-mount-integration.sh \
 	tests/test-summary-collections.sh \
@@ -2190,6 +2198,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FUSE3_CFLAGS = @FUSE3_CFLAGS@
 FUSE3_LIBS = @FUSE3_LIBS@
 FUSE_CFLAGS = @FUSE_CFLAGS@
@@ -2805,6 +2814,7 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-admin-builtin-boot-complete.c \
 	src/ostree/ot-admin-builtin-undeploy.c \
 	src/ostree/ot-admin-builtin-instutil.c \
+	src/ostree/ot-admin-builtin-kargs.c \
 	src/ostree/ot-admin-builtin-cleanup.c \
 	src/ostree/ot-admin-builtin-os-init.c \
 	src/ostree/ot-admin-builtin-set-origin.c \
@@ -2819,7 +2829,9 @@ ostree_SOURCES = src/ostree/main.c src/ostree/ot-builtin-admin.c \
 	src/ostree/ot-admin-instutil-builtin-grub2-generate.c \
 	src/ostree/ot-admin-instutil-builtins.h \
 	src/ostree/ot-admin-functions.h \
-	src/ostree/ot-admin-functions.c $(NULL) \
+	src/ostree/ot-admin-functions.c \
+	src/ostree/ot-admin-kargs-builtins.h \
+	src/ostree/ot-admin-kargs-builtin-edit-in-place.c $(NULL) \
 	src/ostree/ot-remote-builtins.h \
 	src/ostree/ot-remote-builtin-add.c \
 	src/ostree/ot-remote-builtin-delete.c \
@@ -2929,18 +2941,19 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-admin-pull-deploy-commit.sh \
 	tests/test-admin-pull-deploy-split.sh \
 	tests/test-admin-locking.sh tests/test-admin-deploy-clean.sh \
-	tests/test-reset-nonlinear.sh tests/test-oldstyle-partial.sh \
-	tests/test-delta.sh tests/test-delta-sign.sh \
-	tests/test-delta-ed25519.sh tests/test-xattrs.sh \
-	tests/test-auto-summary.sh tests/test-prune.sh \
-	tests/test-concurrency.py tests/test-refs.sh \
-	tests/test-demo-buildsystem.sh tests/test-switchroot.sh \
-	tests/test-pull-contenturl.sh tests/test-pull-mirrorlist.sh \
-	tests/test-summary-update.sh tests/test-summary-view.sh \
-	tests/test-no-initramfs.sh tests/test-create-usb.sh \
-	tests/test-find-remotes.sh tests/test-fsck-collections.sh \
-	tests/test-fsck-delete.sh tests/test-init-collections.sh \
-	tests/test-prune-collections.sh tests/test-refs-collections.sh \
+	tests/test-admin-kargs.sh tests/test-reset-nonlinear.sh \
+	tests/test-oldstyle-partial.sh tests/test-delta.sh \
+	tests/test-delta-sign.sh tests/test-delta-ed25519.sh \
+	tests/test-xattrs.sh tests/test-auto-summary.sh \
+	tests/test-prune.sh tests/test-concurrency.py \
+	tests/test-refs.sh tests/test-demo-buildsystem.sh \
+	tests/test-switchroot.sh tests/test-pull-contenturl.sh \
+	tests/test-pull-mirrorlist.sh tests/test-summary-update.sh \
+	tests/test-summary-view.sh tests/test-no-initramfs.sh \
+	tests/test-create-usb.sh tests/test-find-remotes.sh \
+	tests/test-fsck-collections.sh tests/test-fsck-delete.sh \
+	tests/test-init-collections.sh tests/test-prune-collections.sh \
+	tests/test-refs-collections.sh \
 	tests/test-remote-add-collections.sh \
 	tests/test-repo-finder-mount-integration.sh \
 	tests/test-summary-collections.sh \
@@ -4173,6 +4186,9 @@ src/ostree/ostree-ot-admin-builtin-undeploy.$(OBJEXT):  \
 src/ostree/ostree-ot-admin-builtin-instutil.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
+src/ostree/ostree-ot-admin-builtin-kargs.$(OBJEXT):  \
+	src/ostree/$(am__dirstamp) \
+	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-admin-builtin-cleanup.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
@@ -4207,6 +4223,9 @@ src/ostree/ostree-ot-admin-instutil-builtin-grub2-generate.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-admin-functions.$(OBJEXT):  \
+	src/ostree/$(am__dirstamp) \
+	src/ostree/$(DEPDIR)/$(am__dirstamp)
+src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.$(OBJEXT):  \
 	src/ostree/$(am__dirstamp) \
 	src/ostree/$(DEPDIR)/$(am__dirstamp)
 src/ostree/ostree-ot-remote-builtin-add.$(OBJEXT):  \
@@ -4914,6 +4933,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-init-fs.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-instutil.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-kargs.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-os-init.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-set-origin.Po@am__quote@ # am--include-marker
@@ -4926,6 +4946,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-grub2-generate.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-selinux-ensure-labeled.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-set-kargs.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-admin-kargs-builtin-edit-in-place.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-builtin-admin.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-builtin-cat.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/ostree/$(DEPDIR)/ostree-ot-builtin-checkout.Po@am__quote@ # am--include-marker
@@ -6211,6 +6232,20 @@ src/ostree/ostree-ot-admin-builtin-instutil.obj: src/ostree/ot-admin-builtin-ins
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-builtin-instutil.obj `if test -f 'src/ostree/ot-admin-builtin-instutil.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-builtin-instutil.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-builtin-instutil.c'; fi`
 
+src/ostree/ostree-ot-admin-builtin-kargs.o: src/ostree/ot-admin-builtin-kargs.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-builtin-kargs.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-kargs.Tpo -c -o src/ostree/ostree-ot-admin-builtin-kargs.o `test -f 'src/ostree/ot-admin-builtin-kargs.c' || echo '$(srcdir)/'`src/ostree/ot-admin-builtin-kargs.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-kargs.Tpo src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-kargs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-builtin-kargs.c' object='src/ostree/ostree-ot-admin-builtin-kargs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-builtin-kargs.o `test -f 'src/ostree/ot-admin-builtin-kargs.c' || echo '$(srcdir)/'`src/ostree/ot-admin-builtin-kargs.c
+
+src/ostree/ostree-ot-admin-builtin-kargs.obj: src/ostree/ot-admin-builtin-kargs.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-builtin-kargs.obj -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-kargs.Tpo -c -o src/ostree/ostree-ot-admin-builtin-kargs.obj `if test -f 'src/ostree/ot-admin-builtin-kargs.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-builtin-kargs.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-builtin-kargs.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-kargs.Tpo src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-kargs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-builtin-kargs.c' object='src/ostree/ostree-ot-admin-builtin-kargs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-builtin-kargs.obj `if test -f 'src/ostree/ot-admin-builtin-kargs.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-builtin-kargs.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-builtin-kargs.c'; fi`
+
 src/ostree/ostree-ot-admin-builtin-cleanup.o: src/ostree/ot-admin-builtin-cleanup.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-builtin-cleanup.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-cleanup.Tpo -c -o src/ostree/ostree-ot-admin-builtin-cleanup.o `test -f 'src/ostree/ot-admin-builtin-cleanup.c' || echo '$(srcdir)/'`src/ostree/ot-admin-builtin-cleanup.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-cleanup.Tpo src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-cleanup.Po
@@ -6378,6 +6413,20 @@ src/ostree/ostree-ot-admin-functions.obj: src/ostree/ot-admin-functions.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-functions.c' object='src/ostree/ostree-ot-admin-functions.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-functions.obj `if test -f 'src/ostree/ot-admin-functions.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-functions.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-functions.c'; fi`
+
+src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.o: src/ostree/ot-admin-kargs-builtin-edit-in-place.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-kargs-builtin-edit-in-place.Tpo -c -o src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.o `test -f 'src/ostree/ot-admin-kargs-builtin-edit-in-place.c' || echo '$(srcdir)/'`src/ostree/ot-admin-kargs-builtin-edit-in-place.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-admin-kargs-builtin-edit-in-place.Tpo src/ostree/$(DEPDIR)/ostree-ot-admin-kargs-builtin-edit-in-place.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-kargs-builtin-edit-in-place.c' object='src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.o `test -f 'src/ostree/ot-admin-kargs-builtin-edit-in-place.c' || echo '$(srcdir)/'`src/ostree/ot-admin-kargs-builtin-edit-in-place.c
+
+src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.obj: src/ostree/ot-admin-kargs-builtin-edit-in-place.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.obj -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-admin-kargs-builtin-edit-in-place.Tpo -c -o src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.obj `if test -f 'src/ostree/ot-admin-kargs-builtin-edit-in-place.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-kargs-builtin-edit-in-place.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-kargs-builtin-edit-in-place.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/ostree/$(DEPDIR)/ostree-ot-admin-kargs-builtin-edit-in-place.Tpo src/ostree/$(DEPDIR)/ostree-ot-admin-kargs-builtin-edit-in-place.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/ostree/ot-admin-kargs-builtin-edit-in-place.c' object='src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -c -o src/ostree/ostree-ot-admin-kargs-builtin-edit-in-place.obj `if test -f 'src/ostree/ot-admin-kargs-builtin-edit-in-place.c'; then $(CYGPATH_W) 'src/ostree/ot-admin-kargs-builtin-edit-in-place.c'; else $(CYGPATH_W) '$(srcdir)/src/ostree/ot-admin-kargs-builtin-edit-in-place.c'; fi`
 
 src/ostree/ostree-ot-remote-builtin-add.o: src/ostree/ot-remote-builtin-add.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ostree_CFLAGS) $(CFLAGS) -MT src/ostree/ostree-ot-remote-builtin-add.o -MD -MP -MF src/ostree/$(DEPDIR)/ostree-ot-remote-builtin-add.Tpo -c -o src/ostree/ostree-ot-remote-builtin-add.o `test -f 'src/ostree/ot-remote-builtin-add.c' || echo '$(srcdir)/'`src/ostree/ot-remote-builtin-add.c
@@ -8601,6 +8650,13 @@ tests/test-admin-deploy-clean.sh.log: tests/test-admin-deploy-clean.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-admin-kargs.sh.log: tests/test-admin-kargs.sh
+	@p='tests/test-admin-kargs.sh'; \
+	b='tests/test-admin-kargs.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/test-reset-nonlinear.sh.log: tests/test-reset-nonlinear.sh
 	@p='tests/test-reset-nonlinear.sh'; \
 	b='tests/test-reset-nonlinear.sh'; \
@@ -9402,6 +9458,7 @@ distclean: distclean-recursive
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-init-fs.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-instutil.Po
+	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-kargs.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-os-init.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-set-origin.Po
@@ -9414,6 +9471,7 @@ distclean: distclean-recursive
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-grub2-generate.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-selinux-ensure-labeled.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-set-kargs.Po
+	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-kargs-builtin-edit-in-place.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-builtin-admin.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-builtin-cat.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-builtin-checkout.Po
@@ -9683,6 +9741,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-finalize-staged.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-init-fs.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-instutil.Po
+	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-kargs.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-os-init.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-pin.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-builtin-set-origin.Po
@@ -9695,6 +9754,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-grub2-generate.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-selinux-ensure-labeled.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-instutil-builtin-set-kargs.Po
+	-rm -f src/ostree/$(DEPDIR)/ostree-ot-admin-kargs-builtin-edit-in-place.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-builtin-admin.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-builtin-cat.Po
 	-rm -f src/ostree/$(DEPDIR)/ostree-ot-builtin-checkout.Po

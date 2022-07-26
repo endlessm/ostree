@@ -7464,6 +7464,8 @@ ostree_repo_list_commit_objects_starting_with
 with <em class="parameter"><code>start</code></em>
 , returning data in <em class="parameter"><code>out_commits</code></em>
 .</p>
+<p>To list all commit objects, provide the empty string <code class="literal">""</code> for <em class="parameter"><code>start</code></em>
+.</p>
 <div class="refsect3">
 <a name="ostree-repo-list-commit-objects-starting-with.parameters"></a><h4>Parameters</h4>
 <div class="informaltable"><table class="informaltable" width="100%" border="0">
@@ -7480,7 +7482,7 @@ with <em class="parameter"><code>start</code></em>
 </tr>
 <tr>
 <td class="parameter_name"><p>start</p></td>
-<td class="parameter_description"><p>List commits starting with this checksum</p></td>
+<td class="parameter_description"><p>List commits starting with this checksum (empty string for all)</p></td>
 <td class="parameter_annotations"> </td>
 </tr>
 <tr>
@@ -10416,7 +10418,7 @@ as - List of pack file checksums in which this object appears</p>
 <tr>
 <td class="enum_member_name"><p><a name="OSTREE-REPO-PRUNE-FLAGS-REFS-ONLY:CAPS"></a>OSTREE_REPO_PRUNE_FLAGS_REFS_ONLY</p></td>
 <td class="enum_member_description">
-<p>Do not traverse individual commit objects, only follow refs</p>
+<p>Do not traverse individual commit objects, only follow refs for reachability calculations</p>
 </td>
 <td class="enum_member_annotations"> </td>
 </tr>
