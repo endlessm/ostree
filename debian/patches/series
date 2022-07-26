@@ -1,3 +1,1 @@
-test-basic-c-Don-t-assert-that-extended-attributes-are-av.patch
-lib-Fix-symbol-versioning-inheritance.patch
 debian/Skip-test-pull-repeated-during-CI.patch
