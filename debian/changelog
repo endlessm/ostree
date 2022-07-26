@@ -1,8 +1,13 @@
-ostree (2022.5-1) UNRELEASED; urgency=medium
+ostree (2022.5-1) unstable; urgency=medium
 
   * New upstream release
+  * debian/libostree-1-1.symbols: Update
+  * d/copyright: Update
+  * Drop patches that were applied upstream
+  * Update Lintian overrides
+  * Standards-Version: 4.6.1 (no changes required)
 
- -- Simon McVittie <smcv@debian.org>  Tue, 26 Jul 2022 18:15:12 +0100
+ -- Simon McVittie <smcv@debian.org>  Tue, 26 Jul 2022 19:00:58 +0100
 
 ostree (2022.4-2) unstable; urgency=medium
 
