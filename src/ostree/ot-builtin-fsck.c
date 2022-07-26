@@ -229,6 +229,90 @@ fsck_commit_for_ref (OstreeRepo    *repo,
   return TRUE;
 }
 
+static gboolean
+fsck_one_commit (OstreeRepo *repo, const char *checksum, GVariant *commit, GPtrArray *tombstones,
+                 GCancellable *cancellable, GError **error)
+{
+  /* If requested, check that all the refs listed in the ref-bindings
+   * for this commit resolve back to this commit. */
+  if (opt_verify_back_refs)
+    {
+      g_autoptr(GVariant) metadata = g_variant_get_child_value (commit, 0);
+      const char *collection_id = NULL;
+      if (!g_variant_lookup (metadata,
+                             OSTREE_COMMIT_META_KEY_COLLECTION_BINDING,
+                             "&s",
+                             &collection_id))
+        collection_id = NULL;
+      g_autofree const char **refs = NULL;
+      if (g_variant_lookup (metadata,
+                            OSTREE_COMMIT_META_KEY_REF_BINDING,
+                            "^a&s",
+                            &refs))
+        {
+          for (const char **iter = refs; *iter != NULL; ++iter)
+            {
+              g_autofree char *checksum_for_ref = NULL;
+              if (collection_id != NULL)
+                {
+                  const OstreeCollectionRef collection_ref = { (char *) collection_id, (char *) *iter };
+                  if (!ostree_repo_resolve_collection_ref (repo, &collection_ref,
+                                                           TRUE,
+                                                           OSTREE_REPO_RESOLVE_REV_EXT_NONE,
+                                                           &checksum_for_ref,
+                                                           cancellable,
+                                                           error))
+                    return FALSE;
+                }
+              else
+                {
+                  if (!ostree_repo_resolve_rev (repo, *iter, TRUE,
+                                                &checksum_for_ref, error))
+                    return FALSE;
+                }
+              if (checksum_for_ref == NULL)
+                {
+                  if (collection_id != NULL)
+                    return glnx_throw (error,
+                                       "Collection–ref (%s, %s) in bindings for commit %s does not exist",
+                                       collection_id, *iter, checksum);
+                  else
+                    return glnx_throw (error,
+                                       "Ref ‘%s’ in bindings for commit %s does not exist",
+                                       *iter, checksum);
+                }
+              else if (g_strcmp0 (checksum_for_ref, checksum) != 0)
+                {
+                  if (collection_id != NULL)
+                    return glnx_throw (error,
+                                       "Collection–ref (%s, %s) in bindings for commit %s does not resolve to that commit",
+                                       collection_id, *iter, checksum);
+                  else
+                    return glnx_throw (error,
+                                       "Ref ‘%s’ in bindings for commit %s does not resolve to that commit",
+                                       *iter, checksum);
+                }
+            }
+        }
+    }
+
+  if (opt_add_tombstones)
+    {
+      g_autofree char *parent = ostree_commit_get_parent (commit);
+      if (parent)
+        {
+          g_autoptr(GVariant) parent_commit = NULL;
+          if (!ostree_repo_load_variant_if_exists (repo, OSTREE_OBJECT_TYPE_COMMIT, parent,
+                                                   &parent_commit, error))
+            return FALSE;
+          if (!parent_commit)
+            g_ptr_array_add (tombstones, g_strdup (checksum));
+        }
+    }
+
+  return TRUE;
+}
+
 gboolean
 ostree_builtin_fsck (int argc, char **argv, OstreeCommandInvocation *invocation, GCancellable *cancellable, GError **error)
 {
@@ -282,16 +366,15 @@ ostree_builtin_fsck (int argc, char **argv, OstreeCommandInvocation *invocation,
     }
 
   if (!opt_quiet)
-    g_print ("Enumerating objects...\n");
+    g_print ("Enumerating commits...\n");
 
-  g_autoptr(GHashTable) objects = NULL;
-  if (!ostree_repo_list_objects (repo, OSTREE_REPO_LIST_OBJECTS_ALL,
-                                 &objects, cancellable, error))
+  // Find all commit objects, including partial ones
+  g_autoptr(GHashTable) all_commits = NULL;
+  if (!ostree_repo_list_commit_objects_starting_with (repo, "", &all_commits, cancellable, error))
     return FALSE;
-
+  // And gather a set of non-partial commits for further analysis
   g_autoptr(GHashTable) commits = g_hash_table_new_full (ostree_hash_object_name, g_variant_equal,
                                                          (GDestroyNotify)g_variant_unref, NULL);
-
 
   g_autoptr(GPtrArray) tombstones = NULL;
   if (opt_add_tombstones)
@@ -302,8 +385,8 @@ ostree_builtin_fsck (int argc, char **argv, OstreeCommandInvocation *invocation,
 
   guint n_partial = 0;
   guint n_fsck_partial = 0;
-  g_hash_table_iter_init (&hash_iter, objects);
-  while (g_hash_table_iter_next (&hash_iter, &key, &value))
+  g_hash_table_iter_init (&hash_iter, all_commits);
+  while (g_hash_table_iter_next (&hash_iter, &key, NULL))
     {
       GVariant *serialized_key = key;
       const char *checksum;
@@ -313,114 +396,25 @@ ostree_builtin_fsck (int argc, char **argv, OstreeCommandInvocation *invocation,
 
       ostree_object_name_deserialize (serialized_key, &checksum, &objtype);
 
-      if (objtype == OSTREE_OBJECT_TYPE_COMMIT)
+      g_assert (objtype == OSTREE_OBJECT_TYPE_COMMIT);
+
+      if (!ostree_repo_load_commit (repo, checksum, &commit, &commitstate, error))
+        return FALSE;
+
+      if (!fsck_one_commit (repo, checksum, commit, tombstones, cancellable, error))
+        return FALSE;
+
+      if (commitstate & OSTREE_REPO_COMMIT_STATE_PARTIAL)
         {
-          if (!ostree_repo_load_commit (repo, checksum, &commit, &commitstate, error))
-            return FALSE;
-
-          /* If requested, check that all the refs listed in the ref-bindings
-           * for this commit resolve back to this commit. */
-          if (opt_verify_back_refs)
-            {
-              g_autoptr(GVariant) metadata = g_variant_get_child_value (commit, 0);
-
-              const char *collection_id = NULL;
-              if (!g_variant_lookup (metadata,
-                                     OSTREE_COMMIT_META_KEY_COLLECTION_BINDING,
-                                     "&s",
-                                     &collection_id))
-                collection_id = NULL;
-
-              g_autofree const char **refs = NULL;
-              if (g_variant_lookup (metadata,
-                                    OSTREE_COMMIT_META_KEY_REF_BINDING,
-                                    "^a&s",
-                                    &refs))
-                {
-                  for (const char **iter = refs; *iter != NULL; ++iter)
-                    {
-                      g_autofree char *checksum_for_ref = NULL;
-
-                      if (collection_id != NULL)
-                        {
-                          const OstreeCollectionRef collection_ref = { (char *) collection_id, (char *) *iter };
-                          if (!ostree_repo_resolve_collection_ref (repo, &collection_ref,
-                                                                   TRUE,
-                                                                   OSTREE_REPO_RESOLVE_REV_EXT_NONE,
-                                                                   &checksum_for_ref,
-                                                                   cancellable,
-                                                                   error))
-                            return FALSE;
-                        }
-                      else
-                        {
-                          if (!ostree_repo_resolve_rev (repo, *iter, TRUE,
-                                                        &checksum_for_ref, error))
-                            return FALSE;
-                        }
-
-                      if (checksum_for_ref == NULL)
-                        {
-                          if (collection_id != NULL)
-                            return glnx_throw (error,
-                                               "Collection–ref (%s, %s) in bindings for commit %s does not exist",
-                                               collection_id, *iter, checksum);
-                          else
-                            return glnx_throw (error,
-                                               "Ref ‘%s’ in bindings for commit %s does not exist",
-                                               *iter, checksum);
-                        }
-                      else if (g_strcmp0 (checksum_for_ref, checksum) != 0)
-                        {
-                          if (collection_id != NULL)
-                            return glnx_throw (error,
-                                               "Collection–ref (%s, %s) in bindings for commit %s does not resolve to that commit",
-                                               collection_id, *iter, checksum);
-                          else
-                            return glnx_throw (error,
-                                               "Ref ‘%s’ in bindings for commit %s does not resolve to that commit",
-                                               *iter, checksum);
-                        }
-                    }
-                }
-            }
-
-          if (opt_add_tombstones)
-            {
-              GError *local_error = NULL;
-              g_autofree char *parent = ostree_commit_get_parent (commit);
-              if (parent)
-                {
-                  g_autoptr(GVariant) parent_commit = NULL;
-                  if (!ostree_repo_load_variant (repo, OSTREE_OBJECT_TYPE_COMMIT, parent,
-                                                 &parent_commit, &local_error))
-                    {
-                      if (g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
-                        {
-                          g_ptr_array_add (tombstones, g_strdup (checksum));
-                          g_clear_error (&local_error);
-                        }
-                      else
-                        {
-                          g_propagate_error (error, local_error);
-                          return FALSE;
-                        }
-                    }
-                }
-            }
-
-          if (commitstate & OSTREE_REPO_COMMIT_STATE_PARTIAL)
-            {
-              n_partial++;
-              if (commitstate & OSTREE_REPO_COMMIT_STATE_FSCK_PARTIAL)
-                n_fsck_partial++;
-            }
-          else
-            g_hash_table_add (commits, g_variant_ref (serialized_key));
+          n_partial++;
+          if (commitstate & OSTREE_REPO_COMMIT_STATE_FSCK_PARTIAL)
+            n_fsck_partial++;
         }
-    }
+      else
+        g_hash_table_add (commits, g_variant_ref (serialized_key));
+  }
 
-  g_clear_pointer (&objects, g_hash_table_unref);
+  g_clear_pointer (&all_commits, g_hash_table_unref);
 
   if (!opt_quiet)
     g_print ("Verifying content integrity of %u commit objects...\n",

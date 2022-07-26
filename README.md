@@ -88,6 +88,9 @@ integration tool supports importing and exporting from libostree repos.
 Fedora [coreos-assembler](https://github.com/coreos/coreos-assembler) is
 the build tool used to generate Fedora CoreOS derivatives.
 
+[debos](https://github.com/go-debos/debos) is a tool-chain for simplifying the
+process of building a Debian-based OS image.
+
 ## Projects linking to libostree
 
 [rpm-ostree](https://github.com/projectatomic/rpm-ostree) is used by the
@@ -119,7 +122,7 @@ write higher level manual bindings on top; this is more common
 for statically compiled languages.  Here's a list of such bindings:
 
  - [ostree-go](https://github.com/ostreedev/ostree-go/)
- - [ostree-rs](https://github.com/ostreedev/ostree-rs/)
+ - [ostree-rs](./rust-bindings)
 
 ## Building
 

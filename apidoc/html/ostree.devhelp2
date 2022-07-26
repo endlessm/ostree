@@ -335,6 +335,7 @@
     <keyword type="function" name="ostree_sysroot_get_staged_deployment ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-staged-deployment" since="2018.5"/>
     <keyword type="function" name="ostree_sysroot_init_osname ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-init-osname" since="2016.4"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_kargs ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-kargs"/>
+    <keyword type="function" name="ostree_sysroot_deployment_set_kargs_in_place ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-kargs-in-place"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_mutable ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-mutable"/>
     <keyword type="function" name="ostree_sysroot_deployment_unlock ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-unlock" since="2016.4"/>
     <keyword type="function" name="ostree_sysroot_deployment_set_pinned ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-deployment-set-pinned" since="2018.3"/>
@@ -476,6 +477,7 @@
     <keyword type="function" name="ostree_kernel_args_append ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-append" since="2019.3"/>
     <keyword type="function" name="ostree_kernel_args_append_argv ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-append-argv" since="2019.3"/>
     <keyword type="function" name="ostree_kernel_args_append_argv_filtered ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-append-argv-filtered" since="2019.3"/>
+    <keyword type="function" name="ostree_kernel_args_append_if_missing ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-append-if-missing" since="2022.5"/>
     <keyword type="function" name="ostree_kernel_args_new_replace ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-new-replace" since="2019.3"/>
     <keyword type="function" name="ostree_kernel_args_delete ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-delete" since="2019.3"/>
     <keyword type="function" name="ostree_kernel_args_delete_key_entry ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-delete-key-entry" since="2019.3"/>

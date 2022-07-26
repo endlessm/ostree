@@ -41,7 +41,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_RELEASE_VERSION (4)
+#define OSTREE_RELEASE_VERSION (5)
 
 /**
  * OSTREE_VERSION
@@ -50,7 +50,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION (2022.4)
+#define OSTREE_VERSION (2022.5)
 
 /**
  * OSTREE_VERSION_S:
@@ -60,7 +60,7 @@
  *
  * Since: 2017.4
  */
-#define OSTREE_VERSION_S "2022.4"
+#define OSTREE_VERSION_S "2022.5"
 
 #define OSTREE_ENCODE_VERSION(year,release) \
         ((year) << 16 | (release))
