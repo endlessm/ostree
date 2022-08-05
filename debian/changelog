@@ -1,3 +1,14 @@
+ostree (2022.5-2) unstable; urgency=medium
+
+  * Build with libcurl http backend instead of libsoup2.4.
+    This avoids library conflicts during the transition to GNOME 43, in
+    which core apps and libraries have switched to libsoup3, which conflicts
+    with libsoup2.4.
+    We still build-depend on libsoup2.4, because it's used in the test suite
+    and installed-tests. (Closes: #1016589)
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 05 Aug 2022 10:00:02 +0100
+
 ostree (2022.5-1) unstable; urgency=medium
 
   * New upstream release
