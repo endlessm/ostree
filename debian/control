@@ -29,6 +29,7 @@ Build-Depends:
  libavahi-client-dev (>= 0.6.31),
  libavahi-glib-dev (>= 0.6.31),
  libcap-dev,
+ libcurl4-gnutls-dev | libcurl-dev,
  libfuse3-dev,
  libgirepository1.0-dev,
  libglib2.0-dev (>= 2.66.0),

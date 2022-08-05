@@ -13,6 +13,7 @@ override_dh_autoreconf:
 configure_options = \
 	--enable-installed-tests \
 	--with-avahi \
+	--with-curl \
 	--with-dracut \
 	--with-grub2 \
 	--with-grub2-mkconfig-path=/usr/sbin/grub-mkconfig \
