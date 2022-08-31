@@ -1,3 +1,12 @@
+ostree (2022.5-3) unstable; urgency=medium
+
+  * d/control, d/rules: Disable gjs-based tests on armel.
+    It's looking as though mozjs102, and therefore the next gjs release,
+    will not support armel due to its lack of atomic instructions.
+  * d/control, d/rules: Re-enable gjs tests on s390x
+
+ -- Simon McVittie <smcv@debian.org>  Wed, 31 Aug 2022 09:47:41 +0100
+
 ostree (2022.5-2) unstable; urgency=medium
 
   * Build with libcurl http backend instead of libsoup2.4.
