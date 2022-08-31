@@ -20,7 +20,7 @@ Build-Depends:
  e2fslibs-dev,
  elfutils,
  fuse3,
- gjs [!alpha !armel !hppa !ia64 !m68k !s390x !sh4 !sparc64 !x32],
+ gjs [!alpha !armel !hppa !ia64 !m68k !sh4 !sparc64 !x32],
  gnupg <!nocheck>,
  gobject-introspection,
  gtk-doc-tools <!nodoc>,
