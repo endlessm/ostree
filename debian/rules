@@ -28,7 +28,7 @@ configure_options = \
 	--without-smack \
 	$(NULL)
 
-ifneq ($(filter alpha armel hppa ia64 m68k sh4 sparc64 x32,$(DEB_HOST_ARCH)),)
+ifneq ($(filter alpha hppa ia64 m68k sh4 sparc64 x32,$(DEB_HOST_ARCH)),)
 configure_options += ac_cv_path_GJS=
 endif
 
