@@ -1,3 +1,12 @@
+ostree (2022.5-4) unstable; urgency=medium
+
+  * Re-enable gjs-based tests on armel.
+    Adrian Bunk and Mike Hommey were able to fix mozjs102 on armel, so we
+    can continue to have gjs on that architecture for Debian 12.
+  * d/watch: Adapt to Github website changes
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 03 Oct 2022 10:19:36 +0100
+
 ostree (2022.5-3) unstable; urgency=medium
 
   * d/control, d/rules: Disable gjs-based tests on armel.
