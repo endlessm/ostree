@@ -17,7 +17,7 @@ Build-Depends:
  debhelper-compat (= 13),
  docbook-xml <!nodoc>,
  docbook-xsl <!nodoc>,
- e2fslibs-dev,
+ libext2fs-dev,
  elfutils,
  fuse3,
  gjs [!alpha !hppa !ia64 !m68k !sh4 !sparc64 !x32],
