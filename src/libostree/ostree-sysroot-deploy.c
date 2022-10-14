@@ -29,7 +29,6 @@
 #include <sys/ioctl.h>
 #include <stdbool.h>
 #include <sys/poll.h>
-#include <linux/fs.h>
 #include <err.h>
 
 #ifdef HAVE_LIBMOUNT
@@ -642,7 +641,7 @@ checkout_deployment_tree (OstreeSysroot     *sysroot,
     return FALSE;
 
   /* Generate hardlink farm, then opendir it */
-  OstreeRepoCheckoutAtOptions checkout_opts = { 0, };
+  OstreeRepoCheckoutAtOptions checkout_opts = { .process_passthrough_whiteouts = TRUE };
   if (!ostree_repo_checkout_at (repo, &checkout_opts, osdeploy_dfd,
                                 checkout_target_name, csum,
                                 cancellable, error))
@@ -1476,7 +1475,7 @@ fsfreeze_thaw_cycle (OstreeSysroot *self,
            * EOPNOTSUPP: If the filesystem doesn't support it
            */
           int saved_errno = errno;
-          (void) TEMP_FAILURE_RETRY (ioctl (rootfs_dfd, FITHAW, 0));
+          _ostree_linuxfs_filesystem_thaw (rootfs_dfd);
           errno = saved_errno;
           /* But if we got an error from poll, let's log it */
           if (r < 0)
@@ -1517,7 +1516,7 @@ fsfreeze_thaw_cycle (OstreeSysroot *self,
           return glnx_throw (error, "aborting due to test-fifreeze");
         }
       /* Do a freeze/thaw cycle; TODO add a FIFREEZETHAW ioctl */
-      if (ioctl (rootfs_dfd, FIFREEZE, 0) != 0)
+      if (_ostree_linuxfs_filesystem_freeze (rootfs_dfd) != 0)
         {
           /* Not supported, we're running in the unit tests (as non-root), or
            * the filesystem is already frozen (EBUSY).
@@ -1539,7 +1538,7 @@ fsfreeze_thaw_cycle (OstreeSysroot *self,
             return glnx_throw_errno_prefix (error, "ioctl(FIFREEZE)");
         }
       /* And finally thaw, then signal our completion to the watchdog */
-      if (TEMP_FAILURE_RETRY (ioctl (rootfs_dfd, FITHAW, 0)) != 0)
+      if (_ostree_linuxfs_filesystem_thaw (rootfs_dfd) != 0)
         {
           /* Warn but don't error if the filesystem was already thawed */
           if (errno == EINVAL)
@@ -2006,7 +2005,7 @@ install_deployment_kernel (OstreeSysroot   *sysroot,
                                     &variant, NULL))
         {
           metadata = g_variant_get_child_value (variant, 0);
-          g_variant_lookup (metadata, OSTREE_COMMIT_META_KEY_VERSION, "s", &deployment_version);
+          (void) g_variant_lookup (metadata, OSTREE_COMMIT_META_KEY_VERSION, "s", &deployment_version);
         }
     }
 
@@ -2233,7 +2232,7 @@ get_deployment_ostree_version (OstreeRepo       *repo,
   if (ostree_repo_load_variant (repo, OSTREE_OBJECT_TYPE_COMMIT, csum, &variant, NULL))
     {
       g_autoptr(GVariant) metadata = g_variant_get_child_value (variant, 0);
-      g_variant_lookup (metadata, OSTREE_COMMIT_META_KEY_VERSION, "s", &version);
+      (void) g_variant_lookup (metadata, OSTREE_COMMIT_META_KEY_VERSION, "s", &version);
     }
 
   return g_steal_pointer (&version);
@@ -3595,7 +3594,7 @@ ostree_sysroot_deployment_set_kargs (OstreeSysroot     *self,
  * ostree_sysroot_deployment_set_kargs_in_place:
  * @self: Sysroot
  * @deployment: A deployment
- * @kargs_str: (allow none): Replace @deployment's kernel arguments
+ * @kargs_str: (allow-none): Replace @deployment's kernel arguments
  * @cancellable: Cancellable
  * @error: Error
  *
@@ -3615,25 +3614,55 @@ ostree_sysroot_deployment_set_kargs_in_place (OstreeSysroot     *self,
   if (!_ostree_sysroot_ensure_writable (self, error))
     return FALSE;
 
-  g_assert (!ostree_deployment_is_staged (deployment));
+  // handle staged deployment
+  if (ostree_deployment_is_staged (deployment))
+    {
+      /* Read the staged state from disk */
+      glnx_autofd int fd = -1;
+      if (!glnx_openat_rdonly (AT_FDCWD, _OSTREE_SYSROOT_RUNSTATE_STAGED, TRUE, &fd, error))
+        return FALSE;
 
-  OstreeBootconfigParser *new_bootconfig = ostree_deployment_get_bootconfig (deployment);
-  ostree_bootconfig_parser_set (new_bootconfig, "options", kargs_str);
-
-  g_autofree char *bootconf_name =
-    g_strdup_printf ("ostree-%d-%s.conf",
-                     self->deployments->len - ostree_deployment_get_index (deployment),
-                     ostree_deployment_get_osname (deployment));
-
-  g_autofree char *bootconfdir = g_strdup_printf ("loader.%d/entries", self->bootversion);
-  glnx_autofd int bootconf_dfd = -1;
-  if (!glnx_opendirat (self->boot_fd, bootconfdir, TRUE, &bootconf_dfd, error))
-    return FALSE;
-
-  if (!ostree_bootconfig_parser_write_at (new_bootconfig,
-                                          bootconf_dfd, bootconf_name,
+      g_autoptr(GBytes) contents = ot_fd_readall_or_mmap (fd, 0, error);
+      if (!contents)
+        return FALSE;
+      g_autoptr(GVariant) staged_deployment_data =
+        g_variant_new_from_bytes ((GVariantType*)"a{sv}", contents, TRUE);
+      g_autoptr(GVariantDict) staged_deployment_dict =
+        g_variant_dict_new (staged_deployment_data);
+      
+      g_autoptr(OstreeKernelArgs) kargs = ostree_kernel_args_from_string (kargs_str);
+      g_auto(GStrv) kargs_strv = ostree_kernel_args_to_strv (kargs);
+      
+      g_variant_dict_insert (staged_deployment_dict, "kargs", "^a&s", kargs_strv);
+      g_autoptr(GVariant) new_staged_deployment_data = g_variant_dict_end (staged_deployment_dict);
+      
+      if (!glnx_file_replace_contents_at (fd, _OSTREE_SYSROOT_RUNSTATE_STAGED,
+                                          g_variant_get_data (new_staged_deployment_data), 
+                                          g_variant_get_size (new_staged_deployment_data),
+                                          GLNX_FILE_REPLACE_NODATASYNC,
                                           cancellable, error))
-    return FALSE;
+        return FALSE;
+    }
+  else
+    {
+      OstreeBootconfigParser *new_bootconfig = ostree_deployment_get_bootconfig (deployment);
+      ostree_bootconfig_parser_set (new_bootconfig, "options", kargs_str);
+
+      g_autofree char *bootconf_name =
+        g_strdup_printf ("ostree-%d-%s.conf",
+                        self->deployments->len - ostree_deployment_get_index (deployment),
+                        ostree_deployment_get_osname (deployment));
+
+      g_autofree char *bootconfdir = g_strdup_printf ("loader.%d/entries", self->bootversion);
+      glnx_autofd int bootconf_dfd = -1;
+      if (!glnx_opendirat (self->boot_fd, bootconfdir, TRUE, &bootconf_dfd, error))
+        return FALSE;
+
+      if (!ostree_bootconfig_parser_write_at (new_bootconfig,
+                                              bootconf_dfd, bootconf_name,
+                                              cancellable, error))
+        return FALSE;
+    }
 
   return TRUE;
 }

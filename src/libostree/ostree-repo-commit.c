@@ -30,7 +30,6 @@
 #include <sys/xattr.h>
 #include <glib/gprintf.h>
 #include <sys/ioctl.h>
-#include <linux/fs.h>
 #include <ext2fs/ext2_fs.h>
 
 #include "otutil.h"
@@ -882,11 +881,8 @@ _try_clone_from_payload_link (OstreeRepo   *self,
       else
         {
           /* This undoes all of the previous writes; we want to generate reflinked data.   */
-          if (ftruncate (tmpf->fd, 0) < 0)
-            return glnx_throw_errno_prefix (error, "ftruncate");
-
-          if (glnx_regfile_copy_bytes (fdf, tmpf->fd, -1) < 0)
-            return glnx_throw_errno_prefix (error, "regfile copy");
+          if (ioctl (tmpf->fd, FICLONE, fdf) < 0)
+            return glnx_throw_errno_prefix (error, "FICLONE");
 
           return TRUE;
         }
@@ -1749,7 +1745,7 @@ ostree_repo_prepare_transaction (OstreeRepo     *self,
     return FALSE;
 
   /* Success: do not abort the transaction when returning. */
-  txn->repo = NULL; (void) txn;
+  g_clear_object (&txn->repo); (void) txn;
 
   if (out_transaction_resume)
     *out_transaction_resume = ret_transaction_resume;

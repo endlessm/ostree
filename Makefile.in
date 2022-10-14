@@ -2048,6 +2048,7 @@ am__EXEEXT_23 = tests/test-basic.sh \
 	tests/test-admin-deploy-nomerge.sh \
 	tests/test-admin-deploy-none.sh \
 	tests/test-admin-deploy-bootid-gc.sh \
+	tests/test-admin-deploy-whiteouts.sh \
 	tests/test-osupdate-dtb.sh \
 	tests/test-admin-instutil-set-kargs.sh \
 	tests/test-admin-upgrade-not-backwards.sh \
@@ -2416,28 +2417,24 @@ EXTRA_DIST = $(all_dist_test_scripts) $(all_dist_test_data) autogen.sh \
 	src/libostree/ostree-enumtypes.c.template \
 	src/libostree/ostree-deployment-private.h \
 	src/libostree/ostree-repo-deprecated.h \
-	src/libostree/ostree-version.h \
-	src/libostree/s390x-se-luks-gencpio \
-	src/ostree/parse-datetime.y buildutil/tap-driver.sh \
-	buildutil/tap-test tests/glib.supp tests/ostree.supp $(NULL) \
-	$(am__append_69) $(am__append_72) tests/libtest.sh \
-	$(am__append_73) $(am__append_78) tests/libostreetest.h \
-	tests/libtest.sh $(NULL) src/boot/dracut/module-setup.sh \
-	src/boot/dracut/ostree.conf src/boot/mkinitcpio \
-	src/boot/ostree-boot-complete.service \
+	src/libostree/ostree-version.h src/ostree/parse-datetime.y \
+	buildutil/tap-driver.sh buildutil/tap-test tests/glib.supp \
+	tests/ostree.supp $(NULL) $(am__append_69) $(am__append_72) \
+	tests/libtest.sh $(am__append_73) $(am__append_78) \
+	tests/libostreetest.h tests/libtest.sh $(NULL) \
+	src/boot/dracut/module-setup.sh src/boot/dracut/ostree.conf \
+	src/boot/mkinitcpio src/boot/ostree-boot-complete.service \
 	src/boot/ostree-prepare-root.service \
 	src/boot/ostree-finalize-staged.path \
 	src/boot/ostree-remount.service \
 	src/boot/ostree-finalize-staged.service \
+	src/boot/ostree-finalize-staged-hold.service \
 	src/boot/grub2/grub2-15_ostree \
 	src/boot/grub2/ostree-grub-generator $(NULL) $(am__append_87) \
 	$(am__append_91)
 bin_SCRIPTS = 
 lib_LTLIBRARIES = libostree-1.la
-
-# Secure Execution: script for creating new initramdisk with LUKS key and config
-pkglibexec_SCRIPTS = src/libostree/s390x-se-luks-gencpio \
-	$(am__append_83)
+pkglibexec_SCRIPTS = $(am__append_83)
 noinst_LTLIBRARIES = $(am__append_1) libglnx.la libbsdiff.la \
 	libotutil.la libbupsplit.la libostreetest.la
 privlibdir = $(pkglibdir)
@@ -2935,6 +2932,7 @@ _installed_or_uninstalled_test_scripts = tests/test-basic.sh \
 	tests/test-admin-deploy-nomerge.sh \
 	tests/test-admin-deploy-none.sh \
 	tests/test-admin-deploy-bootid-gc.sh \
+	tests/test-admin-deploy-whiteouts.sh \
 	tests/test-osupdate-dtb.sh \
 	tests/test-admin-instutil-set-kargs.sh \
 	tests/test-admin-upgrade-not-backwards.sh \
@@ -3152,6 +3150,7 @@ tests_test_commit_sign_sh_ext_LDADD = $(TESTS_LDADD)
 @BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-boot-complete.service \
 @BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-finalize-staged.service \
 @BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-finalize-staged.path \
+@BUILDOPT_SYSTEMD_TRUE@	src/boot/ostree-finalize-staged-hold.service \
 @BUILDOPT_SYSTEMD_TRUE@	$(NULL)
 
 @BUILDOPT_SYSTEMD_TRUE@systemdtmpfilesdir = $(prefix)/lib/tmpfiles.d
@@ -8597,6 +8596,13 @@ tests/test-admin-deploy-none.sh.log: tests/test-admin-deploy-none.sh
 tests/test-admin-deploy-bootid-gc.sh.log: tests/test-admin-deploy-bootid-gc.sh
 	@p='tests/test-admin-deploy-bootid-gc.sh'; \
 	b='tests/test-admin-deploy-bootid-gc.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/test-admin-deploy-whiteouts.sh.log: tests/test-admin-deploy-whiteouts.sh
+	@p='tests/test-admin-deploy-whiteouts.sh'; \
+	b='tests/test-admin-deploy-whiteouts.sh'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

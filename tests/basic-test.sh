@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-echo "1..$((87 + ${extra_basic_tests:-0}))"
+echo "1..$((90 + ${extra_basic_tests:-0}))"
 
 CHECKOUT_U_ARG=""
 CHECKOUT_H_ARGS="-H"
@@ -96,6 +96,22 @@ $OSTREE rev-parse test2
 $OSTREE rev-parse 'test2^'
 $OSTREE rev-parse 'test2^^' 2>/dev/null && fatal "rev-parse test2^^ unexpectedly succeeded!"
 echo "ok rev-parse"
+
+if $OSTREE rev-parse -S 2>err.txt; then
+    fatal "rev parse multiple"
+fi
+assert_file_has_content_literal err.txt 'Multiple commit objects found'
+$CMD_PREFIX ostree --repo=repo-copy init --mode=archive
+if $CMD_PREFIX ostree --repo=repo-copy rev-parse -S 2>err.txt; then
+    fatal "rev parse none"
+fi
+assert_file_has_content_literal err.txt 'No commit objects found'
+rev=$($OSTREE rev-parse test2)
+$CMD_PREFIX ostree --repo=repo-copy pull-local repo test2
+rev2=$($CMD_PREFIX ostree --repo=repo-copy rev-parse -S)
+assert_streq "${rev}" "${rev2}"
+echo "ok rev-parse -S"
+
 
 checksum=$($OSTREE rev-parse test2)
 partial=${checksum:0:6} 
@@ -1186,4 +1202,31 @@ if test "$(id -u)" != "0"; then
     echo "ok unwritable repo was caught"
 else
     echo "ok # SKIP not run when root"
+fi
+
+if ! skip_one_without_whiteouts_devices; then
+    cd ${test_tmpdir}
+    rm checkout-test2 -rf
+    $OSTREE checkout test2 checkout-test2
+
+    assert_not_has_file checkout-test2/whiteouts/whiteout
+    assert_not_has_file checkout-test2/whiteouts/whiteout2
+    assert_has_file checkout-test2/whiteouts/.ostree-wh.whiteout
+    assert_has_file checkout-test2/whiteouts/.ostree-wh.whiteout2
+
+    echo "ok checkout: no whiteout passthrough by default"
+fi
+
+if ! skip_one_without_whiteouts_devices; then
+    cd ${test_tmpdir}
+    rm checkout-test2 -rf
+    $OSTREE checkout --process-passthrough-whiteouts test2 checkout-test2
+
+    assert_not_has_file checkout-test2/whiteouts/.ostree-wh.whiteout
+    assert_not_has_file checkout-test2/whiteouts/.ostree-wh.whiteout2
+
+    assert_is_whiteout_device checkout-test2/whiteouts/whiteout
+    assert_is_whiteout_device checkout-test2/whiteouts/whiteout2
+
+    echo "ok checkout: whiteout with overlayfs passthrough processing"
 fi
