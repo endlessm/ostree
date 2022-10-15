@@ -11,7 +11,3 @@ ostree-tests: symlink-is-self-recursive . [usr/libexec/installed-tests/libostree
 # The test that runs this script is automatically skipped if gjs isn't
 # present.
 [alpha hppa ia64 m68k sh4 sparc64 x32]: missing-dep-for-interpreter gjs => gjs (usr/libexec/installed-tests/libostree/corrupt-repo-ref.js)
-
-# This shared object genuinely doesn't use any libc ABIs directly,
-# only via GLib
-library-not-linked-against-libc [usr/libexec/installed-tests/libostree/libreaddir-rand.so]
