@@ -1,8 +1,12 @@
-ostree (2022.6-1) UNRELEASED; urgency=medium
+ostree (2022.6-1) unstable; urgency=medium
 
   * New upstream release
+  * Build-depend on libext2fs-dev instead of transitional e2fslibs-dev
+  * Don't install s390x-se-luks-gencpio script.
+    It was reimplemented in C as part of ostree(1).
+  * Install another early-boot service in ostree-boot
 
- -- Simon McVittie <smcv@debian.org>  Fri, 14 Oct 2022 19:36:38 +0100
+ -- Simon McVittie <smcv@debian.org>  Sat, 15 Oct 2022 10:48:34 +0100
 
 ostree (2022.5-4) unstable; urgency=medium
 
