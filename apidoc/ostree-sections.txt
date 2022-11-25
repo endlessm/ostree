@@ -548,6 +548,7 @@ OstreeSysroot
 ostree_sysroot_new
 ostree_sysroot_new_default
 ostree_sysroot_initialize
+ostree_sysroot_initialize_with_mount_namespace
 ostree_sysroot_get_path
 ostree_sysroot_load
 ostree_sysroot_load_if_changed
@@ -738,6 +739,8 @@ ostree_kernel_args_get_last_value
 ostree_kernel_args_from_string
 ostree_kernel_args_to_strv
 ostree_kernel_args_to_string
+ostree_kernel_args_contains
+ostree_kernel_args_delete_if_present
 </SECTION>
 
 <SECTION>

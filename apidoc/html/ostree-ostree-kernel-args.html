@@ -121,7 +121,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="/usr/share/gtk-doc/html/glib/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-ostree-kernel-args.html#ostree-kernel-args-new-replace" title="ostree_kernel_args_new_replace ()">ostree_kernel_args_new_replace</a> <span class="c_punctuation">()</span>
@@ -129,7 +129,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="/usr/share/gtk-doc/html/glib/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-ostree-kernel-args.html#ostree-kernel-args-delete" title="ostree_kernel_args_delete ()">ostree_kernel_args_delete</a> <span class="c_punctuation">()</span>
@@ -137,7 +137,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="/usr/share/gtk-doc/html/glib/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-ostree-kernel-args.html#ostree-kernel-args-delete-key-entry" title="ostree_kernel_args_delete_key_entry ()">ostree_kernel_args_delete_key_entry</a> <span class="c_punctuation">()</span>
@@ -145,7 +145,7 @@
 </tr>
 <tr>
 <td class="function_type">
-<a href="/usr/share/gtk-doc/html/glib/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<span class="returnvalue">gboolean</span>
 </td>
 <td class="function_name">
 <a class="link" href="ostree-ostree-kernel-args.html#ostree-kernel-args-append-proc-cmdline" title="ostree_kernel_args_append_proc_cmdline ()">ostree_kernel_args_append_proc_cmdline</a> <span class="c_punctuation">()</span>
@@ -188,6 +188,22 @@
 </td>
 <td class="function_name">
 <a class="link" href="ostree-ostree-kernel-args.html#ostree-kernel-args-to-string" title="ostree_kernel_args_to_string ()">ostree_kernel_args_to_string</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-ostree-kernel-args.html#ostree-kernel-args-contains" title="ostree_kernel_args_contains ()">ostree_kernel_args_contains</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-ostree-kernel-args.html#ostree-kernel-args-delete-if-present" title="ostree_kernel_args_delete_if_present ()">ostree_kernel_args_delete_if_present</a> <span class="c_punctuation">()</span>
 </td>
 </tr>
 </tbody>
@@ -518,10 +534,10 @@ and appends key to kargs-&gt;order if it is not in the hash table.</p>
 <hr>
 <div class="refsect2">
 <a name="ostree-kernel-args-new-replace"></a><h3>ostree_kernel_args_new_replace ()</h3>
-<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glib/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_kernel_args_new_replace (<em class="parameter"><code><a class="link" href="ostree-ostree-kernel-args.html#OstreeKernelArgs" title="OstreeKernelArgs"><span class="type">OstreeKernelArgs</span></a> *kargs</code></em>,
                                 <em class="parameter"><code>const <span class="type">char</span> *arg</code></em>,
-                                <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glib/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>This function implements the basic logic behind key/value pair
 replacement. Do note that the arg need to be properly formatted</p>
 <p>When replacing key with exact one value, the arg can be in
@@ -564,7 +580,7 @@ val will be swapped with the new_val in that case</p>
 </div>
 <div class="refsect3">
 <a name="ostree-kernel-args-new-replace.returns"></a><h4>Returns</h4>
-<p> <a href="/usr/share/gtk-doc/html/glib/glib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> on success, <a href="/usr/share/gtk-doc/html/glib/glib-Standard-Macros.html#FALSE:CAPS"><code class="literal">FALSE</code></a> on failure (and in some other instances such as:</p>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> on failure (and in some other instances such as:</p>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem"><p>key not found in <em class="parameter"><code>kargs</code></em>
 </p></li>
@@ -579,10 +595,10 @@ is in the form of key=old_val)</p></li>
 <hr>
 <div class="refsect2">
 <a name="ostree-kernel-args-delete"></a><h3>ostree_kernel_args_delete ()</h3>
-<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glib/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_kernel_args_delete (<em class="parameter"><code><a class="link" href="ostree-ostree-kernel-args.html#OstreeKernelArgs" title="OstreeKernelArgs"><span class="type">OstreeKernelArgs</span></a> *kargs</code></em>,
                            <em class="parameter"><code>const <span class="type">char</span> *arg</code></em>,
-                           <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glib/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+                           <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>There are few scenarios being handled for deletion:</p>
 <p> 1: for input arg with a single key(i.e without = for split),
  the key/value pair will be deleted if there is only
@@ -622,17 +638,17 @@ ostree_kernel_args_delete (<em class="parameter"><code><a class="link" href="ost
 </div>
 <div class="refsect3">
 <a name="ostree-kernel-args-delete.returns"></a><h4>Returns</h4>
-<p> <a href="/usr/share/gtk-doc/html/glib/glib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> on success, <a href="/usr/share/gtk-doc/html/glib/glib-Standard-Macros.html#FALSE:CAPS"><code class="literal">FALSE</code></a> on failure</p>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> on failure</p>
 </div>
 <p class="since">Since: 2019.3</p>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-kernel-args-delete-key-entry"></a><h3>ostree_kernel_args_delete_key_entry ()</h3>
-<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glib/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_kernel_args_delete_key_entry (<em class="parameter"><code><a class="link" href="ostree-ostree-kernel-args.html#OstreeKernelArgs" title="OstreeKernelArgs"><span class="type">OstreeKernelArgs</span></a> *kargs</code></em>,
                                      <em class="parameter"><code>const <span class="type">char</span> *key</code></em>,
-                                     <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glib/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+                                     <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>This function removes the key entry from the hashtable
 as well from the order pointer array inside kargs</p>
 <p>Note: since both table and order inside kernel args
@@ -667,18 +683,18 @@ being called as they are done automatically by GLib</p>
 </div>
 <div class="refsect3">
 <a name="ostree-kernel-args-delete-key-entry.returns"></a><h4>Returns</h4>
-<p> <a href="/usr/share/gtk-doc/html/glib/glib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> on success, <a href="/usr/share/gtk-doc/html/glib/glib-Standard-Macros.html#FALSE:CAPS"><code class="literal">FALSE</code></a> on failure</p>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> on failure</p>
 </div>
 <p class="since">Since: 2019.3</p>
 </div>
 <hr>
 <div class="refsect2">
 <a name="ostree-kernel-args-append-proc-cmdline"></a><h3>ostree_kernel_args_append_proc_cmdline ()</h3>
-<pre class="programlisting"><a href="/usr/share/gtk-doc/html/glib/glib-Basic-Types.html#gboolean"><span class="returnvalue">gboolean</span></a>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
 ostree_kernel_args_append_proc_cmdline
                                (<em class="parameter"><code><a class="link" href="ostree-ostree-kernel-args.html#OstreeKernelArgs" title="OstreeKernelArgs"><span class="type">OstreeKernelArgs</span></a> *kargs</code></em>,
-                                <em class="parameter"><code><a href="/usr/share/gtk-doc/html/gio/GCancellable.html#GCancellable-struct"><span class="type">GCancellable</span></a> *cancellable</code></em>,
-                                <em class="parameter"><code><a href="/usr/share/gtk-doc/html/glib/glib-Error-Reporting.html#GError"><span class="type">GError</span></a> **error</code></em>);</pre>
+                                <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
 <p>Appends the command line arguments in the file "/proc/cmdline"
 that does not have "BOOT_IMAGE=" and "initrd=" as prefixes to the <em class="parameter"><code>kargs</code></em>
 </p>
@@ -711,7 +727,7 @@ that does not have "BOOT_IMAGE=" and "initrd=" as prefixes to the <em class="par
 </div>
 <div class="refsect3">
 <a name="ostree-kernel-args-append-proc-cmdline.returns"></a><h4>Returns</h4>
-<p> <a href="/usr/share/gtk-doc/html/glib/glib-Standard-Macros.html#TRUE:CAPS"><code class="literal">TRUE</code></a> on success, <a href="/usr/share/gtk-doc/html/glib/glib-Standard-Macros.html#FALSE:CAPS"><code class="literal">FALSE</code></a> on failure</p>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> on failure</p>
 </div>
 <p class="since">Since: 2019.3</p>
 </div>
@@ -891,6 +907,87 @@ separated by single whitespaces. </p>
 <p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 <p class="since">Since: 2019.3</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-kernel-args-contains"></a><h3>ostree_kernel_args_contains ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_kernel_args_contains (<em class="parameter"><code><a class="link" href="ostree-ostree-kernel-args.html#OstreeKernelArgs" title="OstreeKernelArgs"><span class="type">OstreeKernelArgs</span></a> *kargs</code></em>,
+                             <em class="parameter"><code>const <span class="type">char</span> *arg</code></em>);</pre>
+<p>Search for <em class="parameter"><code>arg</code></em>
+ which is in the form of key=value pair at the hash table kargs-&gt;table
+and returns true if finds it.</p>
+<div class="refsect3">
+<a name="ostree-kernel-args-contains.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>kargs</p></td>
+<td class="parameter_description"><p>a OstreeKernelArgs instance</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>arg</p></td>
+<td class="parameter_description"><p>key or key/value pair to check</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-kernel-args-contains.returns"></a><h4>Returns</h4>
+<p> <code class="literal">TRUE</code> if <em class="parameter"><code>arg</code></em>
+is contained in <em class="parameter"><code>kargs</code></em>
+, <code class="literal">FALSE</code> otherwise.</p>
+</div>
+<p class="since">Since: 2022.7</p>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-kernel-args-delete-if-present"></a><h3>ostree_kernel_args_delete_if_present ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_kernel_args_delete_if_present (<em class="parameter"><code><a class="link" href="ostree-ostree-kernel-args.html#OstreeKernelArgs" title="OstreeKernelArgs"><span class="type">OstreeKernelArgs</span></a> *kargs</code></em>,
+                                      <em class="parameter"><code>const <span class="type">char</span> *arg</code></em>,
+                                      <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Deletes <em class="parameter"><code>arg</code></em>
+ which is in the form of key=value pair from the hash table kargs-&gt;table.</p>
+<div class="refsect3">
+<a name="ostree-kernel-args-delete-if-present.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>kargs</p></td>
+<td class="parameter_description"><p>a OstreeKernelArgs instance</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>arg</p></td>
+<td class="parameter_description"><p>key or key/value pair to be deleted</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>an GError instance</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="refsect3">
+<a name="ostree-kernel-args-delete-if-present.returns"></a><h4>Returns</h4>
+<p> <code class="literal">TRUE</code> on success, <code class="literal">FALSE</code> on failure</p>
+</div>
+<p class="since">Since: 2022.7</p>
 </div>
 </div>
 <div class="refsect1">
