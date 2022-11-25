@@ -33,6 +33,8 @@ libglnx_la_SOURCES = \
 	libglnx/glnx-macros.h \
 	libglnx/glnx-backport-autocleanups.h \
 	libglnx/glnx-backport-autoptr.h \
+	libglnx/glnx-backport-testutils.h \
+	libglnx/glnx-backport-testutils.c \
 	libglnx/glnx-backports.h \
 	libglnx/glnx-backports.c \
 	libglnx/glnx-local-alloc.h \

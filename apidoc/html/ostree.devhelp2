@@ -306,6 +306,7 @@
     <keyword type="function" name="ostree_sysroot_new ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-new"/>
     <keyword type="function" name="ostree_sysroot_new_default ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-new-default"/>
     <keyword type="function" name="ostree_sysroot_initialize ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-initialize" since="2020.1"/>
+    <keyword type="function" name="ostree_sysroot_initialize_with_mount_namespace ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-initialize-with-mount-namespace" since="2022.7"/>
     <keyword type="function" name="ostree_sysroot_get_path ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-get-path"/>
     <keyword type="function" name="ostree_sysroot_load ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-load"/>
     <keyword type="function" name="ostree_sysroot_load_if_changed ()" link="ostree-Root-partition-mount-point.html#ostree-sysroot-load-if-changed" since="2016.4"/>
@@ -487,6 +488,8 @@
     <keyword type="function" name="ostree_kernel_args_from_string ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-from-string" since="2019.3"/>
     <keyword type="function" name="ostree_kernel_args_to_strv ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-to-strv" since="2019.3"/>
     <keyword type="function" name="ostree_kernel_args_to_string ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-to-string" since="2019.3"/>
+    <keyword type="function" name="ostree_kernel_args_contains ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-contains" since="2022.7"/>
+    <keyword type="function" name="ostree_kernel_args_delete_if_present ()" link="ostree-ostree-kernel-args.html#ostree-kernel-args-delete-if-present" since="2022.7"/>
     <keyword type="struct" name="OstreeKernelArgs" link="ostree-ostree-kernel-args.html#OstreeKernelArgs"/>
     <keyword type="function" name="ostree_collection_ref_new ()" link="ostree-ostree-ref.html#ostree-collection-ref-new" since="2018.6"/>
     <keyword type="function" name="ostree_collection_ref_dup ()" link="ostree-ostree-ref.html#ostree-collection-ref-dup" since="2018.6"/>
