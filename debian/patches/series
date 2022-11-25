@@ -1,1 +1,2 @@
 debian/Skip-test-pull-repeated-during-CI.patch
+configure-use-pkg-config-with-newer-gpgme-and-gpg-error.patch

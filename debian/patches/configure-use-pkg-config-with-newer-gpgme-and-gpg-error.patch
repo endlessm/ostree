@@ -1,0 +1,90 @@
+From: Luca BRUNO <luca.bruno@coreos.com>
+Date: Thu, 24 Nov 2022 16:39:35 +0000
+Subject: configure: use pkg-config with newer gpgme and gpg-error
+
+This tweaks autoconf logic in order to use pkg-config for gpgme
+and gpg-error when available.
+Recent versions of gpgme directly provide threaded support, and
+gpg-error started shipping a .pc file. Thus on recent distributions
+it is possible to directly use pkg-config for both. On older
+environments, the legacy logic is kept in place.
+
+Forwarded: https://github.com/ostreedev/ostree/pull/2789
+---
+ configure.ac                | 25 +++++++++++++++++++------
+ src/libostree/ostree-repo.c |  2 ++
+ 2 files changed, 21 insertions(+), 6 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 84c02b2..60d68c3 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -211,18 +211,25 @@ m4_ifdef([GOBJECT_INTROSPECTION_CHECK], [
+ ])
+ AM_CONDITIONAL(BUILDOPT_INTROSPECTION, test "x$found_introspection" = xyes)
+ 
+-LIBGPGME_DEPENDENCY="1.1.8"
++LIBGPGME_DEPENDENCY="1.8.0"
++LIBGPGME_PTHREAD_DEPENDENCY="1.1.8"
+ AC_ARG_WITH(gpgme,
+ 	    AS_HELP_STRING([--with-gpgme], [Use gpgme @<:@default=yes@:>@]),
+ 	    [], [with_gpgme=yes])
+ AS_IF([test x$with_gpgme != xno], [
+-    PKG_CHECK_MODULES(OT_DEP_GPGME, gpgme-pthread >= $LIBGPGME_DEPENDENCY, have_gpgme=yes, [
++    have_gpgme=yes
++    PKG_CHECK_MODULES([OT_DEP_GPGME], gpgme >= $LIBGPGME_DEPENDENCY, [], have_gpgme=no)
++    PKG_CHECK_MODULES([OT_DEP_GPG_ERROR], [gpg-error], [], have_gpgme=no)
++    ]
++)
++AS_IF([test x$with_gpgme != xno -a x$have_gpgme != xyes], [
++    PKG_CHECK_MODULES(OT_DEP_GPGME, gpgme-pthread >= $LIBGPGME_PTHREAD_DEPENDENCY, have_gpgme=yes, [
+         m4_ifdef([AM_PATH_GPGME_PTHREAD], [
+-            AM_PATH_GPGME_PTHREAD($LIBGPGME_DEPENDENCY, have_gpgme=yes, have_gpgme=no)
++            AM_PATH_GPGME_PTHREAD($LIBGPGME_PTHREAD_DEPENDENCY, have_gpgme=yes, have_gpgme=no)
+         ],[ have_gpgme=no ])
+     ])
+     AS_IF([ test x$have_gpgme = xno ], [
+-       AC_MSG_ERROR([Need GPGME_PTHREAD version $LIBGPGME_DEPENDENCY or later])
++       AC_MSG_ERROR([Need GPGME_PTHREAD version $LIBGPGME_PTHREAD_DEPENDENCY or later])
+     ])
+     OSTREE_FEATURES="$OSTREE_FEATURES gpgme"
+     PKG_CHECK_MODULES(OT_DEP_GPG_ERROR, [gpg-error], [], [
+@@ -234,10 +241,16 @@ dnl to link to it directly.
+     ])
+     OT_DEP_GPGME_CFLAGS="${OT_DEP_GPGME_CFLAGS} ${OT_DEP_GPG_ERROR_CFLAGS}"
+     OT_DEP_GPGME_LIBS="${OT_DEP_GPGME_LIBS} ${OT_DEP_GPG_ERROR_LIBS}"
+-    ],
++    ]
++)
++AS_IF([test x$with_gpgme != xno -a x$have_gpgme != xyes],
++      [AC_MSG_ERROR([Need GPGME_PTHREAD and GPG_ERROR])]
++)
++AS_IF([test x$have_gpgme = xyes],
++    [ OSTREE_FEATURES="$OSTREE_FEATURES gpgme" ],
+     [
+     AC_DEFINE([OSTREE_DISABLE_GPGME], 1, [Define to disable internal GPGME support])
+-    with_gpgme=no
++    have_gpgme=no
+     ]
+ )
+ AM_CONDITIONAL(USE_GPGME, test "x$have_gpgme" = xyes)
+diff --git a/src/libostree/ostree-repo.c b/src/libostree/ostree-repo.c
+index 7bdb3c4..f3a3e03 100644
+--- a/src/libostree/ostree-repo.c
++++ b/src/libostree/ostree-repo.c
+@@ -2528,6 +2528,7 @@ out:
+ #endif /* OSTREE_DISABLE_GPGME */
+ }
+ 
++#ifndef OSTREE_DISABLE_GPGME
+ static gboolean
+ _ostree_repo_gpg_prepare_verifier (OstreeRepo         *self,
+                                    const gchar        *remote_name,
+@@ -2537,6 +2538,7 @@ _ostree_repo_gpg_prepare_verifier (OstreeRepo         *self,
+                                    OstreeGpgVerifier **out_verifier,
+                                    GCancellable       *cancellable,
+                                    GError            **error);
++#endif /* OSTREE_DISABLE_GPGME */
+ 
+ /**
+  * ostree_repo_remote_get_gpg_keys:
