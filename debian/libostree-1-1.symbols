@@ -44,6 +44,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2022.2@LIBOSTREE_2022.2 2022.2
  LIBOSTREE_2022.4@LIBOSTREE_2022.4 2022.4
  LIBOSTREE_2022.5@LIBOSTREE_2022.5 2022.5
+ LIBOSTREE_2022.7@LIBOSTREE_2022.7 2022.7
  ostree_async_progress_copy_state@LIBOSTREE_2019.6 2019.6
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
@@ -167,7 +168,9 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_kernel_args_append_if_missing@LIBOSTREE_2022.5 2022.5
  ostree_kernel_args_append_proc_cmdline@LIBOSTREE_2019.3 2019.3
  ostree_kernel_args_cleanup@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_contains@LIBOSTREE_2022.7 2022.7
  ostree_kernel_args_delete@LIBOSTREE_2019.3 2019.3
+ ostree_kernel_args_delete_if_present@LIBOSTREE_2022.7 2022.7
  ostree_kernel_args_delete_key_entry@LIBOSTREE_2019.3 2019.3
  ostree_kernel_args_free@LIBOSTREE_2019.3 2019.3
  ostree_kernel_args_from_string@LIBOSTREE_2019.3 2019.3
@@ -469,6 +472,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_sysroot_get_type@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_init_osname@LIBOSTREE_2016.4 2016.4
  ostree_sysroot_initialize@LIBOSTREE_2020.1 2020.1
+ ostree_sysroot_initialize_with_mount_namespace@LIBOSTREE_2022.7 2022.7
  ostree_sysroot_is_booted@LIBOSTREE_2020.1 2020.1
  ostree_sysroot_load@LIBOSTREE_2016.3 2016.4
  ostree_sysroot_load_if_changed@LIBOSTREE_2016.4 2016.4
