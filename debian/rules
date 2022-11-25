@@ -73,16 +73,11 @@ override_dh_install:
 	:
 	dh_install
 
-override_dh_makeshlibs:
-	# this is an LD_PRELOAD, not a real shared library
-	dh_makeshlibs -Xinstalled-tests/ostree/libreaddir-rand.so
-
 override_dh_fixperms:
 	dh_fixperms -Xusr/libexec/installed-tests
 ifneq ($(filter %-tests,$(binaries)),)
 	# debhelper >= 13.4 makes all of /usr/libexec executable, which is not
 	# quite right for installed-tests
-	chmod --changes u=rw,og=r debian/*-tests/usr/libexec/installed-tests/*/*.so
 	chmod --recursive --changes a+rX,u+w,og-w debian/*-tests/usr/libexec/installed-tests
 endif
 
