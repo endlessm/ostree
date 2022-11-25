@@ -1,3 +1,15 @@
+ostree (2022.7-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+  * d/copyright: Update
+  * d/libostree-1-1.symbols: Update
+  * Update Lintian overrides
+  * d/p/configure-use-pkg-config-with-newer-gpgme-and-gpg-error.patch:
+    Add patch from Luca Bruno to fix FTBFS with current gpgme Debian packages
+  * d/rules: Update for removal of libreaddir-rand.so LD_PRELOAD module
+
+ -- Simon McVittie <smcv@debian.org>  Fri, 25 Nov 2022 10:54:08 +0000
+
 ostree (2022.6-1) unstable; urgency=medium
 
   * New upstream release
