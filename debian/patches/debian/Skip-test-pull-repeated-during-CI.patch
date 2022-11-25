@@ -18,7 +18,7 @@ Signed-off-by: Simon McVittie <smcv@debian.org>
  1 file changed, 4 insertions(+)
 
 diff --git a/tests/test-pull-repeated.sh b/tests/test-pull-repeated.sh
-index 4c32161..3b7d10b 100755
+index 7f724c9..d10799b 100755
 --- a/tests/test-pull-repeated.sh
 +++ b/tests/test-pull-repeated.sh
 @@ -21,6 +21,10 @@ set -euo pipefail
