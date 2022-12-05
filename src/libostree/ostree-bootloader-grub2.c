@@ -76,16 +76,6 @@ _ostree_bootloader_grub2_query (OstreeBootloader *bootloader,
 {
   OstreeBootloaderGrub2 *self = OSTREE_BOOTLOADER_GRUB2 (bootloader);
 
-  /* FIXME: Endless specific patch: don't let libostree find our
-   * /boot/grub/grub.cfg because we manage that separately and disable
-   * grub-mkconfig. See:
-   * - https://phabricator.endlessm.com/T19614
-   * - https://phabricator.endlessm.com/T18848 */
-  {
-    *out_is_active = FALSE;
-    return TRUE;
-  }
-
   /* Look for the BIOS path first */
   if (g_file_query_exists (self->config_path_bios_1, NULL) ||
       g_file_query_exists (self->config_path_bios_2, NULL))
