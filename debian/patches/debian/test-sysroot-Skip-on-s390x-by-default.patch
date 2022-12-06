@@ -1,0 +1,30 @@
+From: Simon McVittie <smcv@debian.org>
+Date: Tue, 6 Dec 2022 10:59:33 +0000
+Subject: test-sysroot: Skip on s390x by default
+
+This test regularly fails on the buildds, but I cannot reproduce the
+failure on a porterbox.
+
+Bug: https://github.com/ostreedev/ostree/issues/2527
+Bug-Debian: https://bugs.debian.org/1025532
+Forwarded: not-needed
+---
+ tests/test-sysroot.js | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/tests/test-sysroot.js b/tests/test-sysroot.js
+index d4f67ef..0855b3d 100755
+--- a/tests/test-sysroot.js
++++ b/tests/test-sysroot.js
+@@ -38,6 +38,11 @@ function libtestExec(shellCode) {
+     proc.wait_check(null);
+ }
+ 
++if (GLib.getenv('DEB_HOST_ARCH') === 's390x' && !GLib.getenv('DEB_ALLOW_FLAKY_TESTS')) {
++    print('1..0 # SKIP https://bugs.debian.org/1025532');
++    imports.system.exit(0);
++}
++
+ print('1..1')
+ 
+ libtestExec('setup_os_repository archive syslinux');

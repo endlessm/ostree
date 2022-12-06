@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+exec 2>&1
+
+unset ftp_proxy
+unset http_proxy
+unset https_proxy
+unset no_proxy
+export DEB_ALLOW_FLAKY_TESTS=1
+
+exec gnome-desktop-testing-runner libostree/test-sysroot.js.test

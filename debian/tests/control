@@ -1,4 +1,9 @@
-Tests: flaky
+Tests: flaky-concurrency
+Restrictions: flaky
+Depends: gnome-desktop-testing, ostree-tests
+
+Tests: flaky-sysroot
+Architecture: s390x
 Restrictions: flaky
 Depends: gnome-desktop-testing, ostree-tests
 

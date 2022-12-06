@@ -1,2 +1,3 @@
-debian/Skip-test-pull-repeated-during-CI.patch
 configure-use-pkg-config-with-newer-gpgme-and-gpg-error.patch
+debian/Skip-test-pull-repeated-during-CI.patch
+debian/test-sysroot-Skip-on-s390x-by-default.patch
