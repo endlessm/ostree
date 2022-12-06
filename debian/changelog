@@ -1,3 +1,9 @@
+ostree (2022.7-2) unstable; urgency=medium
+
+  * Skip test-sysroot.js on s390x (Mitigates: #1025532)
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 06 Dec 2022 11:11:05 +0000
+
 ostree (2022.7-1) unstable; urgency=medium
 
   * New upstream release
