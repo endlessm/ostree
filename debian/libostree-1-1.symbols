@@ -45,6 +45,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2022.4@LIBOSTREE_2022.4 2022.4
  LIBOSTREE_2022.5@LIBOSTREE_2022.5 2022.5
  LIBOSTREE_2022.7@LIBOSTREE_2022.7 2022.7
+ LIBOSTREE_2023.1@LIBOSTREE_2023.1 2023.1
  ostree_async_progress_copy_state@LIBOSTREE_2019.6 2019.6
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
@@ -349,6 +350,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_query_object_storage_size@LIBOSTREE_2016.3 2016.4
  ostree_repo_read_commit@LIBOSTREE_2016.3 2016.4
  ostree_repo_read_commit_detached_metadata@LIBOSTREE_2016.3 2016.4
+ ostree_repo_regenerate_metadata@LIBOSTREE_2023.1 2023.1
  ostree_repo_regenerate_summary@LIBOSTREE_2016.3 2016.4
  ostree_repo_reload_config@LIBOSTREE_2017.2 2017.2
  ostree_repo_remote_add@LIBOSTREE_2016.3 2016.4

@@ -1,3 +1,11 @@
+ostree (2023.1-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+  * d/copyright: Update
+  * d/libostree-1-1.symbols: Update
+
+ -- Simon McVittie <smcv@debian.org>  Tue, 21 Feb 2023 11:16:57 +0000
+
 ostree (2022.7-2) unstable; urgency=medium
 
   * Skip test-sysroot.js on s390x (Mitigates: #1025532)
