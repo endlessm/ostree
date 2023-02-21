@@ -1,10 +1,12 @@
-ostree (2023.1-1) UNRELEASED; urgency=medium
+ostree (2023.1-1) experimental; urgency=medium
 
   * New upstream release
   * d/copyright: Update
   * d/libostree-1-1.symbols: Update
+  * d/p/configure-use-pkg-config-with-newer-gpgme-and-gpg-error.patch:
+    Drop patch that was applied upstream
 
- -- Simon McVittie <smcv@debian.org>  Tue, 21 Feb 2023 11:16:57 +0000
+ -- Simon McVittie <smcv@debian.org>  Tue, 21 Feb 2023 11:17:55 +0000
 
 ostree (2022.7-2) unstable; urgency=medium
 
