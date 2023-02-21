@@ -208,6 +208,15 @@ ostree_builtin_prune (int argc, char **argv, OstreeCommandInvocation *invocation
     }
   else
     {
+      /* In this branch, we need to compute the reachability set manually.
+       * While we do this, we can't let new content in since it'll race with
+       * reachability calculations and we may immediately nuke it. So push an
+       * exclusive lock now. */
+      g_autoptr(OstreeRepoAutoLock) lock =
+        ostree_repo_auto_lock_push (repo, OSTREE_REPO_LOCK_EXCLUSIVE, cancellable, error);
+      if (!lock)
+        return FALSE;
+
       g_autoptr(GHashTable) all_refs = NULL;
       g_autoptr(GHashTable) reachable = ostree_repo_traverse_new_reachable ();
       g_autoptr(GHashTable) retain_branch_depth = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
@@ -345,7 +354,7 @@ ostree_builtin_prune (int argc, char **argv, OstreeCommandInvocation *invocation
     }
 
   g_autofree char *formatted_freed_size = g_format_size_full (objsize_total, 0);
-  if (opt_commit_only) 
+  if (opt_commit_only)
     g_print("Total (commit only) objects: %u\n", n_objects_total);
   else
     g_print ("Total objects: %u\n", n_objects_total);

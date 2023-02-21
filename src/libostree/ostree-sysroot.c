@@ -32,6 +32,7 @@
 #include "ostree-sepolicy-private.h"
 #include "ostree-sysroot-private.h"
 #include "ostree-deployment-private.h"
+#include "ostree-bootloader-aboot.h"
 #include "ostree-bootloader-uboot.h"
 #include "ostree-bootloader-syslinux.h"
 #include "ostree-bootloader-grub2.h"
@@ -307,7 +308,7 @@ ostree_sysroot_initialize_with_mount_namespace (OstreeSysroot *self, GCancellabl
 
   // If the mount namespaces are the same, we need to unshare().
   if (strcmp (mntns_pid1, mntns_self) == 0)
-    { 
+    {
       if (unshare (CLONE_NEWNS) < 0)
         return glnx_throw_errno_prefix (error, "Failed to invoke unshare(CLONE_NEWNS)");
     }
@@ -441,7 +442,7 @@ ostree_sysroot_get_fd (OstreeSysroot *self)
  * @self: Sysroot
  *
  * Can only be invoked after `ostree_sysroot_initialize()`.
- * 
+ *
  * Returns: %TRUE iff the sysroot points to a booted deployment
  * Since: 2020.1
  */
@@ -1475,6 +1476,8 @@ _ostree_sysroot_new_bootloader_by_type (
       return (OstreeBootloader*) _ostree_bootloader_grub2_new (sysroot);
     case CFG_SYSROOT_BOOTLOADER_OPT_SYSLINUX:
       return (OstreeBootloader*) _ostree_bootloader_syslinux_new (sysroot);
+    case CFG_SYSROOT_BOOTLOADER_OPT_ABOOT:
+      return (OstreeBootloader*) _ostree_bootloader_aboot_new (sysroot);
     case CFG_SYSROOT_BOOTLOADER_OPT_UBOOT:
       return (OstreeBootloader*) _ostree_bootloader_uboot_new (sysroot);
     case CFG_SYSROOT_BOOTLOADER_OPT_ZIPL:
