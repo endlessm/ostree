@@ -321,7 +321,7 @@ ostree_sysroot_upgrader_get_origin (<em class="parameter"><code><a class="link" 
 <div class="refsect3">
 <a name="ostree-sysroot-upgrader-get-origin.returns"></a><h4>Returns</h4>
 <p>The origin file, or <code class="literal">NULL</code> if unknown. </p>
-<p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
 </div>
 <hr>
@@ -347,7 +347,7 @@ ostree_sysroot_upgrader_dup_origin (<em class="parameter"><code><a class="link" 
 <div class="refsect3">
 <a name="ostree-sysroot-upgrader-dup-origin.returns"></a><h4>Returns</h4>
 <p>A copy of the origin file, or <code class="literal">NULL</code> if unknown. </p>
-<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
 </div>
 <hr>
@@ -416,7 +416,8 @@ ostree_sysroot_upgrader_get_origin_description
 </div>
 <div class="refsect3">
 <a name="ostree-sysroot-upgrader-get-origin-description.returns"></a><h4>Returns</h4>
-<p> A one-line descriptive summary of the origin, or <code class="literal">NULL</code> if unknown</p>
+<p>A one-line descriptive summary of the origin, or <code class="literal">NULL</code> if unknown. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
 </div>
 <hr>

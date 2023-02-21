@@ -161,7 +161,7 @@ list_all_boot_directories (OstreeSysroot       *self,
         {
           g_clear_error (&temp_error);
           goto done;
-        } 
+        }
       else
         {
           g_propagate_error (error, temp_error);
@@ -190,10 +190,10 @@ list_all_boot_directories (OstreeSysroot       *self,
       name = g_file_info_get_name (file_info);
       if (!parse_bootdir_name (name, NULL, NULL))
         continue;
-      
+
       g_ptr_array_add (ret_bootdirs, g_object_ref (child));
     }
-  
+
  done:
   ret = TRUE;
   ot_transfer_out_value (out_bootdirs, &ret_bootdirs);
@@ -578,8 +578,8 @@ _ostree_sysroot_cleanup_internal (OstreeSysroot              *self,
                                   GCancellable               *cancellable,
                                   GError                    **error)
 {
-  g_return_val_if_fail (OSTREE_IS_SYSROOT (self), FALSE);
-  g_return_val_if_fail (self->loadstate == OSTREE_SYSROOT_LOAD_STATE_LOADED, FALSE);
+  g_assert (OSTREE_IS_SYSROOT (self));
+  g_assert (self->loadstate == OSTREE_SYSROOT_LOAD_STATE_LOADED);
 
   if (!_ostree_sysroot_ensure_writable (self, error))
     return FALSE;

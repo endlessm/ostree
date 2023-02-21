@@ -262,6 +262,7 @@
     <keyword type="function" name="ostree_repo_verify_commit_ext ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit-ext"/>
     <keyword type="function" name="ostree_repo_verify_commit_for_remote ()" link="ostree-OstreeRepo.html#ostree-repo-verify-commit-for-remote" since="2016.14"/>
     <keyword type="function" name="ostree_repo_verify_summary ()" link="ostree-OstreeRepo.html#ostree-repo-verify-summary"/>
+    <keyword type="function" name="ostree_repo_regenerate_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-regenerate-metadata" since="2023.1"/>
     <keyword type="function" name="ostree_repo_regenerate_summary ()" link="ostree-OstreeRepo.html#ostree-repo-regenerate-summary"/>
     <keyword type="typedef" name="OstreeRepo" link="ostree-OstreeRepo.html#OstreeRepo"/>
     <keyword type="enum" name="enum OstreeRepoMode" link="ostree-OstreeRepo.html#OstreeRepoMode"/>
