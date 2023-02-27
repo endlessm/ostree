@@ -1,3 +1,11 @@
+ostree (2023.1-2) experimental; urgency=medium
+
+  * d/control: Drop compatibility with bsdmainutils older than Debian 11
+  * Standards-Version: 4.6.2 (no changes required)
+  * Add patch to ensure capsh is found in tests' PATH (Closes: #1031353)
+
+ -- Simon McVittie <smcv@debian.org>  Mon, 27 Feb 2023 12:42:45 +0000
+
 ostree (2023.1-1) experimental; urgency=medium
 
   * New upstream release
