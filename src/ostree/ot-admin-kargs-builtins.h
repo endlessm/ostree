@@ -20,15 +20,16 @@
 
 #pragma once
 
-#include <ostree.h>
+#include "ot-main.h"
 
 G_BEGIN_DECLS
 
-#define BUILTINPROTO(name) gboolean ot_admin_kargs_builtin_ ## name (int argc, char **argv, \
-                                                                OstreeCommandInvocation *invocation, \
-                                                                GCancellable *cancellable, GError **error)
+#define BUILTINPROTO(name) \
+  gboolean ot_admin_kargs_builtin_##name (int argc, char **argv, \
+                                          OstreeCommandInvocation *invocation, \
+                                          GCancellable *cancellable, GError **error)
 
-BUILTINPROTO(edit_in_place);
+BUILTINPROTO (edit_in_place);
 
 #undef BUILTINPROTO
 

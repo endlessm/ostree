@@ -153,7 +153,7 @@ operations.</p>
 <div class="refsect3">
 <a name="ostree-collection-ref-new.returns"></a><h4>Returns</h4>
 <p>a new <span class="type">OstreeCollectionRef</span>. </p>
-<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
 </div>
 <p class="since">Since: 2018.6</p>
 </div>
@@ -231,7 +231,7 @@ ostree_collection_ref_hash (<em class="parameter"><code><span class="type">gcons
 <tbody><tr>
 <td class="parameter_name"><p>ref</p></td>
 <td class="parameter_description"><p>an <span class="type">OstreeCollectionRef</span>. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/not%20nullable"><span class="acronym">not nullable</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/not%20nullable"><span class="acronym">not nullable</span></a>][<a href="http://foldoc.org/type"><span class="acronym">type</span></a> OstreeCollectionRef]</span></td>
 </tr></tbody>
 </table></div>
 </div>
@@ -266,12 +266,12 @@ ref name, and <code class="literal">FALSE</code> otherwise. Both <em class="para
 <tr>
 <td class="parameter_name"><p>ref1</p></td>
 <td class="parameter_description"><p>an <span class="type">OstreeCollectionRef</span>. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/not%20nullable"><span class="acronym">not nullable</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/not%20nullable"><span class="acronym">not nullable</span></a>][<a href="http://foldoc.org/type"><span class="acronym">type</span></a> OstreeCollectionRef]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>ref2</p></td>
 <td class="parameter_description"><p>another <span class="type">OstreeCollectionRef</span>. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/not%20nullable"><span class="acronym">not nullable</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/not%20nullable"><span class="acronym">not nullable</span></a>][<a href="http://foldoc.org/type"><span class="acronym">type</span></a> OstreeCollectionRef]</span></td>
 </tr>
 </tbody>
 </table></div>
@@ -288,7 +288,7 @@ are equal, <code class="literal">FALSE</code> otherwise</p>
 <div class="refsect2">
 <a name="ostree-collection-ref-dupv"></a><h3>ostree_collection_ref_dupv ()</h3>
 <pre class="programlisting"><span class="returnvalue">OstreeCollectionRef</span> **
-ostree_collection_ref_dupv (<em class="parameter"><code>const <span class="type">OstreeCollectionRef</span> * const *refs</code></em>);</pre>
+ostree_collection_ref_dupv (<em class="parameter"><code>const <span class="type">OstreeCollectionRef</span> *const *refs</code></em>);</pre>
 <p>Copy an array of <span class="type">OstreeCollectionRefs</span>, including deep copies of all its
 elements. <em class="parameter"><code>refs</code></em>
  must be <code class="literal">NULL</code>-terminated; it may be empty, but must not be
@@ -347,7 +347,7 @@ must be <code class="literal">NULL</code>-terminated; it may be empty, but must 
 <a name="ostree-ostree-ref.other_details"></a><h2>Types and Values</h2>
 <div class="refsect2">
 <a name="OstreeCollectionRefv"></a><h3>OstreeCollectionRefv</h3>
-<pre class="programlisting">typedef OstreeCollectionRef** OstreeCollectionRefv;
+<pre class="programlisting">typedef OstreeCollectionRef **OstreeCollectionRefv;
 </pre>
 <p>A <code class="literal">NULL</code>-terminated array of <span class="type">OstreeCollectionRef</span> instances, designed to
 be used with <code class="function">g_auto()</code>:</p>

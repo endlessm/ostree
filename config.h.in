@@ -82,8 +82,14 @@
 /* Define if we have libsoup.pc */
 #undef HAVE_LIBSOUP
 
+/* Define if we have libsoup3 */
+#undef HAVE_LIBSOUP3
+
 /* Define if we have libsoup client certs */
 #undef HAVE_LIBSOUP_CLIENT_CERTS
+
+/* Define if we have libsoup.pc or libsoup3.pc */
+#undef HAVE_LIBSOUP_OR_LIBSOUP3
 
 /* Define if we have libsystemd.pc */
 #undef HAVE_LIBSYSTEMD

@@ -303,7 +303,7 @@ may not be globally accessible.</p>
 <div class="refsect3">
 <a name="ostree-sepolicy-get-path.returns"></a><h4>Returns</h4>
 <p>Path to rootfs. </p>
-<p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
 </div>
 <hr>
@@ -360,7 +360,7 @@ will be returned.</p>
 <tr>
 <td class="parameter_name"><p>out_label</p></td>
 <td class="parameter_description"><p>Return location for security context. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>][<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>
@@ -384,7 +384,7 @@ ostree_sepolicy_get_csum (<em class="parameter"><code><a class="link" href="ostr
 <div class="refsect3">
 <a name="ostree-sepolicy-get-csum.returns"></a><h4>Returns</h4>
 <p>Checksum of current policy. </p>
-<p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
 <p class="since">Since: 2016.5</p>
 </div>
@@ -424,7 +424,7 @@ ostree_sepolicy_restorecon (<em class="parameter"><code><a class="link" href="os
 <tr>
 <td class="parameter_name"><p>info</p></td>
 <td class="parameter_description"><p>File attributes. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>target</p></td>
@@ -439,7 +439,7 @@ ostree_sepolicy_restorecon (<em class="parameter"><code><a class="link" href="os
 <tr>
 <td class="parameter_name"><p>out_new_label</p></td>
 <td class="parameter_description"><p>New label, or <code class="literal">NULL</code> if unchanged. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>][<a href="http://foldoc.org/optional"><span class="acronym">optional</span></a>][<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>

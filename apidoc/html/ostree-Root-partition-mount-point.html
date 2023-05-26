@@ -1930,7 +1930,8 @@ ostree_sysroot_stage_tree (<em class="parameter"><code><a class="link" href="ost
 </tr>
 <tr>
 <td class="parameter_name"><p>override_kernel_argv</p></td>
-<td class="parameter_description"><p>Use these as kernel arguments; if <code class="literal">NULL</code>, inherit options from provided_merge_deployment. </p></td>
+<td class="parameter_description"><p>Use these as
+kernel arguments; if <code class="literal">NULL</code>, inherit options from provided_merge_deployment. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8]</span></td>
 </tr>
 <tr>
@@ -2110,7 +2111,7 @@ ostree_sysroot_deploy_tree (<em class="parameter"><code><a class="link" href="os
 <tr>
 <td class="parameter_name"><p>osname</p></td>
 <td class="parameter_description"><p>osname to use for merge deployment. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>revision</p></td>
@@ -2120,17 +2121,18 @@ ostree_sysroot_deploy_tree (<em class="parameter"><code><a class="link" href="os
 <tr>
 <td class="parameter_name"><p>origin</p></td>
 <td class="parameter_description"><p>Origin to use for upgrades. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>provided_merge_deployment</p></td>
 <td class="parameter_description"><p>Use this deployment for merge path. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>override_kernel_argv</p></td>
-<td class="parameter_description"><p>Use these as kernel arguments; if <code class="literal">NULL</code>, inherit options from provided_merge_deployment. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8]</span></td>
+<td class="parameter_description"><p>Use these as
+kernel arguments; if <code class="literal">NULL</code>, inherit options from provided_merge_deployment. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>][<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1][<a href="http://foldoc.org/element-type"><span class="acronym">element-type</span></a> utf8]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_new_deployment</p></td>
@@ -2189,7 +2191,7 @@ way merge with <em class="parameter"><code>provided_merge_deployment</code></em>
 <tr>
 <td class="parameter_name"><p>osname</p></td>
 <td class="parameter_description"><p>osname to use for merge deployment. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>revision</p></td>
@@ -2199,22 +2201,22 @@ way merge with <em class="parameter"><code>provided_merge_deployment</code></em>
 <tr>
 <td class="parameter_name"><p>origin</p></td>
 <td class="parameter_description"><p>Origin to use for upgrades. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>provided_merge_deployment</p></td>
 <td class="parameter_description"><p>Use this deployment for merge path. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>opts</p></td>
 <td class="parameter_description"><p>Options. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/allow-none"><span class="acronym">allow-none</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>out_new_deployment</p></td>
 <td class="parameter_description"><p>The new deployment path. </p></td>
-<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>]</span></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/out"><span class="acronym">out</span></a>][<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>

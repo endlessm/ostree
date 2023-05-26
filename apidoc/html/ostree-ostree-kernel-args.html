@@ -449,8 +449,8 @@ appends key to kargs-&gt;order if it is not in the hash table already.</p>
 </tr>
 <tr>
 <td class="parameter_name"><p>argv</p></td>
-<td class="parameter_description"><p>an array of key=value argument pairs</p></td>
-<td class="parameter_annotations"> </td>
+<td class="parameter_description"><p>an array of key=value argument pairs. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1]</span></td>
 </tr>
 </tbody>
 </table></div>
@@ -484,13 +484,13 @@ ostree_kernel_args_append_argv_filtered
 </tr>
 <tr>
 <td class="parameter_name"><p>argv</p></td>
-<td class="parameter_description"><p>an array of key=value argument pairs</p></td>
-<td class="parameter_annotations"> </td>
+<td class="parameter_description"><p>an array of key=value argument pairs. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1]</span></td>
 </tr>
 <tr>
 <td class="parameter_name"><p>prefixes</p></td>
-<td class="parameter_description"><p>an array of prefix strings</p></td>
-<td class="parameter_annotations"> </td>
+<td class="parameter_description"><p>an array of prefix strings. </p></td>
+<td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/array"><span class="acronym">array</span></a> zero-terminated=1]</span></td>
 </tr>
 </tbody>
 </table></div>
@@ -801,11 +801,12 @@ hash table</p></td>
 </div>
 <div class="refsect3">
 <a name="ostree-kernel-args-get-last-value.returns"></a><h4>Returns</h4>
-<p> NULL if <em class="parameter"><code>key</code></em>
+<p><code class="literal">NULL</code> if <em class="parameter"><code>key</code></em>
 is not found in the <em class="parameter"><code>kargs</code></em>
 hash table,
 otherwise returns last element of value array corresponding to <em class="parameter"><code>key</code></em>
-</p>
+. </p>
+<p><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
 <p class="since">Since: 2019.3</p>
 </div>
