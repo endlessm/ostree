@@ -100,7 +100,6 @@
     <keyword type="macro" name="OSTREE_COMMIT_GVARIANT_FORMAT" link="ostree-Core-repository-independent-functions.html#OSTREE-COMMIT-GVARIANT-FORMAT:CAPS"/>
     <keyword type="macro" name="OSTREE_SUMMARY_GVARIANT_STRING" link="ostree-Core-repository-independent-functions.html#OSTREE-SUMMARY-GVARIANT-STRING:CAPS"/>
     <keyword type="macro" name="OSTREE_SUMMARY_GVARIANT_FORMAT" link="ostree-Core-repository-independent-functions.html#OSTREE-SUMMARY-GVARIANT-FORMAT:CAPS"/>
-    <keyword type="struct" name="OstreeCommitSizesEntry" link="ostree-Core-repository-independent-functions.html#OstreeCommitSizesEntry" since="2020.1"/>
     <keyword type="function" name="ostree_repo_mode_from_string ()" link="ostree-OstreeRepo.html#ostree-repo-mode-from-string"/>
     <keyword type="function" name="ostree_repo_open_at ()" link="ostree-OstreeRepo.html#ostree-repo-open-at" since="2017.10"/>
     <keyword type="function" name="ostree_repo_new ()" link="ostree-OstreeRepo.html#ostree-repo-new"/>
@@ -276,7 +275,6 @@
     <keyword type="enum" name="enum OstreeRepoCommitFilterResult" link="ostree-OstreeRepo.html#OstreeRepoCommitFilterResult"/>
     <keyword type="typedef" name="OstreeRepoCommitModifier" link="ostree-OstreeRepo.html#OstreeRepoCommitModifier"/>
     <keyword type="enum" name="enum OstreeRepoCommitModifierFlags" link="ostree-OstreeRepo.html#OstreeRepoCommitModifierFlags"/>
-    <keyword type="struct" name="OstreeRepoCheckoutAtOptions" link="ostree-OstreeRepo.html#OstreeRepoCheckoutAtOptions"/>
     <keyword type="enum" name="enum OstreeRepoCheckoutMode" link="ostree-OstreeRepo.html#OstreeRepoCheckoutMode"/>
     <keyword type="enum" name="enum OstreeRepoCheckoutOverwriteMode" link="ostree-OstreeRepo.html#OstreeRepoCheckoutOverwriteMode"/>
     <keyword type="enum" name="enum OstreeRepoListObjectsFlags" link="ostree-OstreeRepo.html#OstreeRepoListObjectsFlags"/>
@@ -649,10 +647,6 @@
     <keyword type="constant" name="OSTREE_GPG_SIGNATURE_FORMAT_DEFAULT" link="ostree-GPG-signature-verification-results.html#OSTREE-GPG-SIGNATURE-FORMAT-DEFAULT:CAPS"/>
     <keyword type="constant" name="OSTREE_DIFF_FLAGS_NONE" link="ostree-ostree-diff.html#OSTREE-DIFF-FLAGS-NONE:CAPS"/>
     <keyword type="constant" name="OSTREE_DIFF_FLAGS_IGNORE_XATTRS" link="ostree-ostree-diff.html#OSTREE-DIFF-FLAGS-IGNORE-XATTRS:CAPS"/>
-    <keyword type="member" name="OstreeCommitSizesEntry.checksum" link="ostree-Core-repository-independent-functions.html#OstreeCommitSizesEntry.checksum"/>
-    <keyword type="member" name="OstreeCommitSizesEntry.objtype" link="ostree-Core-repository-independent-functions.html#OstreeCommitSizesEntry.objtype"/>
-    <keyword type="member" name="OstreeCommitSizesEntry.unpacked" link="ostree-Core-repository-independent-functions.html#OstreeCommitSizesEntry.unpacked"/>
-    <keyword type="member" name="OstreeCommitSizesEntry.archived" link="ostree-Core-repository-independent-functions.html#OstreeCommitSizesEntry.archived"/>
     <keyword type="member" name="OstreeRepoTransactionStats.metadata-objects-total" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.metadata-objects-total"/>
     <keyword type="member" name="OstreeRepoTransactionStats.metadata-objects-written" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.metadata-objects-written"/>
     <keyword type="member" name="OstreeRepoTransactionStats.content-objects-total" link="ostree-OstreeRepo.html#OstreeRepoTransactionStats.content-objects-total"/>

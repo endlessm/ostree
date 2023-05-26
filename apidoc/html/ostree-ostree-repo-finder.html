@@ -142,7 +142,7 @@
 <a name="ostree-repo-finder-resolve-async"></a><h3>ostree_repo_finder_resolve_async ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 ostree_repo_finder_resolve_async (<em class="parameter"><code><a class="link" href="ostree-ostree-repo-finder.html#OstreeRepoFinder" title="OstreeRepoFinder"><span class="type">OstreeRepoFinder</span></a> *self</code></em>,
-                                  <em class="parameter"><code>const <span class="type">OstreeCollectionRef</span> * const *refs</code></em>,
+                                  <em class="parameter"><code>const <span class="type">OstreeCollectionRef</span> *const *refs</code></em>,
                                   <em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *parent_repo</code></em>,
                                   <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
                                   <em class="parameter"><code><span class="type">GAsyncReadyCallback</span> callback</code></em>,
@@ -264,8 +264,8 @@ or more results. </p>
 <div class="refsect2">
 <a name="ostree-repo-finder-resolve-all-async"></a><h3>ostree_repo_finder_resolve_all_async ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
-ostree_repo_finder_resolve_all_async (<em class="parameter"><code><a class="link" href="ostree-ostree-repo-finder.html#OstreeRepoFinder" title="OstreeRepoFinder"><span class="type">OstreeRepoFinder</span></a> * const *finders</code></em>,
-                                      <em class="parameter"><code>const <span class="type">OstreeCollectionRef</span> * const *refs</code></em>,
+ostree_repo_finder_resolve_all_async (<em class="parameter"><code><a class="link" href="ostree-ostree-repo-finder.html#OstreeRepoFinder" title="OstreeRepoFinder"><span class="type">OstreeRepoFinder</span></a> *const *finders</code></em>,
+                                      <em class="parameter"><code>const <span class="type">OstreeCollectionRef</span> *const *refs</code></em>,
                                       <em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *parent_repo</code></em>,
                                       <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
                                       <em class="parameter"><code><span class="type">GAsyncReadyCallback</span> callback</code></em>,
@@ -551,7 +551,7 @@ ostree_repo_finder_result_freev (<em class="parameter"><code><span class="type">
 <hr>
 <div class="refsect2">
 <a name="OstreeRepoFinderResultv"></a><h3>OstreeRepoFinderResultv</h3>
-<pre class="programlisting">typedef OstreeRepoFinderResult** OstreeRepoFinderResultv;
+<pre class="programlisting">typedef OstreeRepoFinderResult **OstreeRepoFinderResultv;
 </pre>
 <p>A <code class="literal">NULL</code>-terminated array of <span class="type">OstreeRepoFinderResult</span> instances, designed to
 be used with <code class="function">g_auto()</code>:</p>

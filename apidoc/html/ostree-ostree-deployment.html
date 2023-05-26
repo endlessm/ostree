@@ -425,7 +425,7 @@ ostree_deployment_get_bootconfig (<em class="parameter"><code><a class="link" hr
 <div class="refsect3">
 <a name="ostree-deployment-get-bootconfig.returns"></a><h4>Returns</h4>
 <p>Boot configuration. </p>
-<p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
 </div>
 <hr>
@@ -451,7 +451,7 @@ ostree_deployment_get_origin (<em class="parameter"><code><a class="link" href="
 <div class="refsect3">
 <a name="ostree-deployment-get-origin.returns"></a><h4>Returns</h4>
 <p>Origin. </p>
-<p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>]</span></p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20none"><span class="acronym">transfer none</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
 </div>
 <hr>
@@ -745,7 +745,7 @@ ostree_deployment_unlocked_state_to_string
 <div class="refsect2">
 <a name="OstreeDeployment"></a><h3>OstreeDeployment</h3>
 <pre class="programlisting">typedef struct {
-  GObject       parent_instance;
+  GObject parent_instance;
 
   int index;
   char *osname;

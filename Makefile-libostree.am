@@ -221,16 +221,23 @@ libostree_1_la_SOURCES += \
 	$(NULL)
 endif
 
+# Only enable one fetcher backend.
 if USE_CURL
 libostree_1_la_SOURCES += src/libostree/ostree-fetcher-curl.c \
   $(NULL)
 libostree_1_la_CFLAGS += $(OT_DEP_CURL_CFLAGS)
 libostree_1_la_LIBADD += $(OT_DEP_CURL_LIBS)
 else
+if USE_LIBSOUP3
+libostree_1_la_SOURCES += src/libostree/ostree-fetcher-soup3.c
+libostree_1_la_CFLAGS += $(OT_INTERNAL_SOUP_CFLAGS)
+libostree_1_la_LIBADD += $(OT_INTERNAL_SOUP_LIBS)
+else
 if USE_LIBSOUP
 libostree_1_la_SOURCES += src/libostree/ostree-fetcher-soup.c
 libostree_1_la_CFLAGS += $(OT_INTERNAL_SOUP_CFLAGS)
 libostree_1_la_LIBADD += $(OT_INTERNAL_SOUP_LIBS)
+endif
 endif
 endif
 
@@ -267,10 +274,11 @@ if BUILDOPT_INTROSPECTION
 OSTree-1.0.gir: libostree-1.la Makefile
 OSTree_1_0_gir_EXPORT_PACKAGES = ostree-1
 OSTree_1_0_gir_INCLUDES = Gio-2.0
+OSTree_1_0_gir_C_INCLUDES = ostree.h
 OSTree_1_0_gir_CFLAGS = $(libostree_1_la_CFLAGS)
 OSTree_1_0_gir_LIBS = libostree-1.la
 OSTree_1_0_gir_SCANNERFLAGS = --warn-all --identifier-prefix=Ostree --symbol-prefix=ostree $(GI_SCANNERFLAGS)
-OSTree_1_0_gir_FILES = $(libostreeinclude_HEADERS) $(filter-out %-private.h %/ostree-soup-uri.h,$(libostree_1_la_SOURCES))
+OSTree_1_0_gir_FILES = $(libostreeinclude_HEADERS) $(filter-out %.h,$(libostree_1_la_SOURCES))
 INTROSPECTION_GIRS += OSTree-1.0.gir
 gir_DATA += OSTree-1.0.gir
 typelib_DATA += OSTree-1.0.typelib

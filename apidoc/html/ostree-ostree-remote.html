@@ -198,7 +198,7 @@ ostree_remote_get_url (<em class="parameter"><code><a class="link" href="ostree-
 <div class="refsect3">
 <a name="ostree-remote-get-url.returns"></a><h4>Returns</h4>
 <p>the remote's URL. </p>
-<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>]</span></p>
+<p><span class="annotation">[<a href="http://foldoc.org/transfer%20full"><span class="acronym">transfer full</span></a>][<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></p>
 </div>
 <p class="since">Since: 2018.6</p>
 </div>
@@ -208,12 +208,12 @@ ostree_remote_get_url (<em class="parameter"><code><a class="link" href="ostree-
 <div class="refsect2">
 <a name="OstreeRemote"></a><h3>struct OstreeRemote</h3>
 <pre class="programlisting">struct OstreeRemote {
-  int ref_count;  /* atomic */
-  char *name;  /* (not nullable) */
-  char *refspec_name;  /* (nullable) */
-  char *group;   /* group name in options (not nullable) */
-  char *keyring; /* keyring name ($refspec_name.trustedkeys.gpg) (not nullable) */
-  GFile *file;   /* NULL if remote defined in repo/config */
+  int ref_count;      /* atomic */
+  char *name;         /* (not nullable) */
+  char *refspec_name; /* (nullable) */
+  char *group;        /* group name in options (not nullable) */
+  char *keyring;      /* keyring name ($refspec_name.trustedkeys.gpg) (not nullable) */
+  GFile *file;        /* NULL if remote defined in repo/config */
   GKeyFile *options;
 };
 </pre>

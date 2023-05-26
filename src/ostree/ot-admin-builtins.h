@@ -21,32 +21,32 @@
 
 #pragma once
 
-#include <ostree.h>
+#include "ot-main.h"
 
 G_BEGIN_DECLS
 
-#define BUILTINPROTO(name) gboolean ot_admin_builtin_ ## name (int argc, char **argv, \
-                                                               OstreeCommandInvocation *invocation, \
-                                                               GCancellable *cancellable, GError **error)
+#define BUILTINPROTO(name) \
+  gboolean ot_admin_builtin_##name (int argc, char **argv, OstreeCommandInvocation *invocation, \
+                                    GCancellable *cancellable, GError **error)
 
-BUILTINPROTO(selinux_ensure_labeled);
-BUILTINPROTO(os_init);
-BUILTINPROTO(install);
-BUILTINPROTO(instutil);
-BUILTINPROTO(init_fs);
-BUILTINPROTO(undeploy);
-BUILTINPROTO(deploy);
-BUILTINPROTO(cleanup);
-BUILTINPROTO(pin);
-BUILTINPROTO(finalize_staged);
-BUILTINPROTO(boot_complete);
-BUILTINPROTO(unlock);
-BUILTINPROTO(status);
-BUILTINPROTO(set_origin);
-BUILTINPROTO(diff);
-BUILTINPROTO(switch);
-BUILTINPROTO(upgrade);
-BUILTINPROTO(kargs);
+BUILTINPROTO (selinux_ensure_labeled);
+BUILTINPROTO (os_init);
+BUILTINPROTO (install);
+BUILTINPROTO (instutil);
+BUILTINPROTO (init_fs);
+BUILTINPROTO (undeploy);
+BUILTINPROTO (deploy);
+BUILTINPROTO (cleanup);
+BUILTINPROTO (pin);
+BUILTINPROTO (finalize_staged);
+BUILTINPROTO (boot_complete);
+BUILTINPROTO (unlock);
+BUILTINPROTO (status);
+BUILTINPROTO (set_origin);
+BUILTINPROTO (diff);
+BUILTINPROTO (switch);
+BUILTINPROTO (upgrade);
+BUILTINPROTO (kargs);
 
 #undef BUILTINPROTO
 
