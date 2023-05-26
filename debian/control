@@ -37,7 +37,7 @@ Build-Depends:
  liblzma-dev,
  libmount-dev (>= 2.23),
  libselinux1-dev,
- libsoup2.4-dev (>= 2.39.1),
+ libsoup-3.0-dev (>= 3.0.0),
  libsystemd-dev,
  libtool,
  procps,

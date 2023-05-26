@@ -21,7 +21,7 @@ configure_options = \
 	--with-libsystemd \
 	--with-libmount \
 	--with-modern-grub \
-	--with-soup \
+	--with-soup3 \
 	--with-selinux \
 	--with-systemdsystemgeneratordir=/lib/systemd/system-generators \
 	--with-systemdsystemunitdir=/lib/systemd/system \
