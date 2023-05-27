@@ -1,3 +1,2 @@
-tests-Ensure-non-root-users-have-access-to-libcap-tools.patch
 debian/Skip-test-pull-repeated-during-CI.patch
 debian/test-sysroot-Skip-on-s390x-by-default.patch
