@@ -1,8 +1,11 @@
-ostree (2023.3-1) UNRELEASED; urgency=medium
+ostree (2023.3-1) experimental; urgency=medium
 
   * New upstream release
+  * d/patches: Drop patch that was applied upstream
+  * d/control: Update GObject-Introspection build-dependency
+  * d/control, d/rules: Use libsoup 3 for test code
 
- -- Simon McVittie <smcv@debian.org>  Fri, 26 May 2023 16:51:35 +0100
+ -- Simon McVittie <smcv@debian.org>  Sat, 27 May 2023 17:34:25 +0100
 
 ostree (2023.1-2) experimental; urgency=medium
 
