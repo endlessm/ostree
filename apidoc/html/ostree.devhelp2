@@ -214,6 +214,7 @@
     <keyword type="function" name="ostree_repo_write_commit_with_time ()" link="ostree-OstreeRepo.html#ostree-repo-write-commit-with-time"/>
     <keyword type="function" name="ostree_repo_read_commit_detached_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-read-commit-detached-metadata"/>
     <keyword type="function" name="ostree_repo_write_commit_detached_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-write-commit-detached-metadata"/>
+    <keyword type="function" name="ostree_repo_commit_add_composefs_metadata ()" link="ostree-OstreeRepo.html#ostree-repo-commit-add-composefs-metadata"/>
     <keyword type="function" name="ostree_repo_checkout_at_options_set_devino ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-at-options-set-devino" since="2017.13"/>
     <keyword type="function" name="ostree_repo_checkout_tree ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-tree"/>
     <keyword type="function" name="ostree_repo_checkout_tree_at ()" link="ostree-OstreeRepo.html#ostree-repo-checkout-tree-at" deprecated=""/>

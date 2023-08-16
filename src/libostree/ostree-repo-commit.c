@@ -184,7 +184,7 @@ _ostree_repo_commit_tmpf_final (OstreeRepo *self, const char *checksum, OstreeOb
   if (!_ostree_repo_ensure_loose_objdir_at (dest_dfd, tmpbuf, cancellable, error))
     return FALSE;
 
-  if (!_ostree_tmpf_fsverity (self, tmpf, error))
+  if (!_ostree_tmpf_fsverity (self, tmpf, NULL, error))
     return FALSE;
 
   if (!glnx_link_tmpfile_at (tmpf, GLNX_LINK_TMPFILE_NOREPLACE_IGNORE_EXIST, dest_dfd, tmpbuf,
@@ -398,14 +398,9 @@ compare_ascii_checksums_for_sorting (gconstpointer a_pp, gconstpointer b_pp)
 /*
  * Create sizes metadata GVariant and add it to the metadata variant given.
  */
-static GVariant *
-add_size_index_to_metadata (OstreeRepo *self, GVariant *original_metadata)
+static void
+add_size_index_to_metadata (OstreeRepo *self, GVariantBuilder *builder)
 {
-  g_autoptr (GVariantBuilder) builder = NULL;
-
-  /* original_metadata may be NULL */
-  builder = ot_util_variant_builder_from_variant (original_metadata, G_VARIANT_TYPE ("a{sv}"));
-
   if (self->object_sizes && g_hash_table_size (self->object_sizes) > 0)
     {
       GVariantBuilder index_builder;
@@ -443,8 +438,6 @@ add_size_index_to_metadata (OstreeRepo *self, GVariant *original_metadata)
       /* Clear the object sizes hash table for a subsequent commit. */
       g_hash_table_remove_all (self->object_sizes);
     }
-
-  return g_variant_ref_sink (g_variant_builder_end (builder));
 }
 
 static gboolean
@@ -1517,7 +1510,7 @@ scan_loose_devino (OstreeRepo *self, GHashTable *devino_cache, GCancellable *can
  * checksum. */
 static const char *
 devino_cache_lookup (OstreeRepo *self, OstreeRepoCommitModifier *modifier, guint32 device,
-                     guint32 inode)
+                     guint64 inode)
 {
   OstreeDevIno dev_ino_key;
   OstreeDevIno *dev_ino_val;
@@ -2912,6 +2905,20 @@ ostree_repo_write_commit (OstreeRepo *self, const char *parent, const char *subj
                                              out_commit, cancellable, error);
 }
 
+static GVariant *
+add_auto_metadata (OstreeRepo *self, GVariant *original_metadata, OstreeRepoFile *repo_root,
+                   GCancellable *cancellable, GError **error)
+{
+  g_autoptr (GVariantBuilder) builder = NULL;
+
+  /* original_metadata may be NULL */
+  builder = ot_util_variant_builder_from_variant (original_metadata, G_VARIANT_TYPE ("a{sv}"));
+
+  add_size_index_to_metadata (self, builder);
+
+  return g_variant_ref_sink (g_variant_builder_end (builder));
+}
+
 /**
  * ostree_repo_write_commit_with_time:
  * @self: Repo
@@ -2938,7 +2945,10 @@ ostree_repo_write_commit_with_time (OstreeRepo *self, const char *parent, const 
   OstreeRepoFile *repo_root = OSTREE_REPO_FILE (root);
 
   /* Add sizes information to our metadata object */
-  g_autoptr (GVariant) new_metadata = add_size_index_to_metadata (self, metadata);
+  g_autoptr (GVariant) new_metadata
+      = add_auto_metadata (self, metadata, repo_root, cancellable, error);
+  if (new_metadata == NULL)
+    return FALSE;
 
   g_autoptr (GVariant) commit = g_variant_new (
       "(@a{sv}@ay@a(say)sst@ay@ay)", new_metadata ? new_metadata : create_empty_gvariant_dict (),
