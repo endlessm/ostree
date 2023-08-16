@@ -46,6 +46,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  LIBOSTREE_2022.5@LIBOSTREE_2022.5 2022.5
  LIBOSTREE_2022.7@LIBOSTREE_2022.7 2022.7
  LIBOSTREE_2023.1@LIBOSTREE_2023.1 2023.1
+ LIBOSTREE_2023.4@LIBOSTREE_2023.4 2023.5
  ostree_async_progress_copy_state@LIBOSTREE_2019.6 2019.6
  ostree_async_progress_finish@LIBOSTREE_2016.3 2016.4
  ostree_async_progress_get@LIBOSTREE_2017.6 2017.6
@@ -228,6 +229,7 @@ libostree-1.so.1 libostree-1-1 #MINVER#
  ostree_repo_checkout_gc@LIBOSTREE_2016.3 2016.4
  ostree_repo_checkout_tree@LIBOSTREE_2016.3 2016.4
  ostree_repo_checkout_tree_at@LIBOSTREE_2016.3 2016.4
+ ostree_repo_commit_add_composefs_metadata@LIBOSTREE_2023.4 2023.5
  ostree_repo_commit_modifier_get_type@LIBOSTREE_2016.3 2016.4
  ostree_repo_commit_modifier_new@LIBOSTREE_2016.3 2016.4
  ostree_repo_commit_modifier_ref@LIBOSTREE_2016.3 2016.4
