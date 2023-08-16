@@ -29,36 +29,75 @@
 #include <linux/fsverity.h>
 #endif
 
+#if defined(HAVE_OPENSSL)
+#include <openssl/bio.h>
+#include <openssl/engine.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/pkcs7.h>
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (X509, X509_free);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (EVP_PKEY, EVP_PKEY_free);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (BIO, BIO_free);
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (PKCS7, PKCS7_free);
+#endif
+
 gboolean
 _ostree_repo_parse_fsverity_config (OstreeRepo *self, GError **error)
 {
   /* Currently experimental */
-  static const char fsverity_key[] = "ex-fsverity";
-  self->fs_verity_wanted = _OSTREE_FEATURE_NO;
+  OtTristate use_composefs;
+  OtTristate use_fsverity;
+
 #ifdef HAVE_LINUX_FSVERITY_H
   self->fs_verity_supported = _OSTREE_FEATURE_MAYBE;
 #else
   self->fs_verity_supported = _OSTREE_FEATURE_NO;
 #endif
-  gboolean fsverity_required = FALSE;
-  if (!ot_keyfile_get_boolean_with_default (self->config, fsverity_key, "required", FALSE,
-                                            &fsverity_required, error))
+
+  /* Composefs use implies fsverity default of maybe */
+  if (!ot_keyfile_get_tristate_with_default (self->config, _OSTREE_INTEGRITY_SECTION, "composefs",
+                                             OT_TRISTATE_NO, &use_composefs, error))
     return FALSE;
-  if (fsverity_required)
+
+  if (!ot_keyfile_get_tristate_with_default (self->config, _OSTREE_INTEGRITY_SECTION, "fsverity",
+                                             (use_composefs != OT_TRISTATE_NO) ? OT_TRISTATE_MAYBE
+                                                                               : OT_TRISTATE_NO,
+                                             &use_fsverity, error))
+    return FALSE;
+
+  if (use_fsverity != OT_TRISTATE_NO)
     {
-      self->fs_verity_wanted = _OSTREE_FEATURE_YES;
-      if (self->fs_verity_supported == _OSTREE_FEATURE_NO)
-        return glnx_throw (error, "fsverity required, but libostree compiled without support");
+      self->fs_verity_wanted = (_OstreeFeatureSupport)use_fsverity;
     }
   else
     {
-      gboolean fsverity_opportunistic = FALSE;
-      if (!ot_keyfile_get_boolean_with_default (self->config, fsverity_key, "opportunistic", FALSE,
-                                                &fsverity_opportunistic, error))
+      /* Fall back to old configuration key */
+      static const char fsverity_section[] = "ex-fsverity";
+
+      self->fs_verity_wanted = _OSTREE_FEATURE_NO;
+      gboolean fsverity_required = FALSE;
+      if (!ot_keyfile_get_boolean_with_default (self->config, fsverity_section, "required", FALSE,
+                                                &fsverity_required, error))
         return FALSE;
-      if (fsverity_opportunistic)
-        self->fs_verity_wanted = _OSTREE_FEATURE_MAYBE;
+      if (fsverity_required)
+        {
+          self->fs_verity_wanted = _OSTREE_FEATURE_YES;
+        }
+      else
+        {
+          gboolean fsverity_opportunistic = FALSE;
+          if (!ot_keyfile_get_boolean_with_default (self->config, fsverity_section, "opportunistic",
+                                                    FALSE, &fsverity_opportunistic, error))
+            return FALSE;
+          if (fsverity_opportunistic)
+            self->fs_verity_wanted = _OSTREE_FEATURE_MAYBE;
+        }
     }
+
+  if (self->fs_verity_wanted == _OSTREE_FEATURE_YES
+      && self->fs_verity_supported == _OSTREE_FEATURE_NO)
+    return glnx_throw (error, "fsverity required, but libostree compiled without support");
 
   return TRUE;
 }
@@ -69,7 +108,7 @@ _ostree_repo_parse_fsverity_config (OstreeRepo *self, GError **error)
  * */
 gboolean
 _ostree_tmpf_fsverity_core (GLnxTmpfile *tmpf, _OstreeFeatureSupport fsverity_requested,
-                            gboolean *supported, GError **error)
+                            GBytes *signature, gboolean *supported, GError **error)
 {
   /* Set this by default to simplify the code below */
   if (supported)
@@ -93,8 +132,8 @@ _ostree_tmpf_fsverity_core (GLnxTmpfile *tmpf, _OstreeFeatureSupport fsverity_re
   arg.block_size = 4096;                          /* FIXME query */
   arg.salt_size = 0;                              /* TODO store salt in ostree repo config */
   arg.salt_ptr = 0;
-  arg.sig_size = 0; /* We don't currently expect use of in-kernel signature verification */
-  arg.sig_ptr = 0;
+  arg.sig_size = signature ? g_bytes_get_size (signature) : 0;
+  arg.sig_ptr = signature ? (guint64)g_bytes_get_data (signature, NULL) : 0;
 
   if (ioctl (tmpf->fd, FS_IOC_ENABLE_VERITY, &arg) < 0)
     {
@@ -120,7 +159,7 @@ _ostree_tmpf_fsverity_core (GLnxTmpfile *tmpf, _OstreeFeatureSupport fsverity_re
  * as well as to support "opportunistic" use (requested and if filesystem supports).
  * */
 gboolean
-_ostree_tmpf_fsverity (OstreeRepo *self, GLnxTmpfile *tmpf, GError **error)
+_ostree_tmpf_fsverity (OstreeRepo *self, GLnxTmpfile *tmpf, GBytes *signature, GError **error)
 {
 #ifdef HAVE_LINUX_FSVERITY_H
   g_mutex_lock (&self->txn_lock);
@@ -143,7 +182,7 @@ _ostree_tmpf_fsverity (OstreeRepo *self, GLnxTmpfile *tmpf, GError **error)
     }
 
   gboolean supported = FALSE;
-  if (!_ostree_tmpf_fsverity_core (tmpf, fsverity_wanted, &supported, error))
+  if (!_ostree_tmpf_fsverity_core (tmpf, fsverity_wanted, signature, &supported, error))
     return FALSE;
 
   if (!supported)

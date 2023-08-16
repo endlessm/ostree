@@ -950,6 +950,14 @@
 </tr>
 <tr>
 <td class="function_type">
+<span class="returnvalue">gboolean</span>
+</td>
+<td class="function_name">
+<a class="link" href="ostree-OstreeRepo.html#ostree-repo-commit-add-composefs-metadata" title="ostree_repo_commit_add_composefs_metadata ()">ostree_repo_commit_add_composefs_metadata</a> <span class="c_punctuation">()</span>
+</td>
+</tr>
+<tr>
+<td class="function_type">
 <span class="returnvalue">void</span>
 </td>
 <td class="function_name">
@@ -7044,6 +7052,64 @@ data will be deleted.</p>
 <td class="parameter_description"><p>Metadata to associate with commit in with format "a{sv}", or <code class="literal">NULL</code> to
 delete. </p></td>
 <td class="parameter_annotations"><span class="annotation">[<a href="http://foldoc.org/nullable"><span class="acronym">nullable</span></a>]</span></td>
+</tr>
+<tr>
+<td class="parameter_name"><p>cancellable</p></td>
+<td class="parameter_description"><p>Cancellable</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>error</p></td>
+<td class="parameter_description"><p>Error</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+<hr>
+<div class="refsect2">
+<a name="ostree-repo-commit-add-composefs-metadata"></a><h3>ostree_repo_commit_add_composefs_metadata ()</h3>
+<pre class="programlisting"><span class="returnvalue">gboolean</span>
+ostree_repo_commit_add_composefs_metadata
+                               (<em class="parameter"><code><a class="link" href="ostree-OstreeRepo.html#OstreeRepo" title="OstreeRepo"><span class="type">OstreeRepo</span></a> *self</code></em>,
+                                <em class="parameter"><code><span class="type">guint</span> format_version</code></em>,
+                                <em class="parameter"><code><span class="type">GVariantDict</span> *dict</code></em>,
+                                <em class="parameter"><code><a class="link" href="ostree-ostree-repo-file.html#OstreeRepoFile" title="OstreeRepoFile"><span class="type">OstreeRepoFile</span></a> *repo_root</code></em>,
+                                <em class="parameter"><code><span class="type">GCancellable</span> *cancellable</code></em>,
+                                <em class="parameter"><code><span class="type">GError</span> **error</code></em>);</pre>
+<p>Compute the composefs digest for a filesystem tree
+and insert it into metadata for a commit object.  The composefs
+digest covers the entire filesystem tree and can be verified by
+the composefs mount tooling.</p>
+<div class="refsect3">
+<a name="ostree-repo-commit-add-composefs-metadata.parameters"></a><h4>Parameters</h4>
+<div class="informaltable"><table class="informaltable" width="100%" border="0">
+<colgroup>
+<col width="150px" class="parameters_name">
+<col class="parameters_description">
+<col width="200px" class="parameters_annotations">
+</colgroup>
+<tbody>
+<tr>
+<td class="parameter_name"><p>self</p></td>
+<td class="parameter_description"><p>Repo</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>format_version</p></td>
+<td class="parameter_description"><p>Must be zero</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>dict</p></td>
+<td class="parameter_description"><p>A GVariant builder of type a{sv}</p></td>
+<td class="parameter_annotations"> </td>
+</tr>
+<tr>
+<td class="parameter_name"><p>repo_root</p></td>
+<td class="parameter_description"><p>the target filesystem tree</p></td>
+<td class="parameter_annotations"> </td>
 </tr>
 <tr>
 <td class="parameter_name"><p>cancellable</p></td>

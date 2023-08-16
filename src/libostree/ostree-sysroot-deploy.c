@@ -163,7 +163,7 @@ install_into_boot (OstreeRepo *repo, OstreeSePolicy *sepolicy, int src_dfd, cons
   _OstreeFeatureSupport boot_verity = _OSTREE_FEATURE_NO;
   if (repo->fs_verity_wanted != _OSTREE_FEATURE_NO)
     boot_verity = _OSTREE_FEATURE_MAYBE;
-  if (!_ostree_tmpf_fsverity_core (&tmp_dest, boot_verity, NULL, error))
+  if (!_ostree_tmpf_fsverity_core (&tmp_dest, boot_verity, NULL, NULL, error))
     return FALSE;
 
   if (!glnx_link_tmpfile_at (&tmp_dest, GLNX_LINK_TMPFILE_NOREPLACE, dest_dfd, dest_subpath, error))
@@ -582,13 +582,45 @@ merge_configuration_from (OstreeSysroot *sysroot, OstreeDeployment *merge_deploy
   return TRUE;
 }
 
+#ifdef HAVE_COMPOSEFS
+static gboolean
+compare_verity_digests (GVariant *metadata_composefs, const guchar *fsverity_digest, GError **error)
+{
+  const guchar *expected_digest;
+
+  if (metadata_composefs == NULL)
+    return TRUE;
+
+  if (g_variant_n_children (metadata_composefs) != OSTREE_SHA256_DIGEST_LEN)
+    return glnx_throw (error, "Expected composefs fs-verity in metadata has the wrong size");
+
+  expected_digest = g_variant_get_data (metadata_composefs);
+  if (memcmp (fsverity_digest, expected_digest, OSTREE_SHA256_DIGEST_LEN) != 0)
+    {
+      char actual_checksum[OSTREE_SHA256_STRING_LEN + 1];
+      char expected_checksum[OSTREE_SHA256_STRING_LEN + 1];
+
+      ostree_checksum_inplace_from_bytes (fsverity_digest, actual_checksum);
+      ostree_checksum_inplace_from_bytes (expected_digest, expected_checksum);
+
+      return glnx_throw (error,
+                         "Generated composefs image digest (%s) doesn't match expected digest (%s)",
+                         actual_checksum, expected_checksum);
+    }
+
+  return TRUE;
+}
+
+#endif
+
 /* Look up @revision in the repository, and check it out in
  * /ostree/deploy/OS/deploy/${treecsum}.${deployserial}.
  * A dfd for the result is returned in @out_deployment_dfd.
  */
 static gboolean
 checkout_deployment_tree (OstreeSysroot *sysroot, OstreeRepo *repo, OstreeDeployment *deployment,
-                          int *out_deployment_dfd, GCancellable *cancellable, GError **error)
+                          const char *revision, int *out_deployment_dfd, GCancellable *cancellable,
+                          GError **error)
 {
   GLNX_AUTO_PREFIX_ERROR ("Checking out deployment tree", error);
   /* Find the directory with deployments for this stateroot */
@@ -613,6 +645,66 @@ checkout_deployment_tree (OstreeSysroot *sysroot, OstreeRepo *repo, OstreeDeploy
   if (!ostree_repo_checkout_at (repo, &checkout_opts, osdeploy_dfd, checkout_target_name, csum,
                                 cancellable, error))
     return FALSE;
+
+#ifdef HAVE_COMPOSEFS
+  if (repo->composefs_wanted != OT_TRISTATE_NO)
+    {
+      g_autofree guchar *fsverity_digest = NULL;
+      g_auto (GLnxTmpfile) tmpf = {
+        0,
+      };
+      g_autoptr (GVariant) commit_variant = NULL;
+
+      if (!ostree_repo_load_commit (repo, revision, &commit_variant, NULL, error))
+        return FALSE;
+
+      g_autoptr (GVariant) metadata = g_variant_get_child_value (commit_variant, 0);
+      g_autoptr (GVariant) metadata_composefs = g_variant_lookup_value (
+          metadata, OSTREE_COMPOSEFS_DIGEST_KEY_V0, G_VARIANT_TYPE_BYTESTRING);
+
+      /* Create a composefs image and put in deploy dir as .ostree.cfs */
+      g_autoptr (OstreeComposefsTarget) target = ostree_composefs_target_new ();
+
+      g_autoptr (GFile) commit_root = NULL;
+      if (!ostree_repo_read_commit (repo, csum, &commit_root, NULL, cancellable, error))
+        return FALSE;
+
+      if (!ostree_repo_checkout_composefs (repo, target, (OstreeRepoFile *)commit_root, cancellable,
+                                           error))
+        return FALSE;
+
+      g_autofree char *composefs_cfs_path
+          = g_strdup_printf ("%s/.ostree.cfs", checkout_target_name);
+
+      if (!glnx_open_tmpfile_linkable_at (osdeploy_dfd, checkout_target_name, O_WRONLY | O_CLOEXEC,
+                                          &tmpf, error))
+        return FALSE;
+
+      if (!ostree_composefs_target_write (target, tmpf.fd, &fsverity_digest, cancellable, error))
+        return FALSE;
+
+      /* If the commit specified a composefs digest, verify it */
+      if (!compare_verity_digests (metadata_composefs, fsverity_digest, error))
+        return FALSE;
+
+      if (!glnx_fchmod (tmpf.fd, 0644, error))
+        return FALSE;
+
+      if (!_ostree_tmpf_fsverity (repo, &tmpf, NULL, error))
+        return FALSE;
+
+      if (!glnx_link_tmpfile_at (&tmpf, GLNX_LINK_TMPFILE_REPLACE, osdeploy_dfd, composefs_cfs_path,
+                                 error))
+        return FALSE;
+
+      /* This is where the erofs image will be temporarily mounted */
+      g_autofree char *composefs_mnt_path
+          = g_strdup_printf ("%s/.ostree.mnt", checkout_target_name);
+
+      if (!glnx_shutil_mkdir_p_at (osdeploy_dfd, composefs_mnt_path, 0775, cancellable, error))
+        return FALSE;
+    }
+#endif
 
   return glnx_opendirat (osdeploy_dfd, checkout_target_name, TRUE, out_deployment_dfd, error);
 }
@@ -2441,6 +2533,38 @@ get_kernel_layout_size (OstreeSysroot *self, OstreeDeployment *deployment, guint
   return TRUE;
 }
 
+/* This is a roundabout but more trustworthy way of doing a space check than
+ * relying on statvfs's f_bfree when you know the size of the objects. */
+static gboolean
+dfd_fallocate_check (int dfd, off_t len, gboolean *out_passed, GError **error)
+{
+  /* If the requested size is 0 then return early. Passing a 0 len to
+   * fallocate results in EINVAL */
+  if (len == 0)
+    {
+      *out_passed = TRUE;
+      return TRUE;
+    }
+
+  g_auto (GLnxTmpfile) tmpf = {
+    0,
+  };
+  if (!glnx_open_tmpfile_linkable_at (dfd, ".", O_WRONLY | O_CLOEXEC, &tmpf, error))
+    return FALSE;
+
+  *out_passed = TRUE;
+  /* There's glnx_try_fallocate, but not with the same error semantics. */
+  if (TEMP_FAILURE_RETRY (fallocate (tmpf.fd, 0, 0, len)) < 0)
+    {
+      if (G_IN_SET (errno, ENOSYS, EOPNOTSUPP))
+        return TRUE;
+      else if (errno != ENOSPC)
+        return glnx_throw_errno_prefix (error, "fallocate");
+      *out_passed = FALSE;
+    }
+  return TRUE;
+}
+
 /* Analyze /boot and figure out if the new deployments won't fit in the
  * remaining space. If they won't, check if deleting the deployments that are
  * getting rotated out (e.g. the current rollback) would free up sufficient
@@ -2534,7 +2658,7 @@ auto_early_prune_old_deployments (OstreeSysroot *self, GPtrArray *new_deployment
           continue;
         }
 
-      guint64 bootdir_size;
+      guint64 bootdir_size = 0;
       if (!get_kernel_layout_size (self, deployment, &bootdir_size, cancellable, error))
         return FALSE;
 
@@ -2553,32 +2677,45 @@ auto_early_prune_old_deployments (OstreeSysroot *self, GPtrArray *new_deployment
       net_new_bootcsum_dirs_total_size += bootdir_size;
     }
 
-  /* get bootfs free space */
-  struct statvfs stvfsbuf;
-  if (TEMP_FAILURE_RETRY (fstatvfs (self->boot_fd, &stvfsbuf)) < 0)
-    return glnx_throw_errno_prefix (error, "fstatvfs(boot)");
+  {
+    gboolean bootfs_has_space = FALSE;
+    if (!dfd_fallocate_check (self->boot_fd, net_new_bootcsum_dirs_total_size, &bootfs_has_space,
+                              error))
+      return glnx_prefix_error (error, "Checking if bootfs has sufficient space");
 
-  guint64 available_size = stvfsbuf.f_bsize * stvfsbuf.f_bfree;
-
-  /* does the bootfs have enough free space for net-new bootdirs? */
-  if (net_new_bootcsum_dirs_total_size <= available_size)
-    return TRUE; /* nothing to do! */
+    /* does the bootfs have enough free space for temporarily holding both the new
+     * and old bootdirs? */
+    if (bootfs_has_space)
+      return TRUE; /* nothing to do! */
+  }
 
   /* OK, we would fail if we tried to write the new bootdirs. Is it salvageable?
    * First, calculate how much space we could save with the bootcsums scheduled
    * for removal. */
-  guint64 size_to_remove = 0;
+  guint64 bootcsum_dirs_to_remove_total_size = 0;
   GLNX_HASH_TABLE_FOREACH_KV (current_bootcsums, const char *, bootcsum, gpointer, sizep)
     {
       if (!g_hash_table_contains (new_bootcsums, bootcsum))
-        size_to_remove += GPOINTER_TO_UINT (sizep);
+        bootcsum_dirs_to_remove_total_size += GPOINTER_TO_UINT (sizep);
     }
 
-  if (net_new_bootcsum_dirs_total_size > (available_size + size_to_remove))
+  if (net_new_bootcsum_dirs_total_size > bootcsum_dirs_to_remove_total_size)
     {
-      /* Even if we auto-pruned, the new bootdirs wouldn't fit. Just let the
-       * code continue and let it hit ENOSPC. */
-      return TRUE;
+      /* Check whether if we did early prune, we'd have enough space to write
+       * the new bootcsum dirs. */
+      gboolean bootfs_has_space = FALSE;
+      if (!dfd_fallocate_check (
+              self->boot_fd, net_new_bootcsum_dirs_total_size - bootcsum_dirs_to_remove_total_size,
+              &bootfs_has_space, error))
+        return glnx_prefix_error (error, "Checking if prune would give bootfs sufficient space");
+
+      if (!bootfs_has_space)
+        {
+          /* Even if we auto-pruned, the new bootdirs wouldn't fit. Just let the
+           * code continue and let it hit ENOSPC. */
+          g_printerr ("Disabling auto-prune optimization; insufficient space left in bootfs\n");
+          return TRUE;
+        }
     }
 
   g_printerr ("Insufficient space left in bootfs; updating bootloader in two steps\n");
@@ -2910,7 +3047,6 @@ lint_deployment_fs (OstreeSysroot *self, OstreeDeployment *deployment, int deplo
   g_auto (GLnxDirFdIterator) dfd_iter = {
     0,
   };
-  glnx_autofd int dest_dfd = -1;
   gboolean exists;
 
   if (!ot_dfd_iter_init_allow_noent (deployment_dfd, "var", &dfd_iter, &exists, error))
@@ -2959,7 +3095,8 @@ sysroot_initialize_deployment (OstreeSysroot *self, const char *osname, const ch
 
   /* Check out the userspace tree onto the filesystem */
   glnx_autofd int deployment_dfd = -1;
-  if (!checkout_deployment_tree (self, repo, new_deployment, &deployment_dfd, cancellable, error))
+  if (!checkout_deployment_tree (self, repo, new_deployment, revision, &deployment_dfd, cancellable,
+                                 error))
     return FALSE;
 
   g_autoptr (OstreeKernelLayout) kernel_layout = NULL;
