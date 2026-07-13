@@ -1064,6 +1064,8 @@ typedef struct
   char *aboot_namever;
   char *efi_blob_srcpath;
   char *efi_blob_namever;
+  char *fit_srcpath;
+  char *fit_namever;
   char *bootcsum;
 } OstreeKernelLayout;
 static void
@@ -1082,6 +1084,8 @@ _ostree_kernel_layout_free (OstreeKernelLayout *layout)
   g_free (layout->aboot_namever);
   g_free (layout->efi_blob_srcpath);
   g_free (layout->efi_blob_namever);
+  g_free (layout->fit_srcpath);
+  g_free (layout->fit_namever);
   g_free (layout->bootcsum);
   g_free (layout);
 }
@@ -1269,6 +1273,17 @@ get_kernel_from_tree_usrlib_modules (OstreeSysroot *sysroot, int deployment_dfd,
     {
       ret_layout->efi_blob_srcpath = g_strdup ("payg-image.efi");
       ret_layout->efi_blob_namever = g_strdup_printf ("payg-image-%s.efi", kver);
+    }
+  glnx_close_fd (&fd);
+
+  /* Looking for a payg-fitImage file. */
+  if (!ot_openat_ignore_enoent (ret_layout->boot_dfd, "payg-fitImage", &fd, error))
+    return FALSE;
+
+  if (fd != -1)
+    {
+      ret_layout->fit_srcpath = g_strdup ("payg-fitImage");
+      ret_layout->fit_namever = g_strdup_printf ("payg-fitImage-%s", kver);
     }
   glnx_close_fd (&fd);
 
@@ -1963,13 +1978,15 @@ install_deployment_kernel (OstreeSysroot *sysroot, int new_bootversion,
   const char *bootprefix = repo->enable_bootprefix ? "/boot/" : "/";
 
   struct stat stbuf;
-  /* If this is a payg deployment, we want the efi blob and nothing else */
-  gboolean payg = kernel_layout->efi_blob_srcpath && is_payg_deployment (cancellable);
+  /* If this is a payg deployment, we want the efi blob or FIT and nothing else */
+  gboolean payg = (kernel_layout->efi_blob_srcpath || kernel_layout->fit_srcpath) \
+		  && is_payg_deployment (cancellable);
   /* If we're updating an old loader entry that doesn't use efi blobs
    * keep it the way it was. */
   payg = payg && !ostree_bootconfig_parser_get (bootconfig, "linux");
   if (payg)
     {
+#ifdef __x86_64__
       g_assert (kernel_layout->efi_blob_namever);
       if (!glnx_fstatat_allow_noent (bootcsum_dfd, kernel_layout->efi_blob_namever, &stbuf, 0,
                                      error))
@@ -1981,6 +1998,20 @@ install_deployment_kernel (OstreeSysroot *sysroot, int new_bootversion,
                                   kernel_layout->efi_blob_namever, cancellable, error))
             return FALSE;
         }
+#else
+      /* Non x86_64 platforms use FIT image for PAYG. */
+      g_assert (kernel_layout->fit_namever);
+      if (!glnx_fstatat_allow_noent (bootcsum_dfd, kernel_layout->fit_namever, &stbuf, 0,
+                                     error))
+        return FALSE;
+      if (errno == ENOENT)
+        {
+          if (!install_into_boot (repo, sepolicy, kernel_layout->boot_dfd,
+                                  kernel_layout->fit_srcpath, bootcsum_dfd,
+                                  kernel_layout->fit_namever, cancellable, error))
+            return FALSE;
+        }
+#endif
     }
 
   /* Install (hardlink/copy) the kernel into /boot/ostree/osname-${bootcsum} if
@@ -2264,9 +2295,16 @@ install_deployment_kernel (OstreeSysroot *sysroot, int new_bootversion,
 
   if (payg)
     {
+#ifdef __x86_64__
       g_autofree char *boot_relpath
           = g_strconcat (bootprefix, bootcsumdir, "/", kernel_layout->efi_blob_namever, NULL);
       ostree_bootconfig_parser_set (bootconfig, "efi", boot_relpath);
+#else
+      /* Non x86_64 platforms use FIT image for PAYG. */
+      g_autofree char *boot_relpath
+          = g_strconcat (bootprefix, bootcsumdir, "/", kernel_layout->fit_namever, NULL);
+      ostree_bootconfig_parser_set (bootconfig, "fitimage", boot_relpath);
+#endif
     }
 
   /* Note this is parsed in ostree-impl-system-generator.c */
