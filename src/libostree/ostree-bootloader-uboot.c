@@ -120,26 +120,35 @@ create_config_from_boot_loader_entries (OstreeBootloaderUboot *self, int bootver
         index_suffix = g_strdup_printf ("%d", i + 1);
       config = boot_loader_configs->pdata[i];
 
-      val = ostree_bootconfig_parser_get (config, "linux");
-      if (!val)
+      val = ostree_bootconfig_parser_get (config, "fitimage");
+      if (val)
         {
-          g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                       "No \"linux\" key in bootloader config");
-          return FALSE;
+          /* If there is the FIT image, skip kernel, ramdisk, fdt and fdtdir to avoid confusion. */
+          g_ptr_array_add (new_lines, g_strdup_printf ("fit_image%s=/boot%s", index_suffix, val));
         }
-      g_ptr_array_add (new_lines, g_strdup_printf ("kernel_image%s=/boot%s", index_suffix, val));
+      else
+        {
+          val = ostree_bootconfig_parser_get (config, "linux");
+          if (!val)
+            {
+              g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                           "No \"linux\" key in bootloader config");
+              return FALSE;
+            }
+          g_ptr_array_add (new_lines, g_strdup_printf ("kernel_image%s=/boot%s", index_suffix, val));
 
-      val = ostree_bootconfig_parser_get (config, "initrd");
-      if (val)
-        g_ptr_array_add (new_lines, g_strdup_printf ("ramdisk_image%s=/boot%s", index_suffix, val));
+          val = ostree_bootconfig_parser_get (config, "initrd");
+          if (val)
+            g_ptr_array_add (new_lines, g_strdup_printf ("ramdisk_image%s=/boot%s", index_suffix, val));
 
-      val = ostree_bootconfig_parser_get (config, "devicetree");
-      if (val)
-        g_ptr_array_add (new_lines, g_strdup_printf ("fdt_file%s=/boot%s", index_suffix, val));
+          val = ostree_bootconfig_parser_get (config, "devicetree");
+          if (val)
+            g_ptr_array_add (new_lines, g_strdup_printf ("fdt_file%s=/boot%s", index_suffix, val));
 
-      val = ostree_bootconfig_parser_get (config, "fdtdir");
-      if (val)
-        g_ptr_array_add (new_lines, g_strdup_printf ("fdtdir%s=/boot%s", index_suffix, val));
+          val = ostree_bootconfig_parser_get (config, "fdtdir");
+          if (val)
+            g_ptr_array_add (new_lines, g_strdup_printf ("fdtdir%s=/boot%s", index_suffix, val));
+        }
 
       val = ostree_bootconfig_parser_get (config, "options");
       if (val)
