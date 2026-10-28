@@ -2386,8 +2386,8 @@ swap_bootloader (OstreeSysroot *sysroot, OstreeBootloader *bootloader, int curre
   if (!_ostree_sysroot_ensure_boot_fd (sysroot, error))
     return FALSE;
   g_assert_cmpint (sysroot->boot_fd, !=, -1);
-  // We use symlinks here.
-  g_assert (!sysroot->boot_is_vfat);
+  // We use symlinks here. But, EOS allows PAYG deployment using /boot in FAT.
+  g_assert (!sysroot->boot_is_vfat || is_payg_deployment (NULL));
 
   gboolean fat = fs_is_fat (sysroot->boot_fd);
 
